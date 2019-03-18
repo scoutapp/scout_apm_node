@@ -6,5 +6,33 @@
   "repository": "git@github.com:scoutapp/scout_apm_node.git",
   "author": "vados-scout <vados+scout@vadosware.io>",
   "license": "MIT",
-  "private": true
+  "keywords": [
+    "observability",
+    "metrics",
+    "logging",
+    "tracing",
+    "monitoring",
+    "tools",
+    "application-monitoring"
+  ],
+  "bugs": {
+    "url": "https://github.com/scoutapp/scout_apm_node/issues"
+  },
+  "homepage": "https://github.com/scoutapp/scout_apm_node#readme",
+  "scripts": {
+    "build": "./node_modules/.bin/tsc",
+    "build-watch": "./node_modules/.bin/tsc --watch",
+    "lint": "./node_modules/.bin/tslint -p tsconfig.json"
+  },
+  "types": "index.d.ts",
+  "files": [
+    "index.d.ts",
+    "dist/**/*"
+  ],
+  "private": true,
+  "devDependencies": {
+    "tape": "^4.10.1",
+    "tslint": "^5.14.0",
+    "typescript": "^3.3.3333"
+  }
 }
