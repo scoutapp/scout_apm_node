@@ -1,0 +1,14 @@
+# emacs
+*~
+\#*
+*\#
+
+# vim
+*.swp
+
+# node
+node_modules
+
+# build artifacts
+dist
+/yarn-error.log
