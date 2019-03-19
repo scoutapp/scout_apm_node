@@ -33,14 +33,13 @@ class WebAgentDownloader implements AgentDownloader {
         return Promise.resolve(DownloadConfigs[version]);
     }
 
-    public checkBinary(path: string, adc: AgentDownloadConfig): Promise<boolean> {
-        if (!adc.manifest || !adc.manifest.core_agent_binary_sha256) {
+    public checkBinary(path: string, adc?: AgentDownloadConfig): Promise<boolean> {
+        // TODO: support missing ADC (download/lookup manifest locally, then manifest.json, & possibly remotely
+        if (!adc || !adc.manifest || !adc.manifest.core_agent_binary_sha256) {
             return Promise.reject(new Errors.UnexpectedError("Missing/invalid manifest in AgentDownloadConfig"));
         }
 
         const shasum = adc.manifest.core_agent_binary_sha256;
-        // TODO: if agent download config doesn't contain manifest,
-        // & manifest.json is present in the same directory, use it
 
         return hasha.fromFile(path, {algorithm: "sha256"})
             .then(hash => hash === shasum);

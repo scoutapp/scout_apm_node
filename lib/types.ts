@@ -115,6 +115,15 @@ export interface AgentDownloader {
     getDownloadConfigs(v: CoreAgentVersion): Promise<AgentDownloadConfig[]>;
 
     /**
+     * Verify a binary at a given path.
+     *
+     * @param {string} path - Path to the binary
+     * @param {AgentDownloadConfig} adc? - The agent download configuration used
+     * @returns {Promise<boolean>} Whether the binary is valid or not
+     */
+    checkBinary(path: string, adc?: AgentDownloadConfig): Promise<boolean>;
+
+    /**
      * Download & verify the core-agent binary
      * @param {AgentDownloadConfig} config - Config for downloading the agent (url, hash, expected manifest, etc)
      * @param {AgentDownloadOptions} opts - Options for download the agent
