@@ -8,17 +8,19 @@ class ScoutError extends Error {
 }
 
 export class NotImplemented extends ScoutError {
+    public readonly code: number = ErrorCode.NotImplemented;
+
     constructor(m?: string) {
         super();
         this.message = m || "Not implemented";
-        this.code = ErrorCode.NotImplemented;
     }
 }
 
 export class InvalidVersion extends ScoutError {
+    public readonly code: number = ErrorCode.InvalidVersion;
+
     constructor(m?: string) {
         super();
         this.message = m || "Invalid version specified";
-        this.code = ErrorCode.InvalidVersion;
     }
 }

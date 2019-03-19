@@ -40,10 +40,10 @@ clean:
 test: test-unit test-int test-e2e
 
 test-unit:
-	$(TAPE) "dist/test/**/*.unit.js"
+	$(TAPE) "dist/lib/**/*.unit.js"
 
 test-int:
-	$(TAPE) "dist/test/**/*.int.js"
+	$(TAPE) "dist/lib/**/*.int.js"
 
 test-e2e:
-	$(TAPE) "dist/test/**/*.e2e.js"
+	$(TAPE) "dist/lib/**/*.e2e.js"
