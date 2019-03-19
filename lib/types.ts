@@ -92,3 +92,5 @@ export enum Platform {
     MuslLinux64 = "x86_64-unknown-linux-musl",
     AppleDarwin64 = "x86_64-apple-darwin",
 }
+
+export type AgentDownloadConfigs = {[k: string]: AgentDownloadConfig[]};

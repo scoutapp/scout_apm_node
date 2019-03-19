@@ -1,6 +1,8 @@
-import { AgentDownloadConfig, Platform } from "./types";
+import { AgentDownloadConfigs, Platform } from "./types";
 
-const DOWNLOAD_CONFIGS: {[k: string]: AgentDownloadConfig[]} = {
+export default {
+
+    // Version 1.1.8
     "1.1.8": [
         {
             zipped: true,
@@ -14,6 +16,5 @@ const DOWNLOAD_CONFIGS: {[k: string]: AgentDownloadConfig[]} = {
             }
         }
     ]
-};
 
-export default DOWNLOAD_CONFIGS;
+} as AgentDownloadConfigs;
