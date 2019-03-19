@@ -4,7 +4,7 @@ export enum ErrorCode {
 }
 
 class ScoutError extends Error {
-    code: number;
+    public readonly code: number;
 }
 
 export class NotImplemented extends ScoutError {

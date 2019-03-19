@@ -10,12 +10,12 @@ enum AgentType {
 }
 
 class AgentMessage {
-    contentLength: number;
-    contents: Buffer;
+    private readonly contentLength: number;
+    private readonly contents: Buffer;
 }
 
 class AgentResponse {
-    contents: Buffer;
+    private readonly contents: Buffer;
 }
 
 type AgentOptions = ProcessOptions | ChildProcessOptions;
@@ -43,7 +43,7 @@ class ProcessOptions {
      */
     public isDomainSocket(): boolean {
         return this.uri.startsWith(Constants.DOMAIN_SOCKET_URI_SCHEME);
-    };
+    }
 }
 
 // Options for agents that are spawned as child processses and controlled from the current thread
@@ -55,7 +55,6 @@ class ChildProcessOptions {
         this.binPath = binPath;
     }
 }
-
 
 interface AgentManifest {
     version: string;
@@ -78,19 +77,22 @@ export interface AgentDownloadConfig {
 }
 
 export enum Platform {
+    GNULinux32 = "i686-unknown-linux-gnu",
     GNULinux64 = "x86_64-unknown-linux-gnu",
     MuslLinux64 = "x86_64-unknown-linux-musl",
     AppleDarwin64 = "x86_64-apple-darwin",
 }
 
-export type AgentDownloadConfigs = {[k: string]: AgentDownloadConfig[]};
+export interface AgentDownloadConfigs {
+    [k: string]: AgentDownloadConfig[];
+}
 
 export interface AgentDownloadOptions {
     version: CoreAgentVersion;
 }
 
 class CoreAgentVersion {
-    version: string;
+    private readonly version: string;
 
     constructor(v: string) {
         const converted = semver.valid(v);

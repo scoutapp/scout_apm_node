@@ -1,3 +1,17 @@
 {
-   "extends": ["tslint:recommended"]
+    "defaultSeverity": "error",
+    "extends": [
+        "tslint:recommended"
+    ],
+    "jsRules": {},
+    "rules": {
+      "ordered-imports": false,
+      "class-name": false,
+      "interface-name": false,
+      "arrow-parens": false,
+      "max-classes-per-file": false,
+      "no-shadowed-variable": false,
+      "no-namespace": false
+    },
+    "rulesDirectory": []
 }
