@@ -14,21 +14,28 @@ class AgentResponse {
     contents: Buffer;
 }
 
+/**
+ * Scout APM Agent which handles communicating with a local/remote Scout Core Agent process
+ * to relay performance and monitoring information
+ */
 interface Agent<T> {
-    getType(): T;
+    /**
+     * Get the options the agent was started with
+     * @returns {Readonly<T>}
+     */
+    getOptions(): Readonly<AgentOptions>;
+
+    /**
+     * Send a single message to the agent
+     * @param {AgentMessage} msg - The message to send
+     * @returns {AgentREsponse} - The response from the agent
+     */
     send(msg: AgentMessage): Promise<AgentResponse>;
 }
 
-/**
- * Options for a given agent type
- *
- * @param {T} T type of the agent
- */
 type AgentOptions = ProcessOptions | ChildProcessOptions;
 
-/**
- * Contact options for agents in a local process
- */
+// Options for agents that are in a separate process (not managed by this one)
 class ProcessOptions {
     /// URI of the process
     public readonly uri: string;
@@ -50,9 +57,7 @@ class ProcessOptions {
     };
 }
 
-/**
- * Options for agents that must be spawned in a child process
- */
+// Options for agents that are spawned as child processses and controlled from the current thread
 class ChildProcessOptions {
     // Path to the binary
     public readonly binPath: string;
