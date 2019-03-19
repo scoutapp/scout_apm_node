@@ -17,7 +17,7 @@ yarn-install:
 
 git-hook-install:
 	@echo -e "=> copying hooks from [$(GIT_HOOKS_DIR)] to [.git/hooks]..."
-	cp -r $(GIT_HOOKS_DIR) .git/hooks
+	cp -r $(GIT_HOOKS_DIR)/* .git/hooks
 
 dist:
 	@echo -e "=> creating dist directory..."
@@ -33,7 +33,6 @@ build: dist
 
 build-watch: dist
 	$(YARN) build-watch
-
 
 clean:
 	rm -rf dist/*
