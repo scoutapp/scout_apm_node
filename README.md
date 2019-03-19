@@ -33,6 +33,22 @@ $ npm install scout-client
 
 ## Development
 
+To get started developing `scout-client`, run:
+
+```shell
+$ make dev-setup
+```
+
+<TODO: quick intro to typescript>
+
+This repository comes with a few development aids pre-installed, via `make` targets:
+
+<TODO: quick intro to linting + compiling + watch>
+
+For more information on the structure and architecture of the code see `docs/architecture.md`.
+
+## Contributing
+
 To contribute to development of the NodeJS client:
 
 0. Clone this repository
