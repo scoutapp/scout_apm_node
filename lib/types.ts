@@ -1,4 +1,8 @@
-const DOMAIN_SOCKET_URI_SCHEME = "http+unix://";
+import * as semver from "semver";
+import { Readable } from "stream";
+
+import * as Errors from "./errors";
+import * as Constants from "./constants";
 
 enum AgentType {
     Process = "process",
@@ -14,26 +18,11 @@ class AgentResponse {
     contents: Buffer;
 }
 
-/**
- * Scout APM Agent which handles communicating with a local/remote Scout Core Agent process
- * to relay performance and monitoring information
- */
-interface Agent<T> {
-    /**
-     * Get the options the agent was started with
-     * @returns {Readonly<T>}
-     */
-    getOptions(): Readonly<AgentOptions>;
-
-    /**
-     * Send a single message to the agent
-     * @param {AgentMessage} msg - The message to send
-     * @returns {AgentREsponse} - The response from the agent
-     */
-    send(msg: AgentMessage): Promise<AgentResponse>;
-}
-
 type AgentOptions = ProcessOptions | ChildProcessOptions;
+
+interface AgentStatus {
+    connected: boolean;
+}
 
 // Options for agents that are in a separate process (not managed by this one)
 class ProcessOptions {
@@ -53,7 +42,7 @@ class ProcessOptions {
      * @returns {boolean} whether the address is a domain socket
      */
     public isDomainSocket(): boolean {
-        return this.uri.startsWith(DOMAIN_SOCKET_URI_SCHEME);
+        return this.uri.startsWith(Constants.DOMAIN_SOCKET_URI_SCHEME);
     };
 }
 
@@ -66,6 +55,7 @@ class ChildProcessOptions {
         this.binPath = binPath;
     }
 }
+
 
 interface AgentManifest {
     version: string;
@@ -94,3 +84,79 @@ export enum Platform {
 }
 
 export type AgentDownloadConfigs = {[k: string]: AgentDownloadConfig[]};
+
+export interface AgentDownloadOptions {
+    version: CoreAgentVersion;
+}
+
+class CoreAgentVersion {
+    version: string;
+
+    constructor(v: string) {
+        const converted = semver.valid(v);
+        if (!converted) { throw new Errors.InvalidVersion(`Invalid version [${v}]`); }
+        if (!Constants.SUPPORTED_CORE_AGENT_VERSIONS.includes(converted)) {
+            throw new Errors.InvalidVersion(`Unsupported scout agent version [${converted}]`);
+        }
+
+        this.version = converted;
+    }
+}
+
+export interface AgentDownloader {
+    /**
+     * Download an agent
+     * @param {AgentDownloadOptions} opts - Options for download the agent
+     */
+    download(opts: AgentDownloadOptions): Promise<Readable>;
+}
+
+/**
+ * Scout APM Agent which handles communicating with a local/remote Scout Core Agent process
+ * to relay performance and monitoring information
+ */
+interface Agent {
+    /**
+     * Get the type of the agent
+     * @returns {Readonly<AgentType>}
+     */
+    type(): Readonly<AgentType>;
+
+    /**
+     * Get the options used by the agent
+     * @returns {Readonly<AgentOptions>}
+     */
+    options(): Readonly<AgentOptions>;
+
+    /**
+     * Get the status of the connected agent
+     *
+     * @returns {Promise<AgentStatus>} The status of the agent
+     */
+    status(): Promise<AgentStatus>;
+
+    /**
+     * Start the agent
+     * @param {AgentDownloadOptions} opts - Options for download the agent
+     */
+    start(opts: AgentOptions): Promise<Agent>;
+
+    /**
+     * Connect to the agent
+     * @returns {Promise<AgentStatus>} a Promise that resolves when connection is completed
+     */
+    connect(): Promise<AgentStatus>;
+
+    /**
+     * Disconnect the agent
+     * @returns {Promise<AgentStatus>} a Promise that resolves when connection is completed
+     */
+    disconnect(): Promise<AgentStatus>;
+
+    /**
+     * Send a single message to the agent
+     * @param {AgentMessage} msg - The message to send
+     * @returns {AgentREsponse} - The response from the agent
+     */
+    send(msg: AgentMessage): Promise<AgentResponse>;
+}
