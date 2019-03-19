@@ -66,3 +66,29 @@ class ChildProcessOptions {
         this.binPath = binPath;
     }
 }
+
+interface AgentManifest {
+    version: string;
+    core_agent_version: string;
+    core_agent_binary: string;
+    core_agent_binary_sha256: string;
+}
+
+interface HashDigests {
+    sha256?: string;
+    sha512?: string;
+}
+
+export interface AgentDownloadConfig {
+    url: string;
+    zipped: boolean;
+    platform: Platform;
+    hash?: HashDigests;
+    manifest?: AgentManifest;
+}
+
+export enum Platform {
+    GNULinux64 = "x86_64-unknown-linux-gnu",
+    MuslLinux64 = "x86_64-unknown-linux-musl",
+    AppleDarwin64 = "x86_64-apple-darwin",
+}
