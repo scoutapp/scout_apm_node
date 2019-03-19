@@ -1,6 +1,6 @@
 import { Readable } from "stream";
 
-import { AgentDownloader, AgentDownloadOptions } from "../types";
+import { AgentDownloadOptions, AgentDownloader } from "../types";
 import * as Errors from "../errors";
 
 class WebAgentDownloader implements AgentDownloader {
