@@ -91,8 +91,8 @@ export interface AgentDownloadOptions {
     version: CoreAgentVersion;
 }
 
-class CoreAgentVersion {
-    private readonly version: string;
+export class CoreAgentVersion {
+    public readonly version: string;
 
     constructor(v: string) {
         const converted = semver.valid(v);
@@ -107,10 +107,20 @@ class CoreAgentVersion {
 
 export interface AgentDownloader {
     /**
-     * Download an agent
-     * @param {AgentDownloadOptions} opts - Options for download the agent
+     * Retrieve download configurations for given version
+     *
+     * @param {CoreAgentVersion} v - intended version
+     * @returns {Promise<AgentDownloadConfig[]>} One or more download configurations for the given version
      */
-    download(opts: AgentDownloadOptions): Promise<Readable>;
+    getDownloadConfigs(v: CoreAgentVersion): Promise<AgentDownloadConfig[]>;
+
+    /**
+     * Download & verify the core-agent binary
+     * @param {AgentDownloadConfig} config - Config for downloading the agent (url, hash, expected manifest, etc)
+     * @param {AgentDownloadOptions} opts - Options for download the agent
+     * @returns {string} The path the downloaded & verifiedbinary
+     */
+    download(v: CoreAgentVersion, opts: AgentDownloadOptions): Promise<string>;
 }
 
 /**
