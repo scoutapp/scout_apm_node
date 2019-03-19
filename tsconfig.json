@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "target": "es6",
+    "module": "commonjs",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "lib": [ "es2017" ]
+  },
+  "include": [
+    "./index.ts",
+    "./lib/**/*",
+    "./test/**/*"
+  ]
+}

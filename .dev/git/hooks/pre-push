@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Lint
+LINT_CMD="make lint"
+eval $LINT_CMD
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+    echo -e "lint failed!\n CMD: $LINT_CMD"
+    exit 1
+fi
+
+# Run unit tests
+UNIT_TEST_CMD="make test-unit"
+eval $UNIT_TEST_CMD
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+    echo -e "unit tests failed!\n CMD: $UNIT_TEST_CMD"
+    exit 1
+fi
+
+# Run integration tests
+INT_TEST_CMD="make test-int"
+eval $INT_TEST_CMD
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+    echo -e "integration tests failed!\n CMD: $INT_TEST_CMD"
+    exit 1
+fi
