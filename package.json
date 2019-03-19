@@ -34,5 +34,8 @@
     "tape": "^4.10.1",
     "tslint": "^5.14.0",
     "typescript": "^3.3.3333"
+  },
+  "dependencies": {
+    "@types/node": "^11.11.3"
   }
 }
