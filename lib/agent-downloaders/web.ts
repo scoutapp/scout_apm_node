@@ -1,29 +1,20 @@
-import { Readable } from "stream";
 import * as download from "download";
+import * as path from "path";
+import * as tmp from "tmp-promise";
+import { Readable } from "stream";
 import { mkdtemp, createReadStream } from "fs";
 import { pathExists, readJson } from "fs-extra";
-import * as path from "path";
-import hasha from "hasha";
+
+// tslint:disable-next-line no-var-requires
+const hasha = require("hasha");
 
 import { AgentDownloadOptions, CoreAgentVersion, AgentDownloader, AgentDownloadConfig } from "../types";
 import * as Errors from "../errors";
 import * as Constants from "../constants";
 import DownloadConfigs from "../download-configs";
 
-function makeTempDir(prefix: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        return mkdtemp(prefix, (err, folder) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            resolve(folder);
-        });
-    });
-}
-
-class WebAgentDownloader implements AgentDownloader {
+export class WebAgentDownloader implements AgentDownloader {
+    /** @see AgentDownloader */
     public getDownloadConfigs(v: CoreAgentVersion): Promise<AgentDownloadConfig[]> {
         const version = v.version;
         if (!(version in DownloadConfigs)) {
@@ -33,9 +24,10 @@ class WebAgentDownloader implements AgentDownloader {
         return Promise.resolve(DownloadConfigs[version]);
     }
 
+    /** @see AgentDownloader */
     public checkBinary(binPath: string, adc?: AgentDownloadConfig): Promise<boolean> {
         return hasha.fromFile(binPath, {algorithm: "sha256"})
-            .then(hash => {
+            .then((hash: string) => {
                 if (!hash) { throw new Errors.UnexpectedError(`Failed to hash file at path [${binPath}]`); }
 
                 // If download config was not provided, find *any* matching version based on hardcoded manifest data
@@ -51,7 +43,8 @@ class WebAgentDownloader implements AgentDownloader {
             });
     }
 
-    public download(v: CoreAgentVersion, opts: AgentDownloadOptions): Promise<string> {
+    /** @see AgentDownloader */
+    public download(v: CoreAgentVersion, opts?: AgentDownloadOptions): Promise<string> {
         let config: AgentDownloadConfig;
         let expectedBinPath: string;
         let expectedManifestPath: string;
@@ -70,13 +63,15 @@ class WebAgentDownloader implements AgentDownloader {
                 }
             })
         // Create a temporary directory & download the agent
-            .then(() => makeTempDir(Constants.TMP_DIR_PREFIX))
-            .then(tmpdir => {
-                expectedBinPath = `${tmpdir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
-                expectedManifestPath = `${tmpdir}/${Constants.CORE_AGENT_MANIFEST_FILE_NAME}`;
+            .then(() => tmp.dir({prefix: Constants.TMP_DIR_PREFIX}))
+            .then(result => {
+                const dir = result.path;
+
+                expectedBinPath = `${dir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
+                expectedManifestPath = `${dir}/${Constants.CORE_AGENT_MANIFEST_FILE_NAME}`;
 
                 const options = {extract: config.zipped};
-                return download(config.url, tmpdir, options);
+                return download(config.url, dir, options);
             })
         // Ensure file download succeeded
             .then(() => pathExists(expectedBinPath))

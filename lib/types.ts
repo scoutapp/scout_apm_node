@@ -127,7 +127,7 @@ export interface AgentDownloader {
      * Download & verify the core-agent binary
      * @param {AgentDownloadConfig} config - Config for downloading the agent (url, hash, expected manifest, etc)
      * @param {AgentDownloadOptions} opts - Options for download the agent
-     * @returns {string} The path the downloaded & verifiedbinary
+     * @returns {string} The path the downloaded & verified binary
      */
     download(v: CoreAgentVersion, opts: AgentDownloadOptions): Promise<string>;
 }
