@@ -1,8 +1,8 @@
 import { Readable } from "stream";
 import * as download from "download";
 import { mkdtemp, createReadStream } from "fs";
-import { pathExists } from "fs-extra";
-import { basename } from "path";
+import { pathExists, readJson } from "fs-extra";
+import * as path from "path";
 import hasha from "hasha";
 
 import { AgentDownloadOptions, CoreAgentVersion, AgentDownloader, AgentDownloadConfig } from "../types";
@@ -33,16 +33,22 @@ class WebAgentDownloader implements AgentDownloader {
         return Promise.resolve(DownloadConfigs[version]);
     }
 
-    public checkBinary(path: string, adc?: AgentDownloadConfig): Promise<boolean> {
-        // TODO: support missing ADC (download/lookup manifest locally, then manifest.json, & possibly remotely
-        if (!adc || !adc.manifest || !adc.manifest.core_agent_binary_sha256) {
-            return Promise.reject(new Errors.UnexpectedError("Missing/invalid manifest in AgentDownloadConfig"));
-        }
+    public checkBinary(binPath: string, adc?: AgentDownloadConfig): Promise<boolean> {
+        return hasha.fromFile(binPath, {algorithm: "sha256"})
+            .then(hash => {
+                if (!hash) { throw new Errors.UnexpectedError(`Failed to hash file at path [${binPath}]`); }
 
-        const shasum = adc.manifest.core_agent_binary_sha256;
+                // If download config was not provided, find *any* matching version based on hardcoded manifest data
+                if (!adc) { return this.matchesHardcodedVersionSHA256(hash); }
 
-        return hasha.fromFile(path, {algorithm: "sha256"})
-            .then(hash => hash === shasum);
+                // If a hardcoded manifest is not available, check for a manifest in the same folder
+                if (!adc.manifest || !adc.manifest.core_agent_binary_sha256) {
+                    const expectedManifestPath = path.join(path.dirname(binPath), "manifest.json");
+                    return this.checkBinarySHA256AgainstManifest(hash, expectedManifestPath);
+                }
+
+                return hash === adc.manifest.core_agent_binary_sha256;
+            });
     }
 
     public download(v: CoreAgentVersion, opts: AgentDownloadOptions): Promise<string> {
@@ -90,4 +96,47 @@ class WebAgentDownloader implements AgentDownloader {
             })
             .then(() => expectedBinPath);
     }
+
+    /**
+     * Check if a binary hash matches any hardcoded version
+     *
+     * @param {string} hash
+     * @returns {Promise<boolean>} A promise that resolves to whether it matches or not
+     */
+    private matchesHardcodedVersionSHA256(hash: string): Promise<boolean> {
+        // Attempt to find a matching binary from *some* matching version
+        const matchExists = Object.values(DownloadConfigs)
+            .some((configs: AgentDownloadConfig[]) => {
+                return configs.some((c: AgentDownloadConfig) => {
+                    if (!c || !c.manifest || !c.manifest.core_agent_binary_sha256) {
+                        return false;
+                    }
+
+                    return c.manifest.core_agent_binary_sha256 === hash;
+                });
+            });
+
+        return Promise.resolve(matchExists);
+    }
+
+    /**
+     * Check a binary hash against a given manifest file (JSON)
+     *
+     * @param {string} hash - The hash of the binary
+     * @param {string} manifestPath - Path to the manifest (usually same folder as the binary)
+     * @returns {Promise<boolean>} A promise that resolves to whether the binary hash matches the manifest
+     */
+    private checkBinarySHA256AgainstManifest(sha256Hash: string, path: string): Promise<boolean> {
+        // Read the manifest's JSON
+        return readJson(path)
+            .then(obj => {
+                // If SHA256 hash doesn't match, fail
+                if (!obj || !obj.core_agent_binary_sha256) {
+                    return Promise.resolve(false);
+                }
+
+                return obj.core_agent_binary_sha256 === sha256Hash;
+            });
+    }
+
 }
