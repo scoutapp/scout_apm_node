@@ -135,3 +135,5 @@ export class WebAgentDownloader implements AgentDownloader {
     }
 
 }
+
+export default WebAgentDownloader;

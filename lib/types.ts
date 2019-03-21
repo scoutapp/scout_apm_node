@@ -39,8 +39,6 @@ export class ProcessOptions {
     public readonly binPath: string;
     /// URI of the process (with appropriate scheme prefix, ex. 'unix://')
     public readonly uri: string;
-    // Port of the agent process
-    public readonly port?: number;
 
     public readonly logLevel?: LogLevel;
     public readonly logFilePath?: string;
@@ -51,7 +49,6 @@ export class ProcessOptions {
         this.uri = uri;
 
         if (opts) {
-            if (opts.port) { this.port = opts.port; }
             if (opts.logLevel) { this.logLevel = opts.logLevel; }
             if (opts.logFilePath) { this.logFilePath = opts.logFilePath; }
             if (opts.configFilePath) { this.configFilePath = opts.configFilePath; }
@@ -171,8 +168,9 @@ export interface Agent {
     /**
      * Start the agent
      * @param {AgentDownloadOptions} opts - Options for download the agent
+     * @returns {Promise<this>} A promise that resolves to the agent object
      */
-    start(): Promise<Agent>;
+    start(): Promise<this>;
 
     /**
      * Connect to the agent
