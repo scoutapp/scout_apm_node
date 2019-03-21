@@ -3,15 +3,13 @@ import * as Errors from "../errors";
 import * as Constants from "../constants";
 import { Socket } from "net";
 
-const DEFAULT_OPTIONS: ProcessOptions = new ProcessOptions(Constants.DEFAULT_SOCKET_ADDR);
-
 export default class ExternalProcessAgent implements Agent {
     private readonly agentType: AgentType = AgentType.Process;
     private readonly opts: ProcessOptions;
     private socket: Socket;
 
-    constructor(opts?: ProcessOptions) {
-        this.opts = opts || DEFAULT_OPTIONS;
+    constructor(opts: ProcessOptions) {
+        this.opts = opts;
     }
 
     /** @see Agent */
