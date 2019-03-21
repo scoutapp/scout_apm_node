@@ -4,29 +4,30 @@ import { Readable } from "stream";
 import * as Errors from "./errors";
 import * as Constants from "./constants";
 
-enum AgentType {
+export enum AgentType {
     Process = "process",
-    ChildProcess = "child-process",
 }
 
-class AgentMessage {
+export class AgentMessage {
     private readonly contentLength: number;
     private readonly contents: Buffer;
 }
 
-class AgentResponse {
+export class AgentResponse {
     private readonly contents: Buffer;
 }
 
-type AgentOptions = ProcessOptions | ChildProcessOptions;
+export type AgentOptions = ProcessOptions;
 
-interface AgentStatus {
+export interface AgentStatus {
     connected: boolean;
 }
 
-// Options for agents that are in a separate process (not managed by this one)
-class ProcessOptions {
-    /// URI of the process
+/**
+ * Options for agents that are in a separate process not managed by this one
+ */
+export class ProcessOptions {
+    /// URI of the process (with appropriate scheme prefix, ex. 'unix://')
     public readonly uri: string;
     // Port of the agent process
     public readonly port?: number;
@@ -43,16 +44,6 @@ class ProcessOptions {
      */
     public isDomainSocket(): boolean {
         return this.uri.startsWith(Constants.DOMAIN_SOCKET_URI_SCHEME);
-    }
-}
-
-// Options for agents that are spawned as child processses and controlled from the current thread
-class ChildProcessOptions {
-    // Path to the binary
-    public readonly binPath: string;
-
-    constructor(binPath: string) {
-        this.binPath = binPath;
     }
 }
 
@@ -136,7 +127,7 @@ export interface AgentDownloader {
  * Scout APM Agent which handles communicating with a local/remote Scout Core Agent process
  * to relay performance and monitoring information
  */
-interface Agent {
+export interface Agent {
     /**
      * Get the type of the agent
      * @returns {Readonly<AgentType>}
@@ -160,7 +151,7 @@ interface Agent {
      * Start the agent
      * @param {AgentDownloadOptions} opts - Options for download the agent
      */
-    start(opts: AgentOptions): Promise<Agent>;
+    start(): Promise<Agent>;
 
     /**
      * Connect to the agent
