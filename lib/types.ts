@@ -23,18 +23,36 @@ export interface AgentStatus {
     connected: boolean;
 }
 
+export enum LogLevel {
+    Info = "info",
+    Warn = "warn",
+    Debug = "debug",
+    Trace = "trace",
+    Error = "error",
+}
+
 /**
  * Options for agents that are in a separate process not managed by this one
  */
 export class ProcessOptions {
+    // Path to the binary to use (if starting the process is required)
+    public readonly binPath: string;
     /// URI of the process (with appropriate scheme prefix, ex. 'unix://')
     public readonly uri: string;
-    // Port of the agent process
-    public readonly port?: number;
 
-    constructor(uri: string, port?: number) {
+    public readonly logLevel?: LogLevel;
+    public readonly logFilePath?: string;
+    public readonly configFilePath?: string;
+
+    constructor(binPath: string, uri: string, opts?: Partial<ProcessOptions>) {
+        this.binPath = binPath;
         this.uri = uri;
-        if (port) { this.port = port; }
+
+        if (opts) {
+            if (opts.logLevel) { this.logLevel = opts.logLevel; }
+            if (opts.logFilePath) { this.logFilePath = opts.logFilePath; }
+            if (opts.configFilePath) { this.configFilePath = opts.configFilePath; }
+        }
     }
 
     /**
@@ -150,8 +168,9 @@ export interface Agent {
     /**
      * Start the agent
      * @param {AgentDownloadOptions} opts - Options for download the agent
+     * @returns {Promise<this>} A promise that resolves to the agent object
      */
-    start(): Promise<Agent>;
+    start(): Promise<this>;
 
     /**
      * Connect to the agent

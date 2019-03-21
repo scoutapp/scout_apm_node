@@ -4,6 +4,7 @@ export enum ErrorCode {
     UnsupportedVersion,
     UnexpectedError,
     InvalidAgentDownloadConfig,
+    NoProcessReference,
 }
 
 class ScoutError extends Error {
@@ -52,5 +53,14 @@ export class InvalidAgentDownloadConfig extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "Invalid agent download configuration";
+    }
+}
+
+export class NoProcessReference extends ScoutError {
+    public readonly code: number = ErrorCode.NoProcessReference;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "No process reference present (core-agent was not spawned by this process)";
     }
 }
