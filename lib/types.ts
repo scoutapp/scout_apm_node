@@ -6,7 +6,6 @@ import * as Constants from "./constants";
 
 enum AgentType {
     Process = "process",
-    ChildProcess = "child-process",
 }
 
 class AgentMessage {
@@ -18,15 +17,17 @@ class AgentResponse {
     private readonly contents: Buffer;
 }
 
-type AgentOptions = ProcessOptions | ChildProcessOptions;
+type AgentOptions = ProcessOptions;
 
 interface AgentStatus {
     connected: boolean;
 }
 
-// Options for agents that are in a separate process (not managed by this one)
+/**
+ * Options for agents that are in a separate process not managed by this one
+ */
 class ProcessOptions {
-    /// URI of the process
+    /// URI of the process (with appropriate scheme prefix, ex. 'http+unix://')
     public readonly uri: string;
     // Port of the agent process
     public readonly port?: number;
@@ -43,16 +44,6 @@ class ProcessOptions {
      */
     public isDomainSocket(): boolean {
         return this.uri.startsWith(Constants.DOMAIN_SOCKET_URI_SCHEME);
-    }
-}
-
-// Options for agents that are spawned as child processses and controlled from the current thread
-class ChildProcessOptions {
-    // Path to the binary
-    public readonly binPath: string;
-
-    constructor(binPath: string) {
-        this.binPath = binPath;
     }
 }
 
