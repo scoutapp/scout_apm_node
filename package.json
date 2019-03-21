@@ -36,9 +36,18 @@
     "typescript": "^3.3.3333"
   },
   "dependencies": {
+    "@types/download": "^6.2.4",
+    "@types/fs-extra": "^5.0.5",
+    "@types/hasha": "^3.0.0",
     "@types/node": "^11.11.3",
     "@types/semver": "^5.5.0",
     "@types/tape": "^4.2.33",
-    "semver": "^5.6.0"
+    "@types/tmp": "^0.0.34",
+    "download": "^7.1.0",
+    "fs-extra": "^7.0.1",
+    "hasha": "^4.0.1",
+    "semver": "^5.6.0",
+    "tmp": "^0.0.33",
+    "tmp-promise": "^1.0.5"
   }
 }

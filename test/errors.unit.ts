@@ -1,6 +1,6 @@
 import * as test from "tape";
 
-import * as Errors from "./errors";
+import * as Errors from "../lib/errors";
 
 test("NotImplementedError code", t => {
     const err = new Errors.NotImplemented();
