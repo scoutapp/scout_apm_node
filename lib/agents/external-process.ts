@@ -1,18 +1,31 @@
-import { Agent, AgentType, AgentStatus, AgentMessage, AgentResponse, ProcessOptions } from "../types";
+import { EventEmitter } from "events";
 import * as Errors from "../errors";
 import * as Constants from "../constants";
 import { pathExists } from "fs-extra";
-import { Socket } from "net";
+import { Socket, createConnection } from "net";
 import { spawn, ChildProcess } from "child_process";
 
-export default class ExternalProcessAgent implements Agent {
+import {
+    Agent,
+    AgentEvent,
+    AgentRequest,
+    AgentResponse,
+    AgentResponseType,
+    AgentStatus,
+    AgentType,
+    ProcessOptions,
+} from "../types";
+
+export default class ExternalProcessAgent extends EventEmitter implements Agent {
     private readonly agentType: AgentType = AgentType.Process;
     private readonly opts: ProcessOptions;
 
     private socket: Socket;
+    private socketConnected: boolean = false;
     private detachedProcess: ChildProcess;
 
     constructor(opts: ProcessOptions) {
+        super();
         this.opts = opts;
     }
 
@@ -24,8 +37,10 @@ export default class ExternalProcessAgent implements Agent {
 
     /** @see Agent */
     public status(): Promise<AgentStatus> {
-        // TODO: Get the status of the agent (if connected)
-        return Promise.reject(new Errors.NotImplemented());
+        // Get the status of the agent (if connected)
+        return Promise.resolve({
+            connected: this.socket && this.socketConnected,
+        } as AgentStatus);
     }
 
     /** @see Agent */
@@ -42,23 +57,88 @@ export default class ExternalProcessAgent implements Agent {
     /** @see Agent */
     public connect(): Promise<AgentStatus> {
         if (this.socket) { return this.status(); }
-        // TODO: Connect to the agent (create a client)
-        // TODO: Use option for socket path
-        return Promise.reject(new Errors.NotImplemented());
+
+        return new Promise((resolve, reject) => {
+            this.socket = createConnection(this.getSocketPath(), () => {
+                this.socketConnected = true;
+                this.emit(AgentEvent.SocketConnected);
+                resolve(this.status());
+            });
+
+            this.socket.on("data", (data: Buffer) => {
+                AgentResponse
+                    .fromBinary(data)
+                    .then(msg => this.emit(AgentEvent.SocketResponseReceived, msg))
+                    .catch(err => {
+                        // TODO: error log parse error
+                        this.emit(AgentEvent.SocketResponseParseError, err);
+                    });
+            });
+
+            this.socket.on("close", () => {
+                // TODO: debug log that the socket closed
+                this.emit(AgentEvent.SocketDisconnected);
+                this.socketConnected = false;
+            });
+
+            this.socket.on("error", err => {
+                this.emit(AgentEvent.SocketError, err);
+                // TODO: debug log about error during connection
+                reject(err);
+            });
+        });
     }
 
     /** @see Agent */
     public disconnect(): Promise<AgentStatus> {
         if (!this.socket) { return this.status(); }
 
-        // TODO: Disconnect from the agent (delete the current client)
-        return Promise.reject(new Errors.NotImplemented());
+        // Disconnect from the agent (delete the current client)
+        return new Promise((resolve) => {
+            this.socket.destroy();
+            // TODO: Wait until socket is destroyed?
+            resolve(this.status());
+        });
     }
 
     /** @see Agent */
-    public send(msg: AgentMessage): Promise<AgentResponse> {
-        // TODO: Send a message to the agent
-        return Promise.reject(new Errors.NotImplemented());
+    public sendAsync<T extends AgentRequest>(msg: T): Promise<void> {
+        if (!this.socket) { return Promise.reject(new Errors.Disconnected()); }
+
+        const msgBinary = msg.toBinary();
+        this.socket.write(msgBinary);
+        return Promise.resolve();
+    }
+
+    /** @see Agent */
+    public send<T extends AgentRequest>(msg: T): Promise<AgentResponse> {
+        const requestType = msg.type;
+
+        // Build a check fn that works
+        const checkFn = (r: AgentResponse) => {
+            if (r.type === AgentResponseType.V1GetVersionResponse) {
+                return r.type && r.type === AgentResponseType.V1GetVersionResponse;
+            }
+            return msg.getRequestId() === r.getRequestId();
+        };
+
+        return new Promise(resolve => {
+            // Set up a temporary listener
+            const listener = (resp: any) => {
+                // Skip non-matching socket responses
+                if (!checkFn(resp)) { return; }
+
+                // Remove this listener
+                this.removeListener(AgentEvent.SocketResponseReceived, listener);
+
+                // Resolve the encasing promise
+                resolve(resp);
+            };
+
+            // Send the message async
+            this.on(AgentEvent.SocketResponseReceived, listener);
+            return this.sendAsync(msg);
+        });
     }
 
     /**
@@ -82,9 +162,10 @@ export default class ExternalProcessAgent implements Agent {
     }
 
      // Start a detached process with the configured scout-agent binary
-    private startProcess(): this {
+    private startProcess(): Promise<this> {
         // Build command and arguments
-        const args = ["start", "--socket", this.getSocketPath()];
+        const socketPath = this.getSocketPath();
+        const args = ["start", "--socket", socketPath];
         if (this.opts.logFilePath) { args.push("--log-file", this.opts.logFilePath); }
         if (this.opts.configFilePath) { args.push("--config-file", this.opts.configFilePath); }
         if (this.opts.logLevel) { args.push("--log-file", this.opts.logLevel); }
@@ -96,7 +177,16 @@ export default class ExternalProcessAgent implements Agent {
         });
         this.detachedProcess.unref();
 
-        return this;
+        // Wait until process is listening on the given socket port
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                pathExists(socketPath)
+                    .then(exists => {
+                        if (exists) { resolve(this); }
+                    })
+                    .catch(reject);
+            }, Constants.DEFAULT_BIN_STARTUP_WAIT_MS);
+        });
     }
 
 }

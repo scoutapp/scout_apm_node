@@ -1,5 +1,6 @@
 import * as semver from "semver";
 import { Readable } from "stream";
+import { Buffer } from "buffer";
 
 import * as Errors from "./errors";
 import * as Constants from "./constants";
@@ -8,13 +9,132 @@ export enum AgentType {
     Process = "process",
 }
 
-export class AgentMessage {
-    private readonly contentLength: number;
-    private readonly contents: Buffer;
+export enum AgentEvent {
+    SocketResponseReceived = "socket-response-received",
+    SocketResponseParseError = "socket-response-parse-error",
+    SocketDisconnected = "socket-disconnected",
+    SocketError = "socket-error",
+    SocketConnected = "socket-connected",
 }
 
-export class AgentResponse {
-    private readonly contents: Buffer;
+export enum AgentRequestType {
+    V1GetVersion = "v1-get-version",
+}
+
+export abstract class AgentRequest {
+    // Type of message
+    public readonly type: AgentRequestType;
+    // Raw JSON of the message
+    protected json: any;
+
+    /**
+     * Convert the message to the binary type that is readable by core-agent
+     *
+     * @returns {Buffer} the buffer of bytes
+     */
+    public toBinary(): Buffer {
+        const content = JSON.stringify(this.json);
+        const payload = Buffer.from(content, "utf8");
+        const length = Buffer.allocUnsafe(4);
+        length.writeUInt32BE(payload.length, 0);
+
+        return Buffer.concat([length, payload]);
+    }
+
+    /**
+     * Get a request ID
+     * @returns {string | null} Request ID if the request has one
+     */
+    public getRequestId(): string | null {
+        return null;
+    }
+}
+
+export enum AgentResponseType {
+    Unknown = "unknown",
+
+    V1GetVersionResponse = "v1-get-version-response",
+    V1GenericSuccess = "v1-generic-success",
+}
+
+interface RepsonseTypeAndCtor {
+    type: AgentResponseType;
+    ctor?: (obj: object) => AgentResponse;
+}
+
+function getResponseTypeAndConstrutor(obj: object): RepsonseTypeAndCtor {
+    if ("CoreAgentVersion" in obj) {
+        return {type: AgentResponseType.V1GetVersionResponse, ctor: (obj) => new V1GetVersionResponse(obj)};
+    }
+
+    return {type: AgentResponseType.Unknown};
+}
+
+export abstract class AgentResponse {
+    /**
+     * Parse the message from a binary buffer
+     *
+     * @param {Buffer} buf the buffer of bytes
+     * @returns {Promise<AgentResponse>} A promise that resovles to a response, if parse succeeded
+     */
+    public static fromBinary<T extends AgentResponse>(buf: Buffer): Promise<AgentResponse> {
+        return new Promise((resolve, reject) => {
+            // Expect 4 byte content length, then JSON message
+            if (buf.length < 5) {
+                return Promise.reject(new Errors.MalformedAgentResponse(`Unexpected buffer length [${buf.length}]`));
+            }
+
+            // Pull and check the payload length
+            const payloadLen: number = buf.readUInt32BE(0);
+            const expected = buf.length - 4;
+            if (expected !== payloadLen) {
+                return Promise.reject(new Errors.MalformedAgentResponse(
+                    `Invalid Content length: (expected ${expected}, received ${payloadLen})`,
+                ));
+            }
+
+            // Extract & parse JSON
+            const json = buf.toString("utf8", 4, buf.length);
+            const obj = JSON.parse(json);
+
+            // Detect response type
+            const {type: responseType, ctor} = getResponseTypeAndConstrutor(obj);
+            if (responseType === AgentResponseType.Unknown) {
+                reject(new Errors.UnrecognizedAgentResponse(`Raw JSON: ${json}`));
+                return;
+            }
+
+            // Construct specialized response type
+            if (!ctor) {
+                reject(new Errors.UnexpectedError("Failed to construct response type"));
+                return;
+            }
+            const response = ctor(obj);
+
+            resolve(response);
+        });
+    }
+
+    // Type of message
+    public readonly type: AgentResponseType;
+
+    /**
+     * Check whether some JSON value matches the structure for a given agent response
+     *
+     * @param json: any
+     * @returns {boolean} whether the JSON matches the response or not
+     */
+    public matchesJson(json: object): boolean {
+        return false;
+    }
+
+    /**
+     * Get a request ID
+     * @returns {string | null} Request ID if the request has one
+     */
+    public getRequestId(): string | null {
+        return null;
+    }
 }
 
 export type AgentOptions = ProcessOptions;
@@ -101,7 +221,7 @@ export interface AgentDownloadOptions {
 }
 
 export class CoreAgentVersion {
-    public readonly version: string;
+    public readonly raw: string;
 
     constructor(v: string) {
         const converted = semver.valid(v);
@@ -110,7 +230,7 @@ export class CoreAgentVersion {
             throw new Errors.InvalidVersion(`Unsupported scout agent version [${converted}]`);
         }
 
-        this.version = converted;
+        this.raw = converted;
     }
 }
 
@@ -186,8 +306,41 @@ export interface Agent {
 
     /**
      * Send a single message to the agent
-     * @param {AgentMessage} msg - The message to send
+     * @param {AgentRequest} msg - The message to send
      * @returns {AgentREsponse} - The response from the agent
      */
-    send(msg: AgentMessage): Promise<AgentResponse>;
+    send(msg: AgentRequest): Promise<AgentResponse>;
+
+    /**
+     * Send a single message to the agent asynchronously
+     * @param {AgentRequest} msg - The message to send
+     * @returns {AgentREsponse} - The response from the agent
+     */
+    sendAsync(msg: AgentRequest): Promise<void>;
+}
+
+export class V1GetVersionRequest extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1GetVersion;
+
+    constructor() {
+        super();
+        this.json = {CoreAgentVersion: {}};
+    }
+}
+
+export class V1GetVersionResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.V1GetVersionResponse;
+    public readonly result: string;
+    public readonly version: CoreAgentVersion;
+
+    constructor(obj: any) {
+        super();
+        if (!("CoreAgentVersion" in obj)) {
+            throw new Errors.UnexpectedError("Invalid V1GetVersionResponse, 'CoreAgentVersion' key missing");
+        }
+        const inner = obj.CoreAgentVersion;
+
+        this.version = new CoreAgentVersion(inner.version);
+        if ("result" in inner) { this.result = inner.result; }
+    }
 }

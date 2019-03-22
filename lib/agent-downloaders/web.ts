@@ -16,12 +16,12 @@ import DownloadConfigs from "../download-configs";
 export class WebAgentDownloader implements AgentDownloader {
     /** @see AgentDownloader */
     public getDownloadConfigs(v: CoreAgentVersion): Promise<AgentDownloadConfig[]> {
-        const version = v.version;
-        if (!(version in DownloadConfigs)) {
-            return Promise.reject(new Errors.UnsupportedVersion(`Auto-download unsupported for [${version}]`));
+        const rawVersion = v.raw;
+        if (!(rawVersion in DownloadConfigs)) {
+            return Promise.reject(new Errors.UnsupportedVersion(`Auto-download unsupported for [${rawVersion}]`));
         }
 
-        return Promise.resolve(DownloadConfigs[version]);
+        return Promise.resolve(DownloadConfigs[rawVersion]);
     }
 
     /** @see AgentDownloader */
@@ -53,7 +53,7 @@ export class WebAgentDownloader implements AgentDownloader {
         return this.getDownloadConfigs(v)
             .then(configs => {
                 if (!configs || !configs.length) {
-                    throw new Errors.UnexpectedError(`No available download configurations for version [${v.version}]`);
+                    throw new Errors.UnexpectedError(`No available download configurations for version [${v.raw}]`);
                 }
 
                 // Use the first available configuration

@@ -6,3 +6,4 @@ export const SUPPORTED_CORE_AGENT_VERSIONS = [
 export const TMP_DIR_PREFIX = "core-agent-dl";
 export const CORE_AGENT_BIN_FILE_NAME = "core-agent";
 export const CORE_AGENT_MANIFEST_FILE_NAME = "manifest.json";
+export const DEFAULT_BIN_STARTUP_WAIT_MS = 1000;
