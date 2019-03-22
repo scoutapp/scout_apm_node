@@ -1,8 +1,8 @@
-import { Agent, AgentType, AgentStatus, AgentMessage, AgentResponse, ProcessOptions } from "../types";
+import { Agent, AgentType, AgentStatus, AgentRequest, AgentResponse, ProcessOptions } from "../types";
 import * as Errors from "../errors";
 import * as Constants from "../constants";
 import { pathExists } from "fs-extra";
-import { Socket } from "net";
+import { Socket, createConnection } from "net";
 import { spawn, ChildProcess } from "child_process";
 
 export default class ExternalProcessAgent implements Agent {
@@ -42,9 +42,24 @@ export default class ExternalProcessAgent implements Agent {
     /** @see Agent */
     public connect(): Promise<AgentStatus> {
         if (this.socket) { return this.status(); }
+
+        return new Promise((resolve, reject) => {
+            this.socket = createConnection(this.getSocketPath(), () => {
+                resolve(this.status());
+            });
+
+            this.socket.on("data", (data) => {
+                // TODO: parse the data into a message
+
+            });
+
+            this.socket.on("error", err => {
+                // TODO: log about failed connection
+                reject(err);
+            });
+        });
+
         // TODO: Connect to the agent (create a client)
-        // TODO: Use option for socket path
-        return Promise.reject(new Errors.NotImplemented());
     }
 
     /** @see Agent */
@@ -56,7 +71,7 @@ export default class ExternalProcessAgent implements Agent {
     }
 
     /** @see Agent */
-    public send(msg: AgentMessage): Promise<AgentResponse> {
+    public send<T extends AgentRequest>(msg: T): Promise<AgentResponse> {
         // TODO: Send a message to the agent
         return Promise.reject(new Errors.NotImplemented());
     }

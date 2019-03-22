@@ -1,5 +1,6 @@
 import * as semver from "semver";
 import { Readable } from "stream";
+import { Buffer } from "buffer";
 
 import * as Errors from "./errors";
 import * as Constants from "./constants";
@@ -8,13 +9,63 @@ export enum AgentType {
     Process = "process",
 }
 
-export class AgentMessage {
-    private readonly contentLength: number;
-    private readonly contents: Buffer;
+export enum AgentRequestType {
+    V1GetVersion = "v1-get-version",
 }
 
-export class AgentResponse {
-    private readonly contents: Buffer;
+export abstract class AgentRequest {
+    // Type of message
+    public readonly type: AgentRequestType;
+    // Raw JSON of the message
+    protected json: any;
+
+    /**
+     * Convert the message to the binary type that is readable by core-agent
+     *
+     * @returns {Buffer} the buffer of bytes
+     */
+    public toBinary(): Buffer {
+        const content = JSON.stringify(this.json);
+        const payload = Buffer.from(content, "utf8");
+        const length = Buffer.allocUnsafe(4);
+        length.writeUInt32BE(payload.length, 0);
+
+        return Buffer.concat([length, payload]);
+    }
+}
+
+export enum AgentResponseType {
+    V1GetVersionResponse = "v1-get-version-response",
+    V1GenericSuccess = "v1-generic-success",
+}
+
+export abstract class AgentResponse {
+    /**
+     * Parse the message from a binary buffer
+     *
+     * @param {Buffer} buf the buffer of bytes
+     * @returns {Promise<AgentResponse>} A promise that resovles to a response, if parse succeeded
+     */
+    public static fromBinary<T extends AgentResponse>(buf: Buffer): Promise<AgentResponse> {
+        // TODO: parse the content length and JSON (validate along the way)
+        // TODO: if the JSON contains the expected key,
+        // it's a GetVersion Response, otherwise it's just Generic Success/failure??
+        // TODO: use the list of response ctors to attempt to parse
+        return Promise.reject(new Errors.NotImplemented());
+    }
+
+    // Type of message
+    public readonly type: AgentResponseType;
+
+    /**
+     * Check whether some JSON value matches the structure for a given agent response
+     *
+     * @param json: any
+     * @returns {boolean} whether the JSON matches the response or not
+     */
+    public matchesJson(json: object): boolean {
+        return false;
+    }
 }
 
 export type AgentOptions = ProcessOptions;
@@ -186,8 +237,17 @@ export interface Agent {
 
     /**
      * Send a single message to the agent
-     * @param {AgentMessage} msg - The message to send
+     * @param {AgentRequest} msg - The message to send
      * @returns {AgentREsponse} - The response from the agent
      */
-    send(msg: AgentMessage): Promise<AgentResponse>;
+    send(msg: AgentRequest): Promise<AgentResponse>;
+}
+
+export class V1GetVersionMessage extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1GetVersion;
+
+    constructor() {
+        super();
+        this.json = {CoreAgentVersion: {}};
+    }
 }
