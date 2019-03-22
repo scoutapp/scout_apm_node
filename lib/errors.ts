@@ -5,6 +5,9 @@ export enum ErrorCode {
     UnexpectedError,
     InvalidAgentDownloadConfig,
     NoProcessReference,
+    Disconnected,
+    MalformedAgentResponse,
+    UnrecognizedAgentResponse,
 }
 
 class ScoutError extends Error {
@@ -62,5 +65,32 @@ export class NoProcessReference extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "No process reference present (core-agent was not spawned by this process)";
+    }
+}
+
+export class Disconnected extends ScoutError {
+    public readonly code: number = ErrorCode.Disconnected;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Agent is disconnected";
+    }
+}
+
+export class MalformedAgentResponse extends ScoutError {
+    public readonly code: number = ErrorCode.MalformedAgentResponse;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Agent is disconnected";
+    }
+}
+
+export class UnrecognizedAgentResponse extends ScoutError {
+    public readonly code: number = ErrorCode.UnrecognizedAgentResponse;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Agent is disconnected";
     }
 }

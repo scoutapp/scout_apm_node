@@ -20,3 +20,12 @@ export function bootstrapExternalProcessAgent(t: Test, rawVersion: string): Prom
             return new ExternalProcessAgent(options);
         });
 }
+
+export function waitMs(ms: number, t?: Test): Promise<void> {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            if (t) { t.comment(`...waited ${ms}ms`); }
+            resolve();
+        }, ms);
+    });
+}
