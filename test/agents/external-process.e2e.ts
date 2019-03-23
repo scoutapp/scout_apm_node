@@ -18,8 +18,8 @@ import {
     V1RegisterResponse,
 } from "../../lib/types";
 
-const TEST_AGENT_KEY = process.env['TEST_AGENT_KEY'];
-const TEST_APP_NAME = 'scout-e2e-tests';
+const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY;
+const TEST_APP_NAME = "scout-e2e-tests";
 const TEST_APP_VERSION = "1.1.8";
 
 test("external process can be launched locally (v1.1.8)", t => {
@@ -36,7 +36,7 @@ test("external process can be launched locally (v1.1.8)", t => {
         .then(() => t.assert(process, "process was started by this agent"))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
-        .catch(err => TestUtil.cleanup(t, agent, err))
+        .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
 test("manual async GetVersion message works (v1.1.8)", t => {
@@ -62,7 +62,7 @@ test("manual async GetVersion message works (v1.1.8)", t => {
                 // Clean up process, end test
                 TestUtil.cleanup(t, agent)
                     .catch(err => TestUtil.cleanup(t, agent, err));
-            }
+            };
 
             // Set up a listener on the agent that succeeds when we see the response for the get version
             agent.on(AgentEvent.SocketResponseReceived, listener);
@@ -71,7 +71,7 @@ test("manual async GetVersion message works (v1.1.8)", t => {
             agent.sendAsync(new V1GetVersionRequest());
         })
     // Cleanup the process & end test
-        .catch(err => TestUtil.cleanup(t, agent, err))
+        .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
 test("GetVersion message works (v1.1.8)", t => {
@@ -90,7 +90,7 @@ test("GetVersion message works (v1.1.8)", t => {
         })
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
-        .catch(err => TestUtil.cleanup(t, agent, err))
+        .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
 test("Register message works (v1.1.8)", t => {
@@ -117,5 +117,5 @@ test("Register message works (v1.1.8)", t => {
         })
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
-        .catch(err => TestUtil.cleanup(t, agent, err))
+        .catch(err => TestUtil.cleanup(t, agent, err));
 });

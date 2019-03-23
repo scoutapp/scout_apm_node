@@ -76,17 +76,21 @@ type RTACWithCheck = [
 // TODO: make this more efficient (hash lookup) if it's the case
 // that version checking is just looking for key in outer object of response
 const RTAC_LOOKUP: RTACWithCheck[] = [
-    [obj => "CoreAgentVersion" in obj, {type: AgentResponseType.V1GetVersion, ctor: (obj) => new V1GetVersionResponse(obj)}],
-    [obj => "Register" in obj, {type: AgentResponseType.V1Register, ctor: (obj) => new V1RegisterResponse(obj)}],
+    [
+        obj => "CoreAgentVersion" in obj,
+        {type: AgentResponseType.V1GetVersion, ctor: (obj) => new V1GetVersionResponse(obj)},
+    ],
+    [
+        obj => "Register" in obj,
+        {type: AgentResponseType.V1Register, ctor: (obj) => new V1RegisterResponse(obj)},
+    ],
 ];
 
 function getResponseTypeAndConstrutor(obj: object): ResponseTypeAndCtor {
     const rwc: RTACWithCheck | undefined = RTAC_LOOKUP.find((rwc: RTACWithCheck) => rwc[0](obj));
-    if (typeof rwc === 'undefined') {
-        return {type: AgentResponseType.Unknown, ctor: (obj) => new UnknownResponse(obj)};
-    }
+    if (rwc && rwc[1]) { return rwc[1]; }
 
-    return rwc[1];
+    return {type: AgentResponseType.Unknown, ctor: (obj) => new UnknownResponse(obj)};
 }
 
 export abstract class AgentResponse {
@@ -358,10 +362,10 @@ export class V1RegisterRequest extends AgentRequest {
         super();
         this.json = {
             Register: {
+                api_version: version.raw,
                 app,
                 key,
-                api_version: version.raw,
-            }
+            },
         };
     }
 }
