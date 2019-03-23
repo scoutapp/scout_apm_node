@@ -8,6 +8,7 @@ export enum ErrorCode {
     Disconnected,
     MalformedAgentResponse,
     UnrecognizedAgentResponse,
+    ExternalDownloadDisallowed,
 }
 
 class ScoutError extends Error {
@@ -92,5 +93,14 @@ export class UnrecognizedAgentResponse extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "Agent is disconnected";
+    }
+}
+
+export class ExternalDownloadDisallowed extends ScoutError {
+    public readonly code: number = ErrorCode.ExternalDownloadDisallowed;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "External downloads disallowed";
     }
 }

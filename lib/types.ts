@@ -222,6 +222,7 @@ interface HashDigests {
 
 export interface AgentDownloadConfig {
     url: string;
+    rawVersion: string;
     zipped: boolean;
     platform: Platform;
     hash?: HashDigests;
@@ -240,7 +241,13 @@ export interface AgentDownloadConfigs {
 }
 
 export interface AgentDownloadOptions {
-    version: CoreAgentVersion;
+    // Directory to use for download cache, should either contain `core-agent`
+    // or a subdirectory w/ the verison name
+    cacheDir?: string;
+    // Whether to update the cache
+    updateCache?: boolean;
+    // Disallow external downloads
+    disallowDownloads?: boolean;
 }
 
 export class CoreAgentVersion {

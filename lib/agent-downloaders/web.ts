@@ -3,7 +3,7 @@ import * as path from "path";
 import * as tmp from "tmp-promise";
 import { Readable } from "stream";
 import { mkdtemp, createReadStream } from "fs";
-import { pathExists, readJson } from "fs-extra";
+import * as fs from "fs-extra";
 
 // tslint:disable-next-line no-var-requires
 const hasha = require("hasha");
@@ -46,10 +46,8 @@ export class WebAgentDownloader implements AgentDownloader {
     /** @see AgentDownloader */
     public download(v: CoreAgentVersion, opts?: AgentDownloadOptions): Promise<string> {
         let config: AgentDownloadConfig;
-        let expectedBinPath: string;
-        let expectedManifestPath: string;
 
-        // Retrieve the available download configurations
+        // Get the download configuration for the version
         return this.getDownloadConfigs(v)
             .then(configs => {
                 if (!configs || !configs.length) {
@@ -62,34 +60,106 @@ export class WebAgentDownloader implements AgentDownloader {
                     throw new Errors.InvalidAgentDownloadConfig("URL is missing/invalid");
                 }
             })
+            .then(() => {
+                // Attempt to retrieve the binary from cache
+                // use regular download if that fails
+                if (opts && opts.cacheDir) {
+                    return this.getCachedBinaryPath(opts.cacheDir, v, config)
+                        .catch(() => this.downloadFromConfig(config, opts));
+                }
+
+                // Don't use cache, direct download
+                return this.downloadFromConfig(config, opts);
+            });
+    }
+
+    /**
+     * Retrieve a cached binary from a given base directory
+     * (either core-agent binary is @  `dir/<version>/core-agent` or `dir/core-agent`
+     *
+     * @param {string} baseDir - Directory in which to search
+     * @param {CoreAgentVersion} v - Version to search for & validate
+     * @param {AgentDownloadConfig} adc - Agent download config (used for checking manifest)
+     * @returns {Promise<string>} A promise that resolves to a valid cached binary (if found)
+     */
+    private getCachedBinaryPath(baseDir: string, v: CoreAgentVersion, adc: AgentDownloadConfig): Promise<string> {
+        const versionedPath = path.join(baseDir, v.raw, Constants.CORE_AGENT_BIN_FILE_NAME);
+        const inDirPath = path.join(baseDir, Constants.CORE_AGENT_BIN_FILE_NAME);
+        return Promise.all([
+            fs.pathExists(versionedPath),
+            fs.pathExists(inDirPath),
+        ])
+            .then(([versionedPathExists, inDirPathExists]: boolean[]) => {
+                if (!versionedPathExists && !inDirPathExists) {
+                    // TODO: info log cache miss for download
+                    throw new Errors.UnexpectedError("Failed to find cached download");
+                }
+
+                const path = versionedPathExists ? versionedPath : inDirPath;
+                return this.ensureBinary(path, adc);
+            });
+    }
+
+    /**
+     * Download a given version of the core-agent binary using local download configuration
+     *
+     * @param {CoreAgentVersion} v - The version to download
+     * @param {AgentDownloadOptions} [opts] - Options to control download
+     */
+    private downloadFromConfig(adc: AgentDownloadConfig, opts?: AgentDownloadOptions): Promise<string> {
+        let expectedBinPath: string;
+        let downloadDir: string;
+
         // Create a temporary directory & download the agent
-            .then(() => tmp.dir({prefix: Constants.TMP_DIR_PREFIX}))
+        return tmp.dir({prefix: Constants.TMP_DIR_PREFIX})
             .then(result => {
-                const dir = result.path;
+                downloadDir = result.path;
+                expectedBinPath = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
+                const options = {extract: adc.zipped};
 
-                expectedBinPath = `${dir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
-                expectedManifestPath = `${dir}/${Constants.CORE_AGENT_MANIFEST_FILE_NAME}`;
+                // Ensure we're not attempting to do a download if they're disallowed
+                if (opts && opts.disallowDownloads) { throw new Errors.ExternalDownloadDisallowed(); }
 
-                const options = {extract: config.zipped};
-                return download(config.url, dir, options);
+                return download(adc.url, downloadDir, options);
             })
         // Ensure file download succeeded
-            .then(() => pathExists(expectedBinPath))
+            .then(() => fs.pathExists(expectedBinPath))
             .then(exists => {
                 if (!exists) {
                     throw new Errors.UnexpectedError(
-                        `Failed to download agent from [${config.url}] -> [${expectedBinPath}]`,
+                        `Failed to download agent from [${adc.url}] -> [${expectedBinPath}]`,
                     );
                 }
             })
         // Check for & verify binary hash
-            .then(() => this.checkBinary(expectedBinPath, config))
+            .then(() => this.ensureBinary(expectedBinPath, adc))
+        // Update the on disk cache if cache is being used
+            .then(() => {
+                if (opts && opts.cacheDir && opts.updateCache) {
+                    return this.updateCacheWithDownloadDir(downloadDir, adc, opts);
+                }
+
+                // If cache wasn't used then return the tmp dir derived path
+                return Promise.resolve(expectedBinPath);
+            });
+    }
+
+    /**
+     * Ensure that a given binary is valid
+     *
+     * @param {string} binPath - path to the binary
+     * @param {AgentDownloadConfig} [adc] - agent download config (for checking manifest)
+     * @returns {Promise<string>} A promise that resolves to the given path iff the binary is valid
+     */
+    private ensureBinary(binPath: string, adc?: AgentDownloadConfig): Promise<string> {
+        return this.checkBinary(binPath, adc)
             .then(matches => {
                 if (!matches) {
                     throw new Errors.UnexpectedError("Agent binary hash does not match expected value");
                 }
-            })
-            .then(() => expectedBinPath);
+
+                return binPath;
+            });
     }
 
     /**
@@ -115,6 +185,34 @@ export class WebAgentDownloader implements AgentDownloader {
     }
 
     /**
+     * Update the on-disk cache with a download dir
+     *
+     * @param {string} downloadDir - The directory to which a download was performed
+     * @param {AgentDownloadConfig} adc - Download configuration
+     * @param {AgnetDownloadOptions} opts - Options used during download
+     * @returns {Promise<string>} A promise that resolves to the binary path inside the cache
+     */
+    private updateCacheWithDownloadDir(
+        downloadDir: string,
+        adc: AgentDownloadConfig,
+        opts: AgentDownloadOptions,
+    ): Promise<string> {
+        if (!opts.cacheDir || !opts.updateCache) {
+            return Promise.reject(new Errors.UnexpectedError("not configured to use cache"));
+        }
+
+        const dest = path.join(opts.cacheDir, adc.rawVersion);
+
+        return fs.ensureDir(dest)
+            .then(() => fs.pathExists(downloadDir))
+            .then(exists => {
+                if (!exists) { throw new Errors.UnexpectedError(`download directory [${downloadDir}] is missing`); }
+            })
+            .then(() => fs.copy(downloadDir, dest))
+            .then(() => path.join(dest, Constants.CORE_AGENT_BIN_FILE_NAME));
+    }
+
+    /**
      * Check a binary hash against a given manifest file (JSON)
      *
      * @param {string} hash - The hash of the binary
@@ -123,7 +221,7 @@ export class WebAgentDownloader implements AgentDownloader {
      */
     private checkBinarySHA256AgainstManifest(sha256Hash: string, path: string): Promise<boolean> {
         // Read the manifest's JSON
-        return readJson(path)
+        return fs.readJson(path)
             .then(obj => {
                 // If SHA256 hash doesn't match, fail
                 if (!obj || !obj.core_agent_binary_sha256) {

@@ -13,6 +13,7 @@ export default {
                 version: "1.1.8",
             },
             platform: Platform.GNULinux64,
+            rawVersion: "1.1.8",
             url: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.8-x86_64-unknown-linux-gnu.tgz",
             zipped: true,
         },
