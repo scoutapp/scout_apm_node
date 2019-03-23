@@ -1,15 +1,19 @@
 .PHONY: all dev-setup git-hook-install clean \
-				lint build build-watch \
+				lint lint-watch build build-watch \
 				test test-unit test-int test-e2e
 
 all: build
 
 YARN ?= yarn
 NPM ?= npm
+ENTR ?= entr
 
 TAPE ?= ./node_modules/.bin/tape
 
 GIT_HOOKS_DIR = .dev/git/hooks
+
+check-tool-entr:
+	@which entr > /dev/null || (echo -e "\n[ERROR] please install entr (http://entrproject.org/)" && exit 1)
 
 yarn-install:
 	@echo -e "=> running yarn install..."
@@ -27,6 +31,9 @@ dev-setup: dist yarn-install git-hook-install
 
 lint:
 	$(YARN) lint
+
+lint-watch: check-tool-entr
+	find . -name "*.ts" | $(ENTR) -rc $(YARN) lint
 
 build: dist
 	$(YARN) build

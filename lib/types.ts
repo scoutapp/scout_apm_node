@@ -19,6 +19,7 @@ export enum AgentEvent {
 
 export enum AgentRequestType {
     V1GetVersion = "v1-get-version",
+    V1Register = "v1-register",
 }
 
 export abstract class AgentRequest {
@@ -53,21 +54,43 @@ export abstract class AgentRequest {
 export enum AgentResponseType {
     Unknown = "unknown",
 
-    V1GetVersionResponse = "v1-get-version-response",
+    V1GetVersion = "v1-get-version-response",
     V1GenericSuccess = "v1-generic-success",
+    V1Register = "v1-register-response",
 }
 
-interface RepsonseTypeAndCtor {
+export enum AgentResponseResult {
+    Success = "Success",
+}
+
+interface ResponseTypeAndCtor { // "RTAC"
     type: AgentResponseType;
     ctor?: (obj: object) => AgentResponse;
 }
 
-function getResponseTypeAndConstrutor(obj: object): RepsonseTypeAndCtor {
-    if ("CoreAgentVersion" in obj) {
-        return {type: AgentResponseType.V1GetVersionResponse, ctor: (obj) => new V1GetVersionResponse(obj)};
-    }
+type RTACWithCheck = [
+    (obj: object) => boolean,
+    ResponseTypeAndCtor,
+];
 
-    return {type: AgentResponseType.Unknown};
+// TODO: make this more efficient (hash lookup) if it's the case
+// that version checking is just looking for key in outer object of response
+const RTAC_LOOKUP: RTACWithCheck[] = [
+    [
+        obj => "CoreAgentVersion" in obj,
+        {type: AgentResponseType.V1GetVersion, ctor: (obj) => new V1GetVersionResponse(obj)},
+    ],
+    [
+        obj => "Register" in obj,
+        {type: AgentResponseType.V1Register, ctor: (obj) => new V1RegisterResponse(obj)},
+    ],
+];
+
+function getResponseTypeAndConstrutor(obj: object): ResponseTypeAndCtor {
+    const rwc: RTACWithCheck | undefined = RTAC_LOOKUP.find((rwc: RTACWithCheck) => rwc[0](obj));
+    if (rwc && rwc[1]) { return rwc[1]; }
+
+    return {type: AgentResponseType.Unknown, ctor: (obj) => new UnknownResponse(obj)};
 }
 
 export abstract class AgentResponse {
@@ -319,6 +342,10 @@ export interface Agent {
     sendAsync(msg: AgentRequest): Promise<void>;
 }
 
+//////////////
+// Requests //
+//////////////
+
 export class V1GetVersionRequest extends AgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1GetVersion;
 
@@ -328,8 +355,27 @@ export class V1GetVersionRequest extends AgentRequest {
     }
 }
 
+export class V1RegisterRequest extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1GetVersion;
+
+    constructor(app: string, key: string, version: CoreAgentVersion) {
+        super();
+        this.json = {
+            Register: {
+                api_version: version.raw,
+                app,
+                key,
+            },
+        };
+    }
+}
+
+///////////////
+// Responses //
+///////////////
+
 export class V1GetVersionResponse extends AgentResponse {
-    public readonly type: AgentResponseType = AgentResponseType.V1GetVersionResponse;
+    public readonly type: AgentResponseType = AgentResponseType.V1GetVersion;
     public readonly result: string;
     public readonly version: CoreAgentVersion;
 
@@ -342,5 +388,29 @@ export class V1GetVersionResponse extends AgentResponse {
 
         this.version = new CoreAgentVersion(inner.version);
         if ("result" in inner) { this.result = inner.result; }
+    }
+}
+
+export class V1RegisterResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.V1Register;
+    public readonly result: string;
+
+    constructor(obj: any) {
+        super();
+        if (!("Register" in obj)) {
+            throw new Errors.UnexpectedError("Invalid V1RegisterResponse, 'Register' key missing");
+        }
+        const inner = obj.Register;
+        if ("result" in inner) { this.result = inner.result; }
+    }
+}
+
+export class UnknownResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.Unknown;
+    public readonly raw: any;
+
+    constructor(obj: any) {
+        super();
+        this.raw = obj;
     }
 }
