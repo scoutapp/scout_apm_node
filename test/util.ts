@@ -1,20 +1,36 @@
-import { Test } from "tape";
+import * as path from "path";
+import * as tmp from "tmp-promise";
+
+import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
 import WebAgentDownloader from "../lib/agent-downloaders/web";
-import { CoreAgentVersion, ProcessOptions } from "../lib/types";
+import { CoreAgentVersion, ProcessOptions, AgentDownloadOptions } from "../lib/types";
+import { Test } from "tape";
 
 // Helper for downloading and creating an agent
 export function bootstrapExternalProcessAgent(t: Test, rawVersion: string): Promise<ExternalProcessAgent> {
+    const opts: AgentDownloadOptions = {
+        cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+        updateCache: true,
+    };
     const downloader = new WebAgentDownloader();
     const version = new CoreAgentVersion(rawVersion);
 
     let uri: string;
+    let binPath: string;
 
+    // Download binary
     return downloader
-        .download(version)
-        .then(binPath => {
-            // Use temp directory for socket uri
-            uri = `unix://${binPath}.sock`;
+        .download(version, opts)
+        .then(bp => binPath = bp)
+    // Create temporary directory for socket
+        .then(() => tmp.dir({prefix: "core-agent-test-"}))
+        .then(result => {
+            const socketPath = path.join(result.path, "core-agent.sock");
+            uri = `unix://${socketPath}`;
+        })
+    // Start process
+        .then(() => {
             const options = new ProcessOptions(binPath, uri);
             t.comment(`creating external process agent @ [${uri}]...`);
             return new ExternalProcessAgent(options);
