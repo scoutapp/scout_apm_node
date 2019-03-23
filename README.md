@@ -55,7 +55,7 @@ To contribute to development of the NodeJS client:
 1. Run `make dev-setup` to set up the local development environment
 2. Run `make build` to build the project
 3. Write code for your change/bugfix/feature
-4. Run `make test` to ensure all tests are passing
+4. Run `make test` to ensure all tests are passing (see `docs/tests.md` for more information)
 5. Submit a PR
 
 ## Documentation

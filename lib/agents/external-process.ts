@@ -116,8 +116,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         // Build a check fn that works
         const checkFn = (r: AgentResponse) => {
-            if (r.type === AgentResponseType.V1GetVersionResponse) {
-                return r.type && r.type === AgentResponseType.V1GetVersionResponse;
+            if (r.type === AgentResponseType.V1GetVersion) {
+                return r.type && r.type === AgentResponseType.V1GetVersion;
             }
             return msg.getRequestId() === r.getRequestId();
         };

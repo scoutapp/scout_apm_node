@@ -29,3 +29,10 @@ export function waitMs(ms: number, t?: Test): Promise<void> {
         }, ms);
     });
 }
+
+// Helper function for cleaning up an agent processe and passing/failing a test
+export function cleanup(t: Test, agent: ExternalProcessAgent, err?: Error): Promise<void> {
+    return agent.getProcess()
+        .then(process => process.kill())
+        .then(() => t.end(err));
+}
