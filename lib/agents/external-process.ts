@@ -22,6 +22,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     private socket: Socket;
     private socketConnected: boolean = false;
+    private socketConnectionAttempts: number = 0;
+
     private detachedProcess: ChildProcess;
 
     constructor(opts: ProcessOptions) {
@@ -59,8 +61,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (this.socket) { return this.status(); }
 
         return new Promise((resolve, reject) => {
+            this.socketConnectionAttempts++;
+
             this.socket = createConnection(this.getSocketPath(), () => {
                 this.socketConnected = true;
+                this.socketConnectionAttempts = 0;
                 this.emit(AgentEvent.SocketConnected);
                 resolve(this.status());
             });
@@ -79,6 +84,18 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                 // TODO: debug log that the socket closed
                 this.emit(AgentEvent.SocketDisconnected);
                 this.socketConnected = false;
+
+                // Trigger reconnection if there is no limit or we're under it
+                const limit = this.opts.socketReconnectLimit;
+                const limitExists = typeof limit !== "undefined";
+                // If there is a limit, and the limit is either zero or past, do not reconnect
+                if (limitExists && (!limit || this.socketConnectionAttempts >= limit!)) {
+                    this.emit(AgentEvent.SocketReconnectLimitReached);
+                } else {
+                    this.emit(AgentEvent.SocketReconnectAttempted);
+                    this.connect();
+                }
+
             });
 
             this.socket.on("error", err => {

@@ -15,6 +15,8 @@ export enum AgentEvent {
     SocketDisconnected = "socket-disconnected",
     SocketError = "socket-error",
     SocketConnected = "socket-connected",
+    SocketReconnectAttempted = "socket-reconnect-attempted",
+    SocketReconnectLimitReached = "socket-reconnect-limit-reached",
 }
 
 export enum AgentRequestType {
@@ -182,6 +184,8 @@ export class ProcessOptions {
     public readonly binPath: string;
     /// URI of the process (with appropriate scheme prefix, ex. 'unix://')
     public readonly uri: string;
+    /// Limit consecutive socket reconnection attempts
+    public readonly socketReconnectLimit?: number;
 
     public readonly logLevel?: LogLevel;
     public readonly logFilePath?: string;
@@ -195,6 +199,11 @@ export class ProcessOptions {
             if (opts.logLevel) { this.logLevel = opts.logLevel; }
             if (opts.logFilePath) { this.logFilePath = opts.logFilePath; }
             if (opts.configFilePath) { this.configFilePath = opts.configFilePath; }
+
+            // Reconnect limit could be zero (no reconnects)
+            if ("socketReconnectLimit" in opts) {
+                this.socketReconnectLimit = opts.socketReconnectLimit;
+            }
         }
     }
 

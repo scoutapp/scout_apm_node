@@ -2,6 +2,7 @@ import * as test from "tape";
 import { ChildProcess } from "child_process";
 
 import * as Errors from "../../lib/errors";
+import * as Constants from "../../lib/constants";
 import ExternalProcessAgent from "../../lib/agents/external-process";
 import WebAgentDownloader from "../../lib/agent-downloaders/web";
 import * as TestUtil from "../util";
@@ -16,6 +17,7 @@ import {
     V1GetVersionResponse,
     V1RegisterRequest,
     V1RegisterResponse,
+    ProcessOptions,
 } from "../../lib/types";
 
 const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY;
@@ -117,5 +119,70 @@ test("Register message works (v1.1.8)", t => {
         })
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
+        .catch(err => TestUtil.cleanup(t, agent, err));
+});
+
+test("Socket reconnection retry works (v1.1.8)", t => {
+    let agent: ExternalProcessAgent;
+
+    // Ensure agent key is present (fed in from ENV)
+    if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
+
+    // Create the external process agent
+    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+        .then(a => agent = a)
+    // Start the agent & connect to the local socket
+        .then(() => agent.start())
+        .then(() => agent.connect())
+    // Kill the agent process, socket should disconnect and a reconnection will be attempted (though it will fail)
+        .then(() => {
+            const listener = () => {
+                t.pass("socket reconnection attempted");
+                agent.removeListener(AgentEvent.SocketReconnectAttempted, listener);
+                t.end();
+            };
+
+            // Set up a listener on the agent that succeeds when we see the response for the get version
+            agent.on(AgentEvent.SocketReconnectAttempted, listener);
+
+            // Kill the process (which should disconnect the socket)
+            agent.getProcess()
+                .then(p => p.kill())
+               .catch(err => TestUtil.cleanup(t, agent, err));
+        })
+        .catch(err => TestUtil.cleanup(t, agent, err));
+});
+
+test("Socket reconnection limit of 0 is respected (v1.1.8)", t => {
+    let agent: ExternalProcessAgent;
+
+    // Ensure agent key is present (fed in from ENV)
+    if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
+
+    // Make a builder fn for proc opts that includes the socket reconnect limit
+    const buildProcOpts = (binPath: string, uri: string) => new ProcessOptions(binPath, uri, {socketReconnectLimit: 0});
+
+    // Create the external process agent, with special function for building the proc opts with
+    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION, {buildProcOpts})
+        .then(a => agent = a)
+    // Start the agent & connect to the local socket
+        .then(() => agent.start())
+        .then(() => agent.connect())
+    // Kill the agent process, socket should disconnect and a reconnection will be attempted (though it will fail)
+        .then(() => {
+            const listener = () => {
+                t.pass("socket reconnect limit (0) reached immediately");
+                agent.removeListener(AgentEvent.SocketReconnectLimitReached, listener);
+                t.end();
+            };
+
+            // Set up a listener on the agent that succeeds when we see the response for the get version
+            agent.on(AgentEvent.SocketReconnectLimitReached, listener);
+
+            // Kill the process (which should disconnect the socket)
+            agent.getProcess()
+                .then(p => p.kill())
+                .catch(err => TestUtil.cleanup(t, agent, err));
+        })
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
