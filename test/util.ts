@@ -8,8 +8,14 @@ import { CoreAgentVersion, ProcessOptions, AgentDownloadOptions } from "../lib/t
 import { Test } from "tape";
 
 // Helper for downloading and creating an agent
-export function bootstrapExternalProcessAgent(t: Test, rawVersion: string): Promise<ExternalProcessAgent> {
-    const opts: AgentDownloadOptions = {
+export function bootstrapExternalProcessAgent(
+    t: Test,
+    rawVersion: string,
+    opts?: {
+        buildProcOpts?: (bp: string, uri: string) => ProcessOptions,
+    },
+): Promise<ExternalProcessAgent> {
+    const downloadOpts: AgentDownloadOptions = {
         cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
         updateCache: true,
     };
@@ -21,7 +27,7 @@ export function bootstrapExternalProcessAgent(t: Test, rawVersion: string): Prom
 
     // Download binary
     return downloader
-        .download(version, opts)
+        .download(version, downloadOpts)
         .then(bp => binPath = bp)
     // Create temporary directory for socket
         .then(() => tmp.dir({prefix: "core-agent-test-"}))
@@ -31,9 +37,13 @@ export function bootstrapExternalProcessAgent(t: Test, rawVersion: string): Prom
         })
     // Start process
         .then(() => {
-            const options = new ProcessOptions(binPath, uri);
+            let procOpts = new ProcessOptions(binPath, uri);
+            if (opts && opts.buildProcOpts) {
+                procOpts = opts.buildProcOpts(binPath, uri);
+            }
+
             t.comment(`creating external process agent @ [${uri}]...`);
-            return new ExternalProcessAgent(options);
+            return new ExternalProcessAgent(procOpts);
         });
 }
 
