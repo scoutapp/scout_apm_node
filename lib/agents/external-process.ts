@@ -16,6 +16,8 @@ import {
     ProcessOptions,
 } from "../types";
 
+import { V1AgentResponse } from "../protocol/v1/responses";
+
 export default class ExternalProcessAgent extends EventEmitter implements Agent {
     private readonly agentType: AgentType = AgentType.Process;
     private readonly opts: ProcessOptions;
@@ -71,7 +73,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             });
 
             this.socket.on("data", (data: Buffer) => {
-                AgentResponse
+                V1AgentResponse
                     .fromBinary(data)
                     .then(msg => {
                         this.emit(AgentEvent.SocketResponseReceived, msg);
@@ -138,7 +140,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     /** @see Agent */
     public sendAsync<T extends AgentRequest>(msg: T): Promise<void> {
         if (!this.socket) { return Promise.reject(new Errors.Disconnected()); }
-
         const msgBinary = msg.toBinary();
         this.socket.write(msgBinary);
         return Promise.resolve();

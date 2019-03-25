@@ -9,8 +9,8 @@ import {
     ProcessOptions,
     AgentDownloadOptions,
     Agent,
-    V1Register,
 } from "../lib/types";
+import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
 
 // Helper for downloading and creating an agent
