@@ -10,12 +10,11 @@ import * as TestUtil from "../util";
 import {
     AgentEvent,
     AgentResponse,
-    AgentResponseResult,
     AgentResponseType,
     CoreAgentVersion,
     ProcessOptions,
 } from "../../lib/types";
-import * as T from "../../lib/types";
+import * as V1Request from "../../lib/protocol/v1/requests";
 
 const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY;
 const TEST_APP_NAME = "scout-e2e-tests";
@@ -67,7 +66,7 @@ test("manual async GetVersion message works (v1.1.8)", t => {
             agent.on(AgentEvent.SocketResponseReceived, listener);
 
             // Send the version get (that should trigger the event emitter on the agent)
-            agent.sendAsync(new T.V1GetVersionRequest());
+            agent.sendAsync(new V1Request.V1GetVersionRequest());
         })
     // Cleanup the process & end test
         .catch(err => TestUtil.cleanup(t, agent, err));
@@ -83,7 +82,7 @@ test("GetVersion message works (v1.1.8)", t => {
         .then(() => agent.start())
         .then(() => agent.connect())
     // Send GetVersion message
-        .then(() => agent.send(new T.V1GetVersionRequest()))
+        .then(() => agent.send(new V1Request.V1GetVersionRequest()))
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1GetVersion, "expected response received");
         })
@@ -105,14 +104,14 @@ test("Register message works (v1.1.8)", t => {
         .then(() => agent.start())
         .then(() => agent.connect())
     // Send Register message
-        .then(() => agent.send(new T.V1Register(
+        .then(() => agent.send(new V1Request.V1Register(
             TEST_APP_NAME,
             TEST_AGENT_KEY,
             new CoreAgentVersion(TEST_APP_VERSION),
         )))
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1Register, "type matches");
-            t.equals((resp as T.V1RegisterResponse).result, AgentResponseResult.Success, "register succeeded");
+            t.assert(resp.succeeded(), "register succeeded");
         })
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
@@ -197,10 +196,10 @@ test("StartRequest message works (v1.1.8)", t => {
     // Start the agent & connect to the local socket
         .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
-        .then(() => agent.send(new T.V1StartRequest()))
+        .then(() => agent.send(new V1Request.V1StartRequest()))
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1StartRequest, "type matches");
-            t.equals((resp as T.V1StartRequestResponse).result, AgentResponseResult.Success, "start-request succeeded");
+            t.assert(resp.succeeded(), "start-request succeeded");
         })
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
@@ -210,7 +209,7 @@ test("StartRequest message works (v1.1.8)", t => {
 test("FinishRequest message works (v1.1.8)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
-    let start: T.V1StartRequest;
+    let start: V1Request.V1StartRequest;
 
     // Ensure agent key is present (fed in from ENV)
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
@@ -222,18 +221,14 @@ test("FinishRequest message works (v1.1.8)", t => {
         .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
-            start = new T.V1StartRequest();
+            start = new V1Request.V1StartRequest();
             return agent.send(start);
         })
     // Send finish request
-        .then(() => agent.send(new T.V1FinishRequest(start.requestId)))
+        .then(() => agent.send(new V1Request.V1FinishRequest(start.requestId)))
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1FinishRequest, "type matches");
-            t.equals(
-                (resp as T.V1FinishRequestResponse).result,
-                AgentResponseResult.Success,
-                "finish-request succeeded",
-            );
+            t.assert(resp.succeeded(), "finish-request succeeded");
         })
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
@@ -243,7 +238,7 @@ test("FinishRequest message works (v1.1.8)", t => {
 test("TagRequest message works (v1.1.8)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
-    let start: T.V1StartRequest;
+    let start: V1Request.V1StartRequest;
 
     // Ensure agent key is present (fed in from ENV)
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
@@ -255,28 +250,22 @@ test("TagRequest message works (v1.1.8)", t => {
         .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
-            start = new T.V1StartRequest();
+            start = new V1Request.V1StartRequest();
             return agent.send(start);
         })
     // Tag the request
-        .then(() => agent.send(new T.V1TagRequest(
+        .then(() => agent.send(new V1Request.V1TagRequest(
             start.requestId,
             "tag-request-test",
             "value",
         )))
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1TagRequest, "type matches");
-            t.equals((resp as T.V1TagRequestResponse).result, AgentResponseResult.Success, "tag-request succeeded");
+            t.assert(resp.succeeded(), "tag-request succeeded");
         })
     // Finish the request
-        .then(() => agent.send(new T.V1FinishRequest(start.requestId)))
-        .then((resp: AgentResponse) => {
-            t.equals(
-                (resp as T.V1FinishRequestResponse).result,
-                AgentResponseResult.Success,
-                "finish-request succeeded",
-            );
-        })
+        .then(() => agent.send(new V1Request.V1FinishRequest(start.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
@@ -285,7 +274,7 @@ test("TagRequest message works (v1.1.8)", t => {
 test("StartSpan message works for leaf span (v1.1.8)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
-    let start: T.V1StartRequest;
+    let start: V1Request.V1StartRequest;
 
     // Ensure agent key is present (fed in from ENV)
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
@@ -297,27 +286,21 @@ test("StartSpan message works for leaf span (v1.1.8)", t => {
         .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
-            start = new T.V1StartRequest();
+            start = new V1Request.V1StartRequest();
             return agent.send(start);
         })
     // Start a span (no parent)
-        .then(() => agent.send(new T.V1StartSpan(
+        .then(() => agent.send(new V1Request.V1StartSpan(
             "test/start-span",
             start.requestId,
         )))
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1StartSpan, "type matches");
-            t.equals((resp as T.V1StartSpanResponse).result, AgentResponseResult.Success, "start-span succeeded");
+            t.assert(resp.succeeded(), "start-span succeeded");
         })
     // Finish the request
-        .then(() => agent.send(new T.V1FinishRequest(start.requestId)))
-        .then((resp: AgentResponse) => {
-            t.equals(
-                (resp as T.V1FinishRequestResponse).result,
-                AgentResponseResult.Success,
-                "finish-request succeeded",
-            );
-        })
+        .then(() => agent.send(new V1Request.V1FinishRequest(start.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
@@ -327,8 +310,8 @@ test("StopSpan works for leaf span (v1.1.8)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
-    let reqStart: T.V1StartRequest;
-    let spanStart: T.V1StartSpan;
+    let reqStart: V1Request.V1StartRequest;
+    let spanStart: V1Request.V1StartSpan;
 
     // Ensure agent key is present (fed in from ENV)
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
@@ -340,33 +323,75 @@ test("StopSpan works for leaf span (v1.1.8)", t => {
         .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
-            reqStart = new T.V1StartRequest();
+            reqStart = new V1Request.V1StartRequest();
             return agent.send(reqStart);
         })
     // Start a span (no parent)
         .then(() => {
-            spanStart = new T.V1StartSpan("test/start-span", reqStart.requestId);
+            spanStart = new V1Request.V1StartSpan("test/start-span", reqStart.requestId);
             return agent.send(spanStart);
         })
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1StartSpan, "type matches");
-            t.equals((resp as T.V1StartSpanResponse).result, AgentResponseResult.Success, "start-span succeeded");
+            t.assert(resp.succeeded(), "start-span succeeded");
         })
     // Stop the span
-        .then(() => agent.send(new T.V1StopSpan(spanStart.spanId, spanStart.requestId)))
+        .then(() => agent.send(new V1Request.V1StopSpan(spanStart.spanId, spanStart.requestId)))
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1StopSpan, "type matches");
-            t.equals((resp as T.V1StopSpanResponse).result, AgentResponseResult.Success, "stop-span succeeded");
+            t.assert(resp.succeeded(), "stop-span succeeded");
         })
     // Finish the request
-        .then(() => agent.send(new T.V1FinishRequest(reqStart.requestId)))
-        .then((resp: AgentResponse) => {
-            t.equals(
-                (resp as T.V1FinishRequestResponse).result,
-                AgentResponseResult.Success,
-                "finish-request succeeded",
-            );
+        .then(() => agent.send(new V1Request.V1FinishRequest(reqStart.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
+    // Cleanup the process & end test
+        .then(() => TestUtil.cleanup(t, agent))
+        .catch(err => TestUtil.cleanup(t, agent, err));
+});
+
+test("TagSpan works for leaf span (v1.1.8)", t => {
+    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    let agent: ExternalProcessAgent;
+
+    let reqStart: V1Request.V1StartRequest;
+    let spanStart: V1Request.V1StartSpan;
+
+    // Ensure agent key is present (fed in from ENV)
+    if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
+
+    // Create the external process agent, with special function for building the proc opts with
+    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+        .then(a => agent = a)
+    // Start the agent & connect to the local socket
+        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+    // Send StartRequest
+        .then(() => {
+            reqStart = new V1Request.V1StartRequest();
+            return agent.send(reqStart);
         })
+    // Start a span (no parent)
+        .then((resp: AgentResponse) => {
+            spanStart = new V1Request.V1StartSpan("test/start-span", reqStart.requestId);
+            return agent.send(spanStart);
+        })
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded"))
+    // Tag the span
+        .then(() => agent.send(new V1Request.V1TagSpan(
+            "tag-span-test",
+            "value",
+            spanStart.spanId,
+            spanStart.requestId,
+        )))
+        .then((resp: AgentResponse) => {
+            t.equals(resp.type, AgentResponseType.V1TagSpan, "type matches");
+            t.assert(resp.succeeded(), "tag-span succeeded");
+        })
+    // Stop the span
+        .then(() => agent.send(new V1Request.V1StopSpan(spanStart.spanId, spanStart.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded"))
+    // Finish the request
+        .then(() => agent.send(new V1Request.V1FinishRequest(reqStart.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
