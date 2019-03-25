@@ -48,6 +48,7 @@ export enum AgentRequestType {
     V1Register = "v1-register",
     V1StartRequest = "v1-start-request",
     V1FinishRequest = "v1-finish-request",
+    V1TagRequest = "v1-tag-request",
 }
 
 export abstract class AgentRequest {
@@ -126,12 +127,36 @@ export class V1StartRequest extends AgentRequest {
 export class V1FinishRequest extends AgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1FinishRequest;
 
+    public readonly requestId: string;
+
     constructor(requestId: string, timestamp?: Date) {
         super();
+        this.requestId = requestId;
+
         this.json = {
             FinishRequest: {
-                request_id: requestId,
+                request_id: this.requestId,
                 timestamp,
+            },
+        };
+    }
+}
+
+export class V1TagRequest extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1TagRequest;
+
+    public readonly requestId: string;
+
+    constructor(requestId: string, tagName: string, tagValue: string, timestamp?: Date) {
+        super();
+        this.requestId = requestId;
+
+        this.json = {
+            TagRequest: {
+                request_id: this.requestId,
+                tag: tagName,
+                timestamp,
+                value: tagValue,
             },
         };
     }
@@ -148,6 +173,7 @@ export enum AgentResponseType {
     V1Register = "v1-register-response",
     V1StartRequest = "v1-start-request-response",
     V1FinishRequest = "v1-finish-request-response",
+    V1TagRequest = "v1-tag-request-response",
 }
 
 export enum AgentResponseResult {
@@ -182,6 +208,10 @@ const RTAC_LOOKUP: RTACWithCheck[] = [
     [
         obj => "FinishRequest" in obj,
         {type: AgentResponseType.V1FinishRequest, ctor: (obj) => new V1FinishRequestResponse(obj)},
+    ],
+    [
+        obj => "TagRequest" in obj,
+        {type: AgentResponseType.V1TagRequest, ctor: (obj) => new V1TagRequestResponse(obj)},
     ],
 ];
 
@@ -316,6 +346,21 @@ export class V1FinishRequestResponse extends AgentResponse {
         }
 
         const inner = obj.FinishRequest;
+        if ("result" in inner) { this.result = inner.result; }
+    }
+}
+
+export class V1TagRequestResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.V1TagRequest;
+    public readonly result: string;
+
+    constructor(obj: any) {
+        super();
+        if (!("TagRequest" in obj)) {
+            throw new Errors.UnexpectedError("Invalid V1TagRequestResponse, 'TagRequest' key missing");
+        }
+
+        const inner = obj.TagRequest;
         if ("result" in inner) { this.result = inner.result; }
     }
 }
