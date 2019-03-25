@@ -4,7 +4,13 @@ import * as tmp from "tmp-promise";
 import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
 import WebAgentDownloader from "../lib/agent-downloaders/web";
-import { CoreAgentVersion, ProcessOptions, AgentDownloadOptions } from "../lib/types";
+import {
+    CoreAgentVersion,
+    ProcessOptions,
+    AgentDownloadOptions,
+    Agent,
+    V1Register,
+} from "../lib/types";
 import { Test } from "tape";
 
 // Helper for downloading and creating an agent
@@ -45,6 +51,21 @@ export function bootstrapExternalProcessAgent(
             t.comment(`creating external process agent @ [${uri}]...`);
             return new ExternalProcessAgent(procOpts);
         });
+}
+
+// Helper for initializing a bootstrapped agent
+export function initializeAgent(
+    t: Test,
+    agent: Agent,
+    appName: string,
+    agentKey: string,
+    appVersion: CoreAgentVersion,
+): Promise<Agent> {
+    t.comment(`initializing agent with appName [${appName}]`);
+    return agent.start()
+        .then(() => agent.connect())
+        .then(() => agent.send(new V1Register(appName, agentKey, appVersion)))
+        .then(() => agent);
 }
 
 export function waitMs(ms: number, t?: Test): Promise<void> {
