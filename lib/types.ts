@@ -36,14 +36,7 @@ export enum AgentEvent {
     SocketReconnectLimitReached = "socket-reconnect-limit-reached",
 
     RequestStarted = "request-started",
-}
-
-export abstract class AgentEventInfo {
-    public readonly type: AgentEvent;
-}
-
-export class RequestStartedEventInfo extends AgentEventInfo {
-    public readonly request: V1StartRequest;
+    RequestFinished = "request-finished",
 }
 
 //////////////
@@ -54,6 +47,7 @@ export enum AgentRequestType {
     V1GetVersion = "v1-get-version",
     V1Register = "v1-register",
     V1StartRequest = "v1-start-request",
+    V1FinishRequest = "v1-finish-request",
 }
 
 export abstract class AgentRequest {
@@ -112,15 +106,31 @@ export class V1Register extends AgentRequest {
 export class V1StartRequest extends AgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1StartRequest;
 
+    public readonly requestId: string;
+
     constructor(requestId?: string, timestamp?: Date) {
         super();
         const id = requestId || uuidv1();
         const prefix = Constants.DEFAULT_REQUEST_PREFIX;
-        const prefixedRequestId = `${prefix}${id}`;
+        this.requestId = `${prefix}${id}`;
 
         this.json = {
             StartRequest: {
-                request_id: prefixedRequestId,
+                request_id: this.requestId,
+                timestamp,
+            },
+        };
+    }
+}
+
+export class V1FinishRequest extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1FinishRequest;
+
+    constructor(requestId: string, timestamp?: Date) {
+        super();
+        this.json = {
+            FinishRequest: {
+                request_id: requestId,
                 timestamp,
             },
         };
@@ -137,6 +147,7 @@ export enum AgentResponseType {
     V1GetVersion = "v1-get-version-response",
     V1Register = "v1-register-response",
     V1StartRequest = "v1-start-request-response",
+    V1FinishRequest = "v1-finish-request-response",
 }
 
 export enum AgentResponseResult {
@@ -167,6 +178,10 @@ const RTAC_LOOKUP: RTACWithCheck[] = [
     [
         obj => "StartRequest" in obj,
         {type: AgentResponseType.V1StartRequest, ctor: (obj) => new V1StartRequestResponse(obj)},
+    ],
+    [
+        obj => "FinishRequest" in obj,
+        {type: AgentResponseType.V1FinishRequest, ctor: (obj) => new V1FinishRequestResponse(obj)},
     ],
 ];
 
@@ -286,6 +301,21 @@ export class V1StartRequestResponse extends AgentResponse {
         }
 
         const inner = obj.StartRequest;
+        if ("result" in inner) { this.result = inner.result; }
+    }
+}
+
+export class V1FinishRequestResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.V1FinishRequest;
+    public readonly result: string;
+
+    constructor(obj: any) {
+        super();
+        if (!("FinishRequest" in obj)) {
+            throw new Errors.UnexpectedError("Invalid V1FinishRequestResponse, 'FinishRequest' key missing");
+        }
+
+        const inner = obj.FinishRequest;
         if ("result" in inner) { this.result = inner.result; }
     }
 }

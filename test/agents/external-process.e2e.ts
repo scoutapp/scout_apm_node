@@ -20,6 +20,8 @@ import {
     V1RegisterResponse,
     V1StartRequest,
     V1StartRequestResponse,
+    V1FinishRequest,
+    V1FinishRequestResponse,
 } from "../../lib/types";
 
 const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY;
@@ -162,9 +164,9 @@ test("Socket reconnection limit of 0 is respected (v1.1.8)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Make a builder fn for proc opts that includes the socket reconnect limit
-    const buildProcOpts = (binPath: string, uri: string) => new ProcessOptions(binPath, uri, {socketReconnectLimit: 0});
+    const buildProcOpts = (bp: string, uri: string) => new ProcessOptions(bp, uri, {socketReconnectLimit: 0});
 
-    // Create the external process agent, with special function for building the proc opts with
+    // Create the external process agent, with custom proc option builder
     TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION, {buildProcOpts})
         .then(a => agent = a)
     // Start the agent & connect to the local socket
@@ -196,7 +198,7 @@ test("StartRequest message works (v1.1.8)", t => {
     // Ensure agent key is present (fed in from ENV)
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
-    // Create the external process agent, with special function for building the proc opts with
+    // Create the external process agent
     TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
@@ -206,6 +208,35 @@ test("StartRequest message works (v1.1.8)", t => {
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1StartRequest, "type matches");
             t.equals((resp as V1StartRequestResponse).result, AgentResponseResult.Success, "start-request succeeded");
+        })
+    // Cleanup the process & end test
+        .then(() => TestUtil.cleanup(t, agent))
+        .catch(err => TestUtil.cleanup(t, agent, err));
+});
+
+test("FinishRequest message works (v1.1.8)", t => {
+    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    let agent: ExternalProcessAgent;
+    let start: V1StartRequest;
+
+    // Ensure agent key is present (fed in from ENV)
+    if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
+
+    // Create the external process agent, with special function for building the proc opts with
+    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+        .then(a => agent = a)
+    // Start the agent & connect to the local socket
+        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+    // Send StartRequest
+        .then(() => {
+            start = new V1StartRequest();
+            return agent.send(start);
+        })
+    // Send finish request
+        .then(() => agent.send(new V1FinishRequest(start.requestId)))
+        .then((resp: AgentResponse) => {
+            t.equals(resp.type, AgentResponseType.V1FinishRequest, "type matches");
+            t.equals((resp as V1FinishRequestResponse).result, AgentResponseResult.Success, "finish-request succeeded");
         })
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))

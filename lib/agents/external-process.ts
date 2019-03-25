@@ -73,7 +73,18 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             this.socket.on("data", (data: Buffer) => {
                 AgentResponse
                     .fromBinary(data)
-                    .then(msg => this.emit(AgentEvent.SocketResponseReceived, msg))
+                    .then(msg => {
+                        this.emit(AgentEvent.SocketResponseReceived, msg);
+
+                        switch (msg.type) {
+                            case AgentResponseType.V1StartRequest:
+                                this.emit(AgentEvent.RequestStarted);
+                                break;
+                            case AgentResponseType.V1FinishRequest:
+                                this.emit(AgentEvent.RequestFinished);
+                                break;
+                        }
+                    })
                     .catch(err => {
                         // TODO: error log parse error
                         this.emit(AgentEvent.SocketResponseParseError, err);
