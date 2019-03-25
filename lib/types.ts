@@ -39,6 +39,7 @@ export enum AgentEvent {
     RequestFinished = "request-finished",
 
     SpanStarted = "span-started",
+    SpanStopped = "span-stopped",
 }
 
 //////////////
@@ -54,6 +55,7 @@ export enum AgentRequestType {
     V1TagRequest = "v1-tag-request",
 
     V1StartSpan = "v1-start-span",
+    V1StopSpan = "v1-stop-span",
 }
 
 export abstract class AgentRequest {
@@ -114,11 +116,13 @@ export class V1StartRequest extends AgentRequest {
 
     public readonly requestId: string;
 
-    constructor(requestId?: string, timestamp?: Date) {
+    constructor(requestId?: string, opts?: {timestamp?: Date}) {
         super();
         const id = requestId || uuidv1();
         const prefix = Constants.DEFAULT_REQUEST_PREFIX;
         this.requestId = `${prefix}${id}`;
+
+        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
 
         this.json = {
             StartRequest: {
@@ -134,9 +138,10 @@ export class V1FinishRequest extends AgentRequest {
 
     public readonly requestId: string;
 
-    constructor(requestId: string, timestamp?: Date) {
+    constructor(requestId: string, opts?: {timestamp?: Date}) {
         super();
         this.requestId = requestId;
+        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
 
         this.json = {
             FinishRequest: {
@@ -152,9 +157,15 @@ export class V1TagRequest extends AgentRequest {
 
     public readonly requestId: string;
 
-    constructor(requestId: string, tagName: string, tagValue: string, timestamp?: Date) {
+    constructor(
+        requestId: string,
+        tagName: string,
+        tagValue: string,
+        opts?: {timestamp?: Date},
+    ) {
         super();
         this.requestId = requestId;
+        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
 
         this.json = {
             TagRequest: {
@@ -207,6 +218,34 @@ export class V1StartSpan extends AgentRequest {
     }
 }
 
+export class V1StopSpan extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1StopSpan;
+
+    public readonly requestId: string;
+    public readonly spanId: string;
+
+    constructor(
+        spanId: string,
+        requestId: string,
+        opts?: {
+            timestamp?: Date,
+        },
+    ) {
+        super();
+        this.requestId = requestId;
+        this.spanId = spanId;
+        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+
+        this.json = {
+            StopSpan: {
+                request_id: this.requestId,
+                span_id: this.spanId,
+                timestamp,
+            },
+        };
+    }
+}
+
 ///////////////
 // Responses //
 ///////////////
@@ -221,6 +260,7 @@ export enum AgentResponseType {
     V1TagRequest = "v1-tag-request-response",
 
     V1StartSpan = "v1-start-span-response",
+    V1StopSpan = "v1-stop-span-response",
 }
 
 export enum AgentResponseResult {
@@ -263,6 +303,10 @@ const RTAC_LOOKUP: RTACWithCheck[] = [
     [
         obj => "StartSpan" in obj,
         {type: AgentResponseType.V1StartSpan, ctor: (obj) => new V1StartSpanResponse(obj)},
+    ],
+    [
+        obj => "StopSpan" in obj,
+        {type: AgentResponseType.V1StopSpan, ctor: (obj) => new V1StopSpanResponse(obj)},
     ],
 ];
 
@@ -427,6 +471,21 @@ export class V1StartSpanResponse extends AgentResponse {
         }
 
         const inner = obj.StartSpan;
+        if ("result" in inner) { this.result = inner.result; }
+    }
+}
+
+export class V1StopSpanResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.V1StopSpan;
+    public readonly result: string;
+
+    constructor(obj: any) {
+        super();
+        if (!("StopSpan" in obj)) {
+            throw new Errors.UnexpectedError("Invalid V1StopSpanResponse, 'StopSpan' key missing");
+        }
+
+        const inner = obj.StopSpan;
         if ("result" in inner) { this.result = inner.result; }
     }
 }
