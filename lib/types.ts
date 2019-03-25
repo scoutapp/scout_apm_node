@@ -1,6 +1,7 @@
 import * as semver from "semver";
 import { Readable } from "stream";
 import { Buffer } from "buffer";
+import { v1 as uuidv1 } from "uuid";
 
 import * as Errors from "./errors";
 import * as Constants from "./constants";
@@ -8,6 +9,22 @@ import * as Constants from "./constants";
 export enum AgentType {
     Process = "process",
 }
+
+export interface AgentStatus {
+    connected: boolean;
+}
+
+export enum LogLevel {
+    Info = "info",
+    Warn = "warn",
+    Debug = "debug",
+    Trace = "trace",
+    Error = "error",
+}
+
+////////////
+// Events //
+////////////
 
 export enum AgentEvent {
     SocketResponseReceived = "socket-response-received",
@@ -17,11 +34,26 @@ export enum AgentEvent {
     SocketConnected = "socket-connected",
     SocketReconnectAttempted = "socket-reconnect-attempted",
     SocketReconnectLimitReached = "socket-reconnect-limit-reached",
+
+    RequestStarted = "request-started",
 }
+
+export abstract class AgentEventInfo {
+    public readonly type: AgentEvent;
+}
+
+export class RequestStartedEventInfo extends AgentEventInfo {
+    public readonly request: V1StartRequest;
+}
+
+//////////////
+// Requests //
+//////////////
 
 export enum AgentRequestType {
     V1GetVersion = "v1-get-version",
     V1Register = "v1-register",
+    V1StartRequest = "v1-start-request",
 }
 
 export abstract class AgentRequest {
@@ -53,12 +85,58 @@ export abstract class AgentRequest {
     }
 }
 
+export class V1GetVersionRequest extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1GetVersion;
+
+    constructor() {
+        super();
+        this.json = {CoreAgentVersion: {}};
+    }
+}
+
+export class V1Register extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1StartRequest;
+
+    constructor(app: string, key: string, version: CoreAgentVersion) {
+        super();
+        this.json = {
+            Register: {
+                api_version: version.raw,
+                app,
+                key,
+            },
+        };
+    }
+}
+
+export class V1StartRequest extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1StartRequest;
+
+    constructor(requestId?: string, timestamp?: Date) {
+        super();
+        const id = requestId || uuidv1();
+        const prefix = Constants.DEFAULT_REQUEST_PREFIX;
+        const prefixedRequestId = `${prefix}${id}`;
+
+        this.json = {
+            StartRequest: {
+                request_id: prefixedRequestId,
+                timestamp,
+            },
+        };
+    }
+}
+
+///////////////
+// Responses //
+///////////////
+
 export enum AgentResponseType {
     Unknown = "unknown",
 
     V1GetVersion = "v1-get-version-response",
-    V1GenericSuccess = "v1-generic-success",
     V1Register = "v1-register-response",
+    V1StartRequest = "v1-start-request-response",
 }
 
 export enum AgentResponseResult {
@@ -85,6 +163,10 @@ const RTAC_LOOKUP: RTACWithCheck[] = [
     [
         obj => "Register" in obj,
         {type: AgentResponseType.V1Register, ctor: (obj) => new V1RegisterResponse(obj)},
+    ],
+    [
+        obj => "StartRequest" in obj,
+        {type: AgentResponseType.V1StartRequest, ctor: (obj) => new V1StartRequestResponse(obj)},
     ],
 ];
 
@@ -162,19 +244,67 @@ export abstract class AgentResponse {
     }
 }
 
+export class V1GetVersionResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.V1GetVersion;
+    public readonly result: string;
+    public readonly version: CoreAgentVersion;
+
+    constructor(obj: any) {
+        super();
+        if (!("CoreAgentVersion" in obj)) {
+            throw new Errors.UnexpectedError("Invalid V1GetVersionResponse, 'CoreAgentVersion' key missing");
+        }
+        const inner = obj.CoreAgentVersion;
+
+        this.version = new CoreAgentVersion(inner.version);
+        if ("result" in inner) { this.result = inner.result; }
+    }
+}
+
+export class V1RegisterResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.V1Register;
+    public readonly result: string;
+
+    constructor(obj: any) {
+        super();
+        if (!("Register" in obj)) {
+            throw new Errors.UnexpectedError("Invalid V1RegisterResponse, 'Register' key missing");
+        }
+        const inner = obj.Register;
+        if ("result" in inner) { this.result = inner.result; }
+    }
+}
+
+export class V1StartRequestResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.V1StartRequest;
+    public readonly result: string;
+
+    constructor(obj: any) {
+        super();
+        if (!("StartRequest" in obj)) {
+            throw new Errors.UnexpectedError("Invalid V1StartRequestResponse, 'StartRequest' key missing");
+        }
+
+        const inner = obj.StartRequest;
+        if ("result" in inner) { this.result = inner.result; }
+    }
+}
+
+export class UnknownResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.Unknown;
+    public readonly raw: any;
+
+    constructor(obj: any) {
+        super();
+        this.raw = obj;
+    }
+}
+
+/////////////
+// Options //
+/////////////
+
 export type AgentOptions = ProcessOptions;
-
-export interface AgentStatus {
-    connected: boolean;
-}
-
-export enum LogLevel {
-    Info = "info",
-    Warn = "warn",
-    Debug = "debug",
-    Trace = "trace",
-    Error = "error",
-}
 
 /**
  * Options for agents that are in a separate process not managed by this one
@@ -217,6 +347,10 @@ export class ProcessOptions {
     }
 }
 
+////////////////////////////
+// Versioning / Manifests //
+////////////////////////////
+
 interface AgentManifest {
     version: string;
     core_agent_version: string;
@@ -245,20 +379,6 @@ export enum Platform {
     AppleDarwin64 = "x86_64-apple-darwin",
 }
 
-export interface AgentDownloadConfigs {
-    [k: string]: AgentDownloadConfig[];
-}
-
-export interface AgentDownloadOptions {
-    // Directory to use for download cache, should either contain `core-agent`
-    // or a subdirectory w/ the verison name
-    cacheDir?: string;
-    // Whether to update the cache
-    updateCache?: boolean;
-    // Disallow external downloads
-    disallowDownloads?: boolean;
-}
-
 export class CoreAgentVersion {
     public readonly raw: string;
 
@@ -271,6 +391,24 @@ export class CoreAgentVersion {
 
         this.raw = converted;
     }
+}
+
+////////////////////////////
+// Download configuration //
+////////////////////////////
+
+export interface AgentDownloadConfigs {
+    [k: string]: AgentDownloadConfig[];
+}
+
+export interface AgentDownloadOptions {
+    // Directory to use for download cache, should either contain `core-agent`
+    // or a subdirectory w/ the verison name
+    cacheDir?: string;
+    // Whether to update the cache
+    updateCache?: boolean;
+    // Disallow external downloads
+    disallowDownloads?: boolean;
 }
 
 export interface AgentDownloader {
@@ -299,6 +437,10 @@ export interface AgentDownloader {
      */
     download(v: CoreAgentVersion, opts: AgentDownloadOptions): Promise<string>;
 }
+
+///////////
+// Agent //
+///////////
 
 /**
  * Scout APM Agent which handles communicating with a local/remote Scout Core Agent process
@@ -356,77 +498,4 @@ export interface Agent {
      * @returns {AgentREsponse} - The response from the agent
      */
     sendAsync(msg: AgentRequest): Promise<void>;
-}
-
-//////////////
-// Requests //
-//////////////
-
-export class V1GetVersionRequest extends AgentRequest {
-    public readonly type: AgentRequestType = AgentRequestType.V1GetVersion;
-
-    constructor() {
-        super();
-        this.json = {CoreAgentVersion: {}};
-    }
-}
-
-export class V1RegisterRequest extends AgentRequest {
-    public readonly type: AgentRequestType = AgentRequestType.V1GetVersion;
-
-    constructor(app: string, key: string, version: CoreAgentVersion) {
-        super();
-        this.json = {
-            Register: {
-                api_version: version.raw,
-                app,
-                key,
-            },
-        };
-    }
-}
-
-///////////////
-// Responses //
-///////////////
-
-export class V1GetVersionResponse extends AgentResponse {
-    public readonly type: AgentResponseType = AgentResponseType.V1GetVersion;
-    public readonly result: string;
-    public readonly version: CoreAgentVersion;
-
-    constructor(obj: any) {
-        super();
-        if (!("CoreAgentVersion" in obj)) {
-            throw new Errors.UnexpectedError("Invalid V1GetVersionResponse, 'CoreAgentVersion' key missing");
-        }
-        const inner = obj.CoreAgentVersion;
-
-        this.version = new CoreAgentVersion(inner.version);
-        if ("result" in inner) { this.result = inner.result; }
-    }
-}
-
-export class V1RegisterResponse extends AgentResponse {
-    public readonly type: AgentResponseType = AgentResponseType.V1Register;
-    public readonly result: string;
-
-    constructor(obj: any) {
-        super();
-        if (!("Register" in obj)) {
-            throw new Errors.UnexpectedError("Invalid V1RegisterResponse, 'Register' key missing");
-        }
-        const inner = obj.Register;
-        if ("result" in inner) { this.result = inner.result; }
-    }
-}
-
-export class UnknownResponse extends AgentResponse {
-    public readonly type: AgentResponseType = AgentResponseType.Unknown;
-    public readonly raw: any;
-
-    constructor(obj: any) {
-        super();
-        this.raw = obj;
-    }
 }

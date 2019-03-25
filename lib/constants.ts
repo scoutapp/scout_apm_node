@@ -8,3 +8,4 @@ export const CORE_AGENT_BIN_FILE_NAME = "core-agent";
 export const CORE_AGENT_MANIFEST_FILE_NAME = "manifest.json";
 export const DEFAULT_BIN_STARTUP_WAIT_MS = 1000;
 export const DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR = "/tmp/core-agent/downloads";
+export const DEFAULT_REQUEST_PREFIX = "req-";

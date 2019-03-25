@@ -13,11 +13,13 @@ import {
     AgentResponseResult,
     AgentResponseType,
     CoreAgentVersion,
+    ProcessOptions,
     V1GetVersionRequest,
     V1GetVersionResponse,
-    V1RegisterRequest,
+    V1Register,
     V1RegisterResponse,
-    ProcessOptions,
+    V1StartRequest,
+    V1StartRequestResponse,
 } from "../../lib/types";
 
 const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY;
@@ -107,8 +109,8 @@ test("Register message works (v1.1.8)", t => {
     // Start the agent & connect to the local socket
         .then(() => agent.start())
         .then(() => agent.connect())
-    // Send GetVersion message
-        .then(() => agent.send(new V1RegisterRequest(
+    // Send Register message
+        .then(() => agent.send(new V1Register(
             TEST_APP_NAME,
             TEST_AGENT_KEY,
             new CoreAgentVersion(TEST_APP_VERSION),
@@ -184,5 +186,28 @@ test("Socket reconnection limit of 0 is respected (v1.1.8)", t => {
                 .then(p => p.kill())
                 .catch(err => TestUtil.cleanup(t, agent, err));
         })
+        .catch(err => TestUtil.cleanup(t, agent, err));
+});
+
+test("StartRequest message works (v1.1.8)", t => {
+    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    let agent: ExternalProcessAgent;
+
+    // Ensure agent key is present (fed in from ENV)
+    if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
+
+    // Create the external process agent, with special function for building the proc opts with
+    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+        .then(a => agent = a)
+    // Start the agent & connect to the local socket
+        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+    // Send StartRequest
+        .then(() => agent.send(new V1StartRequest()))
+        .then((resp: AgentResponse) => {
+            t.equals(resp.type, AgentResponseType.V1StartRequest, "type matches");
+            t.equals((resp as V1StartRequestResponse).result, AgentResponseResult.Success, "start-request succeeded");
+        })
+    // Cleanup the process & end test
+        .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
