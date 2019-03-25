@@ -83,6 +83,9 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                             case AgentResponseType.V1FinishRequest:
                                 this.emit(AgentEvent.RequestFinished);
                                 break;
+                            case AgentResponseType.V1StartSpan:
+                                this.emit(AgentEvent.SpanStarted);
+                                break;
                         }
                     })
                     .catch(err => {

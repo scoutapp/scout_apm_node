@@ -37,6 +37,8 @@ export enum AgentEvent {
 
     RequestStarted = "request-started",
     RequestFinished = "request-finished",
+
+    SpanStarted = "span-started",
 }
 
 //////////////
@@ -46,9 +48,12 @@ export enum AgentEvent {
 export enum AgentRequestType {
     V1GetVersion = "v1-get-version",
     V1Register = "v1-register",
+
     V1StartRequest = "v1-start-request",
     V1FinishRequest = "v1-finish-request",
     V1TagRequest = "v1-tag-request",
+
+    V1StartSpan = "v1-start-span",
 }
 
 export abstract class AgentRequest {
@@ -162,6 +167,46 @@ export class V1TagRequest extends AgentRequest {
     }
 }
 
+export class V1StartSpan extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1StartSpan;
+
+    public readonly requestId: string;
+    public readonly spanId: string;
+    public readonly operation: string;
+    public readonly parentId?: string;
+
+    constructor(
+        operation: string,
+        requestId: string,
+        spanId?: string,
+        opts?: {
+            parentId?: string,
+            timestamp?: Date,
+        },
+    ) {
+        super();
+        this.requestId = requestId;
+        this.operation = operation;
+        this.parentId = opts && opts.parentId ? opts.parentId : undefined;
+
+        const id = spanId || uuidv1();
+        const prefix = Constants.DEFAULT_SPAN_PREFIX;
+        this.spanId = `${prefix}${id}`;
+
+        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+
+        this.json = {
+            StartSpan: {
+                operation,
+                parent_id: this.parentId,
+                request_id: this.requestId,
+                span_id: this.spanId,
+                timestamp,
+            },
+        };
+    }
+}
+
 ///////////////
 // Responses //
 ///////////////
@@ -174,6 +219,8 @@ export enum AgentResponseType {
     V1StartRequest = "v1-start-request-response",
     V1FinishRequest = "v1-finish-request-response",
     V1TagRequest = "v1-tag-request-response",
+
+    V1StartSpan = "v1-start-span-response",
 }
 
 export enum AgentResponseResult {
@@ -212,6 +259,10 @@ const RTAC_LOOKUP: RTACWithCheck[] = [
     [
         obj => "TagRequest" in obj,
         {type: AgentResponseType.V1TagRequest, ctor: (obj) => new V1TagRequestResponse(obj)},
+    ],
+    [
+        obj => "StartSpan" in obj,
+        {type: AgentResponseType.V1StartSpan, ctor: (obj) => new V1StartSpanResponse(obj)},
     ],
 ];
 
@@ -361,6 +412,21 @@ export class V1TagRequestResponse extends AgentResponse {
         }
 
         const inner = obj.TagRequest;
+        if ("result" in inner) { this.result = inner.result; }
+    }
+}
+
+export class V1StartSpanResponse extends AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.V1StartSpan;
+    public readonly result: string;
+
+    constructor(obj: any) {
+        super();
+        if (!("StartSpan" in obj)) {
+            throw new Errors.UnexpectedError("Invalid V1StartSpanResponse, 'StartSpan' key missing");
+        }
+
+        const inner = obj.StartSpan;
         if ("result" in inner) { this.result = inner.result; }
     }
 }
