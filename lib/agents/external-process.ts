@@ -4,6 +4,7 @@ import * as Constants from "../constants";
 import { pathExists } from "fs-extra";
 import { Socket, createConnection } from "net";
 import { spawn, ChildProcess } from "child_process";
+import { createPool, Pool } from "generic-pool";
 
 import {
     Agent,
@@ -23,7 +24,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private readonly agentType: AgentType = AgentType.Process;
     private readonly opts: ProcessOptions;
 
-    private socket: Socket;
+    private pool: Pool<Socket>;
     private socketConnected: boolean = false;
     private socketConnectionAttempts: number = 0;
 
@@ -42,10 +43,12 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     /** @see Agent */
     public status(): Promise<AgentStatus> {
+        if (!this.pool) { return Promise.resolve({connected: false}); }
+
         // Get the status of the agent (if connected)
         return Promise.resolve({
-            connected: this.socket && this.socketConnected,
-        } as AgentStatus);
+            connected: this.pool.min > 0 ? this.pool.available > 0 : true,
+        });
     }
 
     /** @see Agent */
@@ -61,23 +64,137 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     /** @see Agent */
     public connect(): Promise<AgentStatus> {
-        if (this.socket) { return this.status(); }
+        // Initialize the pool if not already present
+        return (this.pool ? Promise.resolve(this.pool) : this.initPool())
+            .then(() => this.status());
+    }
+
+    /** @see Agent */
+    public disconnect(): Promise<AgentStatus> {
+        if (!this.pool) { return this.status(); }
 
         return new Promise((resolve, reject) => {
-            this.socketConnectionAttempts++;
+            // :( generic-pool uses PromiseLike, and it's usage is *awkward*.
+            this.pool.drain()
+                .then(
+                    () => this.pool.clear(),
+                    err => { throw err; },
+                )
+                .then(
+                    () => this.status(),
+                    err => { throw err; },
+                )
+                .then(resolve);
+        });
+    }
 
-            this.socket = createConnection(this.getSocketPath(), () => {
-                this.socketConnected = true;
-                this.socketConnectionAttempts = 0;
+    /** @see Agent */
+    public sendAsync<T extends AgentRequest>(msg: T): Promise<void> {
+        if (!this.pool) { return Promise.reject(new Errors.Disconnected()); }
+
+        // Get a socket from the pool
+        return new Promise((resolve, reject) => {
+            this.pool.acquire()
+                .then(
+                    socket => {
+                        socket.write(msg.toBinary());
+                        return this.pool.release(socket);
+                    },
+                    err => { throw err; },
+                )
+                .then(() => resolve());
+        });
+    }
+
+    /** @see Agent */
+    public send<T extends AgentRequest>(msg: T): Promise<AgentResponse> {
+        const requestType = msg.type;
+
+        // Application events must be sent uing `sendAsync`
+        if (requestType === AgentRequestType.V1ApplicationEvent) {
+            throw new Errors.RequestDoesNotPromptResponse(
+                "ApplicationEvents do not produce responses, please use `sendAsync` instead",
+            );
+        }
+
+        return new Promise((resolve, reject) => {
+            // Get a socket from the pool
+            this.pool.acquire()
+                .then(
+                    // Socket acquisition succeeded
+                    (socket: Socket) => {
+                        // Set up a temporary listener to catch socket responses
+                        const listener = (resp: any, socket?: Socket) => {
+                            // Ensure we only capture messages that were received on the socket we're holding
+                            if (!socket || socket !== socket) { return; }
+
+                            // Remove this temporary listener
+                            this.removeListener(AgentEvent.SocketResponseReceived, listener);
+
+                            // Resolve the encasing promise
+                            resolve(resp);
+
+                            // Release the socket back into the pool
+                            this.pool.release(socket);
+                        };
+
+                        // Set up a listener on our own event emitter for the parsed socket response
+                        this.on(AgentEvent.SocketResponseReceived, listener);
+
+                        // Send the message over the socket
+                        return socket.write(msg.toBinary());
+                    },
+
+                    // Socket acquisition failed
+                    err => { throw err; },
+                );
+        });
+    }
+
+    /**
+     * Check if the process is present
+     */
+    public getProcess(): Promise<ChildProcess> {
+        if (this.detachedProcess === undefined || this.detachedProcess === null) {
+            return Promise.reject(new Errors.NoProcessReference());
+        }
+
+        return Promise.resolve(this.detachedProcess);
+    }
+
+    /**
+     * Initialize the socket pool
+     *
+     * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
+     */
+    private initPool(): Promise<Pool<Socket>> {
+        this.pool = createPool({
+            create: () => this.createSocket(),
+            destroy: (socket) => Promise.resolve(socket.destroy()),
+            validate: (socket) => Promise.resolve(!socket.destroyed),
+        });
+
+        return Promise.resolve(this.pool);
+    }
+
+    /**
+     * Create a socket to the agent for sending requests
+     *
+     * @returns {Promise<Socket>} A socket for use in  the socket pool
+     */
+    private createSocket(): Promise<Socket> {
+        return new Promise((resolve, reject) => {
+            const socket = createConnection(this.getSocketPath(), () => {
                 this.emit(AgentEvent.SocketConnected);
-                resolve(this.status());
+                resolve(socket);
             });
 
-            this.socket.on("data", (data: Buffer) => {
+            // When the socket receives data, parse it and emit socket response received
+            socket.on("data", (data: Buffer) => {
                 V1AgentResponse
                     .fromBinary(data)
                     .then(msg => {
-                        this.emit(AgentEvent.SocketResponseReceived, msg);
+                        this.emit(AgentEvent.SocketResponseReceived, msg, socket);
 
                         switch (msg.type) {
                             case AgentResponseType.V1StartRequest:
@@ -103,100 +220,18 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                     });
             });
 
-            this.socket.on("close", () => {
+            // When socket closes emit information regarding closure
+            socket.on("close", () => {
                 // TODO: debug log that the socket closed
                 this.emit(AgentEvent.SocketDisconnected);
-                this.socketConnected = false;
-
-                // Trigger reconnection if there is no limit or we're under it
-                const limit = this.opts.socketReconnectLimit;
-                const limitExists = typeof limit !== "undefined";
-                // If there is a limit, and the limit is either zero or past, do not reconnect
-                if (limitExists && (!limit || this.socketConnectionAttempts >= limit!)) {
-                    this.emit(AgentEvent.SocketReconnectLimitReached);
-                } else {
-                    this.emit(AgentEvent.SocketReconnectAttempted);
-                    this.connect();
-                }
-
             });
 
-            this.socket.on("error", err => {
+            socket.on("error", err => {
                 this.emit(AgentEvent.SocketError, err);
                 // TODO: debug log about error during connection
                 reject(err);
             });
         });
-    }
-
-    /** @see Agent */
-    public disconnect(): Promise<AgentStatus> {
-        if (!this.socket) { return this.status(); }
-
-        // Disconnect from the agent (delete the current client)
-        return new Promise((resolve) => {
-            this.socket.destroy();
-            // TODO: Wait until socket is destroyed?
-            resolve(this.status());
-        });
-    }
-
-    /** @see Agent */
-    public sendAsync<T extends AgentRequest>(msg: T): Promise<void> {
-        if (!this.socket) { return Promise.reject(new Errors.Disconnected()); }
-        const msgBinary = msg.toBinary();
-        this.socket.write(msgBinary);
-        // TODO: deubg log the message that was send
-        return Promise.resolve();
-    }
-
-    /** @see Agent */
-    public send<T extends AgentRequest>(msg: T): Promise<AgentResponse> {
-        const requestType = msg.type;
-
-        // Application events must be sent uing `sendAsync`
-        if (requestType === AgentRequestType.V1ApplicationEvent) {
-            throw new Errors.RequestDoesNotPromptResponse(
-                "ApplicationEvents do not produce responses, please use `sendAsync` instead",
-            );
-        }
-
-        // Build a check fn that works
-        const checkFn = (r: AgentResponse) => {
-            if (r.type === AgentResponseType.V1GetVersion) {
-                return r.type && r.type === AgentResponseType.V1GetVersion;
-            }
-            return msg.getRequestId() === r.getRequestId();
-        };
-
-        return new Promise(resolve => {
-            // Set up a temporary listener
-            const listener = (resp: any) => {
-                // Skip non-matching socket responses
-                if (!checkFn(resp)) { return; }
-
-                // Remove this listener
-                this.removeListener(AgentEvent.SocketResponseReceived, listener);
-
-                // Resolve the encasing promise
-                resolve(resp);
-            };
-
-            // Send the message async
-            this.on(AgentEvent.SocketResponseReceived, listener);
-            return this.sendAsync(msg);
-        });
-    }
-
-    /**
-     * Check if the process is present
-     */
-    public getProcess(): Promise<ChildProcess> {
-        if (this.detachedProcess === undefined || this.detachedProcess === null) {
-            return Promise.reject(new Errors.NoProcessReference());
-        }
-
-        return Promise.resolve(this.detachedProcess);
     }
 
     // Get the path for the socket

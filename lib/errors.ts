@@ -10,6 +10,7 @@ export enum ErrorCode {
     UnrecognizedAgentResponse,
     ExternalDownloadDisallowed,
     RequestDoesNotPromptResponse,
+    MissingRequiredFeature,
 }
 
 class ScoutError extends Error {
@@ -112,5 +113,14 @@ export class RequestDoesNotPromptResponse extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "The given request does not prompt a response";
+    }
+}
+
+export class MissingRequiredFeature extends ScoutError {
+    public readonly code: number = ErrorCode.MissingRequiredFeature;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "A required feature has not been enabled";
     }
 }
