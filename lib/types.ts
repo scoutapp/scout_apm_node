@@ -2,6 +2,7 @@ import * as semver from "semver";
 import { Readable } from "stream";
 import { Buffer } from "buffer";
 import { v1 as uuidv1 } from "uuid";
+import { hostname } from "os";
 import { createPool, Options as GenericPoolOptions } from "generic-pool";
 
 import * as Errors from "./errors";
@@ -381,4 +382,63 @@ export interface Agent {
      * @returns {AgentResponse} - The response from the agent
      */
     sendAsync(msg: AgentRequest): Promise<void>;
+}
+
+interface ObjWithGetter {
+    get(s: string): any;
+}
+
+export enum URIReportingLevel {
+    FilteredParams = "filtered-params",
+    PathOnly = "path-only",
+}
+
+export class ScoutConfiguration {
+    /**
+     * Build a Scout configuration from environment variables available
+     *
+     * @param {object} env - The environment
+     * @returns {Partial<ScoutConfiguration>} The generated scout configuration
+     */
+    public static fromEnv(env: object = process.env): Partial<ScoutConfiguration> {
+        throw new Errors.NotImplemented();
+    }
+
+    /**
+     * For ScoutConfiguration from any object that allows `.get(...)` to be called,
+     * for example, Express's `app` object
+     *
+     * @param {ObjWithGetter} obj - Some object that supports `get` method calls
+     * @returns {Partial<ScoutConfiguration>} The generated scout configuration
+     */
+    public static fromObjectWithGetter(obj: ObjWithGetter): Partial<ScoutConfiguration> {
+        throw new Errors.NotImplemented();
+    }
+
+    /**
+     * Build the default ScoutConfiguration
+     *
+     * @returns {ScoutConfiguration} The generated scout configuration
+     */
+    public static fromDefault(): ScoutConfiguration {
+        return Object.assign({}, new ScoutConfiguration());
+    }
+
+    // Application finger printing / auth
+    public readonly applicationName: string = "";
+    public readonly key: string = "";
+    public readonly revisionSHA: string = "";
+
+    // Operation
+    public readonly logLevel: LogLevel = LogLevel.Info;
+    public readonly logFilePath: "stdout" | string = "stdout";
+    public readonly proxy?: string;
+
+    // Machine information
+    public readonly hostname: string = hostname();
+
+    // Trace controls
+    public readonly ignoredRoutePrefixes: string[] = [];
+    public readonly collectRemoteIP: boolean = true;
+    public readonly uriReportingLevel: URIReportingLevel = URIReportingLevel.FilteredParams;
 }
