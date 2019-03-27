@@ -274,6 +274,10 @@ export class CoreAgentVersion {
     }
 }
 
+export enum APIVersion {
+    V1 = "1.0",
+}
+
 ////////////////////////////
 // Download configuration //
 ////////////////////////////
