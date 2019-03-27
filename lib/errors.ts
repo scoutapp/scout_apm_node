@@ -9,6 +9,7 @@ export enum ErrorCode {
     MalformedAgentResponse,
     UnrecognizedAgentResponse,
     ExternalDownloadDisallowed,
+    RequestDoesNotPromptResponse,
 }
 
 class ScoutError extends Error {
@@ -102,5 +103,14 @@ export class ExternalDownloadDisallowed extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "External downloads disallowed";
+    }
+}
+
+export class RequestDoesNotPromptResponse extends ScoutError {
+    public readonly code: number = ErrorCode.RequestDoesNotPromptResponse;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "The given request does not prompt a response";
     }
 }

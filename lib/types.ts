@@ -24,6 +24,30 @@ export enum LogLevel {
 
 export type JSONValue = object | string | number;
 
+export class ApplicationMetadata {
+    public readonly language: string;
+    public readonly version: string;
+    public readonly serverTime: string;
+    public readonly framework: string;
+    public readonly frameworkVersion: string;
+    public readonly environment: string;
+    public readonly appServer: string;
+    public readonly hostname: string;
+    public readonly databaseEngine: string;
+    public readonly databaseAdapter: string;
+    public readonly applicationName: string;
+    public readonly libraries: string;
+    public readonly paas: string;
+    public readonly gitSHA: string;
+}
+
+export enum ApplicationEventType {
+    ScoutMetadata = "scout.metadata",
+
+    CPUUtilizationPercent = "CPU/Utilization",
+    MemoryUsageMB = "Memory/Physical",
+}
+
 ////////////
 // Events //
 ////////////
@@ -42,6 +66,8 @@ export enum AgentEvent {
 
     SpanStarted = "span-started",
     SpanStopped = "span-stopped",
+
+    ApplicationEventReported = "application-event-reported",
 }
 
 export enum AgentRequestType {
@@ -55,6 +81,8 @@ export enum AgentRequestType {
     V1StartSpan = "v1-start-span",
     V1StopSpan = "v1-stop-span",
     V1TagSpan = "v1-tag-span",
+
+    V1ApplicationEvent = "v1-application-event",
 }
 
 export abstract class AgentRequest {
@@ -102,6 +130,8 @@ export enum AgentResponseType {
     V1StartSpan = "v1-start-span-response",
     V1StopSpan = "v1-stop-span-response",
     V1TagSpan = "v1-tag-span-response",
+
+    V1ApplicationEvent = "v1-application-event-response",
 
     V1Failure = "v1-failure-response",
 }
