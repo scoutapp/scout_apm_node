@@ -2,7 +2,7 @@ import { v1 as uuidv1 } from "uuid";
 
 import * as Constants from "../../constants";
 import * as Errors from "../../errors";
-import { AgentRequest, AgentRequestType, CoreAgentVersion, JSONValue } from "../../types";
+import { AgentRequest, AgentRequestType, APIVersion, CoreAgentVersion, JSONValue } from "../../types";
 
 export class V1GetVersionRequest extends AgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1GetVersion;
@@ -16,11 +16,11 @@ export class V1GetVersionRequest extends AgentRequest {
 export class V1Register extends AgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1StartRequest;
 
-    constructor(app: string, key: string, version: CoreAgentVersion) {
+    constructor(app: string, key: string, version: APIVersion) {
         super();
         this.json = {
             Register: {
-                api_version: version.raw,
+                api_version: version,
                 app,
                 key,
             },

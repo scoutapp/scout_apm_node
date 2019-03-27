@@ -5,10 +5,11 @@ import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
 import WebAgentDownloader from "../lib/agent-downloaders/web";
 import {
+    APIVersion,
+    Agent,
+    AgentDownloadOptions,
     CoreAgentVersion,
     ProcessOptions,
-    AgentDownloadOptions,
-    Agent,
 } from "../lib/types";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
@@ -60,11 +61,12 @@ export function initializeAgent(
     appName: string,
     agentKey: string,
     appVersion: CoreAgentVersion,
+    apiVersion: APIVersion = APIVersion.V1,
 ): Promise<Agent> {
     t.comment(`initializing agent with appName [${appName}]`);
     return agent.start()
         .then(() => agent.connect())
-        .then(() => agent.send(new V1Register(appName, agentKey, appVersion)))
+        .then(() => agent.send(new V1Register(appName, agentKey, apiVersion)))
         .then(() => agent);
 }
 

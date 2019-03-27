@@ -15,6 +15,7 @@ import {
     ApplicationEventType,
     CoreAgentVersion,
     ProcessOptions,
+    APIVersion,
 } from "../../lib/types";
 import * as Requests from "../../lib/protocol/v1/requests";
 
@@ -109,7 +110,7 @@ test("Register message works (v1.1.8)", t => {
         .then(() => agent.send(new Requests.V1Register(
             TEST_APP_NAME,
             TEST_AGENT_KEY,
-            new CoreAgentVersion(TEST_APP_VERSION),
+            APIVersion.V1,
         )))
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1Register, "type matches");
@@ -399,7 +400,7 @@ test("TagSpan works for leaf span (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("ApplicationEvent works (v1.1.8)", t => {
+test("ApplicationEvent for application metadata works (v1.1.8)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -416,6 +417,36 @@ test("ApplicationEvent works (v1.1.8)", t => {
             "application-event-test",
             ApplicationEventType.ScoutMetadata,
             Fixtures.APP_META,
+        )))
+        .then(() => t.pass("async send did not fail"))
+    // Cleanup the process & end test
+        .then(() => TestUtil.cleanup(t, agent))
+        .catch(err => TestUtil.cleanup(t, agent, err));
+});
+
+test("ApplicationEvent for sampling works (v1.1.8)", t => {
+    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    let agent: ExternalProcessAgent;
+
+    // Ensure agent key is present (fed in from ENV)
+    if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
+
+    // Create the external process agent, with special function for building the proc opts with
+    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+        .then(a => agent = a)
+    // Start the agent & connect to the local socket
+        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+    // Send application event with CPU sample
+        .then(() => agent.sendAsync(new Requests.V1ApplicationEvent(
+            "application-event-test",
+            ApplicationEventType.CPUUtilizationPercent,
+            10,
+        )))
+    // Send application event with memory sample
+        .then(() => agent.sendAsync(new Requests.V1ApplicationEvent(
+            "application-event-test",
+            ApplicationEventType.MemoryUsageMB,
+            500,
         )))
         .then(() => t.pass("async send did not fail"))
     // Cleanup the process & end test
