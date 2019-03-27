@@ -2,6 +2,7 @@ import * as semver from "semver";
 import { Readable } from "stream";
 import { Buffer } from "buffer";
 import { v1 as uuidv1 } from "uuid";
+import { createPool, Options as GenericPoolOptions } from "generic-pool";
 
 import * as Errors from "./errors";
 import * as Constants from "./constants";
@@ -58,8 +59,6 @@ export enum AgentEvent {
     SocketDisconnected = "socket-disconnected",
     SocketError = "socket-error",
     SocketConnected = "socket-connected",
-    SocketReconnectAttempted = "socket-reconnect-attempted",
-    SocketReconnectLimitReached = "socket-reconnect-limit-reached",
 
     RequestStarted = "request-started",
     RequestFinished = "request-finished",
@@ -187,6 +186,8 @@ export abstract class AgentResponse {
 
 export type AgentOptions = ProcessOptions;
 
+export type ConnectionPoolOptions = Partial<GenericPoolOptions>;
+
 /**
  * Options for agents that are in a separate process not managed by this one
  */
@@ -195,12 +196,13 @@ export class ProcessOptions {
     public readonly binPath: string;
     /// URI of the process (with appropriate scheme prefix, ex. 'unix://')
     public readonly uri: string;
-    /// Limit consecutive socket reconnection attempts
-    public readonly socketReconnectLimit?: number;
 
     public readonly logLevel?: LogLevel;
     public readonly logFilePath?: string;
     public readonly configFilePath?: string;
+
+    // Customize conection pool
+    public readonly connPoolOpts?: ConnectionPoolOptions = Constants.DEFAULT_CONNECTION_POOL_OPTS;
 
     constructor(binPath: string, uri: string, opts?: Partial<ProcessOptions>) {
         this.binPath = binPath;
@@ -210,11 +212,7 @@ export class ProcessOptions {
             if (opts.logLevel) { this.logLevel = opts.logLevel; }
             if (opts.logFilePath) { this.logFilePath = opts.logFilePath; }
             if (opts.configFilePath) { this.configFilePath = opts.configFilePath; }
-
-            // Reconnect limit could be zero (no reconnects)
-            if ("socketReconnectLimit" in opts) {
-                this.socketReconnectLimit = opts.socketReconnectLimit;
-            }
+            if (opts.connPoolOpts) { this.connPoolOpts = opts.connPoolOpts; }
         }
     }
 
