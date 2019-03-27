@@ -9,6 +9,7 @@ import {
     Agent,
     AgentEvent,
     AgentRequest,
+    AgentRequestType,
     AgentResponse,
     AgentResponseType,
     AgentStatus,
@@ -91,6 +92,9 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                             case AgentResponseType.V1StopSpan:
                                 this.emit(AgentEvent.SpanStopped);
                                 break;
+                            case AgentResponseType.V1ApplicationEvent:
+                                this.emit(AgentEvent.ApplicationEventReported);
+                                break;
                         }
                     })
                     .catch(err => {
@@ -142,12 +146,20 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (!this.socket) { return Promise.reject(new Errors.Disconnected()); }
         const msgBinary = msg.toBinary();
         this.socket.write(msgBinary);
+        // TODO: deubg log the message that was send
         return Promise.resolve();
     }
 
     /** @see Agent */
     public send<T extends AgentRequest>(msg: T): Promise<AgentResponse> {
         const requestType = msg.type;
+
+        // Application events must be sent uing `sendAsync`
+        if (requestType === AgentRequestType.V1ApplicationEvent) {
+            throw new Errors.RequestDoesNotPromptResponse(
+                "ApplicationEvents do not produce responses, please use `sendAsync` instead",
+            );
+        }
 
         // Build a check fn that works
         const checkFn = (r: AgentResponse) => {

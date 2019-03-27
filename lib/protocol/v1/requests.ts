@@ -199,3 +199,36 @@ export class V1TagSpan extends AgentRequest {
         };
     }
 }
+
+export class V1ApplicationEvent extends AgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1ApplicationEvent;
+
+    public readonly source: string;
+    public readonly eventType: string;
+    public readonly eventValue: JSONValue;
+
+    constructor(
+        source: string,
+        eventType: string,
+        eventValue: JSONValue | JSONValue[],
+        opts?: {
+            timestamp?: Date,
+        },
+    ) {
+        super();
+        this.source = source;
+        this.eventType = eventType;
+        this.eventValue = eventValue;
+
+        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+
+        this.json = {
+            ApplicationEvent: {
+                event_type: this.eventType,
+                event_value: JSON.stringify(this.eventValue),
+                source,
+                timestamp,
+            },
+        };
+    }
+}
