@@ -15,6 +15,9 @@ GIT_HOOKS_DIR = .dev/git/hooks
 check-tool-entr:
 	@which entr > /dev/null || (echo -e "\n[ERROR] please install entr (http://entrproject.org/)" && exit 1)
 
+check-tool-yarn:
+	@which yarn > /dev/null || (echo -e "\n[ERROR] please install yarn (http://yarnpkg.com/)" && exit 1)
+
 yarn-install:
 	@echo -e "=> running yarn install..."
 	$(YARN) install
@@ -46,11 +49,11 @@ clean:
 
 test: test-unit test-int test-e2e
 
-test-unit:
-	$(TAPE) "dist/test/**/*.unit.js"
+test-unit: check-tool-yarn
+	$(YARN) test-unit
 
-test-int:
-	$(TAPE) "dist/test/**/*.int.js"
+test-int: check-tool-yarn
+	$(YARN) test-int
 
-test-e2e:
-	$(TAPE) "dist/test/**/*.e2e.js"
+test-e2e: check-tool-yarn
+	$(YARN) test-e2e
