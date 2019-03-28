@@ -384,7 +384,7 @@ export interface Agent {
     sendAsync(msg: AgentRequest): Promise<void>;
 }
 
-interface ObjWithGetter {
+interface MapLike {
     get(s: string): any;
 }
 
@@ -400,19 +400,84 @@ export class ScoutConfiguration {
      * @param {object} env - The environment
      * @returns {Partial<ScoutConfiguration>} The generated scout configuration
      */
-    public static fromEnv(env: object = process.env): Partial<ScoutConfiguration> {
-        throw new Errors.NotImplemented();
+    public static fromEnv(env: Record<string, string | undefined> = process.env): Partial<ScoutConfiguration> {
+        const result: any = {};
+        if (env.SCOUT_APP) { result.applicationName = env.SCOUT_APP; }
+        if (env.SCOUT_KEY) { result.key = env.SCOUT_KEY; }
+        if (env.SCOUT_REVISION_SHA) { result.revisionSHA = env.SCOUT_REVISION_SHA; }
+
+        if (env.SCOUT_LOG_LEVEL && Object.values(LogLevel).includes(env.SCOUT_LOG_LEVEL)) {
+            result.logLevel = env.SCOUT_LOG_LEVEL as LogLevel;
+        }
+
+        if (env.SCOUT_HTTP_PROXY) { result.httpProxy = env.SCOUT_HTTP_PROXY; }
+        if (env.SCOUT_HOSTNAME) { result.hostname = env.SCOUT_HOSTNAME; }
+
+        if (env.SCOUT_IGNORED_ROUTE_PREFIXES) {
+            result.ignoredRoutePrefixes = env.SCOUT_IGNORED_ROUTE_PREFIXES.split(",").filter(v => v);
+        }
+
+        if (env.SCOUT_COLLECT_REMOTE_IP) {
+            result.collectRemoteIP = env.SCOUT_COLLECT_REMOTE_IP.toLowerCase() === "true";
+        }
+
+        if (env.SCOUT_URI_REPORTING_LEVEL &&
+            Object.values(LogLevel).includes(env.URI_REPORTING_LEVEL)) {
+            result.uriReportingLevel = env.SCOUT_URI_REPORTING_LEVEL as URIReportingLevel;
+        }
+
+        return result;
     }
 
     /**
      * For ScoutConfiguration from any object that allows `.get(...)` to be called,
      * for example, Express's `app` object
      *
-     * @param {ObjWithGetter} obj - Some object that supports `get` method calls
+     * @param {MapLike} obj - Some object that supports `get` method calls
      * @returns {Partial<ScoutConfiguration>} The generated scout configuration
      */
-    public static fromObjectWithGetter(obj: ObjWithGetter): Partial<ScoutConfiguration> {
-        throw new Errors.NotImplemented();
+    public static fromMapLike(obj: MapLike): Partial<ScoutConfiguration> {
+        const result: any = {};
+
+        const applicationName = obj.get("scout.applicationName");
+        if (applicationName) { result.applicationName = applicationName; }
+
+        const key = obj.get("scout.key");
+        if (key) { result.key = key; }
+
+        const revisionSHA = obj.get("scout.revision.sha");
+        if (typeof revisionSHA === "string") { result.revisionSHA = obj.get("scout.revision.sha"); }
+
+        const logLevel = obj.get("scout.log.level");
+        if (typeof logLevel === "string" && logLevel && Object.values(LogLevel).includes(obj.get("scout.log.level"))) {
+            result.logLevel = logLevel as LogLevel;
+        }
+
+        const httpProxy = obj.get("scout.http.proxy");
+        if (typeof httpProxy === "string") { result.httpProxy = httpProxy; }
+
+        const hostname = obj.get("scout.hostname");
+        if (typeof hostname === "string") { result.hostname = hostname; }
+
+        const ignoredRoutePrefixes = obj.get("scout.ignoredRoutePrefixes");
+        if (ignoredRoutePrefixes instanceof Array) {
+            result.ignoredRoutePrefixes = ignoredRoutePrefixes;
+        } else if (typeof ignoredRoutePrefixes === "string") {
+            result.ignoredRoutePrefixes = ignoredRoutePrefixes.split(",").filter(v => v);
+        }
+
+        const collectRemoteIP = obj.get("scout.collectRemoteIP");
+        if (typeof collectRemoteIP === "string" || typeof collectRemoteIP === "boolean") {
+            result.collectRemoteIP = typeof collectRemoteIP === "string" ? collectRemoteIP === "true" : collectRemoteIP;
+        }
+
+        const uriReportingLevel = obj.get("scout.uriReportingLevel");
+        if (typeof uriReportingLevel === "string" &&
+            Object.values(LogLevel).includes(obj.get("scout.uriReportingLevel"))) {
+            result.uriReportingLevel = uriReportingLevel as URIReportingLevel;
+        }
+
+        return result;
     }
 
     /**
@@ -421,7 +486,21 @@ export class ScoutConfiguration {
      * @returns {ScoutConfiguration} The generated scout configuration
      */
     public static fromDefault(): ScoutConfiguration {
-        return Object.assign({}, new ScoutConfiguration());
+        return new ScoutConfiguration();
+    }
+
+    /**
+     * Build a scout configuration
+     *
+     * @param {MapLike} - some object with a getter (e.x. `app.get(...)`)
+     * @returns {ScoutConfiguration} The assembled configuration
+     */
+    public static build(app?: MapLike): ScoutConfiguration {
+        return Object.assign(
+            ScoutConfiguration.fromDefault(),
+            app ? ScoutConfiguration.fromMapLike(app) : {},
+            ScoutConfiguration.fromEnv(),
+        );
     }
 
     // Application finger printing / auth
@@ -432,7 +511,7 @@ export class ScoutConfiguration {
     // Operation
     public readonly logLevel: LogLevel = LogLevel.Info;
     public readonly logFilePath: "stdout" | string = "stdout";
-    public readonly proxy?: string;
+    public readonly httpProxy?: string;
 
     // Machine information
     public readonly hostname: string = hostname();
