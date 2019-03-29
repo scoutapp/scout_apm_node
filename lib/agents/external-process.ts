@@ -25,6 +25,9 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private readonly opts: ProcessOptions;
 
     private pool: Pool<Socket>;
+    private poolErrors: Error[] = [];
+    private maxPoolErrors: number = 5;
+
     private socketConnected: boolean = false;
     private socketConnectionAttempts: number = 0;
 
@@ -32,6 +35,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     constructor(opts: ProcessOptions) {
         super();
+
+        if (!opts || !ProcessOptions.isValid(opts)) {
+            throw new Errors.UnexpectedError("Invalid ProcessOptions object");
+        }
         this.opts = opts;
     }
 
@@ -108,6 +115,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     /** @see Agent */
     public send<T extends AgentRequest>(msg: T): Promise<AgentResponse> {
+        if (!this.pool) { return Promise.reject(new Errors.Disconnected()); }
+        if (!msg) { return Promise.reject(new Errors.UnexpectedError("No message provided to send()")); }
         const requestType = msg.type;
 
         // Application events must be sent uing `sendAsync`
@@ -168,10 +177,24 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
      */
     private initPool(): Promise<Pool<Socket>> {
+        if (!this.opts.isDomainSocket()) {
+            return Promise.reject(new Errors.NotSupported("Only domain sockets (file:// | unix://) are supported"));
+        }
+
         this.pool = createPool({
-            create: () => this.createSocket(),
+            create: () => this.createDomainSocket(),
             destroy: (socket) => Promise.resolve(socket.destroy()),
             validate: (socket) => Promise.resolve(!socket.destroyed),
+        });
+
+        this.pool.on("factoryCreateError", err => {
+            this.poolErrors.push(err);
+
+            // Stop the pool if it fails too many times
+            if (this.poolErrors.length > this.maxPoolErrors) {
+                this.emit("error", new Errors.ResourceAllocationFailureLimitExceeded());
+                this.disconnect();
+            }
         });
 
         return Promise.resolve(this.pool);
@@ -180,9 +203,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     /**
      * Create a socket to the agent for sending requests
      *
+     * NOTE: this method *must* police itself, if it fails too many times
+     *
      * @returns {Promise<Socket>} A socket for use in  the socket pool
      */
-    private createSocket(): Promise<Socket> {
+    private createDomainSocket(): Promise<Socket> {
         return new Promise((resolve, reject) => {
             const socket = createConnection(this.getSocketPath(), () => {
                 this.emit(AgentEvent.SocketConnected);

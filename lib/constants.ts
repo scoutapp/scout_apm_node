@@ -1,5 +1,4 @@
-export const DOMAIN_SOCKET_URI_SCHEME = "unix://";
-export const DOMAIN_SOCKET_URI_SCHEME_RGX = /^unix:\/\//;
+export const DOMAIN_SOCKET_URI_SCHEME_RGX = /^(unix|file):\/\//;
 export const SUPPORTED_CORE_AGENT_VERSIONS = [
     "1.1.8",
 ];
@@ -11,8 +10,7 @@ export const DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR = "/tmp/core-agent/downloads"
 export const DEFAULT_REQUEST_PREFIX = "req-";
 export const DEFAULT_SPAN_PREFIX = "span-";
 export const DEFAULT_CONNECTION_POOL_OPTS = {
-    autostart: true,
     max: 500,
-    min: 10,
+    min: 0,
     testOnBorrow: true,
 };
