@@ -193,6 +193,19 @@ export type ConnectionPoolOptions = Partial<GenericPoolOptions>;
  * Options for agents that are in a separate process not managed by this one
  */
 export class ProcessOptions {
+    /**
+     * Check if some object is a valid ProcessOptions object
+     *
+     * @param {any} obj
+     * @returns {boolean} whether the object is a valid ProcessOptions
+     */
+    public static isValid(obj: any): obj is ProcessOptions {
+        return obj
+            && "binPath" in obj && typeof obj.binPath === "string"
+            && "uri" in obj && typeof obj.uri === "string"
+            && "isDomainSocket" in obj && typeof obj.isDomainSocket === "function";
+    }
+
     // Path to the binary to use (if starting the process is required)
     public readonly binPath: string;
     /// URI of the process (with appropriate scheme prefix, ex. 'unix://')
@@ -226,18 +239,6 @@ export class ProcessOptions {
         return Constants.DOMAIN_SOCKET_URI_SCHEME_RGX.test(this.uri);
     }
 
-    /**
-     * Check if some object is a valid ProcessOptions object
-     *
-     * @param {any} obj
-     * @returns {boolean} whether the object is a valid ProcessOptions
-     */
-    public static isValid(obj: any): obj is ProcessOptions {
-        return obj
-            && "binPath" in obj && typeof obj.binPath === "string"
-            && "uri" in obj && typeof obj.uri === "string"
-            && "isDomainSocket" in obj && typeof obj.isDomainSocket === "function";
-    }
 }
 
 ////////////////////////////

@@ -13,5 +13,4 @@ export const DEFAULT_CONNECTION_POOL_OPTS = {
     max: 500,
     min: 0,
     testOnBorrow: true,
-    Promise,
 };
