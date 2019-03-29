@@ -223,7 +223,20 @@ export class ProcessOptions {
      * @returns {boolean} whether the address is a domain socket
      */
     public isDomainSocket(): boolean {
-        return this.uri.startsWith(Constants.DOMAIN_SOCKET_URI_SCHEME);
+        return Constants.DOMAIN_SOCKET_URI_SCHEME_RGX.test(this.uri);
+    }
+
+    /**
+     * Check if some object is a valid ProcessOptions object
+     *
+     * @param {any} obj
+     * @returns {boolean} whether the object is a valid ProcessOptions
+     */
+    public static isValid(obj: any): obj is ProcessOptions {
+        return obj
+            && "binPath" in obj && typeof obj.binPath === "string"
+            && "uri" in obj && typeof obj.uri === "string"
+            && "isDomainSocket" in obj && typeof obj.isDomainSocket === "function";
     }
 }
 

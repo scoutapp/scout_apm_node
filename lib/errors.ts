@@ -11,6 +11,9 @@ export enum ErrorCode {
     ExternalDownloadDisallowed,
     RequestDoesNotPromptResponse,
     MissingRequiredFeature,
+    ResourceAllocationFailure,
+    ResourceAllocationFailureLimitExceeded,
+    NotSupported,
 }
 
 class ScoutError extends Error {
@@ -122,5 +125,32 @@ export class MissingRequiredFeature extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "A required feature has not been enabled";
+    }
+}
+
+export class ResourceAllocationFailure extends ScoutError {
+    public readonly code: number = ErrorCode.ResourceAllocationFailure;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Failed to allocate critical resource";
+    }
+}
+
+export class ResourceAllocationFailureLimitExceeded extends ScoutError {
+    public readonly code: number = ErrorCode.ResourceAllocationFailureLimitExceeded;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Resource allocation failures exceeded threshhold";
+    }
+}
+
+export class NotSupported extends ScoutError {
+    public readonly code: number = ErrorCode.NotSupported;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Not supported";
     }
 }
