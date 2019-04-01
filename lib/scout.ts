@@ -46,7 +46,9 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
     }
 
     public stop(): Promise<this> {
-        // TODO: fill out
+        // TODO: Check if already stopped
+        // TODO: Stop all child spans first
+        // TODO: Fill out
         return Promise.resolve(this);
     }
 }
@@ -75,6 +77,9 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
     }
 
     public stop(): Promise<this> {
+        // TODO: Check if already stopped
+        // TODO: Stop all child spans first
+        // TODO: Fill out
         return Promise.resolve(this);
     }
 }
