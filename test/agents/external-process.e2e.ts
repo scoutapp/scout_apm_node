@@ -388,3 +388,105 @@ test("ApplicationEvent for sampling works (v1.1.8)", t => {
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
+
+test("Nested spans work (v1.1.8)", t => {
+    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    let agent: ExternalProcessAgent;
+
+    let reqStart: Requests.V1StartRequest;
+    let childSpanStart: Requests.V1StartSpan;
+    let parentSpanStart: Requests.V1StartSpan;
+
+    // Ensure agent key is present (fed in from ENV)
+    if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
+
+    // Create the external process agent, with special function for building the proc opts with
+    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+        .then(a => agent = a)
+    // Start the agent & connect to the local socket
+        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+    // Send StartRequest
+        .then(() => {
+            reqStart = new Requests.V1StartRequest();
+            return agent.send(reqStart);
+        })
+    // Start a span (no parent)
+        .then((resp: AgentResponse) => {
+            parentSpanStart = new Requests.V1StartSpan("test/start-span", reqStart.requestId);
+            return agent.send(parentSpanStart);
+        })
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (parent)"))
+    // Start a child span
+        .then(() => {
+            childSpanStart = new Requests.V1StartSpan(
+                "test/start-span",
+                reqStart.requestId,
+                {parentId: parentSpanStart.spanId},
+            );
+            return agent.send(childSpanStart);
+        })
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (child)"))
+    // Stop the child span
+        .then(() => agent.send(new Requests.V1StopSpan(childSpanStart.spanId, childSpanStart.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (child)"))
+    // Stop the parent span
+        .then(() => agent.send(new Requests.V1StopSpan(parentSpanStart.spanId, parentSpanStart.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (parent)"))
+    // Finish the request
+        .then(() => agent.send(new Requests.V1FinishRequest(reqStart.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
+    // Cleanup the process & end test
+        .then(() => TestUtil.cleanup(t, agent))
+        .catch(err => TestUtil.cleanup(t, agent, err));
+});
+
+test("Nested spans work in the wrong close order (v1.1.8)", t => {
+    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    let agent: ExternalProcessAgent;
+
+    let reqStart: Requests.V1StartRequest;
+    let childSpanStart: Requests.V1StartSpan;
+    let parentSpanStart: Requests.V1StartSpan;
+
+    // Ensure agent key is present (fed in from ENV)
+    if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
+
+    // Create the external process agent, with special function for building the proc opts with
+    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+        .then(a => agent = a)
+    // Start the agent & connect to the local socket
+        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+    // Send StartRequest
+        .then(() => {
+            reqStart = new Requests.V1StartRequest();
+            return agent.send(reqStart);
+        })
+    // Start a span (no parent)
+        .then((resp: AgentResponse) => {
+            parentSpanStart = new Requests.V1StartSpan("test/start-span", reqStart.requestId);
+            return agent.send(parentSpanStart);
+        })
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (parent)"))
+    // Start a child span
+        .then(() => {
+            childSpanStart = new Requests.V1StartSpan(
+                "test/start-span",
+                reqStart.requestId,
+                {parentId: parentSpanStart.spanId},
+            );
+            return agent.send(childSpanStart);
+        })
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (child)"))
+    // Stop the parent span
+        .then(() => agent.send(new Requests.V1StopSpan(parentSpanStart.spanId, parentSpanStart.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (parent)"))
+    // Stop the child span
+        .then(() => agent.send(new Requests.V1StopSpan(childSpanStart.spanId, childSpanStart.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (child)"))
+    // Finish the request
+        .then(() => agent.send(new Requests.V1FinishRequest(reqStart.requestId)))
+        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
+    // Cleanup the process & end test
+        .then(() => TestUtil.cleanup(t, agent))
+        .catch(err => TestUtil.cleanup(t, agent, err));
+});
