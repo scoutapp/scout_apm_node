@@ -85,3 +85,12 @@ export function cleanup(t: Test, agent: ExternalProcessAgent, err?: Error): Prom
         .then(process => process.kill())
         .then(() => t.end(err));
 }
+
+// Helper that waits for agent buffer to flush
+export function waitForAgentBufferFlush(t?: Test): Promise<void> {
+    const interval = Constants.AGENT_BUFFER_TIME_MS;
+    if (t) {
+        t.comment(`Waiting for agent buffer time (${interval / Constants.MINUTE_MS} minutes)...`);
+    }
+    return waitMs(interval);
+}

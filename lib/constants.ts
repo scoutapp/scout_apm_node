@@ -14,3 +14,5 @@ export const DEFAULT_CONNECTION_POOL_OPTS = {
     min: 0,
     testOnBorrow: true,
 };
+export const MINUTE_MS = 60000;
+export const AGENT_BUFFER_TIME_MS = 2 * MINUTE_MS;
