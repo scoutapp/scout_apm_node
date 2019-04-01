@@ -16,7 +16,7 @@ interface ChildSpannable {
 }
 
 interface Taggable {
-    tag(tag: string): Promise<this>;
+    addTags(tags: string[]): Promise<this>;
 }
 
 interface Stoppable {
@@ -41,7 +41,7 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
         return Promise.resolve(this.childSpans);
     }
 
-    public tag(tag: string): Promise<this> {
+    public addTags(tag: string[]): Promise<this> {
         return Promise.resolve(this);
     }
 
@@ -60,7 +60,7 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
     private stopped: boolean;
     private childSpans: ScoutSpan[];
 
-    public tag(tag: string): Promise<this> {
+    public addTags(tag: string[]): Promise<this> {
         return Promise.resolve(this);
     }
 
