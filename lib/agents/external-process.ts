@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import * as Errors from "../errors";
 import * as Constants from "../constants";
-import { pathExists } from "fs-extra";
+import { pathExists, remove } from "fs-extra";
 import { Socket, createConnection } from "net";
 import { spawn, ChildProcess } from "child_process";
 import { createPool, Pool } from "generic-pool";
@@ -32,6 +32,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private socketConnectionAttempts: number = 0;
 
     private detachedProcess: ChildProcess;
+    private stopped: boolean = true;
 
     constructor(opts: ProcessOptions) {
         super();
@@ -172,6 +173,19 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     }
 
     /**
+     * Stop the process (if one is running)
+     */
+    public stopProcess(): Promise<void> {
+        return this.getProcess()
+            .then(process => {
+                this.stopped = true;
+                process.kill();
+            })
+        // Remove the socket path
+            .then(() => remove(this.getSocketPath()));
+    }
+
+    /**
      * Initialize the socket pool
      *
      * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
@@ -190,8 +204,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         this.pool.on("factoryCreateError", err => {
             this.poolErrors.push(err);
 
-            // Stop the pool if it fails too many times
-            if (this.poolErrors.length > this.maxPoolErrors) {
+            // Stop the pool if it fails too many times (and the agent is not stopped)
+            if (!this.stopped && this.poolErrors.length > this.maxPoolErrors) {
                 this.emit("error", new Errors.ResourceAllocationFailureLimitExceeded());
                 this.disconnect();
             }
@@ -289,7 +303,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             setTimeout(() => {
                 pathExists(socketPath)
                     .then(exists => {
-                        if (exists) { resolve(this); }
+                        if (exists) {
+                            this.stopped = false;
+                            resolve(this);
+                        }
                     })
                     .catch(reject);
             }, Constants.DEFAULT_BIN_STARTUP_WAIT_MS);

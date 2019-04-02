@@ -47,7 +47,7 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
 
     private readonly scoutInstance: Scout;
     private finished: boolean = false;
-    private childSpans: ScoutSpan[];
+    private childSpans: ScoutSpan[] = [];
 
     constructor(id: string, s: Scout) {
         this.scoutInstance = s;
@@ -85,6 +85,10 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
             .then(() => this);
     }
 
+    public finish(): Promise<this> {
+        return this.stop();
+    }
+
     public stop(): Promise<this> {
         if (this.finished) { return Promise.resolve(this); }
 
@@ -104,7 +108,7 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
 
     private readonly scoutInstance: Scout;
     private stopped: boolean;
-    private childSpans: ScoutSpan[];
+    private childSpans: ScoutSpan[] = [];
 
     constructor(operation: string, id: string, req: ScoutRequest, s: Scout) {
         this.scoutInstance = s;
@@ -165,7 +169,7 @@ export class Scout {
     private socketPath: string;
 
     private coreAgentVersion: CoreAgentVersion;
-    private agent: Agent;
+    private agent: ExternalProcessAgent;
     private processOptions: ProcessOptions;
 
     constructor(config?: ScoutConfiguration) {
@@ -267,6 +271,16 @@ export class Scout {
         return this.agent
             .send(new Requests.V1StopSpan(span.id, span.request.id))
             .then(() => span);
+    }
+
+    public shutdown(): Promise<void> {
+        if (!this.config.allowShutdown) {
+            return Promise.reject(new Errors.NotSupported(
+                "Clients is not allowed to cause shutdown agent (change `allowShutdown` to configure this)",
+            ));
+        }
+
+        return this.agent.stopProcess();
     }
 
     private getSocketPath() {

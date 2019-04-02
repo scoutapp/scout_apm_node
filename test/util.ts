@@ -11,6 +11,7 @@ import {
     CoreAgentVersion,
     ProcessOptions,
 } from "../lib/types";
+import { Scout } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
 
@@ -93,4 +94,10 @@ export function waitForAgentBufferFlush(t?: Test): Promise<void> {
         t.comment(`Waiting for agent buffer time (${interval / Constants.MINUTE_MS} minutes)...`);
     }
     return waitMs(interval);
+}
+
+// Helper function to clean up an official (user-facing) scout instance
+export function shutdownScout(t: Test, scout: Scout, err?: Error): Promise<void> {
+    return scout.shutdown()
+        .then(() => t.end(err));
 }
