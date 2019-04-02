@@ -32,7 +32,7 @@ $ TEST_AGENT_KEY=<key> make test-e2e
 
 `TEST_AGENT_KEY` are required for E2E tests that perform real commands against the Scout API with the local `scout-agent`. A more sustainable way of setting these environment variables is to make use of [`direnv`](https://direnv.net/), setting a `.envrc` in your project root.
 
-## Testing out a running agent ##
+## Testing out the `Agent` directly ##
 
 To probe/send messages to a running agent, you can use the `node`/`ts console. Assuming the project has been built, the following script can be used:
 
@@ -62,3 +62,5 @@ To send a registration request for an application:
 > agent.send(req).then(console.log);
 < V1RegisterResponse { type: 'v1-register-response', result: 'Success' }
 ```
+
+After registering, you may send whichever requests you'd like to, but note that `core-agent` buffers requests, so you may need to wait ~2 minutes to see requests/spans on [the scout dashboard](https://apm.scoutapp.com/home). In tests, you can use `TestUtil.waitForAgentBufferFlush` to perform this wait.
