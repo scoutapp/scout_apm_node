@@ -193,9 +193,9 @@ test("TagRequest message works (v1.1.8)", t => {
         })
     // Tag the request
         .then(() => agent.send(new Requests.V1TagRequest(
-            start.requestId,
             "tag-request-test",
             "value",
+            start.requestId,
         )))
         .then((resp: AgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1TagRequest, "type matches");

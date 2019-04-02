@@ -14,6 +14,7 @@ export enum ErrorCode {
     ResourceAllocationFailure,
     ResourceAllocationFailureLimitExceeded,
     NotSupported,
+    FinishedRequest,
 }
 
 class ScoutError extends Error {
@@ -152,5 +153,14 @@ export class NotSupported extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "Not supported";
+    }
+}
+
+export class FinishedRequest extends ScoutError {
+    public readonly code: number = ErrorCode.FinishedRequest;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Operation cannot be performed because the request is finished";
     }
 }

@@ -527,6 +527,10 @@ export class ScoutConfiguration {
     public readonly logFilePath: "stdout" | string = "stdout";
     public readonly httpProxy?: string;
 
+    // Agent
+    public readonly agentVersion: string = "1.1.8";
+    public readonly apiVersion: string = "1.0";
+
     // Machine information
     public readonly hostname: string = hostname();
 
