@@ -1,2 +1,5 @@
 export * from "./scout";
-export { ScoutConfiguration } from "./types";
+export {
+    ScoutConfiguration,
+    AgentEvent as ScoutAgentEvent,
+} from "./types";

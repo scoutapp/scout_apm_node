@@ -301,11 +301,16 @@ export class Scout {
         return this.agent.stopProcess();
     }
 
+    public hasAgent(): boolean {
+        return this.agent !== null;
+    }
+
+    public getAgent(): ExternalProcessAgent {
+        return this.agent;
+    }
+
     private getSocketPath() {
         return `unix://${this.socketPath}`;
     }
 
-    private hasAgent(): boolean {
-        return this.agent !== null;
-    }
 }

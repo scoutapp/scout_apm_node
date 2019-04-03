@@ -1,5 +1,7 @@
 import * as path from "path";
 import * as tmp from "tmp-promise";
+import * as express from "express";
+import { Application, Request, Response } from "express";
 
 import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
@@ -100,4 +102,16 @@ export function waitForAgentBufferFlush(t?: Test): Promise<void> {
 export function shutdownScout(t: Test, scout: Scout, err?: Error): Promise<void> {
     return scout.shutdown()
         .then(() => t.end(err));
+}
+
+// Make a simple express application that just returns
+// some JSON ({status: "success"}) after waiting a certain amount of milliseconds if provided
+export function simpleExpressApp(delayMs: number = 0): Application {
+    const app = express();
+    app.get('/', (req: Request, res: Response) => {
+        waitMs(delayMs)
+            .then(() => res.send({status: "success"}));
+    });
+
+    return app;
 }
