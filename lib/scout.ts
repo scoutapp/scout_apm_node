@@ -292,13 +292,13 @@ export class Scout {
     }
 
     public shutdown(): Promise<void> {
-        if (!this.config.allowShutdown) {
-            return Promise.reject(new Errors.NotSupported(
-                "Clients is not allowed to cause shutdown agent (change `allowShutdown` to configure this)",
-            ));
-        }
-
-        return this.agent.stopProcess();
+        return this.agent
+            .disconnect()
+            .then(() => {
+                if (this.config.allowShutdown) {
+                    return this.agent.stopProcess();
+                }
+            });
     }
 
     public hasAgent(): boolean {

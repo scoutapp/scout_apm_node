@@ -106,9 +106,14 @@ export function shutdownScout(t: Test, scout: Scout, err?: Error): Promise<void>
 
 // Make a simple express application that just returns
 // some JSON ({status: "success"}) after waiting a certain amount of milliseconds if provided
-export function simpleExpressApp(delayMs: number = 0): Application {
+export function simpleExpressApp(middleware: any, delayMs: number = 0): Application {
     const app = express();
-    app.get('/', (req: Request, res: Response) => {
+
+    if (middleware) {
+        app.use(middleware);
+    }
+
+    app.get("/", (req: Request, res: Response) => {
         waitMs(delayMs)
             .then(() => res.send({status: "success"}));
     });

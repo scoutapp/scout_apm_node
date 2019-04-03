@@ -1,4 +1,4 @@
-import * as onFinished  from "on-finished";
+import * as onFinished from "on-finished";
 import { LogLevel, ScoutConfiguration } from "./types";
 import { Scout, ScoutRequest } from "./scout";
 
@@ -20,19 +20,19 @@ export function consoleLogFn(message: string, level?: LogLevel) {
 
     switch (level) {
         case LogLevel.Warn:
-            console.warn(message);
+            console.warn(message); // tslint:disable-line no-console
             break;
         case LogLevel.Error:
-            console.error(message);
+            console.error(message); // tslint:disable-line no-console
             break;
         case LogLevel.Debug:
-            console.debug(message);
+            console.debug(message); // tslint:disable-line no-console
             break;
         case LogLevel.Trace:
-            console.trace(message);
+            console.trace(message); // tslint:disable-line no-console
             break;
         default:
-            console.log(message);
+            console.log(message); // tslint:disable-line no-console
     }
 }
 
@@ -54,7 +54,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // Exit early if we cannot access the application from the request
         if (!req || !req.app) {
             if (opts && opts.logFn) {
-                opts.logFn(`[scout] Request object is missing/invalid (does not contain application object`, LogLevel.Warn);
+                opts.logFn(`[scout] Request object is missing/invalid (application object missing)`, LogLevel.Warn);
             }
             next();
             return;
@@ -64,6 +64,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // Create the scout agent if not present on the app
         if (!req.app.scout) {
             getScout = () => {
+                // Use custom scout configuration if provided
                 const config = opts && opts.config ? opts.config : new ScoutConfiguration();
                 req.app.scout = new Scout(config);
                 return req.app.scout.setup();
@@ -81,7 +82,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                         req.scout = {request: req};
 
                         // Set up handler to act on end of request
-                        onFinished(res, function (err, res) {
+                        onFinished(res, (err, res) => {
                             scoutRequest.finish();
                         });
 
@@ -97,9 +98,9 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // Continue even if getting scout fails
             .catch((err: Error) => {
                 if (opts && opts.logFn) {
-                    opts.logFn(`[scout] Failed to retrieve scout instance from Express application:\n ${err}`, LogLevel.Error);
+                    opts.logFn(`[scout] No scout instance on Express application:\n ${err}`, LogLevel.Error);
                 }
                 next();
-            })
+            });
     };
 }
