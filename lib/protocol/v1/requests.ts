@@ -75,9 +75,9 @@ export class V1TagRequest extends AgentRequest {
     public readonly requestId: string;
 
     constructor(
-        requestId: string,
         tagName: string,
         tagValue: string,
+        requestId: string,
         opts?: {timestamp?: Date},
     ) {
         super();

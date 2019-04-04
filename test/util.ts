@@ -1,5 +1,7 @@
 import * as path from "path";
 import * as tmp from "tmp-promise";
+import * as express from "express";
+import { Application, Request, Response } from "express";
 
 import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
@@ -11,6 +13,7 @@ import {
     CoreAgentVersion,
     ProcessOptions,
 } from "../lib/types";
+import { Scout } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
 
@@ -93,4 +96,27 @@ export function waitForAgentBufferFlush(t?: Test): Promise<void> {
         t.comment(`Waiting for agent buffer time (${interval / Constants.MINUTE_MS} minutes)...`);
     }
     return waitMs(interval);
+}
+
+// Helper function to clean up an official (user-facing) scout instance
+export function shutdownScout(t: Test, scout: Scout, err?: Error): Promise<void> {
+    return scout.shutdown()
+        .then(() => t.end(err));
+}
+
+// Make a simple express application that just returns
+// some JSON ({status: "success"}) after waiting a certain amount of milliseconds if provided
+export function simpleExpressApp(middleware: any, delayMs: number = 0): Application {
+    const app = express();
+
+    if (middleware) {
+        app.use(middleware);
+    }
+
+    app.get("/", (req: Request, res: Response) => {
+        waitMs(delayMs)
+            .then(() => res.send({status: "success"}));
+    });
+
+    return app;
 }

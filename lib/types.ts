@@ -526,6 +526,11 @@ export class ScoutConfiguration {
     public readonly logLevel: LogLevel = LogLevel.Info;
     public readonly logFilePath: "stdout" | string = "stdout";
     public readonly httpProxy?: string;
+    public readonly allowShutdown: boolean = false;
+
+    // Agent
+    public readonly agentVersion: string = "1.1.8";
+    public readonly apiVersion: string = "1.0";
 
     // Machine information
     public readonly hostname: string = hostname();
@@ -534,4 +539,22 @@ export class ScoutConfiguration {
     public readonly ignoredRoutePrefixes: string[] = [];
     public readonly collectRemoteIP: boolean = true;
     public readonly uriReportingLevel: URIReportingLevel = URIReportingLevel.FilteredParams;
+
+    constructor(opts?: Partial<ScoutConfiguration>) {
+        if (opts) {
+            if (opts.applicationName) { this.applicationName = opts.applicationName; }
+            if (opts.key) { this.key = opts.key; }
+            if (opts.revisionSHA) { this.revisionSHA = opts.revisionSHA; }
+            if (opts.logLevel) { this.logLevel = opts.logLevel; }
+            if (opts.logFilePath) { this.logFilePath = opts.logFilePath; }
+            if (opts.httpProxy) { this.httpProxy = opts.httpProxy; }
+            if (opts.allowShutdown) { this.allowShutdown = opts.allowShutdown; }
+            if (opts.agentVersion) { this.agentVersion = opts.agentVersion; }
+            if (opts.apiVersion) { this.apiVersion = opts.apiVersion; }
+            if (opts.hostname) { this.hostname = opts.hostname; }
+            if (opts.ignoredRoutePrefixes) { this.ignoredRoutePrefixes = opts.ignoredRoutePrefixes; }
+            if (opts.collectRemoteIP) { this.collectRemoteIP = opts.collectRemoteIP; }
+            if (opts.uriReportingLevel) { this.uriReportingLevel = opts.uriReportingLevel; }
+        }
+    }
 }
