@@ -26,7 +26,7 @@ $ npm install scout-apm-client
 
 Scout supports use with `express`-based applications by using app-wide middleware:
 
-```nodejs
+```javascript
 const express = require("express");
 const app = express();
 const scout = require("scout-apm-client").expressMiddleware;
