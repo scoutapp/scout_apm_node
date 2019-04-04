@@ -4,8 +4,11 @@ Monitor the performance of NodeJS apps, with [Scout](https://www.scoutapp.com). 
 
 ## Requirements
 
-- [NodeJS](https://nodejs.org)
-- [Yarn](https://yarnpkg.org) (Development)
+[NodeJS](https://nodejs.org) Versions:
+- 10+
+
+Scout APM works with the following frameworks:
+- [Express](https://expressjs.com) 4.x
 
 ## Quick Start
 
@@ -13,39 +16,78 @@ __A Scout account is required. [Signup for Scout](https://apm.scoutapp.com/users
 
 ## Installing the Scout client
 
-Install the `scout-client`:
+Install the `scout-apm-client`:
 
 ```shell
-$ npm install scout-client
+$ npm install scout-apm-client
 ```
 
-## Using `scout-client` with [`net.http`](https://nodejs.org/dist/latest/docs/api/http.html)
+## Using `scout-apm-client` with [`express`](https://expressjs.com/)
 
-<TODO: Fill out Express getting started example>
+Scout supports use with `express`-based applications by using app-wide middleware:
+
 ```nodejs
+const express = require("express");
+const app = express();
+const scout = require("scout-apm-client").expressMiddleware;
+
+// Enable the app-wide scout middleware
+app.use(scout());
+
+// Set up the routes for your application
+app.get('/', function (req, res) {
+  res.send('hello, world!')
+})
 ```
 
-## Using `scout-client` with [`express`](https://expressjs.com/)
+For more information on configuration, see `docs/configuration.md`
 
-<TODO: Fill out Express getting started example>
-```nodejs
+## Using `scout-apm-client` with other frameworks ##
+
+Scout supports use with any other frameworks through it's `Promise` based API:
+
+```javascript
+const Scout = require("scout-apm-client").Scout;
+const scout = new Scout();
+
+// Set up your scout instance
+scout.setup()
+    .then(scout => {
+        // Start a request trace with Scout
+        scout.startRequest()
+            .then(scoutRequest => {
+                // Run your code
+                bigHeavyTaskThatReturnsAPromise()
+                    .then(() => scoutRequest.finish());
+            });
+    });
+});
 ```
+
+For more examples, see `docs/cookbook.md`
+For more information on the architecture of the client see `docs/architecture.md`.
 
 ## Development
 
-To get started developing `scout-client`, run:
+To get started developing `scout-apm-client`, run:
 
 ```shell
 $ make dev-setup
 ```
 
-<TODO: quick intro to typescript>
+This will set up the necessary environment (including git hooks) to get started hacking on `scout-apm-client`.
 
 This repository comes with a few development aids pre-installed, via `make` targets:
 
-<TODO: quick intro to linting + compiling + watch>
+```
+$ make lint # run tslint (a typescript linter
+$ make lint-watch # run tslint continuously
 
-For more information on the structure and architecture of the code see `docs/architecture.md`.
+$ make build # run tsc (the typescript compiler)
+$ make build-watch # run tsc continuously
+```
+
+For more information on the development environment and tools, see `docs/development.md`.
 
 ## Contributing
 
