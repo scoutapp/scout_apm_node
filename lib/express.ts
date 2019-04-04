@@ -1,5 +1,6 @@
 import * as onFinished from "on-finished";
 import { LogLevel, ScoutConfiguration } from "./types";
+import * as Constants from "./constants";
 import { Scout, ScoutRequest } from "./scout";
 
 export interface ApplicationWithScout {
@@ -38,6 +39,7 @@ export function consoleLogFn(message: string, level?: LogLevel) {
 
 export interface ExpressMiddlewareOptions {
     config?: ScoutConfiguration;
+    requestTimeoutMs?: number;
     logFn?: LogFn;
 }
 
@@ -80,6 +82,11 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                     .then((scoutRequest: ScoutRequest) => {
                         // Save the scout request onto the request object
                         req.scout = {request: req};
+
+                        // Set up the request timeout
+                        let timeoutMs = Constants.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS;
+                        if (opts && opts.requestTimeoutMs) { timeoutMs = opts.requestTimeoutMs; }
+                        setTimeout(() => scoutRequest.finish(), timeoutMs);
 
                         // Set up handler to act on end of request
                         onFinished(res, (err, res) => {
