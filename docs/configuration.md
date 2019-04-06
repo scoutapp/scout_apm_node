@@ -81,20 +81,4 @@ Scout offers various integrations for often-used libraries and frameworks in the
 
 ### Express ###
 
-Scout's [Express](https://expressjs.com) integration offers some configuration on how it can be used, encapsulated by the following interface:
-
-```typescript
-interface ExpressMiddlewareOptions {
-    config?: ScoutConfiguration;
-    requestTimeoutMs?: number;
-    logFn?: LogFn;
-}
-```
-
-| Value              | Type                 | Default  | Description                                                                                                              |
-|--------------------|----------------------|----------|--------------------------------------------------------------------------------------------------------------------------|
-| `config`           | `ScoutConfiguration` | N/A      | The configuration to be passed when creating the `Scout` instance                                                        |
-| `requestTimeoutMs` | `number`             | `300000` | The default timeout for any request trace (any traces on requests that take more than this amount of time are cut short) |
-| `logFn`            | `LogFn`              | N/A      | A logging function (that takes `message` and `logLevel` arguments) to allow for logging of the scout layer               |
-
-For more information on how the express integration works, see `docs/integrations/express.md`
+For more information on how the express integration works (and how to configure it), see `docs/integrations/express.md`
