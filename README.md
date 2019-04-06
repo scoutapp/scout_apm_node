@@ -16,7 +16,7 @@ __A Scout account is required. [Signup for Scout](https://apm.scoutapp.com/users
 
 ## Installing the Scout client
 
-Install the `scout-apm-client`:
+Install `scout-apm-client`:
 
 ```shell
 $ npm install scout-apm-client

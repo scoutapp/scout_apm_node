@@ -67,7 +67,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         if (!req.app.scout) {
             getScout = () => {
                 // Use custom scout configuration if provided
-                const config = opts && opts.config ? opts.config : new ScoutConfiguration();
+                const config = opts && opts.config ? opts.config : ScoutConfiguration.build();
                 req.app.scout = new Scout(config);
                 return req.app.scout.setup();
             };
