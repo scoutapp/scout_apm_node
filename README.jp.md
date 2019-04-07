@@ -10,7 +10,7 @@
 Scout APM は下記に書いてあるフレームワークと簡単に使えます:
 - [ExpressJS](https://expressjs.com) 4.x
 
-## Quick Start
+## セットアップ
 
 __Scoutのアカウントが必要です。[Scoutサインアップ](https://apm.scoutapp.com/users/sign_up).__
 
