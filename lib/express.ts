@@ -86,11 +86,11 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                         let timeoutMs = Constants.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS;
                         if (opts && opts.requestTimeoutMs) { timeoutMs = opts.requestTimeoutMs; }
                         setTimeout(() => {
-                            scoutRequest.finish();
                             // Tag the request as timed out
-                            scoutRequest.addTags([
-                                {name: "timeout", value: "true"},
-                            ]);
+                            scoutRequest
+                                .addTags([{name: "timeout", value: "true"}])
+                                .then(() => scoutRequest.finish())
+                                .catch(() => scoutRequest.finish());
                         }, timeoutMs);
 
                         // Set up handler to act on end of request
