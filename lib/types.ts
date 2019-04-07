@@ -63,6 +63,8 @@ export enum AgentEvent {
     SocketError = "socket-error",
     SocketConnected = "socket-connected",
 
+    RequestSent = "request-sent",
+
     RequestStarted = "request-started",
     RequestFinished = "request-finished",
 

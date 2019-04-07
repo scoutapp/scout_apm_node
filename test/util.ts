@@ -120,3 +120,28 @@ export function simpleExpressApp(middleware: any, delayMs: number = 0): Applicat
 
     return app;
 }
+
+// Make an express app with a route with a dynamic segment which returns
+// some JSON ({status: "success", segment: <what you sent>}) after waiting a certain amount of milliseconds if provided
+export function simpleDynamicSegmentExpressApp(middleware: any, delayMs: number = 0): Application {
+    const app = express();
+
+    if (middleware) {
+        app.use(middleware);
+    }
+
+    app.get("/", (req: Request, res: Response) => {
+        waitMs(delayMs)
+            .then(() => res.send({status: "success"}));
+    });
+
+    app.get("/dynamic/:segment", (req: Request, res: Response) => {
+        waitMs(delayMs)
+            .then(() => res.send({
+                segment: req.params.segment,
+                status: "success",
+            }));
+    });
+
+    return app;
+}

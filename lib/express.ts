@@ -72,6 +72,12 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
             };
         }
 
+        // Set default request timeout if not specified
+        let requestTimeoutMs = Constants.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS;
+        if (opts && "requestTimeoutMs" in opts) {
+            requestTimeoutMs = opts.requestTimeoutMs!;
+        }
+
         // Get the scout instance
         getScout()
             .then(scout => {
@@ -83,28 +89,36 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                         req.scout = Object.assign(req.scout || {}, {request: req});
 
                         // Set up the request timeout
-                        let timeoutMs = Constants.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS;
-                        if (opts && opts.requestTimeoutMs) { timeoutMs = opts.requestTimeoutMs; }
-                        setTimeout(() => {
-                            // Tag the request as timed out
-                            scoutRequest
-                                .addTags([{name: "timeout", value: "true"}])
-                                .then(() => scoutRequest.finish())
-                                .catch(() => scoutRequest.finish());
-                        }, timeoutMs);
+                        if (requestTimeoutMs > 0) {
+                            setTimeout(() => {
+                                // Tag the request as timed out
+                                scoutRequest
+                                    .addTags([{name: "timeout", value: "true"}])
+                                    .then(() => scoutRequest.finish())
+                                    .catch(() => scoutRequest.finish());
+                            }, requestTimeoutMs);
+                        }
 
                         // Set up handler to act on end of request
                         onFinished(res, (err, res) => {
                             scoutRequest.finish();
                         });
 
+                        // Find routes that match the current URL
+                        const matchedRoutes = req.app._router.stack
+                            .filter((middleware: any) => {
+                                return middleware.route
+                                    && middleware.regexp
+                                    && middleware.regexp.test(req.url.toString());
+                            });
+
                         // Create a Controller/ span for the request
-                        const path = req.route.path;
-                        const method = req.method;
+                        const path = matchedRoutes.length > 0 ? matchedRoutes[0].route.path : "Unknown";
+                        const reqMethod = req.method.toUpperCase();
 
                         // Start a span for the request
                         scoutRequest
-                            .startChildSpan(`Controller/${method} ${path}`)
+                            .startChildSpan(`Controller/${reqMethod} ${path}`)
                             .then(rootSpan => {
                                 // Add the span to the request object
                                 Object.assign(req.scout, {rootSpan});
