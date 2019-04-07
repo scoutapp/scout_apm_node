@@ -1,43 +1,42 @@
-# Cookbook #
+# レシピー #
 
-A few patterns that you may find helpful if implementing instrumentation on a legacy application that might not have deeper Scout support.
+便利になるScoutの使い方の説明。
 
-## Database operations ##
+## データベース ##
 
-Expensive database operations can be traced in the context of a request (or even by themselves) by using `Scout` agent in the manual setting, or from inside a request:
+`Scout`オブジェクトを使うとリクエスト途中のデータベースのファンクションをトレース出来ます:
 
 ```typescript
 const express = require("express");
 const app = express();
 const scout = require("scout-apm-client").expressMiddleware;
 
-// ... your other set up code code ...
+// ... セットアップコード ...
 
-// Your custom endpoint
+// ルート
 app.use("/your-endpoint", (req, res) => {
-    // Start a scout span (one part of an overall request trace)
+    // Scoutのデータベーススパン開始
     req.scout
         .startSpan("Database/expensive-computation")
         .then(scoutSpan => {
 
-            // Perform your DB call (mongoose, pg, etc)
+            // データベース実行
             yourDatabaseClient
                 .expensiveComputation()
                 .then(result => {
-                    // Conclude the span (which will be rolled up into the request)
-                    scoutSpan.finish();
+                    scoutSpan.finish(); // スパン終了（エラーなし場合)
                     res.send(result);
                 })
                 .catch((err: Error) => {
-                    scoutSpan.finish();
+                    scoutSpan.finish(); // スパン終了(エラーあり場合)
 
-                    // // (OPTIONAL) Add custom tags to help with error classification
+                    // // (オプション) エラ情報のタグを付ける
                     // scoutSpan.tag([
                     //     {name: "error", value: true},
                     //     {name: "error.stack", value: err.stack},
                     // ]);
 
-                    // your custom error handler logic
+                    // エラーロジック
                     res.send(yourErrorResult)
                 });
 
@@ -45,9 +44,9 @@ app.use("/your-endpoint", (req, res) => {
 })
 ```
 
-## Template rendering ##
+## テンプレートのレンダリング ##
 
-When using a popular framework like [`pug`](https://github.com/pugjs/pug) and server-side generating text, you can use the `Scout` agent request in the manual setting
+[`pug`](https://github.com/pugjs/pug)や他のレンダリングライブラリを使ってる場合、`Scout`を使ってリクエストにレンダリングをトレース出来ます:
 
 ```
 const express = require("express");
@@ -56,23 +55,23 @@ const scout = require("scout-apm-client").expressMiddleware;
 
 const pug = require("pug");
 
-// ... your other set up code code ...
+// ... セットアップコード ...
 
-// Your custom endpoint
+// ルート
 app.use("/your-endpoint", (req, res) => {
-    // Start a scout span (one part of an overall request trace)
+    // Scoutのレンダリングスパン開始
     req.scout
         .startSpan("Template/template-generation")
         .then(scoutSpan => {
 
-            // Perform your templating
+            // テンプレートをロードとレンダリング
             var options = ....;
             var html = pug.renderFile("template.pug", options);
 
-            // Finish the scout span
+            // スパン終了
             scoutSpan.finish();
 
-            // // (OPTIONAL) tag the span with some information about the template that was rendered
+            // // (オプション) タッグでテンプレート情報保存
             // scoutSpan.tag([
             //   {name: "template.fileName", value: "template.pug"},
             // ]);

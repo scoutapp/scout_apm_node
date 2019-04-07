@@ -1,6 +1,6 @@
 # Testing #
 
-`scout-client` comes with a full suite of tests, to run all of them run:
+`scout-apm-client` comes with a full suite of tests, to run all of them run:
 
 ```shell
 $ make test
@@ -34,7 +34,7 @@ $ TEST_AGENT_KEY=<key> make test-e2e
 
 ## Testing out the `Agent` directly ##
 
-To probe/send messages to a running agent, you can use the `node`/`ts console. Assuming the project has been built, the following script can be used:
+To probe/send messages to a running agent, you can use the `node`/`ts` console. Assuming the project has been built, the following script can be used:
 
 ```nodejs
 $ node
