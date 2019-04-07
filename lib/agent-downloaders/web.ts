@@ -91,7 +91,6 @@ export class WebAgentDownloader implements AgentDownloader {
         ])
             .then(([versionedPathExists, inDirPathExists]: boolean[]) => {
                 if (!versionedPathExists && !inDirPathExists) {
-                    // TODO: info log cache miss for download
                     throw new Errors.UnexpectedError("Failed to find cached download");
                 }
 

@@ -24,6 +24,8 @@ export enum LogLevel {
     Error = "error",
 }
 
+export type LogFn = (message: string, level?: LogLevel) => void;
+
 export type JSONValue = object | string | number;
 
 export class ApplicationMetadata {

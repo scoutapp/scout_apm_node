@@ -1,5 +1,5 @@
 import * as onFinished from "on-finished";
-import { LogLevel, ScoutConfiguration } from "./types";
+import { LogLevel, ScoutConfiguration, LogFn } from "./types";
 import * as Constants from "./constants";
 import { Scout, ScoutRequest } from "./scout";
 
@@ -8,7 +8,6 @@ export interface ApplicationWithScout {
 }
 
 type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
-type LogFn = (message: string, level?: LogLevel) => void;
 
 /**
  * Default implementation for logging simple messages to console
