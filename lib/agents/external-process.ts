@@ -35,7 +35,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     private detachedProcess: ChildProcess;
     private stopped: boolean = true;
-    private logFn: LogFn = () => undefined;
+    private logFn: LogFn;
 
     constructor(opts: ProcessOptions, logFn?: LogFn) {
         super();
@@ -45,7 +45,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         }
         this.opts = opts;
 
-        if (logFn) { this.logFn = logFn; }
+        this.logFn = logFn ? logFn : () => undefined;
     }
 
     /** @see Agent */
