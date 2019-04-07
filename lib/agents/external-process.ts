@@ -157,7 +157,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         this.on(AgentEvent.SocketResponseReceived, listener);
 
                         // Send the message over the socket
-                        return socket.write(msg.toBinary());
+                        const result = socket.write(msg.toBinary());
+
+                        this.emit(AgentEvent.RequestSent, msg);
+                        return result;
                     },
 
                     // Socket acquisition failed
