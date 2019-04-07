@@ -16,6 +16,8 @@ import {
     AgentStatus,
     AgentType,
     ProcessOptions,
+    LogFn,
+    LogLevel,
 } from "../types";
 
 import { V1AgentResponse } from "../protocol/v1/responses";
@@ -33,14 +35,17 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     private detachedProcess: ChildProcess;
     private stopped: boolean = true;
+    private logFn: LogFn;
 
-    constructor(opts: ProcessOptions) {
+    constructor(opts: ProcessOptions, logFn?: LogFn) {
         super();
 
         if (!opts || !ProcessOptions.isValid(opts)) {
             throw new Errors.UnexpectedError("Invalid ProcessOptions object");
         }
         this.opts = opts;
+
+        this.logFn = logFn ? logFn : () => undefined;
     }
 
     /** @see Agent */
@@ -65,7 +70,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             .then(exists => {
                 // If the socket doesn't already exist, start the process as configured
                 if (!exists) { return this.startProcess(); }
-                // TODO: log a info message about the socket already being present
+                this.logFn("Socket already present", LogLevel.Warn);
                 return this;
             });
     }
@@ -254,20 +259,20 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         }
                     })
                     .catch(err => {
-                        // TODO: error log parse error
+                        this.logFn(`Socket response parse error:\n ${err}`, LogLevel.Error);
                         this.emit(AgentEvent.SocketResponseParseError, err);
                     });
             });
 
             // When socket closes emit information regarding closure
             socket.on("close", () => {
-                // TODO: debug log that the socket closed
+                this.logFn("Socket closed", LogLevel.Debug);
                 this.emit(AgentEvent.SocketDisconnected);
             });
 
             socket.on("error", err => {
                 this.emit(AgentEvent.SocketError, err);
-                // TODO: debug log about error during connection
+                this.logFn(`Socket connection error:\n${err}`, LogLevel.Error);
                 reject(err);
             });
         });
@@ -291,7 +296,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (this.opts.configFilePath) { args.push("--config-file", this.opts.configFilePath); }
         if (this.opts.logLevel) { args.push("--log-file", this.opts.logLevel); }
 
-        // TODO: log the child process cmd & args
+        this.logFn(`Child process command binary path: [${this.opts.binPath}]`, LogLevel.Debug);
+        this.logFn(`Child process command args: [${args}]`, LogLevel.Debug);
         this.detachedProcess = spawn(this.opts.binPath, args, {
             detached: true,
             stdio: "ignore",

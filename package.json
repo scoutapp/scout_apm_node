@@ -1,5 +1,5 @@
 {
-  "name": "scout-client",
+  "name": "scout-apm-client",
   "version": "0.1.0",
   "description": "Scout APM Node Client",
   "main": "index.js",

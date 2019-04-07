@@ -1,5 +1,5 @@
 import * as onFinished from "on-finished";
-import { LogLevel, ScoutConfiguration } from "./types";
+import { LogLevel, ScoutConfiguration, LogFn } from "./types";
 import * as Constants from "./constants";
 import { Scout, ScoutRequest } from "./scout";
 
@@ -8,7 +8,6 @@ export interface ApplicationWithScout {
 }
 
 type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
-type LogFn = (message: string, level?: LogLevel) => void;
 
 /**
  * Default implementation for logging simple messages to console
@@ -67,7 +66,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         if (!req.app.scout) {
             getScout = () => {
                 // Use custom scout configuration if provided
-                const config = opts && opts.config ? opts.config : new ScoutConfiguration();
+                const config = opts && opts.config ? opts.config : ScoutConfiguration.build();
                 req.app.scout = new Scout(config);
                 return req.app.scout.setup();
             };
