@@ -80,7 +80,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                     .startRequest()
                     .then((scoutRequest: ScoutRequest) => {
                         // Save the scout request onto the request object
-                        req.scout = {request: req};
+                        req.scout = Object.assign(req.scout || {}, {request: req});
 
                         // Set up the request timeout
                         let timeoutMs = Constants.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS;
@@ -98,7 +98,19 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                             scoutRequest.finish();
                         });
 
-                        next();
+                        // Create a Controller/ span for the request
+                        const path = req.route.path;
+                        const method = req.method;
+
+                        // Start a span for the request
+                        scoutRequest
+                            .startChildSpan(`Controller/${method} ${path}`)
+                            .then(rootSpan => {
+                                // Add the span to the request object
+                                Object.assign(req.scout, {rootSpan});
+                                next();
+                            })
+                            .catch(() => next());
                     })
                     .catch((err: Error) => {
                         if (opts && opts.logFn) {
