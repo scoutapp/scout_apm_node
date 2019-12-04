@@ -2,7 +2,7 @@
 				lint lint-watch build build-watch \
 				test test-unit test-int test-e2e
 
-all: build
+all: install build
 
 YARN ?= yarn
 NPM ?= npm
@@ -18,7 +18,7 @@ check-tool-entr:
 check-tool-yarn:
 	@which yarn > /dev/null || (echo -e "\n[ERROR] please install yarn (http://yarnpkg.com/)" && exit 1)
 
-yarn-install:
+install:
 	@echo -e "=> running yarn install..."
 	$(YARN) install
 
@@ -30,7 +30,7 @@ dist:
 	@echo -e "=> creating dist directory..."
 	mkdir -p dist
 
-dev-setup: dist yarn-install git-hook-install
+dev-setup: dist install git-hook-install
 
 lint:
 	$(YARN) lint
