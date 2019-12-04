@@ -606,7 +606,7 @@ export class ScoutConfiguration {
      */
     public buildDownloadOptions(): Partial<AgentDownloadOptions> {
         return {
-            disallowDownloads: this.coreAgentDownload,
+            disallowDownloads: !this.coreAgentDownload,
         };
     }
 }
