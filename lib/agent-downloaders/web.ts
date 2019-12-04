@@ -119,7 +119,13 @@ export class WebAgentDownloader implements AgentDownloader {
                 // Ensure we're not attempting to do a download if they're disallowed
                 if (opts && opts.disallowDownloads) { throw new Errors.ExternalDownloadDisallowed(); }
 
-                return download(adc.url, downloadDir, options);
+                // If a custom root URL is specified in the options, use it
+                let url = adc.url;
+                if (opts && opts.rootUrl && opts.coreAgentFullName) {
+                    url = `${opts.rootUrl}/${opts.coreAgentFullName}.tgz`;
+                }
+
+                return download(url, downloadDir, options);
             })
         // Ensure file download succeeded
             .then(() => fs.pathExists(expectedBinPath))

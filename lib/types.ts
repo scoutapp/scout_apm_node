@@ -307,10 +307,20 @@ export interface AgentDownloadOptions {
     // Directory to use for download cache, should either contain `core-agent`
     // or a subdirectory w/ the verison name
     cacheDir?: string;
+
     // Whether to update the cache
     updateCache?: boolean;
+
     // Disallow external downloads
     disallowDownloads?: boolean;
+
+    // Root URL to use for download (overrides default download URL provided by hardcorded download config)
+    // ex. "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release"
+    rootUrl?: string;
+
+    // Filename to be combined wiht the Root URL to use for download (does *not* include the extension, i.e. '.tgz')
+    // ex: "scout_apm_core-v1.1.8-x86_64-unknown-linux-gnu"
+    coreAgentFullName?: string;
 }
 
 export interface AgentDownloader {

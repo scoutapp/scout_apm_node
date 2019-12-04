@@ -83,3 +83,42 @@ test("cache is used by second download (v1.1.8)", t => {
         .then(() => t.end())
         .catch(t.end);
 });
+
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("download works with a custom root URL + agent full name", t => {
+    const downloader = new WebAgentDownloader();
+    const version = new CoreAgentVersion("1.1.8");
+    const opts: AgentDownloadOptions = {
+        coreAgentFullName: "scout_apm_core-v1.1.8-x86_64-unknown-linux-gnu",
+        rootUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
+    };
+
+    downloader
+        .download(version, opts)
+        .then(path => t.assert(path, `binary path is non-null (${path})`))
+        .then(() => t.end())
+        .catch(t.end);
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("download fails with invalid custom URL", t => {
+    const downloader = new WebAgentDownloader();
+    const version = new CoreAgentVersion("1.1.8");
+    const opts: AgentDownloadOptions = {
+        coreAgentFullName: "invalid.tgz",
+        rootUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
+    };
+
+    downloader
+        .download(version, opts)
+        .then(() => t.end(new Error("expected download() call to fail")))
+        .catch(err => {
+            if (err && err.name === "HTTPError" && err.statusCode === 404) {
+                t.pass("download failed with a 404");
+                t.end();
+                return;
+            }
+
+            t.end(err);
+        });
+});
