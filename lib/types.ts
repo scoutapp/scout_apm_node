@@ -421,6 +421,19 @@ export enum URIReportingLevel {
     PathOnly = "path-only",
 }
 
+/**
+ * Parse a string into a log level
+ *
+ * @throws Error if the log level is invalid
+ * @returns {LogLevel}
+ */
+export function parseLogLevel(lvl: string): LogLevel {
+    if (Object.values(LogLevel).includes(lvl as LogLevel)) {
+        return lvl as LogLevel;
+    }
+    throw new Error(`Invalid log level [${lvl}]`);
+}
+
 export class ScoutConfiguration {
     /**
      * Build a Scout configuration from environment variables available
@@ -434,8 +447,9 @@ export class ScoutConfiguration {
         if (env.SCOUT_KEY) { result.key = env.SCOUT_KEY; }
         if (env.SCOUT_REVISION_SHA) { result.revisionSHA = env.SCOUT_REVISION_SHA; }
 
-        if (env.SCOUT_LOG_LEVEL && Object.values(LogLevel).includes(env.SCOUT_LOG_LEVEL)) {
-            result.logLevel = env.SCOUT_LOG_LEVEL as LogLevel;
+        const logLevel = env.SCOUT_LOG_LEVEL;
+        if (typeof logLevel !== "undefined") {
+            result.logLevel = parseLogLevel(logLevel);
         }
 
         if (env.SCOUT_HTTP_PROXY) { result.httpProxy = env.SCOUT_HTTP_PROXY; }
@@ -449,9 +463,14 @@ export class ScoutConfiguration {
             result.collectRemoteIP = env.SCOUT_COLLECT_REMOTE_IP.toLowerCase() === "true";
         }
 
-        if (env.SCOUT_URI_REPORTING_LEVEL &&
-            Object.values(LogLevel).includes(env.URI_REPORTING_LEVEL)) {
-            result.uriReportingLevel = env.SCOUT_URI_REPORTING_LEVEL as URIReportingLevel;
+        const uriReportingLevel = env.SCOUT_URI_REPORTING_LEVEL;
+        if (typeof uriReportingLevel !== "undefined") {
+            result.uriReportingLevel = parseLogLevel(uriReportingLevel);
+        }
+
+        // Default is true so we look for anything other than that
+        if (env.SCOUT_CORE_AGENT_DOWNLOAD && env.SCOUT_CORE_AGENT_DOWNLOAD.toLowerCase() !== "true") {
+            result.coreAgentDownload = false;
         }
 
         return result;
@@ -505,6 +524,9 @@ export class ScoutConfiguration {
             result.uriReportingLevel = uriReportingLevel as URIReportingLevel;
         }
 
+        const coreAgentDownload = obj.get("scout.coreAgentDownload");
+        if (typeof coreAgentDownload !== "undefined") { result.coreAgentDownload = coreAgentDownload; }
+
         return result;
     }
 
@@ -545,6 +567,7 @@ export class ScoutConfiguration {
     // Agent
     public readonly agentVersion: string = "1.1.8";
     public readonly apiVersion: string = "1.0";
+    public readonly coreAgentDownload: boolean = true;
 
     // Machine information
     public readonly hostname: string = hostname();
@@ -569,6 +592,21 @@ export class ScoutConfiguration {
             if (opts.ignoredRoutePrefixes) { this.ignoredRoutePrefixes = opts.ignoredRoutePrefixes; }
             if (opts.collectRemoteIP) { this.collectRemoteIP = opts.collectRemoteIP; }
             if (opts.uriReportingLevel) { this.uriReportingLevel = opts.uriReportingLevel; }
+
+            // Boolean values
+            if (typeof opts.coreAgentDownload !== "undefined") { this.coreAgentDownload = opts.coreAgentDownload; }
         }
+    }
+
+    /**
+     * Build download options to be used with an AgentDownloader,
+     * based on the options provided to Scout at the top level.
+     *
+     * @returns {AgentDownloadOptions}
+     */
+    public buildDownloadOptions(): Partial<AgentDownloadOptions> {
+        return {
+            disallowDownloads: this.coreAgentDownload,
+        };
     }
 }

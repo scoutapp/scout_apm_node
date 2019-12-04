@@ -195,12 +195,17 @@ export class Scout {
     }
 
     public setup(): Promise<this> {
-        this.downloaderOptions = {
-            cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
-            updateCache: true,
-        };
         this.downloader = new WebAgentDownloader();
         this.coreAgentVersion = new CoreAgentVersion(this.config.agentVersion);
+
+        // Build options for download
+        this.downloaderOptions = Object.assign(
+            {
+                cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+                updateCache: true,
+            },
+            this.config.buildDownloadOptions(),
+        );
 
         // Download the appropriate binary
         return this.downloader
