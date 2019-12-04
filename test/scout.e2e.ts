@@ -248,3 +248,39 @@ test("Request auto close works (2 top level)", t => {
         .then(() => TestUtil.shutdownScout(t, scout))
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
+
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("Download disabling works via top level config", t => {
+    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+
+    t.fail("TODO");
+
+    scout
+        .setup()
+        .then(() => t.end())
+        .catch(t.end);
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("Launch disabling works via top level config", t => {
+    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+
+    t.fail("TODO");
+
+    scout
+        .setup()
+        .then(() => t.end())
+        .catch(t.end);
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("Custom version specification works via top level config", t => {
+    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+
+    t.fail("TODO");
+
+    scout
+        .setup()
+        .then(() => t.end())
+        .catch(t.end);
+});
