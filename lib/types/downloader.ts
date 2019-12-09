@@ -1,5 +1,5 @@
 import { AgentManifest, HashDigests, CoreAgentVersion } from "./agent";
-import { Platform } from "./enum";
+import { Platform, PlatformTriple } from "./enum";
 
 export interface AgentDownloadConfigs {
     [k: string]: AgentDownloadConfig[];
@@ -56,7 +56,7 @@ export interface AgentDownloadConfig {
     url: string;
     rawVersion: string;
     zipped: boolean;
-    platform: Platform;
+    platform: PlatformTriple;
     hash?: HashDigests;
     manifest?: AgentManifest;
 }

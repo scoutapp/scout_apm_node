@@ -226,7 +226,6 @@ class DerivedConfigSource implements ConfigSource {
     }
 }
 
-
 // Detect the machine architecture
 function detectArch(): Architecture {
     switch (getSystemArch()) {
@@ -234,12 +233,12 @@ function detectArch(): Architecture {
         case "x32": return Architecture.I686;
         default:
             return Architecture.Unknown;
-    };
+    }
 }
 
 // Retrieve the machine platform
 function detectPlatform(): Platform {
-    switch(getSystemPlatform()) {
+    switch (getSystemPlatform()) {
         case "linux": return isNonGlibcLinux ? Platform.LinuxMusl : Platform.LinuxGNU;
         case "darwin": return Platform.Darwin;
         default:

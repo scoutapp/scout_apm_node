@@ -7,13 +7,6 @@ export enum URIReportingLevel {
     PathOnly = "path-only",
 }
 
-export enum Platform {
-    GNULinux32 = "i686-unknown-linux-gnu",
-    GNULinux64 = "x86_64-unknown-linux-gnu",
-    MuslLinux64 = "x86_64-unknown-linux-musl",
-    AppleDarwin64 = "x86_64-apple-darwin",
-}
-
 export enum AgentType {
     Process = "process",
 }
@@ -115,4 +108,11 @@ export enum Platform {
     LinuxMusl = "unknown-linux-musl",
     Darwin = "apple-darwin",
     Unknown = "unknown",
+}
+
+export enum PlatformTriple {
+    GNULinux32 = "i686-unknown-linux-gnu",
+    GNULinux64 = "x86_64-unknown-linux-gnu",
+    MuslLinux64 = "x86_64-unknown-linux-musl",
+    AppleDarwin64 = "x86_64-apple-darwin",
 }
