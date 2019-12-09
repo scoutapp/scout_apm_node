@@ -9,7 +9,7 @@ import {
     parseLogLevel,
 } from "./enum";
 import { AgentDownloadOptions } from "./downloader";
-import { LogFn } from "./util";
+import { LogFn, convertCamelCaseToEnvVar } from "./util";
 
 import { isNonGlibcLinux } from "detect-libc";
 
@@ -87,7 +87,7 @@ export interface ScoutConfiguration {
     coreAgentFullName: string;
 }
 
-const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
+export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     key: "",
     name: "",
     appServer: "",
@@ -114,9 +114,6 @@ const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     scmSubdirectory: "",
     uriReporting: URIReportingLevel.FilteredParams,
 };
-
-// type ScoutConfigurationKeys = keyof typeof ScoutConfiguration;
-// type ScoutConfigurationValues = typeof ScoutConfiguration[ScoutConfigurationKeys];
 
 interface ConfigSource {
     // Get the name of the config source
@@ -153,6 +150,18 @@ class DefaultConfigSource implements ConfigSource {
     }
 }
 
+// List of transformations to use on certain ENV variables to create appropriate JS objects
+const ENV_TRANSFORMS = {
+    SCOUT_CORE_AGENT_LOG_LEVEL: parseLogLevel,
+    SCOUT_LOG_LEVEL: parseLogLevel,
+    SCOUT_CORE_AGENT_DOWNLOAD: v => v.toLowerCase() === "true",
+    SCOUT_CORE_AGENT_LAUNCH: v => v.toLowerCase() === "true",
+    SCOUT_CORE_AGENT_PERMISSIONS: v => parseInt(v, 10),
+    SCOUT_DISABLED_INSTRUMENTS: v => v.split(","),
+    SCOUT_IGNORE: v => v.split(","),
+    SCOUT_MONITOR: v => v.toLowerCase() === "true",
+};
+
 /**
  * EnvConfigSource returns the values set from the environment
  *
@@ -168,10 +177,13 @@ class EnvConfigSource implements ConfigSource {
     public getName() { return ConfigSourceName.Env; }
 
     public getConfigValue(prop: string): any {
-        const snakeCased = `SCOUT_${snakeCase(prop).toUpperCase()}`;
-        const val = this.env[snakeCased];
-        // TODO: need to convert *some* values of ENV to lists to a for some of the values (ex. lists), like:
-        // if (snakeCased in ENV_TRANSFORMS) { return ENV_TRANSFORMS[value](this.env[snakeCased]); }
+        const envVar = convertCamelCaseToEnvVar(prop);
+        let val = this.env[envVar];
+
+        if (typeof val !== "undefined" && envVar in ENV_TRANSFORMS) {
+            val = ENV_TRANSFORMS[envVar](val);
+        }
+
         return val;
     }
 
