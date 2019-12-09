@@ -103,3 +103,16 @@ export enum ConfigSourceName {
     Derived = "derived",
     Default = "default",
 }
+
+export enum Architecture {
+    X86_64 = "x86_64",
+    I686 = "i686",
+    Unknown = "unknown",
+}
+
+export enum Platform {
+    LinuxGNU = "unknown-linux-gnu",
+    LinuxMusl = "unknown-linux-musl",
+    Darwin = "apple-darwin",
+    Unknown = "unknown",
+}

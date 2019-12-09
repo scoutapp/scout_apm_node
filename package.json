@@ -53,6 +53,7 @@
     "@types/tape": "^4.2.33",
     "@types/tmp": "^0.0.34",
     "@types/uuid": "^3.4.4",
+    "detect-libc": "^1.0.3",
     "download": "^7.1.0",
     "fs-extra": "^7.0.1",
     "generic-pool": "^3.6.1",

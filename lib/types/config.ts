@@ -1,8 +1,17 @@
-import { hostname } from "os";
+import { hostname, arch as getSystemArch, platform as getSystemPlatform } from "os";
 
-import { LogLevel, URIReportingLevel, parseLogLevel, ConfigSourceName } from "./enum";
+import {
+    Architecture,
+    ConfigSourceName,
+    LogLevel,
+    Platform,
+    URIReportingLevel,
+    parseLogLevel,
+} from "./enum";
 import { AgentDownloadOptions } from "./downloader";
 import { LogFn } from "./util";
+
+import { isNonGlibcLinux } from "detect-libc";
 
 import * as Constants from "../constants";
 import { NotSupported } from "../errors";
@@ -160,8 +169,9 @@ class EnvConfigSource implements ConfigSource {
 
     public getConfigValue(prop: string): any {
         const snakeCased = `SCOUT_${snakeCase(prop).toUpperCase()}`;
-        const val = this.env[prop];
-        // TODO: need to convert to a for some of the values
+        const val = this.env[snakeCased];
+        // TODO: need to convert *some* values of ENV to lists to a for some of the values (ex. lists), like:
+        // if (snakeCased in ENV_TRANSFORMS) { return ENV_TRANSFORMS[value](this.env[snakeCased]); }
         return val;
     }
 
@@ -216,10 +226,42 @@ class DerivedConfigSource implements ConfigSource {
     }
 }
 
-function getArch() { return "TODO"; }
-function getPlatform() { return "TODO"; }
-function generateTriple() { return `${getArch()}-${getPlatform()}`; }
-function isValidTriple(triple?: string | undefined): boolean { return false; }
+
+// Detect the machine architecture
+function detectArch(): Architecture {
+    switch (getSystemArch()) {
+        case "x64": return Architecture.X86_64;
+        case "x32": return Architecture.I686;
+        default:
+            return Architecture.Unknown;
+    };
+}
+
+// Retrieve the machine platform
+function detectPlatform(): Platform {
+    switch(getSystemPlatform()) {
+        case "linux": return isNonGlibcLinux ? Platform.LinuxMusl : Platform.LinuxGNU;
+        case "darwin": return Platform.Darwin;
+        default:
+            return Platform.Unknown;
+    }
+}
+
+// Generate the architecture/platform triple
+function generateTriple() {
+    return `${detectArch()}-${detectPlatform()}`;
+}
+
+// Check if a triple is valid
+function isValidTriple(triple?: string | undefined): boolean {
+    if (!triple) { return false; }
+
+    const [arch, ...platformPieces] = triple.split("-");
+    const platform: string = platformPieces.join("-");
+
+    return Object.values(Architecture).includes(arch as Architecture)
+        && Object.values(Platform).includes(platform as Platform);
+}
 
 /**
  * NodeConfigSource returns values that are build/managed by the node process
