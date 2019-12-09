@@ -2,9 +2,9 @@
 
 Scoutのクライアントの設定は様々の方法で設定出来ます:
 
-- 設定ファイル (`scout.yaml`)
-- アプリケーション内(`ScoutConfiguration`)
 - 環境バリアブル
+- アプリケーション内(`ScoutConfiguration`)
+- デフォルト
 
 設定ファイルについては[Scoutのヘルプドキュメント](https://docs.scoutapm.com/)をご参照してください。
 
@@ -74,6 +74,18 @@ enum URIReportingLevel {
     PathOnly = "path-only",
 }
 ```
+
+## オーバーライド仕組み ##
+
+同時に環境バリアブルとアプリ内のバリューを設定する場合には、一番リストに早い方の勝ちです。
+
+例えば、設定状況が以下の場合:
+
+- 環境バリアブルの`SCOUT_NAME`を`my-app-from-env`にセットしました。
+- `Partial<ScoutConfiguration>` のオブジェクトを`{name: "my-app-from-app"}`にして、アプリ内に使う (例 `new Scout(buildScoutConfiguration({name: "my-app-from-app"}))`)
+- (`name`のデフォルトは`""`)
+
+Scoutのエージェントの`name`は`"my-app-from-env"`になります。環境バリアブルの方がアプリ内の設定とデフォルトバリューをオーバーライドします。
 
 ## プラグイン ##
 

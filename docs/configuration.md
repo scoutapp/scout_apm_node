@@ -2,9 +2,9 @@
 
 There are several levels of configuration for the Scout client:
 
-- Configuration file (`scout.yaml`)
-- In-application configuration
 - ENV variables
+- In-application configuration
+- Scout Defaults
 
 For information on configuration file syntax and ENV variables, see [Scout help documentation](https://docs.scoutapm.com/).
 
@@ -74,6 +74,18 @@ enum URIReportingLevel {
     PathOnly = "path-only",
 }
 ```
+
+## Override Behavior ##
+
+If a value is specified at both ENV and the application level, then the *top most* level overrides the lower layers.
+
+As an example, in a scenario where configuration is specified in the following manner:
+
+- the ENV variable `SCOUT_NAME` set to the value `my-app-from-env`
+- A `Partial<ScoutConfiguration>` with value `{name: "my-app-from-app"}` (i.e. `new Scout(buildScoutConfiguration({name: "my-app-from-app"}))`)
+- (without any action on your part the default value for `name` is `""`)
+
+The Scout agent will use a name of `"my-app-from-env"` -- the ENV value overrides the application-specified value, and the default.
 
 ## Integrations ##
 
