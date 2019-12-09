@@ -90,7 +90,7 @@ test("download works with a custom root URL + agent full name", t => {
     const version = new CoreAgentVersion("1.1.8");
     const opts: AgentDownloadOptions = {
         coreAgentFullName: "scout_apm_core-v1.1.8-x86_64-unknown-linux-gnu",
-        rootUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
+        downloadUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
     };
 
     downloader
@@ -106,7 +106,7 @@ test("download fails with invalid custom URL", t => {
     const version = new CoreAgentVersion("1.1.8");
     const opts: AgentDownloadOptions = {
         coreAgentFullName: "invalid.tgz",
-        rootUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
+        downloadUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
     };
 
     downloader

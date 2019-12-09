@@ -121,8 +121,8 @@ export class WebAgentDownloader implements AgentDownloader {
 
                 // If a custom root URL is specified in the options, use it
                 let url = adc.url;
-                if (opts && opts.rootUrl && opts.coreAgentFullName) {
-                    url = `${opts.rootUrl}/${opts.coreAgentFullName}.tgz`;
+                if (opts && opts.downloadUrl && opts.coreAgentFullName) {
+                    url = `${opts.downloadUrl}/${opts.coreAgentFullName}.tgz`;
                 }
 
                 return download(url, downloadDir, options);
