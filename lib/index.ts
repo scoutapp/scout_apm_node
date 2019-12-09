@@ -1,8 +1,8 @@
 export * from "./scout";
 
 export {
-    ScoutConfiguration,
     AgentEvent as ScoutAgentEvent,
+    buildScoutConfiguration,
 } from "./types";
 
 export {

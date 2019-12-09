@@ -96,3 +96,10 @@ export function parseLogLevel(lvl: string): LogLevel {
     }
     throw new Error(`Invalid log level [${lvl}]`);
 }
+
+export enum ConfigSourceName {
+    Env = "env",
+    Node = "node",
+    Derived = "derived",
+    Default = "default",
+}

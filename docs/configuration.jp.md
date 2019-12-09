@@ -15,7 +15,7 @@ Scoutのクライアントの設定は様々の方法で設定出来ます:
 ```typescript
 class ScoutConfiguration {
     // アプリのデータ
-    public readonly applicationName: string = "";
+    public readonly name: string = "";
     public readonly key: string = "";
     public readonly revisionSHA: string = "";
 
@@ -40,7 +40,7 @@ class ScoutConfiguration {
 ```
 | Value                  | Type                | Default             | Description                                                                                                       |
 |------------------------|---------------------|---------------------|-------------------------------------------------------------------------------------------------------------------|
-| `applicationName`      | `string`            | ""                  | アプリ名                                                                                                          |
+| `name`                 | `string`            | ""                  | アプリ名                                                                                                          |
 | `key`                  | `string`            | ""                  | Scoutのキー ([ScoutのAPMのダッシュボード](https://apm.scoutapp.com/home)にあります)                               |
 | `revisionSHA`          | `string`            | ""                  | アプリコードのSHAハッシュ                                                                                         |
 | `logLevel`             | `LogLevel`          | `"info"`            | ログのレベル                                                                                                      |

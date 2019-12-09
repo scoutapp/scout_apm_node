@@ -1,6 +1,6 @@
 import * as test from "tape";
 
-import { Scout, ScoutConfiguration, ScoutRequest, ScoutSpan } from "../lib";
+import { Scout, buildScoutConfiguration, ScoutRequest, ScoutSpan } from "../lib";
 import * as TestUtil from "./util";
 
 test("Scout object creation works without config", t => {
@@ -10,7 +10,7 @@ test("Scout object creation works without config", t => {
 });
 
 test("Scout object setup works without config", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     scout
         .setup()
@@ -22,7 +22,7 @@ test("Scout object setup works without config", t => {
 });
 
 test("Request can be created and finished", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
     let req: ScoutRequest;
 
     scout
@@ -45,7 +45,7 @@ test("Request can be created and finished", t => {
 });
 
 test("Single span request", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
     let req: ScoutRequest;
     let span: ScoutSpan;
 
@@ -75,7 +75,7 @@ test("Single span request", t => {
 });
 
 test("Multi span request (2 top level)", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     const spans: ScoutSpan[] = [];
     let req: ScoutRequest;
@@ -108,7 +108,7 @@ test("Multi span request (2 top level)", t => {
 });
 
 test("Multi span request (1 top level, 1 nested)", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     let req: ScoutRequest;
     let parent: ScoutSpan;
@@ -150,7 +150,7 @@ test("Multi span request (1 top level, 1 nested)", t => {
 });
 
 test("Parent Span auto close works (1 top level, 1 nested)", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     let req: ScoutRequest;
     let parent: ScoutSpan;
@@ -186,7 +186,7 @@ test("Parent Span auto close works (1 top level, 1 nested)", t => {
 });
 
 test("Request auto close works (1 top level, 1 nested)", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     let req: ScoutRequest;
     let parent: ScoutSpan;
@@ -219,7 +219,7 @@ test("Request auto close works (1 top level, 1 nested)", t => {
 });
 
 test("Request auto close works (2 top level)", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     let req: ScoutRequest;
     const spans: ScoutSpan[] = [];
@@ -251,7 +251,7 @@ test("Request auto close works (2 top level)", t => {
 
 // // https://github.com/scoutapp/scout_apm_node/issues/59
 // test("Download disabling works via top level config", t => {
-//     const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+//     const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
 //     t.fail("TODO");
 
@@ -263,7 +263,7 @@ test("Request auto close works (2 top level)", t => {
 
 // // https://github.com/scoutapp/scout_apm_node/issues/59
 // test("Launch disabling works via top level config", t => {
-//     const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+//     const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
 //     t.fail("TODO");
 
@@ -275,7 +275,7 @@ test("Request auto close works (2 top level)", t => {
 
 // // https://github.com/scoutapp/scout_apm_node/issues/59
 // test("Custom version specification works via top level config", t => {
-//     const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+//     const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
 //     t.fail("TODO");
 

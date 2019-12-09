@@ -15,7 +15,7 @@ In addition to checking/using configuration from the default areas, the `Scout` 
 ```typescript
 class ScoutConfiguration {
     // Application finger printing / auth
-    public readonly applicationName: string = "";
+    public readonly name: string = "";
     public readonly key: string = "";
     public readonly revisionSHA: string = "";
 
@@ -40,7 +40,7 @@ class ScoutConfiguration {
 ```
 | Value                  | Type                | Default             | Description                                                                                                                                      |
 |------------------------|---------------------|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| `applicationName`      | `string`            | ""                  | The name of your application                                                                                                                     |
+| `name`                 | `string`            | ""                  | The name of your application                                                                                                                     |
 | `key`                  | `string`            | ""                  | Your Scout key (you can find this [on your Scout APM dashboard](https://apm.scoutapp.com/home))                                                  |
 | `revisionSHA`          | `string`            | ""                  | The SHA hash of the revision of the source code you are deploying                                                                                |
 | `logLevel`             | `LogLevel`          | `"info"`            | The logging level to be used by the Scout instance                                                                                               |
