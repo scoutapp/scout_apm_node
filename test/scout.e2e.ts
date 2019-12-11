@@ -11,7 +11,7 @@ test("Scout object creation works without config", t => {
 });
 
 test("Scout object setup works without config", t => {
-    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}))
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     scout
         .setup()

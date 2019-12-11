@@ -326,7 +326,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (this.opts.disallowLaunch) {
             return Promise.reject(new Errors.AgentLaunchDisabled());
         }
-        
+
         // Build command and arguments
         const socketPath = this.getSocketPath();
         const args = ["start", "--socket", socketPath];
