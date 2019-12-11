@@ -201,6 +201,10 @@ export class Scout {
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
     }
 
+    public getCoreAgentVersion(): CoreAgentVersion {
+        return new CoreAgentVersion(this.coreAgentVersion.raw);
+    }
+
     public setup(): Promise<this> {
         this.downloader = new WebAgentDownloader({logFn: this.logFn});
         if (!this.config.coreAgentVersion) {

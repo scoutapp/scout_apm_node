@@ -290,14 +290,19 @@ test("Launch disabling works via top level config", t => {
         });
 });
 
-// // https://github.com/scoutapp/scout_apm_node/issues/59
-// test("Custom version specification works via top level config", t => {
-//     const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("Custom version specification works via top level config", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        coreAgentVersion: "v1.1.8", // older version (default is newer)
+        allowShutdown: true,
+    }));
 
-//     t.fail("TODO");
-
-//     scout
-//         .setup()
-//         .then(() => t.end())
-//         .catch(t.end);
-// });
+    scout
+        .setup()
+        .then(() => {
+            t.pass("setup succeeded with older version");
+            t.equals(scout.getCoreAgentVersion().raw, "1.1.8", "correct version has been used");
+        })
+        .then(() => TestUtil.shutdownScout(t, scout))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
