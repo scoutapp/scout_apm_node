@@ -15,6 +15,7 @@ export enum ErrorCode {
     ResourceAllocationFailureLimitExceeded,
     NotSupported,
     FinishedRequest,
+    DownloadDisabled,
 }
 
 class ScoutError extends Error {
@@ -162,5 +163,14 @@ export class FinishedRequest extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "Operation cannot be performed because the request is finished";
+    }
+}
+
+export class DownloadDisabled extends ScoutError {
+    public readonly code: number = ErrorCode.DownloadDisabled;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Downloading has been disabled (check configuration for more details)";
     }
 }

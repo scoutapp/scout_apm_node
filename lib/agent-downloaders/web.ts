@@ -47,6 +47,10 @@ export class WebAgentDownloader implements AgentDownloader {
     public download(v: CoreAgentVersion, opts?: AgentDownloadOptions): Promise<string> {
         let config: AgentDownloadConfig;
 
+        if (opts && opts.disallowDownloads) {
+            return Promise.reject(new Errors.DownloadDisabled());
+        }
+
         // Get the download configuration for the version
         return this.getDownloadConfigs(v)
             .then(configs => {

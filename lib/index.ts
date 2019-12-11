@@ -9,3 +9,5 @@ export {
     ExpressMiddlewareOptions as ScoutExpressOptions,
     scoutMiddleware as expressMiddleware,
 } from "./express";
+
+export * from "./errors";

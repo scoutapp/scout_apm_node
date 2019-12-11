@@ -1,6 +1,7 @@
 import * as test from "tape";
 
 import { Scout, buildScoutConfiguration, ScoutRequest, ScoutSpan } from "../lib";
+import { DownloadDisabled } from "../lib";
 import * as TestUtil from "./util";
 
 test("Scout object creation works without config", t => {
@@ -249,17 +250,25 @@ test("Request auto close works (2 top level)", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-// // https://github.com/scoutapp/scout_apm_node/issues/59
-// test("Download disabling works via top level config", t => {
-//     const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("Download disabling works via top level config", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        coreAgentDownload: false,
+        allowShutdown: true,
+    }));
 
-//     t.fail("TODO");
+    scout
+        .setup()
+        .then(() => Promise.reject(new Error("Download failure expected since downloading is disabled")))
+        .catch(err => {
+            if (!(err instanceof DownloadDisabled)) {
+                return TestUtil.shutdownScout(t, scout, err);
+            }
 
-//     scout
-//         .setup()
-//         .then(() => t.end())
-//         .catch(t.end);
-// });
+            t.pass("setup failed due to DownloadDisabled error");
+            return t.end();
+        });
+});
 
 // // https://github.com/scoutapp/scout_apm_node/issues/59
 // test("Launch disabling works via top level config", t => {
