@@ -322,6 +322,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
      // Start a detached process with the configured scout-agent binary
     private startProcess(): Promise<this> {
+        // If core agent launching has been disabled, don't start the process
+        if (this.opts.disallowLaunch) {
+            return Promise.reject(new Errors.AgentLaunchDisabled());
+        }
+        
         // Build command and arguments
         const socketPath = this.getSocketPath();
         const args = ["start", "--socket", socketPath];

@@ -10,6 +10,7 @@ import {
 } from "./enum";
 import { AgentDownloadOptions } from "./downloader";
 import { LogFn, convertCamelCaseToEnvVar } from "./util";
+import { ProcessOptions } from "./agent";
 
 import { isNonGlibcLinux } from "detect-libc";
 
@@ -363,7 +364,19 @@ export function buildScoutConfiguration(
 export function buildDownloadOptions(config: Partial<ScoutConfiguration>): Partial<AgentDownloadOptions> {
     return {
         coreAgentFullName: config.coreAgentFullName,
-        disallowDownloads: !config.coreAgentDownload,
+        disallowDownload: !config.coreAgentDownload,
         downloadUrl: config.downloadUrl,
+    };
+}
+
+/**
+ * Build download options to be used with an AgentDownloader,
+ * based on the options provided to Scout at the top level.
+ *
+ * @returns {ProcessOptions}
+ */
+export function buildProcessOptions(config: Partial<ScoutConfiguration>): Partial<ProcessOptions> {
+    return {
+        disallowLaunch: !config.coreAgentLaunch,
     };
 }

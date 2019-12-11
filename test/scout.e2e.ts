@@ -1,7 +1,7 @@
 import * as test from "tape";
 
 import { Scout, buildScoutConfiguration, ScoutRequest, ScoutSpan } from "../lib";
-import { DownloadDisabled, consoleLogFn } from "../lib";
+import { DownloadDisabled, AgentLaunchDisabled, consoleLogFn } from "../lib";
 import * as TestUtil from "./util";
 
 test("Scout object creation works without config", t => {
@@ -270,17 +270,25 @@ test("Download disabling works via top level config", t => {
         });
 });
 
-// // https://github.com/scoutapp/scout_apm_node/issues/59
-// test("Launch disabling works via top level config", t => {
-//     const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("Launch disabling works via top level config", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        coreAgentLaunch: false,
+        allowShutdown: true,
+    }));
 
-//     t.fail("TODO");
+    scout
+        .setup()
+        .then(() => Promise.reject(new Error("Agent launch failure expected since launching is disabled")))
+        .catch(err => {
+            if (!(err instanceof AgentLaunchDisabled)) {
+                return TestUtil.shutdownScout(t, scout, err);
+            }
 
-//     scout
-//         .setup()
-//         .then(() => t.end())
-//         .catch(t.end);
-// });
+            t.pass("setup failed due to LaunchDisabled error");
+            return t.end();
+        });
+});
 
 // // https://github.com/scoutapp/scout_apm_node/issues/59
 // test("Custom version specification works via top level config", t => {

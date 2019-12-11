@@ -69,7 +69,7 @@ test("cache is used by second download (v1.1.8)", t => {
         .then(path => t.assert(path, "first download worked (should update cache)"))
     // Download again, but disallow external downloads
         .then(() => {
-            opts.disallowDownloads = true;
+            opts.disallowDownload = true;
             // Re-download relying on cache (ExternalDownloadDisallowed error thrown otherwise)
             return downloader.download(version, opts);
         })

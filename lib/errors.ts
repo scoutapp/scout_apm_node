@@ -17,6 +17,7 @@ export enum ErrorCode {
     FinishedRequest,
     DownloadDisabled,
     ConnectionPoolDisabled,
+    AgentLaunchDisabled,
 }
 
 class ScoutError extends Error {
@@ -182,5 +183,14 @@ export class ConnectionPoolDisabled extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "The connection pool has been disabled (likely from too many connection failures)";
+    }
+}
+
+export class AgentLaunchDisabled extends ScoutError {
+    public readonly code: number = ErrorCode.AgentLaunchDisabled;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Agent launching has been disabled";
     }
 }

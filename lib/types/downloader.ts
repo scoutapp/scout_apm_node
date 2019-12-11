@@ -17,7 +17,7 @@ export interface AgentDownloadOptions {
     updateCache?: boolean;
 
     // Disallow external downloads
-    disallowDownloads?: boolean;
+    disallowDownload?: boolean;
 
     // Root URL to use for download (overrides default download URL provided by hardcorded download config)
     // ex. "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release"

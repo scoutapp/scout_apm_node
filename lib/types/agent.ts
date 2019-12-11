@@ -199,6 +199,7 @@ export class ProcessOptions {
     public readonly logLevel?: LogLevel;
     public readonly logFilePath?: string;
     public readonly configFilePath?: string;
+    public readonly disallowLaunch?: boolean;
 
     // Customize conection pool
     public readonly connPoolOpts?: ConnectionPoolOptions = Constants.DEFAULT_CONNECTION_POOL_OPTS;
@@ -212,6 +213,7 @@ export class ProcessOptions {
             if (opts.logFilePath) { this.logFilePath = opts.logFilePath; }
             if (opts.configFilePath) { this.configFilePath = opts.configFilePath; }
             if (opts.connPoolOpts) { this.connPoolOpts = opts.connPoolOpts; }
+            if (opts.disallowLaunch) { this.disallowLaunch = opts.disallowLaunch; }
         }
     }
 

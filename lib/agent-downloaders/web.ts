@@ -60,7 +60,7 @@ export class WebAgentDownloader implements AgentDownloader {
     public download(v: CoreAgentVersion, opts?: AgentDownloadOptions): Promise<string> {
         let config: AgentDownloadConfig;
 
-        if (opts && opts.disallowDownloads) {
+        if (opts && opts.disallowDownload) {
             return Promise.reject(new Errors.DownloadDisabled());
         }
 
@@ -134,7 +134,7 @@ export class WebAgentDownloader implements AgentDownloader {
                 const options = {extract: adc.zipped};
 
                 // Ensure we're not attempting to do a download if they're disallowed
-                if (opts && opts.disallowDownloads) { throw new Errors.ExternalDownloadDisallowed(); }
+                if (opts && opts.disallowDownload) { throw new Errors.ExternalDownloadDisallowed(); }
 
                 // If a custom root URL is specified in the options, use it
                 let url = adc.url;
