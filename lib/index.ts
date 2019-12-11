@@ -3,6 +3,7 @@ export * from "./scout";
 export {
     AgentEvent as ScoutAgentEvent,
     buildScoutConfiguration,
+    consoleLogFn,
 } from "./types";
 
 export {

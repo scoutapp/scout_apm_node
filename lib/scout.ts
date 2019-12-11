@@ -201,7 +201,7 @@ export class Scout {
     }
 
     public setup(): Promise<this> {
-        this.downloader = new WebAgentDownloader();
+        this.downloader = new WebAgentDownloader({logFn: this.logFn});
         if (!this.config.coreAgentVersion) {
             throw new Error("No core agent version specified!");
         }
@@ -226,15 +226,20 @@ export class Scout {
                     path.dirname(this.binPath),
                     "core-agent.sock",
                 );
+                this.logFn(`[scout] using socket path [${this.socketPath}]`, LogLevel.Debug);
             })
         // Build options for the agent and create the agent
             .then(() => {
                 this.processOptions = new ProcessOptions(this.binPath, this.getSocketPath());
-                this.agent = new ExternalProcessAgent(this.processOptions);
+                this.agent = new ExternalProcessAgent(this.processOptions, this.logFn);
+                this.logFn(`[scout] starting process w/ bin @ path [${this.binPath}]`, LogLevel.Debug);
+                this.logFn(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, LogLevel.Debug);
             })
         // Start, connect, and register
             .then(() => this.agent.start())
+            .then(() => this.logFn("[scout] agent successfully started", LogLevel.Debug))
             .then(() => this.agent.connect())
+            .then(() => this.logFn("[scout] successfully connected to agent", LogLevel.Debug))
             .then(() => {
                 if (!this.config.name) {
                     this.logFn("[name] configuration value missing", LogLevel.Warn);

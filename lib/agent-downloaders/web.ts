@@ -8,12 +8,25 @@ import * as fs from "fs-extra";
 // tslint:disable-next-line no-var-requires
 const hasha = require("hasha");
 
-import { AgentDownloadOptions, CoreAgentVersion, AgentDownloader, AgentDownloadConfig } from "../types";
+import {
+    AgentDownloadConfig,
+    AgentDownloadOptions,
+    AgentDownloader,
+    CoreAgentVersion,
+    LogFn,
+    LogLevel,
+} from "../types";
 import * as Errors from "../errors";
 import * as Constants from "../constants";
 import DownloadConfigs from "../download-configs";
 
 export class WebAgentDownloader implements AgentDownloader {
+    private logFn: LogFn;
+
+    constructor(opts?: {logFn: LogFn}) {
+        this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
+    }
+
     /** @see AgentDownloader */
     public getDownloadConfigs(v: CoreAgentVersion): Promise<AgentDownloadConfig[]> {
         const rawVersion = v.raw;
@@ -67,7 +80,7 @@ export class WebAgentDownloader implements AgentDownloader {
             .then(() => {
                 // Attempt to retrieve the binary from cache
                 // use regular download if that fails
-                if (opts && opts.cacheDir) {
+                if (opts && !opts.disableCache && opts.cacheDir) {
                     return this.getCachedBinaryPath(opts.cacheDir, v, config)
                         .catch(() => this.downloadFromConfig(config, opts));
                 }
@@ -128,6 +141,7 @@ export class WebAgentDownloader implements AgentDownloader {
                 if (opts && opts.downloadUrl && opts.coreAgentFullName) {
                     url = `${opts.downloadUrl}/${opts.coreAgentFullName}.tgz`;
                 }
+                this.logFn(`[scout/agent-downloader/web] Downloading from URL [${url}]`, LogLevel.Debug);
 
                 return download(url, downloadDir, options);
             })

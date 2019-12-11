@@ -16,6 +16,7 @@ export enum ErrorCode {
     NotSupported,
     FinishedRequest,
     DownloadDisabled,
+    ConnectionPoolDisabled,
 }
 
 class ScoutError extends Error {
@@ -172,5 +173,14 @@ export class DownloadDisabled extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "Downloading has been disabled (check configuration for more details)";
+    }
+}
+
+export class ConnectionPoolDisabled extends ScoutError {
+    public readonly code: number = ErrorCode.ConnectionPoolDisabled;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "The connection pool has been disabled (likely from too many connection failures)";
     }
 }

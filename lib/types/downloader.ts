@@ -6,6 +6,9 @@ export interface AgentDownloadConfigs {
 }
 
 export interface AgentDownloadOptions {
+    // Whether or not to disable the cache
+    disableCache?: boolean;
+
     // Directory to use for download cache, should either contain `core-agent`
     // or a subdirectory w/ the verison name
     cacheDir?: string;
