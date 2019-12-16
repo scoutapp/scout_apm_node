@@ -1,5 +1,5 @@
 import * as onFinished from "on-finished";
-import { LogLevel, ScoutConfiguration, LogFn } from "./types";
+import { LogLevel, ScoutConfiguration, buildScoutConfiguration, LogFn, consoleLogFn } from "./types";
 import * as Constants from "./constants";
 import { Scout, ScoutRequest } from "./scout";
 
@@ -9,35 +9,8 @@ export interface ApplicationWithScout {
 
 type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
 
-/**
- * Default implementation for logging simple messages to console
- *
- * @param {string} message
- * @param {LogLevel} level
- */
-export function consoleLogFn(message: string, level?: LogLevel) {
-    level = level || LogLevel.Info;
-
-    switch (level) {
-        case LogLevel.Warn:
-            console.warn(message); // tslint:disable-line no-console
-            break;
-        case LogLevel.Error:
-            console.error(message); // tslint:disable-line no-console
-            break;
-        case LogLevel.Debug:
-            console.debug(message); // tslint:disable-line no-console
-            break;
-        case LogLevel.Trace:
-            console.trace(message); // tslint:disable-line no-console
-            break;
-        default:
-            console.log(message); // tslint:disable-line no-console
-    }
-}
-
 export interface ExpressMiddlewareOptions {
-    config?: ScoutConfiguration;
+    config?: Partial<ScoutConfiguration>;
     requestTimeoutMs?: number;
     logFn?: LogFn;
 }
@@ -66,7 +39,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         if (!req.app.scout) {
             getScout = () => {
                 // Use custom scout configuration if provided
-                const config = opts && opts.config ? opts.config : ScoutConfiguration.build();
+                const config = opts && opts.config ? opts.config : buildScoutConfiguration();
                 req.app.scout = new Scout(config);
                 return req.app.scout.setup();
             };

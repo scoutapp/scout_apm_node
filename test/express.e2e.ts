@@ -4,14 +4,14 @@ import * as request from "supertest";
 
 import { Application } from "express";
 import { scoutMiddleware, ApplicationWithScout } from "../lib/express";
-import { AgentEvent, ScoutConfiguration, AgentRequest, AgentRequestType } from "../lib/types";
+import { AgentEvent, buildScoutConfiguration, AgentRequest, AgentRequestType } from "../lib/types";
 import { Scout } from "../lib/scout";
 import { V1StartSpan } from "../lib/protocol/v1/requests";
 
 test("Simple operation", t => {
     // Create an application and setup scout middleware
     const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(scoutMiddleware({
-        config: new ScoutConfiguration({
+        config: buildScoutConfiguration({
             allowShutdown: true,
         }),
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
@@ -65,7 +65,7 @@ test("Simple operation", t => {
 test("Dynamic segment routes", t => {
     // Create an application and setup scout middleware
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
-        config: new ScoutConfiguration({
+        config: buildScoutConfiguration({
             allowShutdown: true,
         }),
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging

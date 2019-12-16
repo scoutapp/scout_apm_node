@@ -12,7 +12,11 @@ import {
     AgentDownloadOptions,
     CoreAgentVersion,
     ProcessOptions,
+    ScoutConfiguration,
+    buildScoutConfiguration,
+    convertCamelCaseToEnvVar,
 } from "../lib/types";
+import { DEFAULT_SCOUT_CONFIGURATION } from "../lib/types/config";
 import { Scout } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
@@ -144,4 +148,51 @@ export function simpleDynamicSegmentExpressApp(middleware: any, delayMs: number 
     });
 
     return app;
+}
+
+// Test that a given variable is effectively overlaid in the configuration
+export function testConfigurationOverlay(
+    t: Test,
+    opts: {
+        appKey: string,
+        envValue: string,
+        expectedValue: any,
+    },
+): void {
+    const {appKey, envValue, expectedValue} = opts;
+    const envKey = convertCamelCaseToEnvVar(appKey);
+
+    const defaultConfig = buildScoutConfiguration();
+    t.assert(defaultConfig, "defaultConfig was generated");
+    if (appKey in DEFAULT_SCOUT_CONFIGURATION) {
+        t.equals(defaultConfig[appKey], DEFAULT_SCOUT_CONFIGURATION[appKey], `config [${appKey}] matches default`);
+    }
+
+    // Set key at the application level
+    const appConfig: Partial<ScoutConfiguration> = {};
+    appConfig[appKey] = expectedValue;
+
+    const appOnlyConfig = buildScoutConfiguration(appConfig);
+    t.assert(appOnlyConfig, "appOnlyConfig was generated");
+    t.equals(appOnlyConfig[appKey], expectedValue, `config [${appKey}] matches app value when set by app`);
+
+    // Save the previous ENV value
+    const wasPresent = envKey in process.env;
+    const previousKeyValue = process.env[envKey];
+
+    process.env[envKey] = envValue;
+
+    // FUTURE: we could also *simulate* process.env here by passing in {env: {...}} to buildScoutConfiguration
+    // since we're not trying to do parallel tests yet (env will be changed and reset serially), it's fine
+    const envOverrideConfig = buildScoutConfiguration(appConfig);
+    t.assert(envOverrideConfig, "envOverrideConfig was generated");
+    t.deepEquals(envOverrideConfig[appKey], expectedValue, `config [${appKey}] matches app value when set by app`);
+
+    // Reset the env value
+    // Set key to the previous value if it was present
+    if (wasPresent) {
+        process.env[envKey] = previousKeyValue;
+    } else {
+        delete process.env[envKey];
+    }
 }

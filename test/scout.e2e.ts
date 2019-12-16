@@ -1,6 +1,7 @@
 import * as test from "tape";
 
-import { Scout, ScoutConfiguration, ScoutRequest, ScoutSpan } from "../lib";
+import { Scout, buildScoutConfiguration, ScoutRequest, ScoutSpan } from "../lib";
+import { DownloadDisabled, AgentLaunchDisabled, consoleLogFn } from "../lib";
 import * as TestUtil from "./util";
 
 test("Scout object creation works without config", t => {
@@ -10,7 +11,7 @@ test("Scout object creation works without config", t => {
 });
 
 test("Scout object setup works without config", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     scout
         .setup()
@@ -22,7 +23,7 @@ test("Scout object setup works without config", t => {
 });
 
 test("Request can be created and finished", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
     let req: ScoutRequest;
 
     scout
@@ -45,7 +46,7 @@ test("Request can be created and finished", t => {
 });
 
 test("Single span request", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
     let req: ScoutRequest;
     let span: ScoutSpan;
 
@@ -75,7 +76,7 @@ test("Single span request", t => {
 });
 
 test("Multi span request (2 top level)", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     const spans: ScoutSpan[] = [];
     let req: ScoutRequest;
@@ -108,7 +109,7 @@ test("Multi span request (2 top level)", t => {
 });
 
 test("Multi span request (1 top level, 1 nested)", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     let req: ScoutRequest;
     let parent: ScoutSpan;
@@ -150,7 +151,7 @@ test("Multi span request (1 top level, 1 nested)", t => {
 });
 
 test("Parent Span auto close works (1 top level, 1 nested)", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     let req: ScoutRequest;
     let parent: ScoutSpan;
@@ -186,7 +187,7 @@ test("Parent Span auto close works (1 top level, 1 nested)", t => {
 });
 
 test("Request auto close works (1 top level, 1 nested)", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     let req: ScoutRequest;
     let parent: ScoutSpan;
@@ -219,7 +220,7 @@ test("Request auto close works (1 top level, 1 nested)", t => {
 });
 
 test("Request auto close works (2 top level)", t => {
-    const scout = new Scout(new ScoutConfiguration({allowShutdown: true}));
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
 
     let req: ScoutRequest;
     const spans: ScoutSpan[] = [];
@@ -245,6 +246,63 @@ test("Request auto close works (2 top level)", t => {
             t.assert(req.isStopped(), "request is stopped");
         })
     // Teardown and end test
+        .then(() => TestUtil.shutdownScout(t, scout))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("Download disabling works via top level config", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        coreAgentDownload: false,
+        allowShutdown: true,
+    }));
+
+    scout
+        .setup()
+        .then(() => Promise.reject(new Error("Download failure expected since downloading is disabled")))
+        .catch(err => {
+            if (!(err instanceof DownloadDisabled)) {
+                return TestUtil.shutdownScout(t, scout, err);
+            }
+
+            t.pass("setup failed due to DownloadDisabled error");
+            return t.end();
+        });
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("Launch disabling works via top level config", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        coreAgentLaunch: false,
+        allowShutdown: true,
+    }));
+
+    scout
+        .setup()
+        .then(() => Promise.reject(new Error("Agent launch failure expected since launching is disabled")))
+        .catch(err => {
+            if (!(err instanceof AgentLaunchDisabled)) {
+                return TestUtil.shutdownScout(t, scout, err);
+            }
+
+            t.pass("setup failed due to LaunchDisabled error");
+            return t.end();
+        });
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/59
+test("Custom version specification works via top level config", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        coreAgentVersion: "v1.1.8", // older version (default is newer)
+        allowShutdown: true,
+    }));
+
+    scout
+        .setup()
+        .then(() => {
+            t.pass("setup succeeded with older version");
+            t.equals(scout.getCoreAgentVersion().raw, "1.1.8", "correct version has been used");
+        })
         .then(() => TestUtil.shutdownScout(t, scout))
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });

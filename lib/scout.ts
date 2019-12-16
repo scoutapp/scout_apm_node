@@ -6,8 +6,13 @@ import {
     AgentDownloadOptions,
     AgentDownloader,
     CoreAgentVersion,
+    LogFn,
+    LogLevel,
     ProcessOptions,
     ScoutConfiguration,
+    buildDownloadOptions,
+    buildProcessOptions,
+    buildScoutConfiguration,
 } from "./types";
 import WebAgentDownloader from "./agent-downloaders/web";
 import ExternalProcessAgent from "./agents/external-process";
@@ -179,28 +184,43 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
 }
 
 export class Scout {
-    private readonly config: ScoutConfiguration;
+    private readonly config: Partial<ScoutConfiguration>;
 
     private downloader: AgentDownloader;
     private downloaderOptions: AgentDownloadOptions;
     private binPath: string;
     private socketPath: string;
+    private logFn: LogFn;
 
     private coreAgentVersion: CoreAgentVersion;
     private agent: ExternalProcessAgent;
     private processOptions: ProcessOptions;
 
-    constructor(config?: ScoutConfiguration) {
-        this.config = config || ScoutConfiguration.build();
+    constructor(config?: Partial<ScoutConfiguration>, opts?: {logFn?: LogFn}) {
+        this.config = config || buildScoutConfiguration();
+        this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
+    }
+
+    public getCoreAgentVersion(): CoreAgentVersion {
+        return new CoreAgentVersion(this.coreAgentVersion.raw);
     }
 
     public setup(): Promise<this> {
-        this.downloaderOptions = {
-            cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
-            updateCache: true,
-        };
-        this.downloader = new WebAgentDownloader();
-        this.coreAgentVersion = new CoreAgentVersion(this.config.agentVersion);
+        this.downloader = new WebAgentDownloader({logFn: this.logFn});
+        if (!this.config.coreAgentVersion) {
+            throw new Error("No core agent version specified!");
+        }
+        this.coreAgentVersion = new CoreAgentVersion(this.config.coreAgentVersion);
+
+        // Build options for download
+        this.downloaderOptions = Object.assign(
+            {
+                cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+                updateCache: true,
+            },
+
+            buildDownloadOptions(this.config),
+        );
 
         // Download the appropriate binary
         return this.downloader
@@ -211,20 +231,41 @@ export class Scout {
                     path.dirname(this.binPath),
                     "core-agent.sock",
                 );
+                this.logFn(`[scout] using socket path [${this.socketPath}]`, LogLevel.Debug);
             })
         // Build options for the agent and create the agent
             .then(() => {
-                this.processOptions = new ProcessOptions(this.binPath, this.getSocketPath());
-                this.agent = new ExternalProcessAgent(this.processOptions);
+                this.processOptions = new ProcessOptions(
+                    this.binPath,
+                    this.getSocketPath(),
+                    buildProcessOptions(this.config),
+                );
+
+                this.agent = new ExternalProcessAgent(this.processOptions, this.logFn);
             })
         // Start, connect, and register
-            .then(() => this.agent.start())
+            .then(() => {
+                this.logFn(`[scout] starting process w/ bin @ path [${this.binPath}]`, LogLevel.Debug);
+                this.logFn(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, LogLevel.Debug);
+                return this.agent.start();
+            })
+            .then(() => this.logFn("[scout] agent successfully started", LogLevel.Debug))
             .then(() => this.agent.connect())
-            .then(() => this.agent.send(new Requests.V1Register(
-                this.config.applicationName,
-                this.config.key,
-                APIVersion.V1,
-            )))
+            .then(() => this.logFn("[scout] successfully connected to agent", LogLevel.Debug))
+            .then(() => {
+                if (!this.config.name) {
+                    this.logFn("[name] configuration value missing", LogLevel.Warn);
+                }
+                if (!this.config.key) {
+                    this.logFn("[key] missing in configuration", LogLevel.Warn);
+                }
+
+                return this.agent.send(new Requests.V1Register(
+                    this.config.name || "",
+                    this.config.key || "",
+                    APIVersion.V1,
+                ));
+            })
             .then(() => this);
     }
 

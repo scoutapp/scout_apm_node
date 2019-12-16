@@ -8,12 +8,25 @@ import * as fs from "fs-extra";
 // tslint:disable-next-line no-var-requires
 const hasha = require("hasha");
 
-import { AgentDownloadOptions, CoreAgentVersion, AgentDownloader, AgentDownloadConfig } from "../types";
+import {
+    AgentDownloadConfig,
+    AgentDownloadOptions,
+    AgentDownloader,
+    CoreAgentVersion,
+    LogFn,
+    LogLevel,
+} from "../types";
 import * as Errors from "../errors";
 import * as Constants from "../constants";
 import DownloadConfigs from "../download-configs";
 
 export class WebAgentDownloader implements AgentDownloader {
+    private logFn: LogFn;
+
+    constructor(opts?: {logFn: LogFn}) {
+        this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
+    }
+
     /** @see AgentDownloader */
     public getDownloadConfigs(v: CoreAgentVersion): Promise<AgentDownloadConfig[]> {
         const rawVersion = v.raw;
@@ -47,6 +60,10 @@ export class WebAgentDownloader implements AgentDownloader {
     public download(v: CoreAgentVersion, opts?: AgentDownloadOptions): Promise<string> {
         let config: AgentDownloadConfig;
 
+        if (opts && opts.disallowDownload) {
+            return Promise.reject(new Errors.DownloadDisabled());
+        }
+
         // Get the download configuration for the version
         return this.getDownloadConfigs(v)
             .then(configs => {
@@ -63,7 +80,7 @@ export class WebAgentDownloader implements AgentDownloader {
             .then(() => {
                 // Attempt to retrieve the binary from cache
                 // use regular download if that fails
-                if (opts && opts.cacheDir) {
+                if (opts && !opts.disableCache && opts.cacheDir) {
                     return this.getCachedBinaryPath(opts.cacheDir, v, config)
                         .catch(() => this.downloadFromConfig(config, opts));
                 }
@@ -117,9 +134,16 @@ export class WebAgentDownloader implements AgentDownloader {
                 const options = {extract: adc.zipped};
 
                 // Ensure we're not attempting to do a download if they're disallowed
-                if (opts && opts.disallowDownloads) { throw new Errors.ExternalDownloadDisallowed(); }
+                if (opts && opts.disallowDownload) { throw new Errors.ExternalDownloadDisallowed(); }
 
-                return download(adc.url, downloadDir, options);
+                // If a custom root URL is specified in the options, use it
+                let url = adc.url;
+                if (opts && opts.downloadUrl && opts.coreAgentFullName) {
+                    url = `${opts.downloadUrl}/${opts.coreAgentFullName}.tgz`;
+                }
+                this.logFn(`[scout/agent-downloader/web] Downloading from URL [${url}]`, LogLevel.Debug);
+
+                return download(url, downloadDir, options);
             })
         // Ensure file download succeeded
             .then(() => fs.pathExists(expectedBinPath))

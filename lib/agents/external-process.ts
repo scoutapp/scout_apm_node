@@ -29,6 +29,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private pool: Pool<Socket>;
     private poolErrors: Error[] = [];
     private maxPoolErrors: number = 5;
+    private poolDisabled: boolean = false;
 
     private socketConnected: boolean = false;
     private socketConnectionAttempts: number = 0;
@@ -70,13 +71,15 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             .then(exists => {
                 // If the socket doesn't already exist, start the process as configured
                 if (!exists) { return this.startProcess(); }
-                this.logFn("Socket already present", LogLevel.Warn);
+                this.logFn("[scout/external-process] Socket already present", LogLevel.Warn);
                 return this;
             });
     }
 
     /** @see Agent */
     public connect(): Promise<AgentStatus> {
+        this.logFn("[scout/external-process] connecting to agent", LogLevel.Debug);
+
         // Initialize the pool if not already present
         return (this.pool ? Promise.resolve(this.pool) : this.initPool())
             .then(() => this.status());
@@ -85,10 +88,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     /** @see Agent */
     public disconnect(): Promise<AgentStatus> {
         if (!this.pool) { return this.status(); }
-
         return new Promise((resolve, reject) => {
             // :( generic-pool uses PromiseLike, and it's usage is *awkward*.
-            this.pool.drain()
+            this.pool
+                .drain()
                 .then(
                     () => this.pool.clear(),
                     err => { throw err; },
@@ -204,7 +207,15 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         }
 
         this.pool = createPool({
-            create: () => this.createDomainSocket(),
+            create: () => {
+                // If the pool is disabled we need to disconnect it and
+                if (this.poolDisabled) {
+                    return this.disconnect()
+                        .then(() => Promise.reject(new Errors.ConnectionPoolDisabled()));
+                }
+
+                return this.createDomainSocket();
+            },
             destroy: (socket) => Promise.resolve(socket.destroy()),
             validate: (socket) => Promise.resolve(!socket.destroyed),
         });
@@ -212,7 +223,26 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         this.pool.on("factoryCreateError", err => {
             this.poolErrors.push(err);
 
-            // Stop the pool if it fails too many times (and the agent is not stopped)
+            // If connection is refused X times we need to stop trying
+            if ((err as any).code === "ECONNREFUSED") {
+                const socketPath = this.getSocketPath();
+                this.logFn(
+                    `Socket connection failed, is core-agent running and listening at [${socketPath}]?`,
+                    LogLevel.Error,
+                );
+
+                // In the case that connection fails repeatedly we'll need to stop trying
+                if (this.poolErrors.length > this.maxPoolErrors) {
+                    this.logFn(
+                        "maxPoolErrors reached on a refused connection error, disabling pool...",
+                        LogLevel.Error,
+                    );
+                    this.poolDisabled = true;
+                    this.emit(AgentEvent.SocketError, err);
+                }
+            }
+
+            // If the agent is supposedly running, but connection fails too many times for any reason
             if (!this.stopped && this.poolErrors.length > this.maxPoolErrors) {
                 this.emit("error", new Errors.ResourceAllocationFailureLimitExceeded());
                 this.disconnect();
@@ -262,20 +292,20 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         }
                     })
                     .catch(err => {
-                        this.logFn(`Socket response parse error:\n ${err}`, LogLevel.Error);
+                        this.logFn(`[scout/external-process] Socket response parse error:\n ${err}`, LogLevel.Error);
                         this.emit(AgentEvent.SocketResponseParseError, err);
                     });
             });
 
             // When socket closes emit information regarding closure
             socket.on("close", () => {
-                this.logFn("Socket closed", LogLevel.Debug);
+                this.logFn("[scout/external-process] Socket closed", LogLevel.Debug);
                 this.emit(AgentEvent.SocketDisconnected);
             });
 
-            socket.on("error", err => {
+            socket.on("error", (err: Error) => {
                 this.emit(AgentEvent.SocketError, err);
-                this.logFn(`Socket connection error:\n${err}`, LogLevel.Error);
+                this.logFn(`[scout/external-process] Socket connection error:\n${err}`, LogLevel.Error);
                 reject(err);
             });
         });
@@ -292,6 +322,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
      // Start a detached process with the configured scout-agent binary
     private startProcess(): Promise<this> {
+        // If core agent launching has been disabled, don't start the process
+        if (this.opts.disallowLaunch) {
+            return Promise.reject(new Errors.AgentLaunchDisabled());
+        }
+
         // Build command and arguments
         const socketPath = this.getSocketPath();
         const args = ["start", "--socket", socketPath];
@@ -299,8 +334,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (this.opts.configFilePath) { args.push("--config-file", this.opts.configFilePath); }
         if (this.opts.logLevel) { args.push("--log-file", this.opts.logLevel); }
 
-        this.logFn(`Child process command binary path: [${this.opts.binPath}]`, LogLevel.Debug);
-        this.logFn(`Child process command args: [${args}]`, LogLevel.Debug);
+        this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, LogLevel.Debug);
+        this.logFn(`[scout/external-process] args: [${args}]`, LogLevel.Debug);
         this.detachedProcess = spawn(this.opts.binPath, args, {
             detached: true,
             stdio: "ignore",

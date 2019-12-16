@@ -15,6 +15,9 @@ export enum ErrorCode {
     ResourceAllocationFailureLimitExceeded,
     NotSupported,
     FinishedRequest,
+    DownloadDisabled,
+    ConnectionPoolDisabled,
+    AgentLaunchDisabled,
 }
 
 class ScoutError extends Error {
@@ -162,5 +165,32 @@ export class FinishedRequest extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "Operation cannot be performed because the request is finished";
+    }
+}
+
+export class DownloadDisabled extends ScoutError {
+    public readonly code: number = ErrorCode.DownloadDisabled;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Downloading has been disabled (check configuration for more details)";
+    }
+}
+
+export class ConnectionPoolDisabled extends ScoutError {
+    public readonly code: number = ErrorCode.ConnectionPoolDisabled;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "The connection pool has been disabled (likely from too many connection failures)";
+    }
+}
+
+export class AgentLaunchDisabled extends ScoutError {
+    public readonly code: number = ErrorCode.AgentLaunchDisabled;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Agent launching has been disabled";
     }
 }
