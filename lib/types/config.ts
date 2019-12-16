@@ -26,23 +26,23 @@ interface MapLike {
 }
 
 export class ApplicationMetadata {
-    language: string;
-    languageVersion: string;
-    serverTime: string;
-    framework: string;
-    frameworkVersion: string;
-    environment: string;
-    appServer: string;
-    hostname: string;
-    databaseEngine: string;
-    databaseAdapter: string;
-    applicationName: string;
-    libraries: [string, any][];
-    paas: string;
-    gitSHA: string;
-    applicationRoot: string;
-    scmSubdirectory: string;
-    
+    public readonly language: string;
+    public readonly languageVersion: string;
+    public readonly serverTime: string;
+    public readonly framework: string;
+    public readonly frameworkVersion: string;
+    public readonly environment: string;
+    public readonly appServer: string;
+    public readonly hostname: string;
+    public readonly databaseEngine: string;
+    public readonly databaseAdapter: string;
+    public readonly applicationName: string;
+    public readonly libraries: Array<[string, any]>;
+    public readonly paas: string;
+    public readonly gitSHA: string;
+    public readonly applicationRoot: string;
+    public readonly scmSubdirectory: string;
+
     constructor(opts: Partial<ApplicationMetadata>) {
         if (opts) {
             if (opts.language) { this.language = opts.language; }
@@ -69,7 +69,7 @@ export class ApplicationMetadata {
      *
      * @returns {Object} ApplicationMetadata with keys/values as core-agent expects
      */
-    serialize(): object {
+    public serialize(): object {
         return {
             language: this.language,
             languageVersion: this.languageVersion,
@@ -85,7 +85,7 @@ export class ApplicationMetadata {
             libraries: this.libraries,
             paas: this.paas,
             gitSHA: this.gitSHA,
-        }
+        };
     }
 }
 
@@ -447,8 +447,9 @@ export function buildProcessOptions(config: Partial<ScoutConfiguration>): Partia
  * @returns {ApplicationMetadata}
  */
 export function buildApplicationMetadata(config: Partial<ScoutConfiguration>): ApplicationMetadata {
-    const pkgJson = require("./package.json");
-    const depsWithVersions = Object.entries(pkgJson.dependencies)
+    const pkgJson = require("./package.json") || {dependencies: [], version: "unknown"};
+
+    const depsWithVersions = Object.entries(pkgJson.dependencies);
     const libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
 
     return new ApplicationMetadata({
@@ -463,7 +464,7 @@ export function buildApplicationMetadata(config: Partial<ScoutConfiguration>): A
         databaseEngine: "",
         databaseAdapter: "",
         applicationName: config.name || "",
-        libraries: libraries,
+        libraries,
         paas: "",
         applicationRoot: config.applicationRoot || "",
         scmSubdirectory: config.scmSubdirectory || "",
