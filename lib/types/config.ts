@@ -44,24 +44,22 @@ export class ApplicationMetadata {
     public readonly scmSubdirectory: string;
 
     constructor(opts: Partial<ApplicationMetadata>) {
-        if (opts) {
-            if (opts.language) { this.language = opts.language; }
-            if (opts.languageVersion) { this.languageVersion = opts.languageVersion; }
-            if (opts.serverTime) { this.serverTime = opts.serverTime; }
-            if (opts.framework) { this.framework = opts.framework; }
-            if (opts.frameworkVersion) { this.frameworkVersion = opts.frameworkVersion; }
-            if (opts.environment) { this.environment = opts.environment; }
-            if (opts.appServer) { this.appServer = opts.appServer; }
-            if (opts.hostname) { this.hostname = opts.hostname; }
-            if (opts.databaseEngine) { this.databaseEngine = opts.databaseEngine; }
-            if (opts.databaseAdapter) { this.databaseAdapter = opts.databaseAdapter; }
-            if (opts.applicationName) { this.applicationName = opts.applicationName; }
-            if (opts.libraries) { this.libraries = opts.libraries; }
-            if (opts.paas) { this.paas = opts.paas; }
-            if (opts.gitSHA) { this.gitSHA = opts.gitSHA; }
-            if (opts.applicationRoot) { this.applicationRoot = opts.applicationRoot; }
-            if (opts.scmSubdirectory) { this.scmSubdirectory = opts.scmSubdirectory; }
-        }
+        this.language = opts.language || "javascript";
+        this.languageVersion = opts.languageVersion || "unknown";
+        this.serverTime = opts.serverTime || new Date().toISOString();
+        this.framework = opts.framework || "";
+        this.frameworkVersion = opts.frameworkVersion || "";
+        this.environment = opts.environment || "";
+        this.appServer = opts.appServer || "";
+        this.hostname = opts.hostname || "";
+        this.databaseEngine = opts.databaseEngine || "";
+        this.databaseAdapter = opts.databaseAdapter || "";
+        this.applicationName = opts.applicationName || "";
+        this.libraries = opts.libraries || [];
+        this.paas = opts.paas || "";
+        this.gitSHA = opts.gitSHA || "";
+        this.applicationRoot = opts.applicationRoot || "";
+        this.scmSubdirectory = opts.scmSubdirectory || "";
     }
 
     /**
@@ -447,7 +445,7 @@ export function buildProcessOptions(config: Partial<ScoutConfiguration>): Partia
  * @returns {ApplicationMetadata}
  */
 export function buildApplicationMetadata(config: Partial<ScoutConfiguration>): ApplicationMetadata {
-    const pkgJson = require("./package.json") || {dependencies: [], version: "unknown"};
+    const pkgJson = require("root-require")("package.json") || {dependencies: [], version: "unknown"};
 
     const depsWithVersions = Object.entries(pkgJson.dependencies);
     const libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
