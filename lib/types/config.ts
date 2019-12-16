@@ -1,4 +1,5 @@
 import { hostname, arch as getSystemArch, platform as getSystemPlatform } from "os";
+import { version as processVersion } from "process";
 
 import {
     Architecture,
@@ -25,20 +26,67 @@ interface MapLike {
 }
 
 export class ApplicationMetadata {
-    public readonly language: string;
-    public readonly version: string;
-    public readonly serverTime: string;
-    public readonly framework: string;
-    public readonly frameworkVersion: string;
-    public readonly environment: string;
-    public readonly appServer: string;
-    public readonly hostname: string;
-    public readonly databaseEngine: string;
-    public readonly databaseAdapter: string;
-    public readonly applicationName: string;
-    public readonly libraries: string;
-    public readonly paas: string;
-    public readonly gitSHA: string;
+    language: string;
+    languageVersion: string;
+    serverTime: string;
+    framework: string;
+    frameworkVersion: string;
+    environment: string;
+    appServer: string;
+    hostname: string;
+    databaseEngine: string;
+    databaseAdapter: string;
+    applicationName: string;
+    libraries: [string, any][];
+    paas: string;
+    gitSHA: string;
+    applicationRoot: string;
+    scmSubdirectory: string;
+    
+    constructor(opts: Partial<ApplicationMetadata>) {
+        if (opts) {
+            if (opts.language) { this.language = opts.language; }
+            if (opts.languageVersion) { this.languageVersion = opts.languageVersion; }
+            if (opts.serverTime) { this.serverTime = opts.serverTime; }
+            if (opts.framework) { this.framework = opts.framework; }
+            if (opts.frameworkVersion) { this.frameworkVersion = opts.frameworkVersion; }
+            if (opts.environment) { this.environment = opts.environment; }
+            if (opts.appServer) { this.appServer = opts.appServer; }
+            if (opts.hostname) { this.hostname = opts.hostname; }
+            if (opts.databaseEngine) { this.databaseEngine = opts.databaseEngine; }
+            if (opts.databaseAdapter) { this.databaseAdapter = opts.databaseAdapter; }
+            if (opts.applicationName) { this.applicationName = opts.applicationName; }
+            if (opts.libraries) { this.libraries = opts.libraries; }
+            if (opts.paas) { this.paas = opts.paas; }
+            if (opts.gitSHA) { this.gitSHA = opts.gitSHA; }
+            if (opts.applicationRoot) { this.applicationRoot = opts.applicationRoot; }
+            if (opts.scmSubdirectory) { this.scmSubdirectory = opts.scmSubdirectory; }
+        }
+    }
+
+    /**
+     * Generate a version of the ApplicationMetadata that is formatted as core-agent expects it to be
+     *
+     * @returns {Object} ApplicationMetadata with keys/values as core-agent expects
+     */
+    serialize(): object {
+        return {
+            language: this.language,
+            languageVersion: this.languageVersion,
+            server_time: this.serverTime,
+            framework: this.framework,
+            framework_version: this.frameworkVersion,
+            environment: this.environment,
+            app_server: this.appServer,
+            hostname: this.hostname,
+            database_engine: this.databaseEngine,
+            database_adapter: this.databaseAdapter,
+            application_name: this.applicationName,
+            libraries: this.libraries,
+            paas: this.paas,
+            gitSHA: this.gitSHA,
+        }
+    }
 }
 
 export interface ScoutConfiguration {
@@ -390,4 +438,35 @@ export function buildProcessOptions(config: Partial<ScoutConfiguration>): Partia
     return {
         disallowLaunch: !config.coreAgentLaunch,
     };
+}
+
+/**
+ * Build application metadata to be sent upstream
+ *
+ * @param {ScoutConfiguration} config - current scout configuration
+ * @returns {ApplicationMetadata}
+ */
+export function buildApplicationMetadata(config: Partial<ScoutConfiguration>): ApplicationMetadata {
+    const pkgJson = require("./package.json");
+    const depsWithVersions = Object.entries(pkgJson.dependencies)
+    const libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
+
+    return new ApplicationMetadata({
+        language: "javascript",
+        languageVersion: processVersion,
+        serverTime: new Date().toISOString(),
+        framework: config.framework || "",
+        frameworkVersion: config.frameworkVersion || "",
+        environment: "",
+        appServer: config.appServer || "",
+        hostname: config.hostname || "",
+        databaseEngine: "",
+        databaseAdapter: "",
+        applicationName: config.name || "",
+        libraries: libraries,
+        paas: "",
+        applicationRoot: config.applicationRoot || "",
+        scmSubdirectory: config.scmSubdirectory || "",
+        gitSHA: config.revisionSHA,
+    });
 }
