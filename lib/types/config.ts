@@ -70,7 +70,7 @@ export class ApplicationMetadata {
     public serialize(): object {
         return {
             language: this.language,
-            languageVersion: this.languageVersion,
+            language_version: this.languageVersion,
             server_time: this.serverTime,
             framework: this.framework,
             framework_version: this.frameworkVersion,
