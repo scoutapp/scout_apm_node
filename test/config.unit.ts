@@ -6,7 +6,7 @@ import { version as processVersion } from "process";
 import {
     ScoutConfiguration,
     buildScoutConfiguration,
-    buildApplicationMetadata,
+    ApplicationMetadata,
     LogLevel,
 } from "../lib/types";
 import { testConfigurationOverlay } from "./util";
@@ -88,7 +88,7 @@ test("application metadata is correctly generated", (t: Test) => {
     };
 
     const config = buildScoutConfiguration({}, {env});
-    const appMetadata = buildApplicationMetadata(config);
+    const appMetadata = new ApplicationMetadata(config);
 
     t.assert(appMetadata, "app metadata was generated");
     t.equals(appMetadata.language, "javascript", `[language] matches [${appMetadata.language}]`);

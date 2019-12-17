@@ -1,7 +1,16 @@
 import * as test from "tape";
 
-import { Scout, buildScoutConfiguration, ScoutRequest, ScoutSpan } from "../lib";
-import { ExternalDownloadDisallowed, AgentLaunchDisabled, consoleLogFn } from "../lib";
+import {
+  AgentLaunchDisabled,
+  ApplicationMetadata,
+  ExternalDownloadDisallowed,
+  Scout,
+  ScoutRequest,
+  ScoutSpan,
+  buildScoutConfiguration,
+  consoleLogFn,
+} from "../lib";
+
 import * as TestUtil from "./util";
 
 test("Scout object creation works without config", t => {
@@ -304,6 +313,57 @@ test("Custom version specification works via top level config", t => {
             t.pass("setup succeeded with older version");
             t.equals(scout.getCoreAgentVersion().raw, "1.1.8", "correct version has been used");
         })
+        .then(() => TestUtil.shutdownScout(t, scout))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/61
+test("Application metadata is built and sent", t => {
+    const appMeta = new ApplicationMetadata({
+        frameworkVersion: "framework-version-from-app-meta",
+    });
+
+    const config = buildScoutConfiguration(
+        {allowShutdown: true},
+        {
+            env: {
+                SCOUT_FRAMEWORK: "framework-from-env",
+                SCOUT_FRAMEWORK_VERSION: "framework-version-from-env",
+            },
+        },
+    );
+
+    const scout = new Scout(config, {appMeta});
+
+    // Check that the applicationMetdata has values overlaid
+    const returnedAppMeta = scout.getApplicationMetadata();
+
+    t.equals(returnedAppMeta.framework, "framework-from-env", "framework value is from env");
+    t.equals(
+        returnedAppMeta.frameworkVersion,
+        "framework-version-from-app-meta",
+        "framework version is from user-provided app meta",
+    );
+    t.equals(returnedAppMeta.languageVersion, process.version, "processVersion was populated from nodejs");
+
+    let req: ScoutRequest;
+
+    scout
+    // Setup should end up sending the Application metadata
+        .setup()
+    // Create the request
+        .then(() => scout.startRequest())
+        .then(r => {
+            t.assert(r, "request was created");
+            req = r;
+        })
+    // Immediately finish the request
+        .then(() => req.finish())
+        .then(returned => {
+            t.assert(returned, "request was finished");
+            t.equals(returned.id, req.id, "request id matches what was returned by finish()");
+        })
+    // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });

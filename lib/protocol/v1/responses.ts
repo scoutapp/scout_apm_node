@@ -77,7 +77,7 @@ export class V1AgentResponse extends AgentResponse {
             const expected = buf.length - 4;
             if (expected !== payloadLen) {
                 return Promise.reject(new Errors.MalformedAgentResponse(
-                    `Invalid Content length: (expected ${expected}, received ${payloadLen})`,
+                    `Invalid Content length: (expected ${expected}, received ${payloadLen})\n Buffer: [${buf}]`,
                 ));
             }
 

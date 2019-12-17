@@ -1,10 +1,12 @@
 import * as path from "path";
+import * as process from "process";
 
 import {
     APIVersion,
     Agent,
     AgentDownloadOptions,
     AgentDownloader,
+    ApplicationMetadata,
     CoreAgentVersion,
     LogFn,
     LogLevel,
@@ -186,6 +188,7 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
 export interface ScoutOptions {
     logFn?: LogFn;
     downloadOptions?: Partial<AgentDownloadOptions>;
+    appMeta?: ApplicationMetadata;
 }
 
 export class Scout {
@@ -200,6 +203,7 @@ export class Scout {
     private coreAgentVersion: CoreAgentVersion;
     private agent: ExternalProcessAgent;
     private processOptions: ProcessOptions;
+    private applicationMetadata: ApplicationMetadata;
 
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         this.config = config || buildScoutConfiguration();
@@ -208,10 +212,19 @@ export class Scout {
         if (opts && opts.downloadOptions) {
             this.downloaderOptions = opts.downloadOptions;
         }
+
+        this.applicationMetadata = new ApplicationMetadata(
+            this.config,
+            opts && opts.appMeta ? opts.appMeta : {},
+        );
     }
 
     public getCoreAgentVersion(): CoreAgentVersion {
         return new CoreAgentVersion(this.coreAgentVersion.raw);
+    }
+
+    public getApplicationMetadata(): ApplicationMetadata {
+        return Object.assign({}, this.applicationMetadata);
     }
 
     public setup(): Promise<this> {
@@ -275,6 +288,8 @@ export class Scout {
                     APIVersion.V1,
                 ));
             })
+        // Send the application metadata
+            .then(() => this.agent.send(this.buildAppMetadataEvent()))
             .then(() => this);
     }
 
@@ -361,6 +376,15 @@ export class Scout {
 
     private getSocketPath() {
         return `unix://${this.socketPath}`;
+    }
+
+    private buildAppMetadataEvent(): Requests.V1ApplicationEvent {
+        return new Requests.V1ApplicationEvent(
+            `Pid: ${process.pid}`,
+            "scout.metadata",
+            this.applicationMetadata,
+            {timestamp: new Date()},
+        );
     }
 
 }
