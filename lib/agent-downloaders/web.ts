@@ -66,7 +66,7 @@ export class WebAgentDownloader implements AgentDownloader {
 
         // If a custom download URL is specified, then use that
         // if not, look up the version from the hard-coded configs
-        if (opts && opts.downloadUrl && opts.coreAgentFullName) {
+        if (opts && opts.downloadUrl && opts.coreAgentFullName && opts.coreAgentDir) {
             doDownload = () => this.downloadFromCustomPath(v, opts);
         }
 
