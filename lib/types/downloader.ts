@@ -26,6 +26,10 @@ export interface AgentDownloadOptions {
     // Filename to be combined wiht the Root URL to use for download (does *not* include the extension, i.e. '.tgz')
     // ex: "scout_apm_core-v1.1.8-x86_64-unknown-linux-gnu"
     coreAgentFullName?: string;
+
+    // Directory into which core agent binaries will be downloaded
+    // ex: "/tmp/scout_apm_core"
+    coreAgentDir?: string;
 }
 
 export interface AgentDownloader {

@@ -11,6 +11,7 @@ import {
 import { AgentDownloadOptions } from "./downloader";
 import { LogFn, convertCamelCaseToEnvVar } from "./util";
 import { ProcessOptions } from "./agent";
+import { PlatformTriple } from "./enum";
 
 import { isNonGlibcLinux } from "detect-libc";
 
@@ -259,6 +260,15 @@ function detectPlatform(): Platform {
     }
 }
 
+export function detectPlatformTriple(): PlatformTriple {
+    const triple = generateTriple();
+    if (!(Object.values(PlatformTriple).includes(triple as PlatformTriple))) {
+        throw new Error("Invalid platform triple");
+    }
+
+    return triple as PlatformTriple;
+}
+
 // Generate the architecture/platform triple
 function generateTriple() {
     return `${detectArch()}-${detectPlatform()}`;
@@ -364,6 +374,7 @@ export function buildScoutConfiguration(
 export function buildDownloadOptions(config: Partial<ScoutConfiguration>): Partial<AgentDownloadOptions> {
     return {
         coreAgentFullName: config.coreAgentFullName,
+        coreAgentDir: config.coreAgentDir,
         disallowDownload: !config.coreAgentDownload,
         downloadUrl: config.downloadUrl,
     };

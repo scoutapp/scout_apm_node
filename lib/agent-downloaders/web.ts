@@ -3,10 +3,13 @@ import * as path from "path";
 import * as tmp from "tmp-promise";
 import { Readable } from "stream";
 import { mkdtemp, createReadStream } from "fs";
+import { PlatformTriple, detectPlatformTriple } from "../types";
 import * as fs from "fs-extra";
 
 // tslint:disable-next-line no-var-requires
 const hasha = require("hasha");
+
+const PLATFORM: PlatformTriple = detectPlatformTriple();
 
 import {
     AgentDownloadConfig,
@@ -58,35 +61,60 @@ export class WebAgentDownloader implements AgentDownloader {
 
     /** @see AgentDownloader */
     public download(v: CoreAgentVersion, opts?: AgentDownloadOptions): Promise<string> {
-        let config: AgentDownloadConfig;
+        // Normally we'd look up the version from the hard-coded known configs
+        let doDownload = () => this.downloadFromConfig(v, opts);
 
-        if (opts && opts.disallowDownload) {
-            return Promise.reject(new Errors.DownloadDisabled());
+        // If a custom download URL is specified, then use that
+        // if not, look up the version from the hard-coded configs
+        if (opts && opts.downloadUrl && opts.coreAgentFullName) {
+            doDownload = () => this.downloadFromCustomPath(v, opts);
         }
 
-        // Get the download configuration for the version
-        return this.getDownloadConfigs(v)
-            .then(configs => {
-                if (!configs || !configs.length) {
-                    throw new Errors.UnexpectedError(`No available download configurations for version [${v.raw}]`);
-                }
+        // Use cache if available & populated, otherwise do download
+        if (opts && !opts.disableCache && opts.cacheDir) {
+            return this.getCachedBinaryPath(opts.cacheDir, v)
+                .catch(() => doDownload());
+        }
 
-                // Use the first available configuration
-                config = configs[0];
-                if (!config.url) {
-                    throw new Errors.InvalidAgentDownloadConfig("URL is missing/invalid");
-                }
-            })
-            .then(() => {
-                // Attempt to retrieve the binary from cache
-                // use regular download if that fails
-                if (opts && !opts.disableCache && opts.cacheDir) {
-                    return this.getCachedBinaryPath(opts.cacheDir, v, config)
-                        .catch(() => this.downloadFromConfig(config, opts));
-                }
+        // Do regular download (without trying cache first)
+        return doDownload();
+    }
 
-                // Don't use cache, direct download
-                return this.downloadFromConfig(config, opts);
+    /**
+     * Download from a custom path
+     *
+     * @param {CoreAgentVersion} v - Version of the agent we're going to be downloading
+     * @param {AgentDownloadOptions} [opts]
+     * @returns {string} Path to the downloaded binary
+     */
+    private downloadFromCustomPath(v: CoreAgentVersion, opts: AgentDownloadOptions): Promise<string> {
+        const url = `${opts.downloadUrl}/${opts.coreAgentFullName}.tgz`;
+        const downloadDir: string = `${opts.coreAgentDir}/${opts.coreAgentFullName}`;
+        const expectedBinPath: string = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
+
+        // Ensure we're not attempting to do a download if they're disallowed
+        if (opts && opts.disallowDownload) { throw new Errors.ExternalDownloadDisallowed(); }
+
+        // check if file has already been downloaded
+        this.logFn(`[scout/agent-downloader/web] Checking for existing file @ [${expectedBinPath}]`, LogLevel.Debug);
+        return fs.pathExists(expectedBinPath)
+            .then(binExists => {
+                if (binExists) { return expectedBinPath; }
+
+                // Perform download
+                this.logFn(`[scout/agent-downloader/web] Downloading from URL [${url}]`, LogLevel.Debug);
+                return download(url, downloadDir, {extract: true})
+                // Ensure file download succeeded
+                    .then(() => fs.pathExists(expectedBinPath))
+                    .then(exists => {
+                        if (!exists) {
+                            throw new Errors.UnexpectedError(
+                                `Failed to download agent from [${url}] -> [${expectedBinPath}]`,
+                            );
+                        }
+
+                        return expectedBinPath;
+                    });
             });
     }
 
@@ -99,7 +127,7 @@ export class WebAgentDownloader implements AgentDownloader {
      * @param {AgentDownloadConfig} adc - Agent download config (used for checking manifest)
      * @returns {Promise<string>} A promise that resolves to a valid cached binary (if found)
      */
-    private getCachedBinaryPath(baseDir: string, v: CoreAgentVersion, adc: AgentDownloadConfig): Promise<string> {
+    private getCachedBinaryPath(baseDir: string, v: CoreAgentVersion, adc?: AgentDownloadConfig): Promise<string> {
         const versionedPath = path.join(baseDir, v.raw, Constants.CORE_AGENT_BIN_FILE_NAME);
         const inDirPath = path.join(baseDir, Constants.CORE_AGENT_BIN_FILE_NAME);
         return Promise.all([
@@ -121,13 +149,33 @@ export class WebAgentDownloader implements AgentDownloader {
      *
      * @param {CoreAgentVersion} v - The version to download
      * @param {AgentDownloadOptions} [opts] - Options to control download
+     * @returns {string} Path to the downloaded binary
      */
-    private downloadFromConfig(adc: AgentDownloadConfig, opts?: AgentDownloadOptions): Promise<string> {
+    private downloadFromConfig(v: CoreAgentVersion, opts?: AgentDownloadOptions): Promise<string> {
         let expectedBinPath: string;
         let downloadDir: string;
+        let adc: AgentDownloadConfig;
 
+        // Retrieve the hard-coded download config for the given version
+        return this.getDownloadConfigs(v)
+            .then(configs => {
+                if (!configs || !configs.length) {
+                    throw new Errors.UnexpectedError(`No available download configurations for version [${v.raw}]`);
+                }
+
+                // Find the configuration that matches the detected platform triple
+                const foundConfig = configs.find(c => c.platform === PLATFORM);
+                if (!foundConfig) {
+                    throw new Errors.InvalidAgentDownloadConfig(`no config for detected platform [${PLATFORM}]`);
+                }
+                adc = foundConfig;
+
+                if (!adc.url) {
+                    throw new Errors.InvalidAgentDownloadConfig("URL is missing/invalid");
+                }
+            })
         // Create a temporary directory & download the agent
-        return tmp.dir({prefix: Constants.TMP_DIR_PREFIX})
+            .then(() => tmp.dir({prefix: Constants.TMP_DIR_PREFIX}))
             .then(result => {
                 downloadDir = result.path;
                 expectedBinPath = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
@@ -136,14 +184,7 @@ export class WebAgentDownloader implements AgentDownloader {
                 // Ensure we're not attempting to do a download if they're disallowed
                 if (opts && opts.disallowDownload) { throw new Errors.ExternalDownloadDisallowed(); }
 
-                // If a custom root URL is specified in the options, use it
-                let url = adc.url;
-                if (opts && opts.downloadUrl && opts.coreAgentFullName) {
-                    url = `${opts.downloadUrl}/${opts.coreAgentFullName}.tgz`;
-                }
-                this.logFn(`[scout/agent-downloader/web] Downloading from URL [${url}]`, LogLevel.Debug);
-
-                return download(url, downloadDir, options);
+                return download(adc.url, downloadDir, options);
             })
         // Ensure file download succeeded
             .then(() => fs.pathExists(expectedBinPath))
@@ -156,7 +197,7 @@ export class WebAgentDownloader implements AgentDownloader {
             })
         // Check for & verify binary hash
             .then(() => this.ensureBinary(expectedBinPath, adc))
-        // Update the on disk cache if cache is being used
+        // Update the on-disk cache if cache is being used
             .then(() => {
                 if (opts && opts.cacheDir && opts.updateCache) {
                     return this.updateCacheWithDownloadDir(downloadDir, adc, opts);
