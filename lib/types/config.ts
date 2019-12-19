@@ -87,9 +87,6 @@ export interface ScoutConfiguration {
     // Derived
     coreAgentTriple: string;
     coreAgentFullName: string;
-
-    // Additional
-    checkBinarySHA: boolean;
 }
 
 export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
@@ -118,8 +115,6 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     revisionSHA: process.env.HEROKU_SLUG_COMMIT || "",
     scmSubdirectory: "",
     uriReporting: URIReportingLevel.FilteredParams,
-
-    checkBinarySHA: false,
 };
 
 interface ConfigSource {
@@ -382,7 +377,6 @@ export function buildDownloadOptions(config: Partial<ScoutConfiguration>): Parti
         coreAgentDir: config.coreAgentDir,
         disallowDownload: !config.coreAgentDownload,
         downloadUrl: config.downloadUrl,
-        checkBinarySHA: config.checkBinarySHA,
     };
 }
 
