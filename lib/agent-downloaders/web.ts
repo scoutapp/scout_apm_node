@@ -196,7 +196,11 @@ export class WebAgentDownloader implements AgentDownloader {
                 }
             })
         // Check for & verify binary hash
-            .then(() => this.ensureBinary(expectedBinPath, adc))
+            .then(() => {
+                if (opts && opts.checkBinarySHA) {
+                    this.ensureBinary(expectedBinPath, adc);
+                }
+            })
         // Update the on-disk cache if cache is being used
             .then(() => {
                 if (opts && opts.cacheDir && opts.updateCache) {

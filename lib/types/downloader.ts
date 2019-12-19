@@ -30,6 +30,11 @@ export interface AgentDownloadOptions {
     // Directory into which core agent binaries will be downloaded
     // ex: "/tmp/scout_apm_core"
     coreAgentDir?: string;
+
+    // Check the SHA for the downloaded binary against supplied config
+    // This option only takes effect when the hard-coded version configs are used
+    // (so *not* in the case of a custom supplied url)
+    checkBinarySHA?: boolean;
 }
 
 export interface AgentDownloader {

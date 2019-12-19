@@ -98,7 +98,7 @@ test("download works with a custom root URL + agent full name", t => {
         .download(version, opts)
         .then(path => {
             t.assert(path, `binary path is non-null (${path})`);
-            t.assert(path.includes(opts.coreAgentDir), `binary path contains coreAgentDir`);
+            t.assert(opts.coreAgentDir && path.includes(opts.coreAgentDir), `binary path contains coreAgentDir`);
         })
         .then(() => t.end())
         .catch(t.end);
