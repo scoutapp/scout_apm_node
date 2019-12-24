@@ -150,9 +150,6 @@ export class CoreAgentVersion {
     constructor(v: string) {
         const converted = isValidSemVer(v);
         if (!converted) { throw new InvalidVersion(`Invalid version [${v}]`); }
-        if (!Constants.SUPPORTED_CORE_AGENT_VERSIONS.includes(converted)) {
-            throw new InvalidVersion(`Unsupported scout agent version [${converted}]`);
-        }
 
         this.raw = converted;
     }

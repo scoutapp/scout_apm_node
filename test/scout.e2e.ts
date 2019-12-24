@@ -1,7 +1,7 @@
 import * as test from "tape";
 
 import { Scout, buildScoutConfiguration, ScoutRequest, ScoutSpan } from "../lib";
-import { DownloadDisabled, AgentLaunchDisabled, consoleLogFn } from "../lib";
+import { ExternalDownloadDisallowed, AgentLaunchDisabled, consoleLogFn } from "../lib";
 import * as TestUtil from "./util";
 
 test("Scout object creation works without config", t => {
@@ -252,20 +252,21 @@ test("Request auto close works (2 top level)", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/59
 test("Download disabling works via top level config", t => {
-    const scout = new Scout(buildScoutConfiguration({
+    const config = buildScoutConfiguration({
         coreAgentDownload: false,
         allowShutdown: true,
-    }));
+    });
+    const scout = new Scout(config, {downloadOptions: {disableCache: true}});
 
     scout
         .setup()
         .then(() => Promise.reject(new Error("Download failure expected since downloading is disabled")))
         .catch(err => {
-            if (!(err instanceof DownloadDisabled)) {
+            if (!(err instanceof ExternalDownloadDisallowed)) {
                 return TestUtil.shutdownScout(t, scout, err);
             }
 
-            t.pass("setup failed due to DownloadDisabled error");
+            t.pass("setup failed due to ExternalDownloadDisallowed error");
             return t.end();
         });
 });

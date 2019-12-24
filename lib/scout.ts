@@ -183,11 +183,16 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
     }
 }
 
+export interface ScoutOptions {
+    logFn?: LogFn;
+    downloadOptions?: Partial<AgentDownloadOptions>;
+}
+
 export class Scout {
     private readonly config: Partial<ScoutConfiguration>;
 
     private downloader: AgentDownloader;
-    private downloaderOptions: AgentDownloadOptions;
+    private downloaderOptions: AgentDownloadOptions = {};
     private binPath: string;
     private socketPath: string;
     private logFn: LogFn;
@@ -196,9 +201,13 @@ export class Scout {
     private agent: ExternalProcessAgent;
     private processOptions: ProcessOptions;
 
-    constructor(config?: Partial<ScoutConfiguration>, opts?: {logFn?: LogFn}) {
+    constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         this.config = config || buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
+
+        if (opts && opts.downloadOptions) {
+            this.downloaderOptions = opts.downloadOptions;
+        }
     }
 
     public getCoreAgentVersion(): CoreAgentVersion {
@@ -218,7 +227,7 @@ export class Scout {
                 cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
                 updateCache: true,
             },
-
+            this.downloaderOptions,
             buildDownloadOptions(this.config),
         );
 
