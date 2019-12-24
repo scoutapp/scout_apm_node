@@ -49,7 +49,7 @@ export class ApplicationMetadata {
         const depsWithVersions = Object.entries(pkgJson.dependencies);
         const libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
 
-        this.language = "javascript";
+        this.language = "nodejs";
         this.languageVersion = processVersion;
         this.serverTime = new Date().toISOString();
         this.framework = config.framework || "";
@@ -107,7 +107,7 @@ export class ApplicationMetadata {
             application_name: this.applicationName,
             libraries: this.libraries,
             paas: this.paas,
-            gitSHA: this.gitSHA,
+            git_sha: this.gitSHA,
         };
     }
 }

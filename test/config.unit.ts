@@ -91,7 +91,7 @@ test("application metadata is correctly generated", (t: Test) => {
     const appMetadata = new ApplicationMetadata(config);
 
     t.assert(appMetadata, "app metadata was generated");
-    t.equals(appMetadata.language, "javascript", `[language] matches [${appMetadata.language}]`);
+    t.equals(appMetadata.language, "nodejs", `[language] matches [${appMetadata.language}]`);
     t.equals(appMetadata.languageVersion, processVersion, `[languageVersion] matches [${appMetadata.languageVersion}]`);
     t.assert(new Date(appMetadata.serverTime), `[serverTime] is a non null date [${appMetadata.serverTime}]`);
     t.equals(appMetadata.framework, env.SCOUT_FRAMEWORK, `[framework] matches [${appMetadata.framework}]`);
