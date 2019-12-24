@@ -1,8 +1,14 @@
 import { hostname } from "os";
 import * as test from "tape";
 import { Test } from "tape";
+import { version as processVersion } from "process";
 
-import { ScoutConfiguration, buildScoutConfiguration, LogLevel } from "../lib/types";
+import {
+    ScoutConfiguration,
+    buildScoutConfiguration,
+    ApplicationMetadata,
+    LogLevel,
+} from "../lib/types";
 import { testConfigurationOverlay } from "./util";
 
 test("ScoutConfiguration builds with minimal passed ENV", t => {
@@ -28,7 +34,11 @@ test("ScoutConfiguration builds with minimal passed ENV", t => {
 test("ScoutConfiguration overrides correctly for every config value", (t: Test) => {
     testConfigurationOverlay(t, {appKey: "name", envValue: "test", expectedValue: "test"});
     testConfigurationOverlay(t, {appKey: "appServer", envValue: "test-server", expectedValue: "test-server"});
-    testConfigurationOverlay(t, {appKey: "applicationRoot", envValue: "/var/app/root", expectedValue: "/var/app/root"});
+    testConfigurationOverlay(t, {
+      appKey: "applicationRoot",
+      envValue: "/var/app/root",
+      expectedValue: "/var/app/root"},
+    );
     testConfigurationOverlay(t, {appKey: "coreAgentDir", envValue: "/tmp/dir", expectedValue: "/tmp/dir"});
     testConfigurationOverlay(t, {appKey: "coreAgentDownload", envValue: "true", expectedValue: true});
     testConfigurationOverlay(t, {appKey: "coreAgentLaunch", envValue: "false", expectedValue: false});
@@ -59,6 +69,59 @@ test("ScoutConfiguration overrides correctly for every config value", (t: Test) 
         envValue: "/var/path/to/socket.sock",
         expectedValue: "/var/path/to/socket.sock",
     });
+
+    t.end();
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/61
+test("application metadata is correctly generated", (t: Test) => {
+    const env = {
+        SCOUT_NAME: "app",
+        SCOUT_HOSTNAME: "hostname",
+        SCOUT_KEY: "key",
+        SCOUT_FRAMEWORK: "express",
+        SCOUT_FRAMEWORK_VERSION: "v1",
+        SCOUT_APP_SERVER: "appsrv",
+        SCOUT_SCM_SUBDIRECTORY: "server",
+        SCOUT_APPLICATION_ROOT: "/var/app",
+        SCOUT_REVISION_SHA: "12345678",
+    };
+
+    const config = buildScoutConfiguration({}, {env});
+    const appMetadata = new ApplicationMetadata(config);
+
+    t.assert(appMetadata, "app metadata was generated");
+    t.equals(appMetadata.language, "nodejs", `[language] matches [${appMetadata.language}]`);
+    t.equals(appMetadata.languageVersion, processVersion, `[languageVersion] matches [${appMetadata.languageVersion}]`);
+    t.assert(new Date(appMetadata.serverTime), `[serverTime] is a non null date [${appMetadata.serverTime}]`);
+    t.equals(appMetadata.framework, env.SCOUT_FRAMEWORK, `[framework] matches [${appMetadata.framework}]`);
+    t.equals(
+        appMetadata.frameworkVersion,
+        env.SCOUT_FRAMEWORK_VERSION,
+        `[frameworkVersion] matches [${appMetadata.frameworkVersion}]`,
+    );
+    t.equals(appMetadata.environment, "", `[environment] matches [${appMetadata.environment}]`);
+    t.equals(appMetadata.appServer, env.SCOUT_APP_SERVER, `[appServer] matches [${appMetadata.appServer}]`);
+    t.equals(appMetadata.hostname, env.SCOUT_HOSTNAME, `[hostname] matches [${appMetadata.hostname}]`);
+    t.equals(appMetadata.databaseEngine, "", `[databaseEngine] matches [${appMetadata.databaseEngine}]`);
+    t.equals(appMetadata.databaseAdapter, "", `[databaseAdapter] matches [${appMetadata.databaseAdapter}]`);
+    t.equals(appMetadata.applicationName, env.SCOUT_NAME, `[applicationName] matches [${appMetadata.applicationName}]`);
+    t.assert(
+        appMetadata.libraries && appMetadata.libraries instanceof Array,
+        `[libraries] is non-null and an array [${appMetadata.libraries}]`,
+    );
+    t.equals(appMetadata.paas, "", `[paas] matches [${appMetadata.paas}]`);
+    t.equals(
+        appMetadata.applicationRoot,
+        env.SCOUT_APPLICATION_ROOT,
+        `[applicationRoot] matches [${appMetadata.applicationRoot}]`,
+    );
+    t.equals(
+        appMetadata.scmSubdirectory,
+        env.SCOUT_SCM_SUBDIRECTORY,
+        `[scmSubdirectory] matches [${appMetadata.scmSubdirectory}]`,
+    );
+    t.equals(appMetadata.gitSHA, env.SCOUT_REVISION_SHA, `[gitSHA] matches [${appMetadata.gitSHA}]`);
 
     t.end();
 });

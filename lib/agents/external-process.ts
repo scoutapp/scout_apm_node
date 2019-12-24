@@ -128,13 +128,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (!msg) { return Promise.reject(new Errors.UnexpectedError("No message provided to send()")); }
         const requestType = msg.type;
 
-        // Application events must be sent uing `sendAsync`
-        if (requestType === AgentRequestType.V1ApplicationEvent) {
-            throw new Errors.RequestDoesNotPromptResponse(
-                "ApplicationEvents do not produce responses, please use `sendAsync` instead",
-            );
-        }
-
         return new Promise((resolve, reject) => {
             // Get a socket from the pool
             this.pool.acquire()

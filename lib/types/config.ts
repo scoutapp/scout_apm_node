@@ -1,4 +1,5 @@
 import { hostname, arch as getSystemArch, platform as getSystemPlatform } from "os";
+import { version as processVersion } from "process";
 
 import {
     Architecture,
@@ -26,7 +27,7 @@ interface MapLike {
 
 export class ApplicationMetadata {
     public readonly language: string;
-    public readonly version: string;
+    public readonly languageVersion: string;
     public readonly serverTime: string;
     public readonly framework: string;
     public readonly frameworkVersion: string;
@@ -36,9 +37,79 @@ export class ApplicationMetadata {
     public readonly databaseEngine: string;
     public readonly databaseAdapter: string;
     public readonly applicationName: string;
-    public readonly libraries: string;
+    public readonly libraries: Array<[string, any]>;
     public readonly paas: string;
     public readonly gitSHA: string;
+    public readonly applicationRoot: string;
+    public readonly scmSubdirectory: string;
+
+    constructor(config: Partial<ScoutConfiguration>, opts?: Partial<ApplicationMetadata>) {
+        const pkgJson = require("root-require")("package.json") || {dependencies: [], version: "unknown"};
+
+        const depsWithVersions = Object.entries(pkgJson.dependencies);
+        const libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
+
+        this.language = "nodejs";
+        this.languageVersion = processVersion;
+        this.serverTime = new Date().toISOString();
+        this.framework = config.framework || "";
+        this.frameworkVersion = config.frameworkVersion || "";
+        this.environment = "";
+        this.appServer = config.appServer || "";
+        this.hostname = config.hostname || "";
+        this.databaseEngine = "";
+        this.databaseAdapter = "";
+        this.applicationName = config.name || "";
+        this.libraries = libraries;
+        this.paas = "";
+        this.applicationRoot = config.applicationRoot || "";
+        this.scmSubdirectory = config.scmSubdirectory || "";
+        this.gitSHA = config.revisionSHA || "";
+
+        // Handle overrides
+        if (opts) {
+            if (opts.language) { this.language = opts.language; }
+            if (opts.languageVersion) { this.languageVersion = opts.languageVersion; }
+            if (opts.serverTime) { this.serverTime = opts.serverTime || new Date().toISOString(); }
+            if (opts.framework) { this.framework = opts.framework; }
+            if (opts.frameworkVersion) { this.frameworkVersion = opts.frameworkVersion; }
+            if (opts.environment) { this.environment = opts.environment; }
+            if (opts.appServer) { this.appServer = opts.appServer; }
+            if (opts.hostname) { this.hostname = opts.hostname; }
+            if (opts.databaseEngine) { this.databaseEngine = opts.databaseEngine; }
+            if (opts.databaseAdapter) { this.databaseAdapter = opts.databaseAdapter; }
+            if (opts.applicationName) { this.applicationName = opts.applicationName; }
+            if (opts.libraries) { this.libraries = opts.libraries || []; }
+            if (opts.paas) { this.paas = opts.paas; }
+            if (opts.gitSHA) { this.gitSHA = opts.gitSHA; }
+            if (opts.applicationRoot) { this.applicationRoot = opts.applicationRoot; }
+            if (opts.scmSubdirectory) { this.scmSubdirectory = opts.scmSubdirectory; }
+        }
+    }
+
+    /**
+     * Generate a version of the ApplicationMetadata that is formatted as core-agent expects it to be
+     *
+     * @returns {Object} ApplicationMetadata with keys/values as core-agent expects
+     */
+    public serialize(): object {
+        return {
+            language: this.language,
+            language_version: this.languageVersion,
+            server_time: this.serverTime,
+            framework: this.framework,
+            framework_version: this.frameworkVersion,
+            environment: this.environment,
+            app_server: this.appServer,
+            hostname: this.hostname,
+            database_engine: this.databaseEngine,
+            database_adapter: this.databaseAdapter,
+            application_name: this.applicationName,
+            libraries: this.libraries,
+            paas: this.paas,
+            git_sha: this.gitSHA,
+        };
+    }
 }
 
 export interface ScoutConfiguration {
