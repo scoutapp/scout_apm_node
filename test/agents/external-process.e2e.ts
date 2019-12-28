@@ -10,7 +10,7 @@ import * as Fixtures from "../fixtures";
 
 import {
     AgentEvent,
-    AgentResponse,
+    BaseAgentResponse,
     AgentResponseType,
     ApplicationEventType,
     CoreAgentVersion,
@@ -86,7 +86,7 @@ test("GetVersion message works (v1.1.8)", t => {
         .then(() => agent.connect())
     // Send GetVersion message
         .then(() => agent.send(new Requests.V1GetVersionRequest()))
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1GetVersion, "expected response received");
         })
     // Cleanup the process & end test
@@ -112,7 +112,7 @@ test("Register message works (v1.1.8)", t => {
             TEST_AGENT_KEY,
             APIVersion.V1,
         )))
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1Register, "type matches");
             t.assert(resp.succeeded(), "register succeeded");
         })
@@ -135,7 +135,7 @@ test("StartRequest message works (v1.1.8)", t => {
         .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => agent.send(new Requests.V1StartRequest()))
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1StartRequest, "type matches");
             t.assert(resp.succeeded(), "start-request succeeded");
         })
@@ -164,7 +164,7 @@ test("FinishRequest message works (v1.1.8)", t => {
         })
     // Send finish request
         .then(() => agent.send(new Requests.V1FinishRequest(start.requestId)))
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1FinishRequest, "type matches");
             t.assert(resp.succeeded(), "finish-request succeeded");
         })
@@ -197,13 +197,13 @@ test("TagRequest message works (v1.1.8)", t => {
             "value",
             start.requestId,
         )))
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1TagRequest, "type matches");
             t.assert(resp.succeeded(), "tag-request succeeded");
         })
     // Finish the request
         .then(() => agent.send(new Requests.V1FinishRequest(start.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
@@ -232,13 +232,13 @@ test("StartSpan message works for leaf span (v1.1.8)", t => {
             "test/start-span",
             start.requestId,
         )))
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1StartSpan, "type matches");
             t.assert(resp.succeeded(), "start-span succeeded");
         })
     // Finish the request
         .then(() => agent.send(new Requests.V1FinishRequest(start.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
@@ -269,19 +269,19 @@ test("StopSpan works for leaf span (v1.1.8)", t => {
             spanStart = new Requests.V1StartSpan("test/start-span", reqStart.requestId);
             return agent.send(spanStart);
         })
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1StartSpan, "type matches");
             t.assert(resp.succeeded(), "start-span succeeded");
         })
     // Stop the span
         .then(() => agent.send(new Requests.V1StopSpan(spanStart.spanId, spanStart.requestId)))
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1StopSpan, "type matches");
             t.assert(resp.succeeded(), "stop-span succeeded");
         })
     // Finish the request
         .then(() => agent.send(new Requests.V1FinishRequest(reqStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
@@ -308,11 +308,11 @@ test("TagSpan works for leaf span (v1.1.8)", t => {
             return agent.send(reqStart);
         })
     // Start a span (no parent)
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             spanStart = new Requests.V1StartSpan("test/start-span", reqStart.requestId);
             return agent.send(spanStart);
         })
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "start-span succeeded"))
     // Tag the span
         .then(() => agent.send(new Requests.V1TagSpan(
             "tag-span-test",
@@ -320,16 +320,16 @@ test("TagSpan works for leaf span (v1.1.8)", t => {
             spanStart.spanId,
             spanStart.requestId,
         )))
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             t.equals(resp.type, AgentResponseType.V1TagSpan, "type matches");
             t.assert(resp.succeeded(), "tag-span succeeded");
         })
     // Stop the span
         .then(() => agent.send(new Requests.V1StopSpan(spanStart.spanId, spanStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded"))
     // Finish the request
         .then(() => agent.send(new Requests.V1FinishRequest(reqStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
@@ -411,11 +411,11 @@ test("Nested spans work (v1.1.8)", t => {
             return agent.send(reqStart);
         })
     // Start a span (no parent)
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             parentSpanStart = new Requests.V1StartSpan("test/start-span", reqStart.requestId);
             return agent.send(parentSpanStart);
         })
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (parent)"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (parent)"))
     // Start a child span
         .then(() => {
             childSpanStart = new Requests.V1StartSpan(
@@ -425,16 +425,16 @@ test("Nested spans work (v1.1.8)", t => {
             );
             return agent.send(childSpanStart);
         })
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (child)"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (child)"))
     // Stop the child span
         .then(() => agent.send(new Requests.V1StopSpan(childSpanStart.spanId, childSpanStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (child)"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (child)"))
     // Stop the parent span
         .then(() => agent.send(new Requests.V1StopSpan(parentSpanStart.spanId, parentSpanStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (parent)"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (parent)"))
     // Finish the request
         .then(() => agent.send(new Requests.V1FinishRequest(reqStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
@@ -462,11 +462,11 @@ test("Nested spans work in the wrong close order (v1.1.8)", t => {
             return agent.send(reqStart);
         })
     // Start a span (no parent)
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             parentSpanStart = new Requests.V1StartSpan("test/start-span", reqStart.requestId);
             return agent.send(parentSpanStart);
         })
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (parent)"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (parent)"))
     // Start a child span
         .then(() => {
             childSpanStart = new Requests.V1StartSpan(
@@ -476,16 +476,16 @@ test("Nested spans work in the wrong close order (v1.1.8)", t => {
             );
             return agent.send(childSpanStart);
         })
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (child)"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "start-span succeeded (child)"))
     // Stop the parent span
         .then(() => agent.send(new Requests.V1StopSpan(parentSpanStart.spanId, parentSpanStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (parent)"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (parent)"))
     // Stop the child span
         .then(() => agent.send(new Requests.V1StopSpan(childSpanStart.spanId, childSpanStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (child)"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded (child)"))
     // Finish the request
         .then(() => agent.send(new Requests.V1FinishRequest(reqStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
@@ -512,17 +512,17 @@ test("Request with 'Controller' span works, after waiting for flush (v1.1.8)", t
             return agent.send(reqStart);
         })
     // Start the controller span
-        .then((resp: AgentResponse) => {
+        .then((resp: BaseAgentResponse) => {
             spanStart = new Requests.V1StartSpan("Controller/test", reqStart.requestId);
             return agent.send(spanStart);
         })
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "start-span succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "start-span succeeded"))
     // Stop the span
         .then(() => agent.send(new Requests.V1StopSpan(spanStart.spanId, spanStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "stop-span succeeded"))
     // Finish the request
         .then(() => agent.send(new Requests.V1FinishRequest(reqStart.requestId)))
-        .then((resp: AgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
+        .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
     // Wait for agent to clear internal request buffers (and send the requests)
     //  .then(() => TestUtil.waitForAgentBufferFlush(t))
     // Cleanup the process & end test

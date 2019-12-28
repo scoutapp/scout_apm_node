@@ -62,17 +62,17 @@ export interface Agent {
      * @param {AgentRequest} msg - The message to send
      * @returns {AgentResponse} - The response from the agent
      */
-    send(msg: AgentRequest): Promise<AgentResponse>;
+    send<T extends BaseAgentRequest, R extends BaseAgentResponse>(msg: T): Promise<R>;
 
     /**
      * Send a single message to the agent asynchronously
      * @param {AgentRequest} msg - The message to send
      * @returns {AgentResponse} - The response from the agent
      */
-    sendAsync(msg: AgentRequest): Promise<void>;
+    sendAsync<T extends BaseAgentRequest>(msg: T): Promise<void>;
 }
 
-export abstract class AgentRequest {
+export abstract class BaseAgentRequest {
     // Type of message
     public readonly type: AgentRequestType;
     // Raw JSON of the message
@@ -112,7 +112,7 @@ function isSuccessfulResponseResult(obj: any): obj is AgentResponseSuccessResult
     return obj && typeof obj === "string" && obj === "Success";
 }
 
-export abstract class AgentResponse {
+export abstract class BaseAgentResponse {
     // Type of message
     public readonly type: AgentResponseType;
 

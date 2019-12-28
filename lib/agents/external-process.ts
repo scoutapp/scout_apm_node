@@ -9,9 +9,9 @@ import { createPool, Pool } from "generic-pool";
 import {
     Agent,
     AgentEvent,
-    AgentRequest,
+    BaseAgentRequest,
     AgentRequestType,
-    AgentResponse,
+    BaseAgentResponse,
     AgentResponseType,
     AgentStatus,
     AgentType,
@@ -106,7 +106,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     }
 
     /** @see Agent */
-    public sendAsync<T extends AgentRequest>(msg: T): Promise<void> {
+    public sendAsync<T extends BaseAgentRequest>(msg: T): Promise<void> {
         if (!this.pool) { return Promise.reject(new Errors.Disconnected()); }
 
         this.logFn("[scout/external-process] sending async message", LogLevel.Debug);
@@ -126,7 +126,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     }
 
     /** @see Agent */
-    public send<T extends AgentRequest>(msg: T): Promise<AgentResponse> {
+    public send<T extends BaseAgentRequest, R extends BaseAgentResponse>(msg: T): Promise<R> {
         if (!this.pool) { return Promise.reject(new Errors.Disconnected()); }
         if (!msg) { return Promise.reject(new Errors.UnexpectedError("No message provided to send()")); }
         const requestType = msg.type;

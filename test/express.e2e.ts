@@ -4,7 +4,7 @@ import * as request from "supertest";
 
 import { Application } from "express";
 import { scoutMiddleware, ApplicationWithScout } from "../lib/express";
-import { AgentEvent, buildScoutConfiguration, AgentRequest, AgentRequestType } from "../lib/types";
+import { AgentEvent, buildScoutConfiguration, BaseAgentRequest, AgentRequestType } from "../lib/types";
 import { Scout } from "../lib/scout";
 import { V1StartSpan } from "../lib/protocol/v1/requests";
 
@@ -89,7 +89,7 @@ test("Dynamic segment routes", t => {
     // Set up listeners and make another request to ensure that scout is working
         .then(() => {
             // Create a listener to watch for the request finished event
-            const listener = (message: AgentRequest) => {
+            const listener = (message: BaseAgentRequest) => {
                 // Ignore requests that are sent that aren't span starts
                 if (!message || message.type !== AgentRequestType.V1StartSpan) { return; }
 

@@ -1,9 +1,9 @@
 import * as Errors from "../../errors";
-import { AgentResponse, AgentResponseType, CoreAgentVersion, JSONValue } from "../../types";
+import { BaseAgentResponse, AgentResponseType, CoreAgentVersion, JSONValue } from "../../types";
 
 interface ResponseTypeAndCtor { // "RTAC"
     type: AgentResponseType;
-    ctor?: (obj: object) => AgentResponse;
+    ctor?: (obj: object) => BaseAgentResponse;
 }
 
 type RTACWithCheck = [
@@ -63,9 +63,9 @@ function getResponseTypeAndConstrutor(obj: object): ResponseTypeAndCtor {
     return {type: AgentResponseType.Unknown, ctor: (obj) => new UnknownResponse(obj)};
 }
 
-export class V1AgentResponse extends AgentResponse {
+export class V1AgentResponse extends BaseAgentResponse {
     /** @see AgentResponse */
-    public static fromBinary<T extends AgentResponse>(buf: Buffer): Promise<AgentResponse> {
+    public static fromBinary<T extends BaseAgentResponse>(buf: Buffer): Promise<BaseAgentResponse> {
         return new Promise((resolve, reject) => {
             // Expect 4 byte content length, then JSON message
             if (buf.length < 5) {

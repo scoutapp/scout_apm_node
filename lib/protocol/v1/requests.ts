@@ -2,9 +2,9 @@ import { v4 as uuidv4 } from "uuid";
 
 import * as Constants from "../../constants";
 import * as Errors from "../../errors";
-import { AgentRequest, AgentRequestType, APIVersion, CoreAgentVersion, JSONValue } from "../../types";
+import { BaseAgentRequest, AgentRequestType, APIVersion, CoreAgentVersion, JSONValue } from "../../types";
 
-export class V1GetVersionRequest extends AgentRequest {
+export class V1GetVersionRequest extends BaseAgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1GetVersion;
 
     constructor() {
@@ -13,7 +13,7 @@ export class V1GetVersionRequest extends AgentRequest {
     }
 }
 
-export class V1Register extends AgentRequest {
+export class V1Register extends BaseAgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1StartRequest;
 
     constructor(app: string, key: string, version: APIVersion) {
@@ -28,7 +28,7 @@ export class V1Register extends AgentRequest {
     }
 }
 
-export class V1StartRequest extends AgentRequest {
+export class V1StartRequest extends BaseAgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1StartRequest;
 
     public readonly requestId: string;
@@ -50,7 +50,7 @@ export class V1StartRequest extends AgentRequest {
     }
 }
 
-export class V1FinishRequest extends AgentRequest {
+export class V1FinishRequest extends BaseAgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1FinishRequest;
 
     public readonly requestId: string;
@@ -69,7 +69,7 @@ export class V1FinishRequest extends AgentRequest {
     }
 }
 
-export class V1TagRequest extends AgentRequest {
+export class V1TagRequest extends BaseAgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1TagRequest;
 
     public readonly requestId: string;
@@ -95,7 +95,7 @@ export class V1TagRequest extends AgentRequest {
     }
 }
 
-export class V1StartSpan extends AgentRequest {
+export class V1StartSpan extends BaseAgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1StartSpan;
 
     public readonly requestId: string;
@@ -135,7 +135,7 @@ export class V1StartSpan extends AgentRequest {
     }
 }
 
-export class V1StopSpan extends AgentRequest {
+export class V1StopSpan extends BaseAgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1StopSpan;
 
     public readonly requestId: string;
@@ -163,7 +163,7 @@ export class V1StopSpan extends AgentRequest {
     }
 }
 
-export class V1TagSpan extends AgentRequest {
+export class V1TagSpan extends BaseAgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1TagSpan;
 
     public readonly requestId: string;
@@ -200,7 +200,7 @@ export class V1TagSpan extends AgentRequest {
     }
 }
 
-export class V1ApplicationEvent extends AgentRequest {
+export class V1ApplicationEvent extends BaseAgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1ApplicationEvent;
 
     public readonly source: string;
