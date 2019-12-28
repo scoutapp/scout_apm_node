@@ -18,6 +18,7 @@ import {
     ProcessOptions,
     LogFn,
     LogLevel,
+    splitAgentResponses,
 } from "../types";
 
 import { V1AgentResponse } from "../protocol/v1/responses";
@@ -264,6 +265,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      */
     private createDomainSocket(): Promise<Socket> {
         return new Promise((resolve, reject) => {
+            let chunks: Buffer = Buffer.from([]);
+
             const socket = createConnection(this.getSocketPath(), () => {
                 this.emit(AgentEvent.SocketConnected);
                 resolve(socket);
@@ -271,32 +274,56 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
             // When the socket receives data, parse it and emit socket response received
             socket.on("data", (data: Buffer) => {
-                V1AgentResponse
-                    .fromBinary(data)
-                    .then(msg => {
-                        this.emit(AgentEvent.SocketResponseReceived, msg, socket);
+                let framed: Buffer[] = [];
 
-                        switch (msg.type) {
-                            case AgentResponseType.V1StartRequest:
-                                this.emit(AgentEvent.RequestStarted);
-                                break;
-                            case AgentResponseType.V1FinishRequest:
-                                this.emit(AgentEvent.RequestFinished);
-                                break;
-                            case AgentResponseType.V1StartSpan:
-                                this.emit(AgentEvent.SpanStarted);
-                                break;
-                            case AgentResponseType.V1StopSpan:
-                                this.emit(AgentEvent.SpanStopped);
-                                break;
-                            case AgentResponseType.V1ApplicationEvent:
-                                this.emit(AgentEvent.ApplicationEventReported);
-                                break;
-                        }
-                    })
-                    .catch(err => {
-                        this.logFn(`[scout/external-process] Socket response parse error:\n ${err}`, LogLevel.Error);
-                        this.emit(AgentEvent.SocketResponseParseError, err);
+                // Parse the buffer to return zero or more well-framed agent responses
+                console.log(`ORIGINAL: ${data}]`);
+                let {framed: newFramed, remaining: newRemaining} = splitAgentResponses(data);
+                framed = framed.concat(newFramed);
+                console.log(`AFTER FRAMING, framed: ${newFramed}]`);
+                console.log(`AFTER FRAMING, remaining: ${newRemaining}]`);
+
+                // Add the remaining to the partial response buffer we're keeping
+                chunks = Buffer.concat([chunks, newRemaining]);
+
+                // Attempt to extract any *just* completed messages
+                // Update the partial response for any remaining
+                let {framed: chunkFramed, remaining: chunkRemaining} = splitAgentResponses(chunks);
+                framed = framed.concat(chunkFramed);
+                chunks = chunkRemaining;
+
+                // Read all (likely) fully formed, correctly framed messages
+                framed
+                    .forEach(data => {
+                        console.log(`about to parse: ${data}]`);
+                        // Attempt to parse an agent response
+                        V1AgentResponse
+                            .fromBinary(data)
+                            .then(msg => {
+                                this.emit(AgentEvent.SocketResponseReceived, msg, socket);
+
+                                switch (msg.type) {
+                                    case AgentResponseType.V1StartRequest:
+                                        this.emit(AgentEvent.RequestStarted);
+                                        break;
+                                    case AgentResponseType.V1FinishRequest:
+                                        this.emit(AgentEvent.RequestFinished);
+                                        break;
+                                    case AgentResponseType.V1StartSpan:
+                                        this.emit(AgentEvent.SpanStarted);
+                                        break;
+                                    case AgentResponseType.V1StopSpan:
+                                        this.emit(AgentEvent.SpanStopped);
+                                        break;
+                                    case AgentResponseType.V1ApplicationEvent:
+                                        this.emit(AgentEvent.ApplicationEventReported);
+                                        break;
+                                }
+                            })
+                            .catch(err => {
+                                this.logFn(`[scout/external-process] Socket response parse error:\n ${err}`, LogLevel.Error);
+                                this.emit(AgentEvent.SocketResponseParseError, err);
+                            });
                     });
             });
 

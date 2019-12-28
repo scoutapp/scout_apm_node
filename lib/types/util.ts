@@ -36,3 +36,54 @@ export function consoleLogFn(message: string, level?: LogLevel) {
             console.log(msg); // tslint:disable-line no-console
     }
 }
+
+// Correctly framed headers and the remainder (if any)
+export interface FramedHeadersWithRemaining {
+    framed: Buffer[];
+    remaining: Buffer;
+}
+
+/**
+ * Check if a given data buffer contains more than one message
+ *
+ * @param {Buffer} buf - the data that was received
+ * @returns {[Buffer[], Buffer]} completed properly framed buffers
+ */
+export function splitAgentResponses(buf: Buffer): FramedHeadersWithRemaining {
+    // If buf isn't long enough to contain a proper 4 byte content length + msg
+    // then we know no messages are present but it *might* be a chunked message
+    if (buf.length < 5) {
+        return {framed: [], remaining: buf};
+    }
+
+    const framed: Buffer[] = [];
+    let remaining: Buffer = Buffer.from([]);
+
+    while (buf.length > 0) {
+        // Pull and check the payload length
+        const payloadLen: number = buf.readUInt32BE(0);
+        const expected = payloadLen + 4; // length of payload + initial length
+
+        // Exactly the right amount
+        if (buf.length === expected) {
+            framed.push(buf);
+            continue
+        }
+
+        // If we have more in the buffer than expected, save & truncate
+        if (buf.length > expected) {
+            console.log("MORE THAN EXPECTED");
+            // Split the buffer into payload & remaining
+            let [m, remainder] = [buf.slice(payloadLen), buf.slice(payloadLen, buf.length)];
+            framed.push(m);
+            buf = remainder;
+            continue;
+        }
+
+        // Less than expected case, we want to leave
+        remaining = buf;
+        break;
+    }
+
+    return {framed, remaining};
+}
