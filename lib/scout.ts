@@ -232,7 +232,7 @@ export class Scout {
 
         // Ensure coreAgentVersion is present
         if (!this.config.coreAgentVersion) {
-            const err = new Error("No core agent version specified!")
+            const err = new Error("No core agent version specified!");
             this.logFn(err.message, LogLevel.Error);
             return Promise.reject(err);
         }

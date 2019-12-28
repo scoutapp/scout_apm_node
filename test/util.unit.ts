@@ -10,7 +10,7 @@ import * as TestFixtures from "./fixtures";
 
 test("splitAgentResponse parses well formed headers", t => {
     // Build a buffer with a message
-    const buf = buildCoreAgentSocketResponse(TestFixtures.RESPONSES.V1_REGISTER.COMPLETE);
+    const buf = buildCoreAgentSocketResponse(TestFixtures.RESPONSES.V1.REGISTER.COMPLETE);
 
     const result = splitAgentResponses(buf);
 
@@ -23,8 +23,8 @@ test("splitAgentResponse parses well formed headers", t => {
 
 test("splitAgentResponse parses partial response", t => {
     // Build a buffer with a partial message, but write the length to be the complete message
-    const buf = buildCoreAgentSocketResponse(TestFixtures.RESPONSES.V1_REGISTER.PARTIAL);
-    buf.writeUInt32BE(TestFixtures.RESPONSES.V1_REGISTER.COMPLETE.length, 0);
+    const buf = buildCoreAgentSocketResponse(TestFixtures.RESPONSES.V1.REGISTER.PARTIAL);
+    buf.writeUInt32BE(TestFixtures.RESPONSES.V1.REGISTER.COMPLETE.length, 0);
 
     const result = splitAgentResponses(buf);
 
@@ -32,7 +32,7 @@ test("splitAgentResponse parses partial response", t => {
     t.equals(result.framed.length, 0, "no framed full message was returned");
     t.equals(
         result.remaining.length,
-        TestFixtures.RESPONSES.V1_REGISTER.PARTIAL.length + 4,
+        TestFixtures.RESPONSES.V1.REGISTER.PARTIAL.length + 4,
         "remaining (badly-framed) bytes are partial length + 4 byte amount",
     );
 
@@ -42,8 +42,8 @@ test("splitAgentResponse parses partial response", t => {
 test("splitAgentResponse parses multiple responses", t => {
     // Build a buffer with a message
     const buf = Buffer.concat([
-        buildCoreAgentSocketResponse(TestFixtures.RESPONSES.V1_REGISTER.COMPLETE),
-        buildCoreAgentSocketResponse(TestFixtures.RESPONSES.V1_REGISTER.COMPLETE),
+        buildCoreAgentSocketResponse(TestFixtures.RESPONSES.V1.REGISTER.COMPLETE),
+        buildCoreAgentSocketResponse(TestFixtures.RESPONSES.V1.REGISTER.COMPLETE),
     ]);
 
     const result = splitAgentResponses(buf);
