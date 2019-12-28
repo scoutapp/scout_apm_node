@@ -196,3 +196,13 @@ export function testConfigurationOverlay(
         delete process.env[envKey];
     }
 }
+
+export function buildCoreAgentSocketResponse(json: string): Buffer {
+    const buf = Buffer.concat([
+        Buffer.allocUnsafe(4),
+        Buffer.from(json),
+    ]);
+    buf.writeUInt32BE(json.length, 0);
+
+    return buf;
+}

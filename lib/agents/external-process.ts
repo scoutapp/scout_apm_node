@@ -277,25 +277,21 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                 let framed: Buffer[] = [];
 
                 // Parse the buffer to return zero or more well-framed agent responses
-                console.log(`ORIGINAL: ${data}]`);
-                let {framed: newFramed, remaining: newRemaining} = splitAgentResponses(data);
+                const {framed: newFramed, remaining: newRemaining} = splitAgentResponses(data);
                 framed = framed.concat(newFramed);
-                console.log(`AFTER FRAMING, framed: ${newFramed}]`);
-                console.log(`AFTER FRAMING, remaining: ${newRemaining}]`);
 
                 // Add the remaining to the partial response buffer we're keeping
                 chunks = Buffer.concat([chunks, newRemaining]);
 
                 // Attempt to extract any *just* completed messages
                 // Update the partial response for any remaining
-                let {framed: chunkFramed, remaining: chunkRemaining} = splitAgentResponses(chunks);
+                const {framed: chunkFramed, remaining: chunkRemaining} = splitAgentResponses(chunks);
                 framed = framed.concat(chunkFramed);
                 chunks = chunkRemaining;
 
                 // Read all (likely) fully formed, correctly framed messages
                 framed
                     .forEach(data => {
-                        console.log(`about to parse: ${data}]`);
                         // Attempt to parse an agent response
                         V1AgentResponse
                             .fromBinary(data)
@@ -321,7 +317,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                                 }
                             })
                             .catch(err => {
-                                this.logFn(`[scout/external-process] Socket response parse error:\n ${err}`, LogLevel.Error);
+                                this.logFn(
+                                    `[scout/external-process] Socket response parse error:\n ${err}`,
+                                    LogLevel.Error,
+                                );
                                 this.emit(AgentEvent.SocketResponseParseError, err);
                             });
                     });

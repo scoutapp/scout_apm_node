@@ -64,17 +64,16 @@ export function splitAgentResponses(buf: Buffer): FramedHeadersWithRemaining {
         const payloadLen: number = buf.readUInt32BE(0);
         const expected = payloadLen + 4; // length of payload + initial length
 
-        // Exactly the right amount
+        // If we get exactly the right amount return because we have the framed amount
         if (buf.length === expected) {
             framed.push(buf);
-            continue
+            break;
         }
 
-        // If we have more in the buffer than expected, save & truncate
+        // If we have more in the whole buffer than expected, save the first chunk then remainder
         if (buf.length > expected) {
-            console.log("MORE THAN EXPECTED");
             // Split the buffer into payload & remaining
-            let [m, remainder] = [buf.slice(payloadLen), buf.slice(payloadLen, buf.length)];
+            const [m, remainder] = [buf.slice(expected), buf.slice(expected, buf.length)];
             framed.push(m);
             buf = remainder;
             continue;

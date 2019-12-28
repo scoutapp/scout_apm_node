@@ -7,8 +7,8 @@ export const APP_META: Partial<ApplicationMetadata> = {
 
 export const RESPONSES = {
     V1_REGISTER: {
-        COMPLETE: '+{"Register":{"id":null,"result":"Success"}}',
-        PARTIAL: '+{"Register":{"id":null,"',
-        CHUNKED: ['+{"Register":{"id":null,"', 'result":"Success"}}'],
+        COMPLETE: '{"Register":{"id":null,"result":"Success"}}',
+        PARTIAL: '{"Register":{"id":null,"',
+        CHUNKED: ['{"Register":{"id":null,"', 'result":"Success"}}'],
     },
 };
