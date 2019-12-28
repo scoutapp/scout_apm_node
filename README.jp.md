@@ -54,10 +54,10 @@ const scout = new Scout();
 scout.setup()
     .then(scout => {
         // リクエスト開始
-        scout.startRequest()
+        return scout.startRequest()
             .then(scoutRequest => {
                 // タスク実行
-                bigHeavyTaskThatReturnsAPromise()
+                return bigHeavyTaskThatReturnsAPromise()
                     // リクエスト終了
                     .then(() => scoutRequest.finish());
             });

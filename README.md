@@ -47,17 +47,14 @@ For more information on configuration, see `docs/configuration.md`
 Scout supports use with any other frameworks through it's `Promise` based API:
 
 ```javascript
-const Scout = require("scout-apm-client").Scout;
-const scout = new Scout();
-
 // Set up your scout instance
 scout.setup()
     .then(scout => {
         // Start a request trace with Scout
-        scout.startRequest()
+        return scout.startRequest()
             .then(scoutRequest => {
                 // Run your code
-                bigHeavyTaskThatReturnsAPromise()
+                return bigHeavyTaskThatReturnsAPromise()
                     .then(() => scoutRequest.finish());
             });
     });
