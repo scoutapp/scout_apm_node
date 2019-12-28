@@ -1,4 +1,4 @@
-import { v1 as uuidv1 } from "uuid";
+import { v4 as uuidv4 } from "uuid";
 
 import * as Constants from "../../constants";
 import * as Errors from "../../errors";
@@ -35,7 +35,7 @@ export class V1StartRequest extends AgentRequest {
 
     constructor(opts?: {requestId?: string, timestamp?: Date}) {
         super();
-        const id = opts && opts.requestId ? opts.requestId : uuidv1();
+        const id = opts && opts.requestId ? opts.requestId : uuidv4();
         const prefix = Constants.DEFAULT_REQUEST_PREFIX;
         this.requestId = `${prefix}${id}`;
 
@@ -117,7 +117,7 @@ export class V1StartSpan extends AgentRequest {
         this.operation = operation;
         this.parentId = opts && opts.parentId ? opts.parentId : undefined;
 
-        const id = opts && opts.spanId ? opts.spanId : uuidv1();
+        const id = opts && opts.spanId ? opts.spanId : uuidv4();
         const prefix = Constants.DEFAULT_SPAN_PREFIX;
         this.spanId = `${prefix}${id}`;
 
