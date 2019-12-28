@@ -8,6 +8,8 @@ import {
     LogLevel,
 } from "./enum";
 
+import { JSONValue } from "./util";
+
 import { Buffer } from "buffer";
 import { InvalidVersion } from "../errors";
 import * as Constants from "../constants";
@@ -74,7 +76,7 @@ export abstract class AgentRequest {
     // Type of message
     public readonly type: AgentRequestType;
     // Raw JSON of the message
-    protected json: any;
+    public json: JSONValue;
 
     /**
      * Convert the message to the binary type that is readable by core-agent

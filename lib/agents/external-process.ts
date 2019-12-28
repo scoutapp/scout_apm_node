@@ -108,6 +108,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     public sendAsync<T extends AgentRequest>(msg: T): Promise<void> {
         if (!this.pool) { return Promise.reject(new Errors.Disconnected()); }
 
+        this.logFn("[scout/external-process] sending async message", LogLevel.Debug);
+
         // Get a socket from the pool
         return new Promise((resolve, reject) => {
             this.pool.acquire()
@@ -128,9 +130,12 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (!msg) { return Promise.reject(new Errors.UnexpectedError("No message provided to send()")); }
         const requestType = msg.type;
 
+        this.logFn(`[scout/external-process] sending message:\n ${JSON.stringify(msg.json)}`, LogLevel.Debug);
+
         return new Promise((resolve, reject) => {
             // Get a socket from the pool
-            this.pool.acquire()
+            this.pool
+                .acquire()
                 .then(
                     // Socket acquisition succeeded
                     (socket: Socket) => {
@@ -138,6 +143,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         const listener = (resp: any, socket?: Socket) => {
                             // Ensure we only capture messages that were received on the socket we're holding
                             if (!socket || socket !== socket) { return; }
+
+                            this.logFn(
+                                `[scout/external-process] received response: ${JSON.stringify(resp)}`,
+                                LogLevel.Debug,
+                            );
 
                             // Remove this temporary listener
                             this.removeListener(AgentEvent.SocketResponseReceived, listener);
