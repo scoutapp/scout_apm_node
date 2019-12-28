@@ -229,9 +229,14 @@ export class Scout {
 
     public setup(): Promise<this> {
         this.downloader = new WebAgentDownloader({logFn: this.logFn});
+
+        // Ensure coreAgentVersion is present
         if (!this.config.coreAgentVersion) {
-            throw new Error("No core agent version specified!");
+            const err = new Error("No core agent version specified!")
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
         }
+
         this.coreAgentVersion = new CoreAgentVersion(this.config.coreAgentVersion);
 
         // Build options for download
@@ -276,10 +281,10 @@ export class Scout {
             .then(() => this.logFn("[scout] successfully connected to agent", LogLevel.Debug))
             .then(() => {
                 if (!this.config.name) {
-                    this.logFn("[name] configuration value missing", LogLevel.Warn);
+                    this.logFn("[scout] 'name' configuration value missing", LogLevel.Warn);
                 }
                 if (!this.config.key) {
-                    this.logFn("[key] missing in configuration", LogLevel.Warn);
+                    this.logFn("[scout] 'key' missing in configuration", LogLevel.Warn);
                 }
 
                 return this.agent.send(new Requests.V1Register(
@@ -294,7 +299,11 @@ export class Scout {
     }
 
     public startRequest(): Promise<ScoutRequest> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         const req = new Requests.V1StartRequest();
         return this.agent
@@ -303,7 +312,11 @@ export class Scout {
     }
 
     public stopRequest(req: ScoutRequest): Promise<ScoutRequest> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         return this.agent
             .send(new Requests.V1FinishRequest(req.id))
@@ -311,7 +324,11 @@ export class Scout {
     }
 
     public tagRequest(req: ScoutRequest, name: string, value: string): Promise<void> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         return this.agent
             .send(new Requests.V1TagRequest(
@@ -323,7 +340,11 @@ export class Scout {
     }
 
     public tagSpan(span: ScoutSpan, name: string, value: string): Promise<void> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         return this.agent
             .send(new Requests.V1TagSpan(
@@ -336,7 +357,11 @@ export class Scout {
     }
 
     public startSpan(operation: string, req: ScoutRequest, parent?: ScoutSpan): Promise<ScoutSpan> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         const opts = {
             parentId: parent ? parent.id : undefined,
@@ -349,7 +374,11 @@ export class Scout {
     }
 
     public stopSpan(span: ScoutSpan): Promise<ScoutSpan> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         return this.agent
             .send(new Requests.V1StopSpan(span.id, span.request.id))
