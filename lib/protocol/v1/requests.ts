@@ -194,7 +194,7 @@ export class V1TagSpan extends BaseAgentRequest {
                 span_id: this.spanId,
                 tag: this.tagName,
                 timestamp,
-                value: JSON.stringify(this.tagValue),
+                value: this.tagValue,
             },
         };
     }
@@ -225,7 +225,7 @@ export class V1ApplicationEvent extends BaseAgentRequest {
         this.json = {
             ApplicationEvent: {
                 event_type: this.eventType,
-                event_value: JSON.stringify(this.eventValue),
+                event_value: this.eventValue,
                 source,
                 timestamp,
             },

@@ -21,9 +21,9 @@ import * as Requests from "../../lib/protocol/v1/requests";
 
 const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY;
 const TEST_APP_NAME = "scout-e2e-tests";
-const TEST_APP_VERSION = "1.1.8";
+const TEST_APP_VERSION = "1.2.6";
 
-test("external process can be launched locally (v1.1.8)", t => {
+test("external process can be launched locally (v1.2.6)", t => {
     let agent: ExternalProcessAgent;
     let process: ChildProcess;
 
@@ -40,7 +40,7 @@ test("external process can be launched locally (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("manual async GetVersion message works (v1.1.8)", t => {
+test("manual async GetVersion message works (v1.2.6)", t => {
     let agent: ExternalProcessAgent;
 
     // Create the external process agent
@@ -56,7 +56,7 @@ test("manual async GetVersion message works (v1.1.8)", t => {
                 if (resp.type !== AgentResponseType.V1GetVersion) { return; }
 
                 // Ensure the version we got back is what we expect
-                t.equals(resp.version.raw, TEST_APP_VERSION, "parsed response version matches (1.1.8)");
+                t.equals(resp.version.raw, TEST_APP_VERSION, "parsed response version matches (1.2.6)");
 
                 // Remove listener
                 agent.removeListener(AgentEvent.SocketResponseReceived, listener);
@@ -75,7 +75,7 @@ test("manual async GetVersion message works (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("GetVersion message works (v1.1.8)", t => {
+test("GetVersion message works (v1.2.6)", t => {
     let agent: ExternalProcessAgent;
 
     // Create the external process agent
@@ -94,7 +94,7 @@ test("GetVersion message works (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("Register message works (v1.1.8)", t => {
+test("Register message works (v1.2.6)", t => {
     let agent: ExternalProcessAgent;
 
     // Ensure agent key is present (fed in from ENV)
@@ -121,7 +121,7 @@ test("Register message works (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("StartRequest message works (v1.1.8)", t => {
+test("StartRequest message works (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -144,7 +144,7 @@ test("StartRequest message works (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("FinishRequest message works (v1.1.8)", t => {
+test("FinishRequest message works (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
@@ -173,7 +173,7 @@ test("FinishRequest message works (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("TagRequest message works (v1.1.8)", t => {
+test("TagRequest message works (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
@@ -209,7 +209,7 @@ test("TagRequest message works (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("StartSpan message works for leaf span (v1.1.8)", t => {
+test("StartSpan message works for leaf span (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
@@ -244,7 +244,7 @@ test("StartSpan message works for leaf span (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("StopSpan works for leaf span (v1.1.8)", t => {
+test("StopSpan works for leaf span (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -287,7 +287,7 @@ test("StopSpan works for leaf span (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("TagSpan works for leaf span (v1.1.8)", t => {
+test("TagSpan works for leaf span (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -335,7 +335,7 @@ test("TagSpan works for leaf span (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("ApplicationEvent for application metadata works (v1.1.8)", t => {
+test("ApplicationEvent for application metadata works (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -359,7 +359,7 @@ test("ApplicationEvent for application metadata works (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("ApplicationEvent for sampling works (v1.1.8)", t => {
+test("ApplicationEvent for sampling works (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -389,7 +389,7 @@ test("ApplicationEvent for sampling works (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("Nested spans work (v1.1.8)", t => {
+test("Nested spans work (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -440,7 +440,7 @@ test("Nested spans work (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("Nested spans work in the wrong close order (v1.1.8)", t => {
+test("Nested spans work in the wrong close order (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -491,7 +491,7 @@ test("Nested spans work in the wrong close order (v1.1.8)", t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("Request with 'Controller' span works, after waiting for flush (v1.1.8)", t => {
+test("Request with 'Controller' span works, after waiting for flush (v1.2.6)", t => {
     const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
