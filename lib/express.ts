@@ -55,7 +55,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         getScout()
             .then(scout => {
                 // Create a trace
-                scout
+                return scout
                     .startRequest()
                     .then((scoutRequest: ScoutRequest) => {
                         // Save the scout request onto the request object
@@ -95,7 +95,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                         const reqMethod = req.method.toUpperCase();
 
                         // Start a span for the request
-                        scoutRequest
+                        return scoutRequest
                             .startChildSpan(`Controller/${reqMethod} ${path}`)
                             .then(rootSpan => {
                                 // Add the span to the request object
