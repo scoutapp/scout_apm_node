@@ -150,6 +150,18 @@ export function simpleDynamicSegmentExpressApp(middleware: any, delayMs: number 
     return app;
 }
 
+// An express application which errors on the /
+export function simpleErrorApp(middleware: any, delayMs: number = 0): Application {
+    const app = express();
+    app.use(middleware);
+
+    app.get("/", (req: Request, res: Response) => {
+        throw new Error("Expected application error (simpleErrorApp)");
+    });
+
+    return app;
+}
+
 // Test that a given variable is effectively overlaid in the configuration
 export function testConfigurationOverlay(
     t: Test,

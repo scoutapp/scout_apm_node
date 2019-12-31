@@ -120,3 +120,30 @@ test("Dynamic segment routes", t => {
         })
         .catch(t.end);
 });
+
+test("Application which errors", t => {
+    // Create an application and setup scout middleware
+    const app: Application & ApplicationWithScout = TestUtil.simpleErrorApp(scoutMiddleware({
+        config: buildScoutConfiguration({
+            allowShutdown: true,
+        }),
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
+
+    let scout: Scout;
+
+    // Send a request to the application (which should trigger setup of scout)
+    request(app)
+        .get("/")
+        .expect(500)
+        .then(res => {
+            if (!app.scout) { throw new Error("Scout was not added to app object"); }
+
+            t.assert(app.scout, "scout instance was added to the app object");
+            t.assert(app.scout.hasAgent(), "the scout instance has an agent");
+            scout = app.scout;
+        })
+        .then(() => scout.shutdown())
+        .then(() => t.end())
+        .catch(t.end);
+});
