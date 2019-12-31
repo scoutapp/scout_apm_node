@@ -64,6 +64,11 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                         // Set up the request timeout
                         if (requestTimeoutMs > 0) {
                             setTimeout(() => {
+                                // Do not perform timeout code if request is already stopped
+                                if (scoutRequest.isStopped()) {
+                                    return;
+                                }
+
                                 // Tag the request as timed out
                                 scoutRequest
                                     .addTags([{name: "timeout", value: "true"}])
