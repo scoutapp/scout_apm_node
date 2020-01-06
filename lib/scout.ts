@@ -470,6 +470,17 @@ export class Scout {
             .then(() => this);
     }
 
+    /**
+     * Helper function for starting a scout request with the instance
+     *
+     * @param {ScoutRequestOptions} [options]
+     * @returns {Promise<ScoutRequest>} a new scout request
+     */
+    public startRequest(opts?: ScoutRequestOptions): Promise<ScoutRequest> {
+        const request = new ScoutRequest(Object.assign({}, {scoutInstance: this}, opts || {}));
+        return request.start();
+    }
+
     public sendStartRequest(original: ScoutRequest): Promise<ScoutRequest> {
         if (!this.hasAgent()) {
             const err = new Errors.Disconnected("No agent is present, please run .setup()");

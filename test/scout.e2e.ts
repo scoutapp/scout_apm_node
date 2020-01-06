@@ -39,9 +39,10 @@ test("Request can be created and finished", t => {
     scout
         .setup()
     // Create the request
+        .then(() => scout.startRequest())
         .then(r => {
-            req = new ScoutRequest();
-            t.assert(req, "request was created");
+            t.assert(r, "request was created");
+            req = r;
         })
     // Finish & send the request
         .then(() => req.finish())
@@ -63,7 +64,8 @@ test("Single span request", t => {
     scout
         .setup()
     // Create the request
-        .then(() => req = new ScoutRequest())
+        .then(() => scout.startRequest())
+        .then(r => req = r)
     // Add a span to the request
         .then(() => req.startChildSpan("Controller/test"))
         .then(s => {
@@ -94,7 +96,8 @@ test("Multi span request (2 top level)", t => {
     scout
         .setup()
     // Create the request
-        .then(() => req = new ScoutRequest())
+        .then(() => scout.startRequest())
+        .then(r => req = r)
     // Add the first span
         .then(() => req.startChildSpan("Controller/test.first"))
         .then(s => spans.push(s))
@@ -128,7 +131,8 @@ test("Multi span request (1 top level, 1 nested)", t => {
     scout
         .setup()
     // Create the request
-        .then(() => req = new ScoutRequest())
+        .then(() => scout.startRequest())
+        .then(r => req = r)
     // Add the first span
         .then(() => req.startChildSpan("Controller/test.first"))
         .then(s => parent = s)
@@ -170,7 +174,8 @@ test("Parent Span auto close works (1 top level, 1 nested)", t => {
     scout
         .setup()
     // Create the request
-        .then(() => req = new ScoutRequest())
+        .then(() => scout.startRequest())
+        .then(r => req = r)
     // Add the first span
         .then(() => req.startChildSpan("Controller/test.first"))
         .then(s => parent = s)
@@ -206,7 +211,8 @@ test("Request auto close works (1 top level, 1 nested)", t => {
     scout
         .setup()
     // Create the request
-        .then(() => req = new ScoutRequest())
+        .then(() => scout.startRequest())
+        .then(r => req = r)
     // Add the first span
         .then(() => req.startChildSpan("Controller/test.first"))
         .then(s => parent = s)
@@ -238,7 +244,8 @@ test("Request auto close works (2 top level)", t => {
     scout
         .setup()
     // Create the request
-        .then(() => req = new ScoutRequest())
+        .then(() => scout.startRequest())
+        .then(r => req = r)
     // Add the first span
         .then(() => req.startChildSpan("Controller/test.first"))
         .then(s => spans.push(s))
@@ -352,9 +359,10 @@ test("Application metadata is built and sent", t => {
     // Setup should end up sending the Application metadata
         .setup()
     // Create the request
+        .then(() => scout.startRequest())
         .then(r => {
-            req = new ScoutRequest();
-            t.assert(req, "request was created");
+            t.assert(r, "request was created");
+            req = r;
         })
     // Immediately finish & send the request
         .then(() => req.finish())
@@ -377,8 +385,12 @@ test("Multiple ongoing requests are possible at the same time", t => {
     scout
         .setup()
     // Create the first & second request
-        .then(() => {
-            [first, second] = [new ScoutRequest(), new ScoutRequest()];
+        .then(() => Promise.all([
+            scout.startRequest(),
+            scout.startRequest(),
+        ]))
+        .then((reqs: ScoutRequest[]) => {
+            [first, second] = reqs;
             t.assert(first, "first request was created");
             t.assert(second, "second request was created");
         })

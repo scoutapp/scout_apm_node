@@ -173,10 +173,14 @@ export function testConfigurationOverlay(
 ): void {
     const {appKey, envValue, expectedValue} = opts;
     const envKey = convertCamelCaseToEnvVar(appKey);
+    const envValueIsSet = envKey in process.env;
 
     const defaultConfig = buildScoutConfiguration();
     t.assert(defaultConfig, "defaultConfig was generated");
-    if (appKey in DEFAULT_SCOUT_CONFIGURATION) {
+
+    // Only perform this check if we're not currently overriding the value in ENV *during* this test
+    // it won't be the default, because we've set it to be so
+    if (appKey in DEFAULT_SCOUT_CONFIGURATION && !envValueIsSet) {
         t.equals(defaultConfig[appKey], DEFAULT_SCOUT_CONFIGURATION[appKey], `config [${appKey}] matches default`);
     }
 
@@ -186,7 +190,12 @@ export function testConfigurationOverlay(
 
     const appOnlyConfig = buildScoutConfiguration(appConfig);
     t.assert(appOnlyConfig, "appOnlyConfig was generated");
-    t.equals(appOnlyConfig[appKey], expectedValue, `config [${appKey}] matches app value when set by app`);
+
+    // Only perform this check if we're not currently overriding the value in ENV *during* this test
+    // ENV overrides the app so it won't be the app value
+    if (!envValueIsSet) {
+        t.equals(appOnlyConfig[appKey], expectedValue, `config [${appKey}] matches app value when set by app`);
+    }
 
     // Save the previous ENV value
     const wasPresent = envKey in process.env;
