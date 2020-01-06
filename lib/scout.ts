@@ -63,7 +63,6 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
     public readonly timestamp: Date;
 
     private readonly scoutInstance?: Scout;
-    private logFn: LogFn = () => undefined;
     private finished: boolean = false;
     private sent: boolean = false;
 
@@ -87,7 +86,10 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
     /** @see ChildSpannable */
     public startChildSpan(operation: string): Promise<ScoutSpan> {
         if (this.finished) {
-            this.logFn(`[scout/request/${this.id}] Cannot add a child span to a finished request [${this.id}]`, LogLevel.Error);
+            this.logFn(
+                `[scout/request/${this.id}] Cannot add a child span to a finished request [${this.id}]`,
+                LogLevel.Error,
+            );
 
             return Promise.reject(new Errors.FinishedRequest(
                 "Cannot add a child span to a finished request",
@@ -165,6 +167,8 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
                 return this;
             });
     }
+
+    private logFn: LogFn = () => undefined;
 }
 
 export interface ScoutSpanOptions {
@@ -182,7 +186,6 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
     public readonly operation: string;
 
     private readonly scoutInstance?: Scout;
-    private logFn: LogFn = () => undefined;
 
     private stopped: boolean = false;
     private sent: boolean = false;
@@ -289,6 +292,8 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
                 return this;
             });
     }
+
+    private logFn: LogFn = () => undefined;
 }
 
 export interface ScoutOptions {
