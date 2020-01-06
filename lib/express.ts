@@ -54,54 +54,67 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // Get the scout instance
         getScout()
             .then(scout => {
-                // Create a request
-                const request = new ScoutRequest({scoutInstance: scout});
+                // Create a trace
+                scout
+                    .startRequest()
+                    .then((scoutRequest: ScoutRequest) => {
+                        // Save the scout request onto the request object
+                        req.scout = Object.assign(req.scout || {}, {request: req});
 
-                // Save the scout request onto the request object
-                req.scout = Object.assign(req.scout || {}, {request: req});
-
-                // Set up the request timeout
-                if (requestTimeoutMs > 0) {
-                    setTimeout(() => {
-                        // Do not perform timeout code if request is already stopped
-                        if (request.isStopped()) {
-                            return;
+                        // Set up the request timeout
+                        if (requestTimeoutMs > 0) {
+                            setTimeout(() => {
+                                // Tag the request as timed out
+                                scoutRequest
+                                    .addTags([{name: "timeout", value: "true"}])
+                                    .then(() => scoutRequest.finish())
+                                    .then(() => scoutRequest.send())
+                                    .catch(() => {
+                                        if (opts && opts.logFn) {
+                                            opts.logFn(
+                                                `[scout] Failed to finish request that timed out: ${scoutRequest}`,
+                                                LogLevel.Warn,
+                                            );
+                                        }
+                                    });
+                            }, requestTimeoutMs);
                         }
 
-                        // Tag the request as timed out
-                        request
-                            .addTags([{name: "timeout", value: "true"}])
-                            .then(() => request.finish())
-                            .catch(() => request.finish());
-                    }, requestTimeoutMs);
-                }
+                        // Set up handler to act on end of request
+                        onFinished(res, (err, res) => {
+                            // Finish & send request
+                            scoutRequest.finish()
+                                .then(() => scoutRequest.send());
+                        });
 
-                // Set up handler to act on end of request
-                onFinished(res, (err, res) => {
-                    request.finish();
-                });
+                        // Find routes that match the current URL
+                        const matchedRoutes = req.app._router.stack
+                            .filter((middleware: any) => {
+                                return middleware.route
+                                    && middleware.regexp
+                                    && middleware.regexp.test(req.url.toString());
+                            });
 
-                // Find routes that match the current URL
-                const matchedRoutes = req.app._router.stack
-                    .filter((middleware: any) => {
-                        return middleware.route
-                            && middleware.regexp
-                            && middleware.regexp.test(req.url.toString());
-                    });
+                        // Create a Controller/ span for the request
+                        const path = matchedRoutes.length > 0 ? matchedRoutes[0].route.path : "Unknown";
+                        const reqMethod = req.method.toUpperCase();
 
-                // Create a Controller/ span for the request
-                const path = matchedRoutes.length > 0 ? matchedRoutes[0].route.path : "Unknown";
-                const reqMethod = req.method.toUpperCase();
-
-                // Start a span for the request
-                return request
-                    .startChildSpan(`Controller/${reqMethod} ${path}`)
-                    .then(rootSpan => {
-                        // Add the span to the request object
-                        Object.assign(req.scout, {rootSpan});
-                        next();
+                        // Start a span for the request
+                        scoutRequest
+                            .startChildSpan(`Controller/${reqMethod} ${path}`)
+                            .then(rootSpan => {
+                                // Add the span to the request object
+                                Object.assign(req.scout, {rootSpan});
+                                next();
+                            })
+                            .catch(() => next());
                     })
-                    .catch(() => next());
+                    .catch((err: Error) => {
+                        if (opts && opts.logFn) {
+                            opts.logFn(`[scout] Error setting up tracing for request:\n ${err}`, LogLevel.Error);
+                        }
+                        next();
+                    });
             })
         // Continue even if getting scout fails
             .catch((err: Error) => {

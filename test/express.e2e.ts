@@ -93,6 +93,9 @@ test("Dynamic segment routes", t => {
                 // Ignore requests that are sent that aren't span starts
                 if (!message || message.type !== AgentRequestType.V1StartSpan) { return; }
 
+                // Skip requests that aren't the span we expect ( the initial GET / will trigger this)
+                if ((message as V1StartSpan).operation !== expectedRootSpan) { return; }
+
                 // Ensure that the span is what we expect
                 t.equals((message as V1StartSpan).operation, expectedRootSpan, "root span operation is correct");
 
