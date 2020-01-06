@@ -144,6 +144,11 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable, Starta
         return this.stop();
     }
 
+    public finishAndSend(): Promise<this> {
+        return this.finish()
+            .then(() => this.send());
+    }
+
     public isStopped(): boolean {
         return this.finished;
     }
@@ -292,6 +297,11 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable, Startable
 
     public finish(): Promise<this> {
         return this.stop();
+    }
+
+    public finishAndSend(): Promise<this> {
+        return this.finish()
+            .then(() => this.send());
     }
 
     public isStopped(): boolean {

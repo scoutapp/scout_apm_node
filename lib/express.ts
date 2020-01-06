@@ -67,8 +67,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                                 // Tag the request as timed out
                                 scoutRequest
                                     .addTags([{name: "timeout", value: "true"}])
-                                    .then(() => scoutRequest.finish())
-                                    .then(() => scoutRequest.send())
+                                    .then(() => scoutRequest.finishAndSend())
                                     .catch(() => {
                                         if (opts && opts.logFn) {
                                             opts.logFn(
@@ -83,8 +82,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                         // Set up handler to act on end of request
                         onFinished(res, (err, res) => {
                             // Finish & send request
-                            scoutRequest.finish()
-                                .then(() => scoutRequest.send());
+                            scoutRequest.finishAndSend();
                         });
 
                         // Find routes that match the current URL

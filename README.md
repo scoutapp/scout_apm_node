@@ -55,7 +55,7 @@ scout.setup()
             .then(scoutRequest => {
                 // Run your code
                 return bigHeavyTaskThatReturnsAPromise()
-                    .then(() => scoutRequest.finish());
+                    .then(() => scoutRequest.finishAndSend());
             });
     });
 });

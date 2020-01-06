@@ -59,7 +59,7 @@ scout.setup()
                 // タスク実行
                 return bigHeavyTaskThatReturnsAPromise()
                     // リクエスト終了
-                    .then(() => scoutRequest.finish());
+                    .then(() => scoutRequest.finishAndSend());
             });
     });
 });

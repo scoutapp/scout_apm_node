@@ -45,8 +45,7 @@ test("Request can be created and finished", t => {
             req = r;
         })
     // Finish & send the request
-        .then(() => req.finish())
-        .then(() => req.send())
+        .then(() => req.finishAndSend())
         .then(returned => {
             t.assert(returned, "request was finished");
             t.equals(returned.id, req.id, "request id matches what was returned by finish()");
@@ -80,8 +79,7 @@ test("Single span request", t => {
             t.equals(returnedSpan.id, span.id, "span id matches what was returned by finish()");
         })
     // Finish & Send the request
-        .then(() => req.finish())
-        .then(() => req.send())
+        .then(() => req.finishAndSend())
     // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
         .catch(err => TestUtil.shutdownScout(t, scout, err));
@@ -113,8 +111,7 @@ test("Multi span request (2 top level)", t => {
             t.assert(!req.isStopped(), "request is not stopped yet");
         })
     // Finish & send the request
-        .then(() => req.finish())
-        .then(() => req.send())
+        .then(() => req.finishAndSend())
         .then(() => t.assert(req.isStopped(), "request is stopped"))
     // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
@@ -156,8 +153,7 @@ test("Multi span request (1 top level, 1 nested)", t => {
             t.assert(!req.isStopped(), "request is not stopped yet");
         })
     // Send & Finish the request
-        .then(() => req.finish())
-        .then(() => req.send())
+        .then(() => req.finishAndSend())
         .then(() => t.assert(req.isStopped(), "request is stopped"))
     // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
@@ -193,8 +189,7 @@ test("Parent Span auto close works (1 top level, 1 nested)", t => {
             t.assert(!req.isStopped(), "request is not stopped yet");
         })
     // Finish & send the request
-        .then(() => req.finish())
-        .then(() => req.send())
+        .then(() => req.finishAndSend())
         .then(() => t.assert(req.isStopped(), "request is stopped"))
     // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
@@ -221,8 +216,7 @@ test("Request auto close works (1 top level, 1 nested)", t => {
         .then(() => parent.startChildSpan("Controller/test.first.nested"))
         .then(s => child = s)
     // Finish & send the request (should trigger all spans below to finish)
-        .then(() => req.finish())
-        .then(() => req.send())
+        .then(() => req.finishAndSend())
     // Ensure the child span is stopped but the parent isn't
         .then(returnedReq => {
             t.equals(returnedReq.id, req.id, "returned request id matches");
@@ -365,8 +359,7 @@ test("Application metadata is built and sent", t => {
             req = r;
         })
     // Immediately finish & send the request
-        .then(() => req.finish())
-        .then(() => req.send())
+        .then(() => req.finishAndSend())
         .then(returned => {
             t.assert(returned, "request was finished");
             t.equals(returned.id, req.id, "request id matches what was returned by finish()");
@@ -395,8 +388,7 @@ test("Multiple ongoing requests are possible at the same time", t => {
             t.assert(second, "second request was created");
         })
     // Immediately finish & send the second request
-        .then(() => second.finish())
-        .then(() => second.send())
+        .then(() => second.finishAndSend())
         .then(returned => {
             t.assert(returned, "second request was finished");
             t.equals(returned.id, second.id, "second request id matches what was returned by finish()");
@@ -404,8 +396,7 @@ test("Multiple ongoing requests are possible at the same time", t => {
     // Wait then finish the second request
         .then(() => TestUtil.waitMs(100))
     // Finish & send the first request
-        .then(() => first.finish())
-        .then(() => first.send())
+        .then(() => first.finishAndSend())
         .then(returned => {
             t.assert(returned, "first request was finished");
             t.equals(returned.id, first.id, "first request id matches what was returned by finish()");
