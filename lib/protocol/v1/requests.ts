@@ -35,11 +35,10 @@ export class V1StartRequest extends BaseAgentRequest {
 
     constructor(opts?: {requestId?: string, timestamp?: Date}) {
         super();
-        const id = opts && opts.requestId ? opts.requestId : uuidv4();
         const prefix = Constants.DEFAULT_REQUEST_PREFIX;
-        this.requestId = `${prefix}${id}`;
-
         const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+
+        this.requestId = opts && opts.requestId ? opts.requestId : `${prefix}${uuidv4()}`;
 
         this.json = {
             StartRequest: {
