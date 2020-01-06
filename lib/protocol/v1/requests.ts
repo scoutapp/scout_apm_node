@@ -36,7 +36,7 @@ export class V1StartRequest extends BaseAgentRequest {
     constructor(opts?: {requestId?: string, timestamp?: Date}) {
         super();
         const prefix = Constants.DEFAULT_REQUEST_PREFIX;
-        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+        const timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
 
         this.requestId = opts && opts.requestId ? opts.requestId : `${prefix}${uuidv4()}`;
 
@@ -57,7 +57,7 @@ export class V1FinishRequest extends BaseAgentRequest {
     constructor(requestId: string, opts?: {timestamp?: Date}) {
         super();
         this.requestId = requestId;
-        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+        const timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
 
         this.json = {
             FinishRequest: {
@@ -81,7 +81,7 @@ export class V1TagRequest extends BaseAgentRequest {
     ) {
         super();
         this.requestId = requestId;
-        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+        const timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
 
         this.json = {
             TagRequest: {
@@ -120,7 +120,7 @@ export class V1StartSpan extends BaseAgentRequest {
         const prefix = Constants.DEFAULT_SPAN_PREFIX;
         this.spanId = `${prefix}${id}`;
 
-        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+        const timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
 
         this.json = {
             StartSpan: {
@@ -150,7 +150,7 @@ export class V1StopSpan extends BaseAgentRequest {
         super();
         this.requestId = requestId;
         this.spanId = spanId;
-        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+        const timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
 
         this.json = {
             StopSpan: {
@@ -185,7 +185,7 @@ export class V1TagSpan extends BaseAgentRequest {
         this.tagName = tagName;
         this.tagValue = tagValue;
 
-        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+        const timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
 
         this.json = {
             TagSpan: {
@@ -219,7 +219,7 @@ export class V1ApplicationEvent extends BaseAgentRequest {
         this.eventType = eventType;
         this.eventValue = eventValue;
 
-        const timestamp = opts && opts.timestamp ? opts.timestamp : undefined;
+        const timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
 
         this.json = {
             ApplicationEvent: {

@@ -47,6 +47,12 @@ interface Stoppable {
     isStopped(): boolean;
 }
 
+interface Startable {
+    start(): Promise<this>;
+
+    isStarted(): boolean;
+}
+
 export interface ScoutTag {
     name: string;
     value: string;
@@ -59,11 +65,12 @@ export interface ScoutRequestOptions {
     started?: boolean;
 }
 
-export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
+export class ScoutRequest implements ChildSpannable, Taggable, Stoppable, Startable {
     public readonly id: string;
-    public readonly timestamp: Date;
-
     private readonly scoutInstance?: Scout;
+
+    public timestamp: Date;
+    private started: boolean = false;
     private finished: boolean = false;
     private sent: boolean = false;
 
@@ -72,11 +79,11 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
 
     constructor(id: string, opts?: ScoutRequestOptions) {
         this.id = id;
-        this.timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
 
         if (opts) {
             if (opts.logFn) { this.logFn = opts.logFn; }
             if (opts.scoutInstance) { this.scoutInstance = opts.scoutInstance; }
+            if (opts.timestamp)  { this.timestamp = opts.timestamp; }
 
             // It's possible that the scout request has already been started
             // ex. when startRequest is used by a Scout instance
@@ -102,10 +109,17 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
         }
 
         // Create a new child span
-        const span = new ScoutSpan(operation, uuidv4(), this, {scoutInstance: this.scoutInstance, logFn: this.logFn});
+        const span = new ScoutSpan(
+            operation,
+            uuidv4(),
+            this,
+            {scoutInstance: this.scoutInstance, logFn: this.logFn},
+        );
+
+        // Add the child span to the list
         this.childSpans.push(span);
 
-        return Promise.resolve(span);
+        return span.start();
     }
 
     /** @see ChildSpannable */
@@ -139,6 +153,19 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
         return Promise.resolve(this);
     }
 
+    public isStarted(): boolean {
+        return this.started;
+    }
+
+    public start(): Promise<this> {
+        if (this.started) { return Promise.resolve(this); }
+
+        this.timestamp = new Date();
+        this.started = true;
+
+        return Promise.resolve(this);
+    }
+
     /**
      * Send this request and internal spans to the scoutInstance
      *
@@ -154,14 +181,12 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
         }
 
         // If this request has not been started then we'll need to start it
-        const doStart = () => this.started ? Promise.resolve() : inst.startRequest(this);
+        const doStart = () => this.started ? Promise.resolve(this) : inst.startRequest(this);
 
         // Start request
         return doStart()
         // Send all the child spans
-            .then(() => Promise.all(
-                this.childSpans.map(s => s.send()),
-            ))
+            .then(() => Promise.all(this.childSpans.map(s => s.send())))
         // Send tags
             .then(() => Promise.all(
                 Object.entries(this.tags).map(([name, value]) => inst.tagRequest(this, name, value)),
@@ -184,17 +209,19 @@ export interface ScoutSpanOptions {
     logFn?: LogFn;
     parent?: ScoutSpan;
     timestamp?: Date;
+    started?: boolean;
 }
 
-export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
+export class ScoutSpan implements ChildSpannable, Taggable, Stoppable, Startable {
     public readonly request: ScoutRequest;
     public readonly parent?: ScoutSpan;
     public readonly id: string;
-    public readonly timestamp: Date;
     public readonly operation: string;
 
     private readonly scoutInstance?: Scout;
 
+    public timestamp: Date;
+    private started: boolean = false;
     private stopped: boolean = false;
     private sent: boolean = false;
     private childSpans: ScoutSpan[] = [];
@@ -203,12 +230,12 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
     constructor(operation: string, id: string, req: ScoutRequest, opts?: ScoutSpanOptions) {
         this.request = req;
         this.id = id;
-        this.timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
         this.operation = operation;
 
         if (opts) {
             if (opts.logFn) { this.logFn = opts.logFn; }
             if (opts.scoutInstance) { this.scoutInstance = opts.scoutInstance; }
+            if (opts.timestamp)  { this.timestamp = opts.timestamp; }
 
             // It's possible that the scout span has already been started
             // ex. when startSpan is used by a Scout instance
@@ -244,7 +271,7 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
 
         this.childSpans.push(span);
 
-        return Promise.resolve(span);
+        return span.start();
     }
 
     /** @see ChildSpannable */
@@ -271,6 +298,19 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
         return Promise.resolve(this);
     }
 
+    public isStarted(): boolean {
+        return this.started;
+    }
+
+    public start(): Promise<this> {
+        if (this.started) { return Promise.resolve(this); }
+
+        this.timestamp = new Date();
+        this.started = true;
+
+        return Promise.resolve(this);
+    }
+
     /**
      * Send this span and internal spans to the scoutInstance
      *
@@ -288,9 +328,7 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
         // Start Span
         return inst.startSpan(this.operation, this.request, this.parent)
         // Send all the child spans
-            .then(() => Promise.all(
-                this.childSpans.map(s => s.send()),
-            ))
+            .then(() => Promise.all(this.childSpans.map(s => s.send())))
         // Send tags
             .then(() => Promise.all(
                 Object.entries(this.tags).map(([name, value]) => inst.tagSpan(this, name, value)),
