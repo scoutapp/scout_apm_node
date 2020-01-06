@@ -4,6 +4,7 @@ export {
     AgentEvent as ScoutAgentEvent,
     ApplicationMetadata,
     buildScoutConfiguration,
+    LogLevel,
     consoleLogFn,
 } from "./types";
 
