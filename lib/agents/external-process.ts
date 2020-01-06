@@ -71,9 +71,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         return pathExists(this.getSocketPath())
             .then(exists => {
                 // If the socket doesn't already exist, start the process as configured
-                if (!exists) { return this.startProcess(); }
-                this.logFn("[scout/external-process] Socket already present", LogLevel.Warn);
-                return this;
+                if (exists) {
+                    this.logFn("[scout/external-process] Socket already present", LogLevel.Warn);
+                }
+                return this.startProcess();
             });
     }
 
@@ -361,7 +362,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         const args = ["start", "--socket", socketPath];
         if (this.opts.logFilePath) { args.push("--log-file", this.opts.logFilePath); }
         if (this.opts.configFilePath) { args.push("--config-file", this.opts.configFilePath); }
-        if (this.opts.logLevel) { args.push("--log-file", this.opts.logLevel); }
+        if (this.opts.logLevel) { args.push("--log-level", this.opts.logLevel); }
 
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, LogLevel.Debug);
