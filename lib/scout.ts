@@ -56,6 +56,7 @@ export interface ScoutRequestOptions {
     logFn?: LogFn;
     scoutInstance?: Scout;
     timestamp?: Date;
+    started?: boolean;
 }
 
 export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
@@ -76,6 +77,10 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
         if (opts) {
             if (opts.logFn) { this.logFn = opts.logFn; }
             if (opts.scoutInstance) { this.scoutInstance = opts.scoutInstance; }
+
+            // It's possible that the scout request has already been started
+            // ex. when startRequest is used by a Scout instance
+            if (opts.started) { this.started = opts.started; }
         }
     }
 
@@ -148,8 +153,11 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
             return Promise.resolve(this);
         }
 
+        // If this request has not been started then we'll need to start it
+        const doStart = () => this.started ? Promise.resolve() : inst.startRequest(this);
+
         // Start request
-        return inst.startRequest(this)
+        return doStart()
         // Send all the child spans
             .then(() => Promise.all(
                 this.childSpans.map(s => s.send()),
@@ -201,6 +209,10 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
         if (opts) {
             if (opts.logFn) { this.logFn = opts.logFn; }
             if (opts.scoutInstance) { this.scoutInstance = opts.scoutInstance; }
+
+            // It's possible that the scout span has already been started
+            // ex. when startSpan is used by a Scout instance
+            if (opts.started) { this.started = opts.started; }
         }
     }
 
@@ -430,7 +442,10 @@ export class Scout {
             .send(req)
             .then(() => {
                 if (original) { return original; }
-                return new ScoutRequest(req.requestId, {scoutInstance: this});
+                return new ScoutRequest(
+                    req.requestId,
+                    {scoutInstance: this, started: true},
+                );
             });
     }
 
@@ -493,7 +508,12 @@ export class Scout {
         const startSpan = new Requests.V1StartSpan(operation, req.id);
         return this.agent
             .send(startSpan)
-            .then(() => new ScoutSpan(operation, startSpan.spanId, req, {scoutInstance: this}));
+            .then(() => new ScoutSpan(
+                operation,
+                startSpan.spanId,
+                req,
+                {scoutInstance: this, started: true},
+            ));
     }
 
     public stopSpan(span: ScoutSpan): Promise<ScoutSpan> {
