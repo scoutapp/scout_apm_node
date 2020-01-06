@@ -59,5 +59,9 @@ test-int: check-tool-yarn
 test-e2e: check-tool-yarn
 	$(YARN) test-e2e
 
+test-dashboard-send: check-tool-yarn
+	@echo -e "running a test that will send a test to the dashboard, it should take ~ 30 seconds to run..."
+	$(YARN) test-dashboard-send
+
 generate-agent-configs:
 	$(DEV_SCRIPTS)/generate-download-configs.js lib/download-configs.ts
