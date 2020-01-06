@@ -534,7 +534,7 @@ export class Scout {
         return new Requests.V1ApplicationEvent(
             `Pid: ${process.pid}`,
             "scout.metadata",
-            this.applicationMetadata,
+            this.applicationMetadata.serialize(),
             {timestamp: new Date()},
         );
     }
