@@ -1,3 +1,4 @@
+import { EventEmitter } from "events";
 import * as path from "path";
 import * as process from "process";
 import { v4 as uuidv4 } from "uuid";
@@ -5,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
     APIVersion,
     Agent,
+    AgentEvent,
     AgentDownloadOptions,
     AgentDownloader,
     ApplicationMetadata,
@@ -375,7 +377,7 @@ export interface ScoutOptions {
     appMeta?: ApplicationMetadata;
 }
 
-export class Scout {
+export class Scout extends EventEmitter {
     private readonly config: Partial<ScoutConfiguration>;
 
     private downloader: AgentDownloader;
@@ -390,6 +392,8 @@ export class Scout {
     private applicationMetadata: ApplicationMetadata;
 
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
+        super();
+
         this.config = config || buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
 
@@ -452,7 +456,7 @@ export class Scout {
                     buildProcessOptions(this.config),
                 );
 
-                this.agent = new ExternalProcessAgent(this.processOptions, this.logFn);
+                this.setupAgent(new ExternalProcessAgent(this.processOptions, this.logFn));
             })
         // Start, connect, and register
             .then(() => {
@@ -644,6 +648,15 @@ export class Scout {
         return `unix://${this.socketPath}`;
     }
 
+    private buildAppMetadataEvent(): Requests.V1ApplicationEvent {
+        return new Requests.V1ApplicationEvent(
+            `Pid: ${process.pid}`,
+            "scout.metadata",
+            this.applicationMetadata.serialize(),
+            {timestamp: new Date()},
+        );
+    }
+
     /**
      * Helper function for sending a given request through the agent
      *
@@ -665,13 +678,16 @@ export class Scout {
         return this.agent.send(msg);
     }
 
-    private buildAppMetadataEvent(): Requests.V1ApplicationEvent {
-        return new Requests.V1ApplicationEvent(
-            `Pid: ${process.pid}`,
-            "scout.metadata",
-            this.applicationMetadata.serialize(),
-            {timestamp: new Date()},
-        );
+    // Helper function for setting up an agent to be part of the scout instance
+    private setupAgent(agent: ExternalProcessAgent): Promise<void> {
+        this.agent = agent;
+
+        // Setup forwarding of all events of the agent through the scout instance
+        Object.values(AgentEvent).forEach(evt => {
+            this.agent.on(evt, () => this.emit(evt, ...arguments));
+        });
+
+        return Promise.resolve();
     }
 
 }
