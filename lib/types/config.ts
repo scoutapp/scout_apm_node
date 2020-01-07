@@ -460,5 +460,7 @@ export function buildDownloadOptions(config: Partial<ScoutConfiguration>): Parti
 export function buildProcessOptions(config: Partial<ScoutConfiguration>): Partial<ProcessOptions> {
     return {
         disallowLaunch: !config.coreAgentLaunch,
+        logFilePath: config.logFilePath,
+        logLevel: config.logLevel || config.coreAgentLogLevel,
     };
 }

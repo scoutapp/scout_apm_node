@@ -4,7 +4,7 @@ import * as request from "supertest";
 
 import { Application } from "express";
 import { scoutMiddleware, ApplicationWithScout } from "../lib/express";
-import { AgentEvent, buildScoutConfiguration, AgentRequest, AgentRequestType } from "../lib/types";
+import { AgentEvent, buildScoutConfiguration, BaseAgentRequest, AgentRequestType } from "../lib/types";
 import { Scout } from "../lib/scout";
 import { V1StartSpan } from "../lib/protocol/v1/requests";
 
@@ -89,9 +89,12 @@ test("Dynamic segment routes", t => {
     // Set up listeners and make another request to ensure that scout is working
         .then(() => {
             // Create a listener to watch for the request finished event
-            const listener = (message: AgentRequest) => {
+            const listener = (message: BaseAgentRequest) => {
                 // Ignore requests that are sent that aren't span starts
                 if (!message || message.type !== AgentRequestType.V1StartSpan) { return; }
+
+                // Skip requests that aren't the span we expect ( the initial GET / will trigger this)
+                if ((message as V1StartSpan).operation !== expectedRootSpan) { return; }
 
                 // Ensure that the span is what we expect
                 t.equals((message as V1StartSpan).operation, expectedRootSpan, "root span operation is correct");
@@ -118,5 +121,32 @@ test("Dynamic segment routes", t => {
                 .expect(200)
                 .then(() => t.comment("sent second request"));
         })
+        .catch(t.end);
+});
+
+test("Application which errors", t => {
+    // Create an application and setup scout middleware
+    const app: Application & ApplicationWithScout = TestUtil.simpleErrorApp(scoutMiddleware({
+        config: buildScoutConfiguration({
+            allowShutdown: true,
+        }),
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
+
+    let scout: Scout;
+
+    // Send a request to the application (which should trigger setup of scout)
+    request(app)
+        .get("/")
+        .expect(500)
+        .then(res => {
+            if (!app.scout) { throw new Error("Scout was not added to app object"); }
+
+            t.assert(app.scout, "scout instance was added to the app object");
+            t.assert(app.scout.hasAgent(), "the scout instance has an agent");
+            scout = app.scout;
+        })
+        .then(() => scout.shutdown())
+        .then(() => t.end())
         .catch(t.end);
 });

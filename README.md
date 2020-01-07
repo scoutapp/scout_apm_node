@@ -29,10 +29,10 @@ Scout supports use with `express`-based applications by using app-wide middlewar
 ```javascript
 const express = require("express");
 const app = express();
-const scout = require("scout-apm-client").expressMiddleware;
+const scoutMiddleware = require("scout-apm-client").expressMiddleware;
 
 // Enable the app-wide scout middleware
-app.use(scout());
+app.use(scoutMiddleware());
 
 // Set up the routes for your application
 app.get('/', function (req, res) {
@@ -47,18 +47,15 @@ For more information on configuration, see `docs/configuration.md`
 Scout supports use with any other frameworks through it's `Promise` based API:
 
 ```javascript
-const Scout = require("scout-apm-client").Scout;
-const scout = new Scout();
-
 // Set up your scout instance
 scout.setup()
     .then(scout => {
         // Start a request trace with Scout
-        scout.startRequest()
+        return scout.startRequest()
             .then(scoutRequest => {
                 // Run your code
-                bigHeavyTaskThatReturnsAPromise()
-                    .then(() => scoutRequest.finish());
+                return bigHeavyTaskThatReturnsAPromise()
+                    .then(() => scoutRequest.finishAndSend());
             });
     });
 });

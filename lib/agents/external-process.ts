@@ -9,15 +9,16 @@ import { createPool, Pool } from "generic-pool";
 import {
     Agent,
     AgentEvent,
-    AgentRequest,
+    BaseAgentRequest,
     AgentRequestType,
-    AgentResponse,
+    BaseAgentResponse,
     AgentResponseType,
     AgentStatus,
     AgentType,
     ProcessOptions,
     LogFn,
     LogLevel,
+    splitAgentResponses,
 } from "../types";
 
 import { V1AgentResponse } from "../protocol/v1/responses";
@@ -70,9 +71,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         return pathExists(this.getSocketPath())
             .then(exists => {
                 // If the socket doesn't already exist, start the process as configured
-                if (!exists) { return this.startProcess(); }
-                this.logFn("[scout/external-process] Socket already present", LogLevel.Warn);
-                return this;
+                if (exists) {
+                    this.logFn("[scout/external-process] Socket already present", LogLevel.Warn);
+                }
+                return this.startProcess();
             });
     }
 
@@ -105,8 +107,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     }
 
     /** @see Agent */
-    public sendAsync<T extends AgentRequest>(msg: T): Promise<void> {
+    public sendAsync<T extends BaseAgentRequest>(msg: T): Promise<void> {
         if (!this.pool) { return Promise.reject(new Errors.Disconnected()); }
+
+        this.logFn("[scout/external-process] sending async message", LogLevel.Debug);
 
         // Get a socket from the pool
         return new Promise((resolve, reject) => {
@@ -123,14 +127,17 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     }
 
     /** @see Agent */
-    public send<T extends AgentRequest>(msg: T): Promise<AgentResponse> {
+    public send<T extends BaseAgentRequest, R extends BaseAgentResponse>(msg: T): Promise<R> {
         if (!this.pool) { return Promise.reject(new Errors.Disconnected()); }
         if (!msg) { return Promise.reject(new Errors.UnexpectedError("No message provided to send()")); }
         const requestType = msg.type;
 
+        this.logFn(`[scout/external-process] sending message:\n ${JSON.stringify(msg.json)}`, LogLevel.Debug);
+
         return new Promise((resolve, reject) => {
             // Get a socket from the pool
-            this.pool.acquire()
+            this.pool
+                .acquire()
                 .then(
                     // Socket acquisition succeeded
                     (socket: Socket) => {
@@ -138,6 +145,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         const listener = (resp: any, socket?: Socket) => {
                             // Ensure we only capture messages that were received on the socket we're holding
                             if (!socket || socket !== socket) { return; }
+
+                            this.logFn(
+                                `[scout/external-process] received response: ${JSON.stringify(resp)}`,
+                                LogLevel.Debug,
+                            );
 
                             // Remove this temporary listener
                             this.removeListener(AgentEvent.SocketResponseReceived, listener);
@@ -254,6 +266,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      */
     private createDomainSocket(): Promise<Socket> {
         return new Promise((resolve, reject) => {
+            let chunks: Buffer = Buffer.from([]);
+
             const socket = createConnection(this.getSocketPath(), () => {
                 this.emit(AgentEvent.SocketConnected);
                 resolve(socket);
@@ -261,32 +275,55 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
             // When the socket receives data, parse it and emit socket response received
             socket.on("data", (data: Buffer) => {
-                V1AgentResponse
-                    .fromBinary(data)
-                    .then(msg => {
-                        this.emit(AgentEvent.SocketResponseReceived, msg, socket);
+                let framed: Buffer[] = [];
 
-                        switch (msg.type) {
-                            case AgentResponseType.V1StartRequest:
-                                this.emit(AgentEvent.RequestStarted);
-                                break;
-                            case AgentResponseType.V1FinishRequest:
-                                this.emit(AgentEvent.RequestFinished);
-                                break;
-                            case AgentResponseType.V1StartSpan:
-                                this.emit(AgentEvent.SpanStarted);
-                                break;
-                            case AgentResponseType.V1StopSpan:
-                                this.emit(AgentEvent.SpanStopped);
-                                break;
-                            case AgentResponseType.V1ApplicationEvent:
-                                this.emit(AgentEvent.ApplicationEventReported);
-                                break;
-                        }
-                    })
-                    .catch(err => {
-                        this.logFn(`[scout/external-process] Socket response parse error:\n ${err}`, LogLevel.Error);
-                        this.emit(AgentEvent.SocketResponseParseError, err);
+                // Parse the buffer to return zero or more well-framed agent responses
+                const {framed: newFramed, remaining: newRemaining} = splitAgentResponses(data);
+                framed = framed.concat(newFramed);
+
+                // Add the remaining to the partial response buffer we're keeping
+                chunks = Buffer.concat([chunks, newRemaining]);
+
+                // Attempt to extract any *just* completed messages
+                // Update the partial response for any remaining
+                const {framed: chunkFramed, remaining: chunkRemaining} = splitAgentResponses(chunks);
+                framed = framed.concat(chunkFramed);
+                chunks = chunkRemaining;
+
+                // Read all (likely) fully formed, correctly framed messages
+                framed
+                    .forEach(data => {
+                        // Attempt to parse an agent response
+                        V1AgentResponse
+                            .fromBinary(data)
+                            .then(msg => {
+                                this.emit(AgentEvent.SocketResponseReceived, msg, socket);
+
+                                switch (msg.type) {
+                                    case AgentResponseType.V1StartRequest:
+                                        this.emit(AgentEvent.RequestStarted);
+                                        break;
+                                    case AgentResponseType.V1FinishRequest:
+                                        this.emit(AgentEvent.RequestFinished);
+                                        break;
+                                    case AgentResponseType.V1StartSpan:
+                                        this.emit(AgentEvent.SpanStarted);
+                                        break;
+                                    case AgentResponseType.V1StopSpan:
+                                        this.emit(AgentEvent.SpanStopped);
+                                        break;
+                                    case AgentResponseType.V1ApplicationEvent:
+                                        this.emit(AgentEvent.ApplicationEventReported);
+                                        break;
+                                }
+                            })
+                            .catch(err => {
+                                this.logFn(
+                                    `[scout/external-process] Socket response parse error:\n ${err}`,
+                                    LogLevel.Error,
+                                );
+                                this.emit(AgentEvent.SocketResponseParseError, err);
+                            });
                     });
             });
 
@@ -325,7 +362,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         const args = ["start", "--socket", socketPath];
         if (this.opts.logFilePath) { args.push("--log-file", this.opts.logFilePath); }
         if (this.opts.configFilePath) { args.push("--config-file", this.opts.configFilePath); }
-        if (this.opts.logLevel) { args.push("--log-file", this.opts.logLevel); }
+        if (this.opts.logLevel) { args.push("--log-level", this.opts.logLevel); }
 
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, LogLevel.Debug);

@@ -150,6 +150,18 @@ export function simpleDynamicSegmentExpressApp(middleware: any, delayMs: number 
     return app;
 }
 
+// An express application which errors on the /
+export function simpleErrorApp(middleware: any, delayMs: number = 0): Application {
+    const app = express();
+    app.use(middleware);
+
+    app.get("/", (req: Request, res: Response) => {
+        throw new Error("Expected application error (simpleErrorApp)");
+    });
+
+    return app;
+}
+
 // Test that a given variable is effectively overlaid in the configuration
 export function testConfigurationOverlay(
     t: Test,
@@ -161,10 +173,14 @@ export function testConfigurationOverlay(
 ): void {
     const {appKey, envValue, expectedValue} = opts;
     const envKey = convertCamelCaseToEnvVar(appKey);
+    const envValueIsSet = envKey in process.env;
 
     const defaultConfig = buildScoutConfiguration();
     t.assert(defaultConfig, "defaultConfig was generated");
-    if (appKey in DEFAULT_SCOUT_CONFIGURATION) {
+
+    // Only perform this check if we're not currently overriding the value in ENV *during* this test
+    // it won't be the default, because we've set it to be so
+    if (appKey in DEFAULT_SCOUT_CONFIGURATION && !envValueIsSet) {
         t.equals(defaultConfig[appKey], DEFAULT_SCOUT_CONFIGURATION[appKey], `config [${appKey}] matches default`);
     }
 
@@ -174,7 +190,12 @@ export function testConfigurationOverlay(
 
     const appOnlyConfig = buildScoutConfiguration(appConfig);
     t.assert(appOnlyConfig, "appOnlyConfig was generated");
-    t.equals(appOnlyConfig[appKey], expectedValue, `config [${appKey}] matches app value when set by app`);
+
+    // Only perform this check if we're not currently overriding the value in ENV *during* this test
+    // ENV overrides the app so it won't be the app value
+    if (!envValueIsSet) {
+        t.equals(appOnlyConfig[appKey], expectedValue, `config [${appKey}] matches app value when set by app`);
+    }
 
     // Save the previous ENV value
     const wasPresent = envKey in process.env;
@@ -195,4 +216,14 @@ export function testConfigurationOverlay(
     } else {
         delete process.env[envKey];
     }
+}
+
+export function buildCoreAgentSocketResponse(json: string): Buffer {
+    const buf = Buffer.concat([
+        Buffer.allocUnsafe(4),
+        Buffer.from(json),
+    ]);
+    buf.writeUInt32BE(json.length, 0);
+
+    return buf;
 }

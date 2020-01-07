@@ -67,14 +67,22 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                                 // Tag the request as timed out
                                 scoutRequest
                                     .addTags([{name: "timeout", value: "true"}])
-                                    .then(() => scoutRequest.finish())
-                                    .catch(() => scoutRequest.finish());
+                                    .then(() => scoutRequest.finishAndSend())
+                                    .catch(() => {
+                                        if (opts && opts.logFn) {
+                                            opts.logFn(
+                                                `[scout] Failed to finish request that timed out: ${scoutRequest}`,
+                                                LogLevel.Warn,
+                                            );
+                                        }
+                                    });
                             }, requestTimeoutMs);
                         }
 
                         // Set up handler to act on end of request
                         onFinished(res, (err, res) => {
-                            scoutRequest.finish();
+                            // Finish & send request
+                            scoutRequest.finishAndSend();
                         });
 
                         // Find routes that match the current URL

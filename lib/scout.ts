@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as process from "process";
+import { v4 as uuidv4 } from "uuid";
 
 import {
     APIVersion,
@@ -46,41 +47,86 @@ interface Stoppable {
     isStopped(): boolean;
 }
 
+interface Startable {
+    start(): Promise<this>;
+
+    isStarted(): boolean;
+}
+
 export interface ScoutTag {
     name: string;
     value: string;
 }
 
-export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
+export interface ScoutRequestOptions {
+    id?: string;
+    logFn?: LogFn;
+    scoutInstance?: Scout;
+    timestamp?: Date;
+    started?: boolean;
+}
+
+export class ScoutRequest implements ChildSpannable, Taggable, Stoppable, Startable {
     public readonly id: string;
 
-    private readonly scoutInstance: Scout;
-    private finished: boolean = false;
-    private childSpans: ScoutSpan[] = [];
+    private timestamp: Date;
 
-    constructor(id: string, s: Scout) {
-        this.scoutInstance = s;
-        this.id = id;
+    private readonly scoutInstance?: Scout;
+
+    private started: boolean = false;
+    private finished: boolean = false;
+    private sent: boolean = false;
+
+    private childSpans: ScoutSpan[] = [];
+    private tags: { [key: string]: string } = {};
+
+    constructor(opts?: ScoutRequestOptions) {
+        this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_REQUEST_PREFIX}${uuidv4()}`;
+
+        if (opts) {
+            if (opts.logFn) { this.logFn = opts.logFn; }
+            if (opts.scoutInstance) { this.scoutInstance = opts.scoutInstance; }
+            if (opts.timestamp)  { this.timestamp = opts.timestamp; }
+
+            // It's possible that the scout request has already been started
+            // ex. when startRequest is used by a Scout instance
+            if (opts.started) { this.started = opts.started; }
+        }
     }
 
     public span(operation: string): Promise<ScoutSpan> {
         return this.startChildSpan(operation);
     }
 
+    public getTimestamp(): Date {
+        return new Date(this.timestamp);
+    }
+
     /** @see ChildSpannable */
     public startChildSpan(operation: string): Promise<ScoutSpan> {
         if (this.finished) {
+            this.logFn(
+                `[scout/request/${this.id}] Cannot add a child span to a finished request [${this.id}]`,
+                LogLevel.Error,
+            );
+
             return Promise.reject(new Errors.FinishedRequest(
                 "Cannot add a child span to a finished request",
             ));
         }
 
-        return this.scoutInstance
-            .startSpan(operation, this)
-            .then(span => {
-                this.childSpans.push(span);
-                return span;
-            });
+        // Create a new child span
+        const span = new ScoutSpan({
+            operation,
+            request: this,
+            scoutInstance: this.scoutInstance,
+            logFn: this.logFn,
+        });
+
+        // Add the child span to the list
+        this.childSpans.push(span);
+
+        return span.start();
     }
 
     /** @see ChildSpannable */
@@ -90,16 +136,17 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
 
     /** @see Taggable */
     public addTags(tags: ScoutTag[]): Promise<this> {
-        // If tags is empty then return early
-        if (!tags || tags.length === 0) { return Promise.resolve(this); }
-
-        // Send all tags
-        return Promise.all(tags.map(({name, value}) => this.scoutInstance.tagRequest(this, name, value)))
-            .then(() => this);
+        tags.forEach(t => this.tags[t.name] = t.value);
+        return Promise.resolve(this);
     }
 
     public finish(): Promise<this> {
         return this.stop();
+    }
+
+    public finishAndSend(): Promise<this> {
+        return this.finish()
+            .then(() => this.send());
     }
 
     public isStopped(): boolean {
@@ -110,54 +157,137 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable {
         if (this.finished) { return Promise.resolve(this); }
 
         // Stop all child spans
-        return Promise.all(this.childSpans.map(s => s.stop()))
-        // Stop this span
-            .then(() => this.scoutInstance.stopRequest(this))
-            .then(() => this.finished = true)
-            .then(() => this);
+        this.childSpans.forEach(s => s.stop());
+
+        // Finish the request
+        this.finished = true;
+
+        return Promise.resolve(this);
     }
+
+    public isStarted(): boolean {
+        return this.started;
+    }
+
+    public start(): Promise<this> {
+        if (this.started) { return Promise.resolve(this); }
+
+        this.timestamp = new Date();
+        this.started = true;
+
+        return Promise.resolve(this);
+    }
+
+    /**
+     * Send this request and internal spans to the scoutInstance
+     *
+     * @returns this request
+     */
+    public send(scoutInstance?: Scout): Promise<this> {
+        const inst = scoutInstance || this.scoutInstance;
+
+        // Ensure a scout instance was available
+        if (!inst) {
+            this.logFn(`[scout/request/${this.id}] No scout instance available, send failed`);
+            return Promise.resolve(this);
+        }
+
+        return inst.sendStartRequest(this)
+        // Send all the child spans
+            .then(() => Promise.all(this.childSpans.map(s => s.send())))
+        // Send tags
+            .then(() => Promise.all(
+                Object.entries(this.tags).map(([name, value]) => inst.sendTagRequest(this, name, value)),
+            ))
+        // End the span
+            .then(() => inst.sendStopRequest(this))
+            .then(() => this.sent = true)
+            .then(() => this)
+            .catch(err => {
+                this.logFn(`[scout/request/${this.id}]Failed to send request`);
+                return this;
+            });
+    }
+
+    private logFn: LogFn = () => undefined;
 }
 
-export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
+export interface ScoutSpanOptions {
+    id?: string;
+    scoutInstance?: Scout;
+    logFn?: LogFn;
+    parent?: ScoutSpan;
+    timestamp?: Date;
+    started?: boolean;
+    operation: string;
+    request: ScoutRequest;
+}
+
+export class ScoutSpan implements ChildSpannable, Taggable, Stoppable, Startable {
     public readonly request: ScoutRequest;
+    public readonly parent?: ScoutSpan;
     public readonly id: string;
     public readonly operation: string;
 
-    private readonly scoutInstance: Scout;
-    private stopped: boolean;
-    private childSpans: ScoutSpan[] = [];
+    private timestamp: Date;
+    private readonly scoutInstance?: Scout;
 
-    constructor(operation: string, id: string, req: ScoutRequest, s: Scout) {
-        this.scoutInstance = s;
-        this.request = req;
-        this.id = id;
-        this.operation = operation;
+    private started: boolean = false;
+    private stopped: boolean = false;
+    private sent: boolean = false;
+    private childSpans: ScoutSpan[] = [];
+    private tags: { [key: string]: string } = {};
+
+    constructor(opts: ScoutSpanOptions) {
+        this.request = opts.request;
+        this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_SPAN_PREFIX}${uuidv4()}`;
+        this.operation = opts.operation;
+
+        if (opts) {
+            if (opts.logFn) { this.logFn = opts.logFn; }
+            if (opts.scoutInstance) { this.scoutInstance = opts.scoutInstance; }
+            if (opts.timestamp)  { this.timestamp = opts.timestamp; }
+
+            // It's possible that the scout span has already been started
+            // ex. when startSpan is used by a Scout instance
+            if (opts.started) { this.started = opts.started; }
+        }
+    }
+
+    public getTimestamp(): Date {
+        return new Date(this.timestamp);
     }
 
     /** @see Taggable */
     public addTags(tags: ScoutTag[]): Promise<this> {
-        // If tags is empty then return early
-        if (!tags || tags.length === 0) { return Promise.resolve(this); }
-
-        // Send all tags
-        return Promise.all(tags.map(({name, value}) => this.scoutInstance.tagSpan(this, name, value)))
-            .then(() => this);
+        tags.forEach(t => this.tags[t.name] = t.value);
+        return Promise.resolve(this);
     }
 
     /** @see ChildSpannable */
     public startChildSpan(operation: string): Promise<ScoutSpan> {
         if (this.stopped) {
+            this.logFn(
+                `[scout/request/${this.request.id}/span/${this.id}] Cannot add span to stopped span [${this.id}]`,
+                LogLevel.Error,
+            );
+
             return Promise.reject(new Errors.FinishedRequest(
                 "Cannot add a child span to a finished span",
             ));
         }
 
-        return this.scoutInstance
-            .startSpan(operation, this.request, this)
-            .then(span => {
-                this.childSpans.push(span);
-                return span;
-            });
+        const span = new ScoutSpan({
+            operation,
+            request: this.request,
+            scoutInstance: this.scoutInstance,
+            logFn: this.logFn,
+            parent: this,
+        });
+
+        this.childSpans.push(span);
+
+        return span.start();
     }
 
     /** @see ChildSpannable */
@@ -169,6 +299,11 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
         return this.stop();
     }
 
+    public finishAndSend(): Promise<this> {
+        return this.finish()
+            .then(() => this.send());
+    }
+
     public isStopped(): boolean {
         return this.stopped;
     }
@@ -176,13 +311,60 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable {
     public stop(): Promise<this> {
         if (this.stopped) { return Promise.resolve(this); }
 
+        this.stopped = true;
+
         // Stop all child spans
-        return Promise.all(this.childSpans.map(s => s.stop()))
-        // Stop this span
-            .then(() => this.scoutInstance.stopSpan(this))
-            .then(() => this.stopped = true)
-            .then(() => this);
+        this.childSpans.forEach(s => s.stop());
+
+        return Promise.resolve(this);
     }
+
+    public isStarted(): boolean {
+        return this.started;
+    }
+
+    public start(): Promise<this> {
+        if (this.started) { return Promise.resolve(this); }
+
+        this.timestamp = new Date();
+        this.started = true;
+
+        return Promise.resolve(this);
+    }
+
+    /**
+     * Send this span and internal spans to the scoutInstance
+     *
+     * @returns this span
+     */
+    public send(scoutInstance?: Scout): Promise<this> {
+        const inst = scoutInstance || this.scoutInstance;
+
+        // Ensure a scout instance was available
+        if (!inst) {
+            this.logFn(`[scout/request/${this.id}] No scout instance available, send failed`);
+            return Promise.resolve(this);
+        }
+
+        // Start Span
+        return inst.sendStartSpan(this)
+        // Send all the child spans
+            .then(() => Promise.all(this.childSpans.map(s => s.send())))
+        // Send tags
+            .then(() => Promise.all(
+                Object.entries(this.tags).map(([name, value]) => inst.sendTagSpan(this, name, value)),
+            ))
+        // End the span
+            .then(() => inst.sendStopSpan(this))
+            .then(() => this.sent = true)
+            .then(() => this)
+            .catch(err => {
+                this.logFn(`[scout/request/${this.request.id}/span/${this.id}}] Failed to send span`);
+                return this;
+            });
+    }
+
+    private logFn: LogFn = () => undefined;
 }
 
 export interface ScoutOptions {
@@ -229,9 +411,14 @@ export class Scout {
 
     public setup(): Promise<this> {
         this.downloader = new WebAgentDownloader({logFn: this.logFn});
+
+        // Ensure coreAgentVersion is present
         if (!this.config.coreAgentVersion) {
-            throw new Error("No core agent version specified!");
+            const err = new Error("No core agent version specified!");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
         }
+
         this.coreAgentVersion = new CoreAgentVersion(this.config.coreAgentVersion);
 
         // Build options for download
@@ -276,10 +463,10 @@ export class Scout {
             .then(() => this.logFn("[scout] successfully connected to agent", LogLevel.Debug))
             .then(() => {
                 if (!this.config.name) {
-                    this.logFn("[name] configuration value missing", LogLevel.Warn);
+                    this.logFn("[scout] 'name' configuration value missing", LogLevel.Warn);
                 }
                 if (!this.config.key) {
-                    this.logFn("[key] missing in configuration", LogLevel.Warn);
+                    this.logFn("[scout] 'key' missing in configuration", LogLevel.Warn);
                 }
 
                 return this.agent.send(new Requests.V1Register(
@@ -293,25 +480,52 @@ export class Scout {
             .then(() => this);
     }
 
-    public startRequest(): Promise<ScoutRequest> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
-
-        const req = new Requests.V1StartRequest();
-        return this.agent
-            .send(req)
-            .then(() => new ScoutRequest(req.requestId, this));
+    /**
+     * Helper function for starting a scout request with the instance
+     *
+     * @param {ScoutRequestOptions} [options]
+     * @returns {Promise<ScoutRequest>} a new scout request
+     */
+    public startRequest(opts?: ScoutRequestOptions): Promise<ScoutRequest> {
+        const request = new ScoutRequest(Object.assign({}, {scoutInstance: this}, opts || {}));
+        return request.start();
     }
 
-    public stopRequest(req: ScoutRequest): Promise<ScoutRequest> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+    public sendStartRequest(original: ScoutRequest): Promise<ScoutRequest> {
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
+
+        const req = new Requests.V1StartRequest({
+            requestId: original.id,
+            timestamp: original.getTimestamp(),
+        });
+
+        return this.agent
+            .send(req)
+            .then(() => original);
+    }
+
+    public sendStopRequest(req: ScoutRequest): Promise<ScoutRequest> {
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         return this.agent
             .send(new Requests.V1FinishRequest(req.id))
             .then(() => req);
     }
 
-    public tagRequest(req: ScoutRequest, name: string, value: string): Promise<void> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+    public sendTagRequest(req: ScoutRequest, name: string, value: string): Promise<void> {
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         return this.agent
             .send(new Requests.V1TagRequest(
@@ -322,8 +536,12 @@ export class Scout {
             .then(() => undefined);
     }
 
-    public tagSpan(span: ScoutSpan, name: string, value: string): Promise<void> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+    public sendTagSpan(span: ScoutSpan, name: string, value: string): Promise<void> {
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         return this.agent
             .send(new Requests.V1TagSpan(
@@ -335,21 +553,36 @@ export class Scout {
             .then(() => undefined);
     }
 
-    public startSpan(operation: string, req: ScoutRequest, parent?: ScoutSpan): Promise<ScoutSpan> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+    public sendStartSpan(span: ScoutSpan): Promise<ScoutSpan> {
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         const opts = {
-            parentId: parent ? parent.id : undefined,
+            spanId: span.id,
+            parentId: span.parent ? span.parent.id : undefined,
+            timestamp: span.getTimestamp(),
         };
 
-        const startSpan = new Requests.V1StartSpan(operation, req.id);
+        const startSpan = new Requests.V1StartSpan(
+            span.operation,
+            span.request.id,
+            opts,
+        );
+
         return this.agent
             .send(startSpan)
-            .then(() => new ScoutSpan(operation, startSpan.spanId, req, this));
+            .then(() => span);
     }
 
-    public stopSpan(span: ScoutSpan): Promise<ScoutSpan> {
-        if (!this.hasAgent()) { throw new Errors.Disconnected("No agent is present, please run .setup()"); }
+    public sendStopSpan(span: ScoutSpan): Promise<ScoutSpan> {
+        if (!this.hasAgent()) {
+            const err = new Errors.Disconnected("No agent is present, please run .setup()");
+            this.logFn(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
 
         return this.agent
             .send(new Requests.V1StopSpan(span.id, span.request.id))
@@ -382,7 +615,7 @@ export class Scout {
         return new Requests.V1ApplicationEvent(
             `Pid: ${process.pid}`,
             "scout.metadata",
-            this.applicationMetadata,
+            this.applicationMetadata.serialize(),
             {timestamp: new Date()},
         );
     }

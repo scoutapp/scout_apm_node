@@ -1,14 +1,15 @@
 import * as test from "tape";
 
 import {
-  AgentLaunchDisabled,
-  ApplicationMetadata,
-  ExternalDownloadDisallowed,
-  Scout,
-  ScoutRequest,
-  ScoutSpan,
-  buildScoutConfiguration,
-  consoleLogFn,
+    LogLevel,
+    AgentLaunchDisabled,
+    ApplicationMetadata,
+    ExternalDownloadDisallowed,
+    Scout,
+    ScoutRequest,
+    ScoutSpan,
+    buildScoutConfiguration,
+    consoleLogFn,
 } from "../lib";
 
 import * as TestUtil from "./util";
@@ -43,8 +44,8 @@ test("Request can be created and finished", t => {
             t.assert(r, "request was created");
             req = r;
         })
-    // Immediately finish the request
-        .then(() => req.finish())
+    // Finish & send the request
+        .then(() => req.finishAndSend())
         .then(returned => {
             t.assert(returned, "request was finished");
             t.equals(returned.id, req.id, "request id matches what was returned by finish()");
@@ -77,8 +78,8 @@ test("Single span request", t => {
             t.assert(returnedSpan, "span was finished");
             t.equals(returnedSpan.id, span.id, "span id matches what was returned by finish()");
         })
-    // Finish the request
-        .then(() => req.finish())
+    // Finish & Send the request
+        .then(() => req.finishAndSend())
     // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
         .catch(err => TestUtil.shutdownScout(t, scout, err));
@@ -109,8 +110,8 @@ test("Multi span request (2 top level)", t => {
             t.assert(spans.every(s => s.isStopped()), "spans are stopped");
             t.assert(!req.isStopped(), "request is not stopped yet");
         })
-    // Finish the request
-        .then(() => req.finish())
+    // Finish & send the request
+        .then(() => req.finishAndSend())
         .then(() => t.assert(req.isStopped(), "request is stopped"))
     // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
@@ -151,8 +152,8 @@ test("Multi span request (1 top level, 1 nested)", t => {
             t.assert(parent.isStopped(), "parent span is not stopped yet");
             t.assert(!req.isStopped(), "request is not stopped yet");
         })
-    // Finish the request
-        .then(() => req.finish())
+    // Send & Finish the request
+        .then(() => req.finishAndSend())
         .then(() => t.assert(req.isStopped(), "request is stopped"))
     // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
@@ -187,8 +188,8 @@ test("Parent Span auto close works (1 top level, 1 nested)", t => {
             t.assert(parent.isStopped(), "parent span is stopped");
             t.assert(!req.isStopped(), "request is not stopped yet");
         })
-    // Finish the request
-        .then(() => req.finish())
+    // Finish & send the request
+        .then(() => req.finishAndSend())
         .then(() => t.assert(req.isStopped(), "request is stopped"))
     // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
@@ -214,8 +215,8 @@ test("Request auto close works (1 top level, 1 nested)", t => {
     // Add the second (nested) span
         .then(() => parent.startChildSpan("Controller/test.first.nested"))
         .then(s => child = s)
-    // Finish the request (should trigger all spans below to finish)
-        .then(() => req.finish())
+    // Finish & send the request (should trigger all spans below to finish)
+        .then(() => req.finishAndSend())
     // Ensure the child span is stopped but the parent isn't
         .then(returnedReq => {
             t.equals(returnedReq.id, req.id, "returned request id matches");
@@ -357,11 +358,48 @@ test("Application metadata is built and sent", t => {
             t.assert(r, "request was created");
             req = r;
         })
-    // Immediately finish the request
-        .then(() => req.finish())
+    // Immediately finish & send the request
+        .then(() => req.finishAndSend())
         .then(returned => {
             t.assert(returned, "request was finished");
             t.equals(returned.id, req.id, "request id matches what was returned by finish()");
+        })
+    // Teardown and end test
+        .then(() => TestUtil.shutdownScout(t, scout))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/70
+test("Multiple ongoing requests are possible at the same time", t => {
+    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+    let first: ScoutRequest;
+    let second: ScoutRequest;
+
+    scout
+        .setup()
+    // Create the first & second request
+        .then(() => Promise.all([
+            scout.startRequest(),
+            scout.startRequest(),
+        ]))
+        .then((reqs: ScoutRequest[]) => {
+            [first, second] = reqs;
+            t.assert(first, "first request was created");
+            t.assert(second, "second request was created");
+        })
+    // Immediately finish & send the second request
+        .then(() => second.finishAndSend())
+        .then(returned => {
+            t.assert(returned, "second request was finished");
+            t.equals(returned.id, second.id, "second request id matches what was returned by finish()");
+        })
+    // Wait then finish the second request
+        .then(() => TestUtil.waitMs(100))
+    // Finish & send the first request
+        .then(() => first.finishAndSend())
+        .then(returned => {
+            t.assert(returned, "first request was finished");
+            t.equals(returned.id, first.id, "first request id matches what was returned by finish()");
         })
     // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
