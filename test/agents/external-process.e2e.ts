@@ -18,17 +18,16 @@ import {
     APIVersion,
 } from "../../lib/types";
 import * as Requests from "../../lib/protocol/v1/requests";
+import * as TestConstants from "../constants";
 
 const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY;
-const TEST_APP_NAME = "scout-e2e-tests";
-const TEST_APP_VERSION = "1.2.7";
 
 test("external process can be launched locally (v1.2.7)", t => {
     let agent: ExternalProcessAgent;
     let process: ChildProcess;
 
     // Create the external process agent
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & check it was started by viewing the process
         .then(() => agent.start())
@@ -44,7 +43,7 @@ test("manual async GetVersion message works (v1.2.7)", t => {
     let agent: ExternalProcessAgent;
 
     // Create the external process agent
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
         .then(() => agent.start())
@@ -56,7 +55,7 @@ test("manual async GetVersion message works (v1.2.7)", t => {
                 if (resp.type !== AgentResponseType.V1GetVersion) { return; }
 
                 // Ensure the version we got back is what we expect
-                t.equals(resp.version.raw, TEST_APP_VERSION, "parsed response version matches (1.2.7)");
+                t.equals(resp.version.raw, TestConstants.TEST_APP_VERSION, "parsed response version matches (1.2.7)");
 
                 // Remove listener
                 agent.removeListener(AgentEvent.SocketResponseReceived, listener);
@@ -79,7 +78,7 @@ test("GetVersion message works (v1.2.7)", t => {
     let agent: ExternalProcessAgent;
 
     // Create the external process agent
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
         .then(() => agent.start())
@@ -101,14 +100,14 @@ test("Register message works (v1.2.7)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
         .then(() => agent.start())
         .then(() => agent.connect())
     // Send Register message
         .then(() => agent.send(new Requests.V1Register(
-            TEST_APP_NAME,
+            TestConstants.TEST_SCOUT_NAME,
             TEST_AGENT_KEY,
             APIVersion.V1,
         )))
@@ -122,17 +121,17 @@ test("Register message works (v1.2.7)", t => {
 });
 
 test("StartRequest message works (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
     // Ensure agent key is present (fed in from ENV)
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => agent.send(new Requests.V1StartRequest()))
         .then((resp: BaseAgentResponse) => {
@@ -145,7 +144,7 @@ test("StartRequest message works (v1.2.7)", t => {
 });
 
 test("FinishRequest message works (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
 
@@ -153,10 +152,10 @@ test("FinishRequest message works (v1.2.7)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
             start = new Requests.V1StartRequest();
@@ -174,7 +173,7 @@ test("FinishRequest message works (v1.2.7)", t => {
 });
 
 test("TagRequest message works (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
 
@@ -182,10 +181,10 @@ test("TagRequest message works (v1.2.7)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
             start = new Requests.V1StartRequest();
@@ -210,7 +209,7 @@ test("TagRequest message works (v1.2.7)", t => {
 });
 
 test("StartSpan message works for leaf span (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
 
@@ -218,10 +217,10 @@ test("StartSpan message works for leaf span (v1.2.7)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
             start = new Requests.V1StartRequest();
@@ -245,7 +244,7 @@ test("StartSpan message works for leaf span (v1.2.7)", t => {
 });
 
 test("StopSpan works for leaf span (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
     let reqStart: Requests.V1StartRequest;
@@ -255,10 +254,10 @@ test("StopSpan works for leaf span (v1.2.7)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
             reqStart = new Requests.V1StartRequest();
@@ -288,7 +287,7 @@ test("StopSpan works for leaf span (v1.2.7)", t => {
 });
 
 test("TagSpan works for leaf span (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
     let reqStart: Requests.V1StartRequest;
@@ -298,10 +297,10 @@ test("TagSpan works for leaf span (v1.2.7)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
             reqStart = new Requests.V1StartRequest();
@@ -336,17 +335,17 @@ test("TagSpan works for leaf span (v1.2.7)", t => {
 });
 
 test("ApplicationEvent for application metadata works (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
     // Ensure agent key is present (fed in from ENV)
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send application event with metadata
         .then(() => agent.sendAsync(new Requests.V1ApplicationEvent(
             "application-event-test",
@@ -360,17 +359,17 @@ test("ApplicationEvent for application metadata works (v1.2.7)", t => {
 });
 
 test("ApplicationEvent for sampling works (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
     // Ensure agent key is present (fed in from ENV)
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send application event with CPU sample
         .then(() => agent.sendAsync(new Requests.V1ApplicationEvent(
             "application-event-test",
@@ -390,7 +389,7 @@ test("ApplicationEvent for sampling works (v1.2.7)", t => {
 });
 
 test("Nested spans work (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
     let reqStart: Requests.V1StartRequest;
@@ -401,10 +400,10 @@ test("Nested spans work (v1.2.7)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
             reqStart = new Requests.V1StartRequest();
@@ -441,7 +440,7 @@ test("Nested spans work (v1.2.7)", t => {
 });
 
 test("Nested spans work in the wrong close order (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
     let reqStart: Requests.V1StartRequest;
@@ -452,10 +451,10 @@ test("Nested spans work in the wrong close order (v1.2.7)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
             reqStart = new Requests.V1StartRequest();
@@ -492,7 +491,7 @@ test("Nested spans work in the wrong close order (v1.2.7)", t => {
 });
 
 test("Request with 'Controller' span works, after waiting for flush (v1.2.7)", t => {
-    const appVersion = new CoreAgentVersion(TEST_APP_VERSION);
+    const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
     let reqStart: Requests.V1StartRequest;
@@ -502,10 +501,10 @@ test("Request with 'Controller' span works, after waiting for flush (v1.2.7)", t
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TEST_APP_VERSION)
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
-        .then(() => TestUtil.initializeAgent(t, agent, TEST_APP_NAME, TEST_AGENT_KEY, appVersion))
+        .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
     // Send StartRequest
         .then(() => {
             reqStart = new Requests.V1StartRequest();

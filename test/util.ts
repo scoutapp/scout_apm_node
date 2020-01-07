@@ -86,6 +86,10 @@ export function waitMs(ms: number, t?: Test): Promise<void> {
     });
 }
 
+export function waitMinutes(mins: number, t?: Test): Promise<void> {
+    return waitMs(mins * 60 * 1000, t);
+}
+
 // Helper function for cleaning up an agent processe and passing/failing a test
 export function cleanup(t: Test, agent: ExternalProcessAgent, err?: Error): Promise<void> {
     return agent.getProcess()
