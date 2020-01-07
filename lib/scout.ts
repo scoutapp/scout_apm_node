@@ -474,15 +474,11 @@ export class Scout extends EventEmitter {
                 if (!this.config.key) {
                     this.logFn("[scout] 'key' missing in configuration", LogLevel.Warn);
                 }
-
-                return this.agent.send(new Requests.V1Register(
-                    this.config.name || "",
-                    this.config.key || "",
-                    APIVersion.V1,
-                ));
             })
+        // Register the application
+            .then(() => this.sendRegistrationRequest())
         // Send the application metadata
-            .then(() => this.agent.send(this.buildAppMetadataEvent()))
+            .then(() => this.sendAppMetadataEvent())
             .then(() => this);
     }
 
@@ -657,13 +653,39 @@ export class Scout extends EventEmitter {
         );
     }
 
+    // Helper for sending app metadata
+    private sendAppMetadataEvent(): Promise<void> {
+        return this
+            .sendThroughAgent(this.buildAppMetadataEvent(), {async: true})
+            .then(() => undefined)
+            .catch(err => {
+                this.logFn("[scout] failed to send start request request", LogLevel.Error);
+            });
+    }
+
+    private sendRegistrationRequest(): Promise<void> {
+        return this
+            .sendThroughAgent(new Requests.V1Register(
+                this.config.name || "",
+                this.config.key || "",
+                APIVersion.V1,
+            ))
+            .then(() => undefined)
+            .catch(err => {
+                this.logFn("[scout] failed to send app registration request", LogLevel.Error);
+            });
+    }
+
     /**
      * Helper function for sending a given request through the agent
      *
      * @param {T extends BaseAgentRequest} msg - The message to send
      * @returns {Promise<T extends BaseAgentResponse>} resp - The message to send
      */
-    private sendThroughAgent<T extends BaseAgentRequest, R extends BaseAgentResponse>(msg: T): Promise<R> {
+    private sendThroughAgent<T extends BaseAgentRequest, R extends BaseAgentResponse>(
+        msg: T,
+        opts?: {async: boolean},
+    ): Promise<R | void> {
         if (!this.hasAgent()) {
             const err = new Errors.Disconnected("No agent is present, please run .setup()");
             this.logFn(err.message, LogLevel.Error);
@@ -675,7 +697,11 @@ export class Scout extends EventEmitter {
             return Promise.reject(new Errors.MonitoringDisabled());
         }
 
-        return this.agent.send(msg);
+        if (opts && opts.async) {
+            return this.agent.sendAsync(msg);
+        }
+
+        return this.agent.send(msg) as Promise<void | R>;
     }
 
     // Helper function for setting up an agent to be part of the scout instance
@@ -684,7 +710,7 @@ export class Scout extends EventEmitter {
 
         // Setup forwarding of all events of the agent through the scout instance
         Object.values(AgentEvent).forEach(evt => {
-            this.agent.on(evt, () => this.emit(evt, ...arguments));
+            this.agent.on(evt, msg => this.emit(evt, msg));
         });
 
         return Promise.resolve();
