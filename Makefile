@@ -1,6 +1,7 @@
 .PHONY: all dev-setup git-hook-install clean \
 				lint lint-watch build build-watch \
 				test test-unit test-int test-e2e \
+				test-dashboard-send \
 				generate-agent-configs
 
 all: install build

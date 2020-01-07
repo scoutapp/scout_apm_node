@@ -13,16 +13,18 @@ import {
 } from "../lib";
 
 import * as TestUtil from "./util";
+import * as TestConstants from "./constants";
 
 // This "test" is made to send to the dashboard
 // it does not shut down scout in order to give it time to actually send data
 // https://github.com/scoutapp/scout_apm_node/issues/71
 test("Scout sends basic controller span to dashboard", t => {
-    const appMeta = new ApplicationMetadata({
-        frameworkVersion: "test",
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        name: TestConstants.TEST_SCOUT_NAME,
     });
 
-    const config = buildScoutConfiguration({allowShutdown: true});
+    const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
 
     if (!config.key) {
         throw new Error("No Scout key! Provide one with the SCOUT_KEY ENV variable");
@@ -47,6 +49,7 @@ test("Scout sends basic controller span to dashboard", t => {
         .then(() => TestUtil.waitMs(200))
         .then(() => span.stop())
         .then(() => req.finishAndSend())
+        .then(() => t.ok("request finished and sent successfully (check the dashboard)"))
     // Wait 2 mins for scout to send data
         .then(() => TestUtil.waitMinutes(2))
     // Teardown and end test
