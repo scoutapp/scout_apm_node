@@ -1,10 +1,11 @@
 import * as test from "tape";
 
 import {
-    LogLevel,
+    ScoutAgentEvent,
     AgentLaunchDisabled,
     ApplicationMetadata,
     ExternalDownloadDisallowed,
+    LogLevel,
     Scout,
     ScoutRequest,
     ScoutSpan,
@@ -401,6 +402,37 @@ test("Multiple ongoing requests are possible at the same time", t => {
             t.assert(returned, "first request was finished");
             t.equals(returned.id, first.id, "first request id matches what was returned by finish()");
         })
+    // Teardown and end test
+        .then(() => TestUtil.shutdownScout(t, scout))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/72
+test("Ensure that no requests are received by the agent if monitoring is off", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: false,
+    }));
+
+    let req: ScoutRequest;
+    let span: ScoutSpan;
+
+    // Fail the test if a request is sent from the agent
+    scout.on(ScoutAgentEvent.RequestSent, (req) => {
+        t.fail("agent sent a request");
+    });
+
+    scout
+        .setup()
+    // Create the first & second request
+        .then(() => scout.startRequest())
+        .then(r => req = r)
+    // Add a span
+        .then(() => req.startChildSpan("Controller/test"))
+        .then(s => span = s)
+    // Wait a little then finish the request (finishing the span as well)
+        .then(() => req.finishAndSend())
+        .then(returned => t.assert(returned, "req request was finished"))
     // Teardown and end test
         .then(() => TestUtil.shutdownScout(t, scout))
         .catch(err => TestUtil.shutdownScout(t, scout, err));
