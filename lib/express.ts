@@ -24,6 +24,9 @@ export interface ExpressMiddlewareOptions {
  * @returns {Function} a middleware function for use with express
  */
 export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddleware {
+    // A cache for frequently hit middlewares (which are often routes like  sorts for
+    const commonRouteMiddlewares: any[] = [];
+
     return (req: any, res: any, next: () => void) => {
         // Exit early if we cannot access the application from the request
         if (!req || !req.app) {
@@ -85,16 +88,31 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                             scoutRequest.finishAndSend();
                         });
 
+                        // Attempt to match one of the common middlewares first
+                        const reqUrl = req.url.toString();
+                        let matchedRouteMiddleware = commonRouteMiddlewares.find((m: any) => m.regexp.test(reqUrl));
+
+                        // If we couldn't find a route in the ones that have worked before,
+                        // then we have to search the router stack
+                        if (!matchedRouteMiddleware) {
                         // Find routes that match the current URL
-                        const matchedRoutes = req.app._router.stack
+                            matchedRouteMiddleware = req.app._router.stack
                             .filter((middleware: any) => {
-                                return middleware.route
-                                    && middleware.regexp
-                                    && middleware.regexp.test(req.url.toString());
-                            });
+                                // We can recognize a middleware as a route if .route & .regexp are present
+                                if (!middleware || !middleware.route || !middleware.regexp) { return false; }
+
+                                // Check if the URL matches the route
+                                const isMatch = middleware.regexp.test(reqUrl);
+
+                                // Add matches in the hope that common routes will be faster than searching everything
+                                if (isMatch) { commonRouteMiddlewares.push(middleware); }
+
+                                return isMatch;
+                            })[0];
+                        }
 
                         // Create a Controller/ span for the request
-                        const path = matchedRoutes.length > 0 ? matchedRoutes[0].route.path : "Unknown";
+                        const path = matchedRouteMiddleware.route.path || reqUrl;
                         const reqMethod = req.method.toUpperCase();
 
                         // Start a span for the request

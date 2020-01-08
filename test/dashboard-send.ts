@@ -21,6 +21,7 @@ import * as TestConstants from "./constants";
 test("Scout sends basic controller span to dashboard", t => {
     const config = buildScoutConfiguration({
         allowShutdown: true,
+        monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
 

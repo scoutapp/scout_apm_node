@@ -13,6 +13,7 @@ test("Simple operation", t => {
     const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(scoutMiddleware({
         config: buildScoutConfiguration({
             allowShutdown: true,
+            monitor: true,
         }),
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }));
@@ -37,20 +38,17 @@ test("Simple operation", t => {
             const listener = () => {
                 t.pass("received RequestFinished agent event");
 
-                // Remove agent, pass test
-                scout.getAgent()
-                    .removeListener(AgentEvent.RequestFinished, listener);
+                // Remove listener
+                scout.removeListener(AgentEvent.RequestFinished, listener);
 
                 // Wait a little while for request to finish up, then shutdown
                 TestUtil.waitMs(100)
-                    .then(() => scout.shutdown())
-                    .then(() => t.end())
-                    .catch(t.end);
+                    .then(() => TestUtil.shutdownScout(t, scout))
+                    .catch(err => TestUtil.shutdownScout(t, scout, err));
             };
 
             // Set up listener on the agent
-            scout.getAgent()
-                .on(AgentEvent.RequestFinished, listener);
+            scout.on(AgentEvent.RequestFinished, listener);
 
             // Make another request to the application
             request(app)
@@ -62,14 +60,17 @@ test("Simple operation", t => {
         .catch(t.end);
 });
 
-test("Dynamic segment routes", t => {
+test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
     // Create an application and setup scout middleware
-    const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
-        config: buildScoutConfiguration({
-            allowShutdown: true,
+    const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(
+        scoutMiddleware({
+            config: buildScoutConfiguration({
+                allowShutdown: true,
+                monitor: true,
+            }),
+            requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         }),
-        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
-    }));
+    );
 
     let scout: Scout;
     const expectedRootSpan = "Controller/GET /dynamic/:segment";
@@ -94,25 +95,23 @@ test("Dynamic segment routes", t => {
                 if (!message || message.type !== AgentRequestType.V1StartSpan) { return; }
 
                 // Skip requests that aren't the span we expect ( the initial GET / will trigger this)
-                if ((message as V1StartSpan).operation !== expectedRootSpan) { return; }
+                const msg: V1StartSpan = message as V1StartSpan;
+                if (msg.operation !== expectedRootSpan) { return; }
 
                 // Ensure that the span is what we expect
-                t.equals((message as V1StartSpan).operation, expectedRootSpan, "root span operation is correct");
+                t.equals(msg.operation, expectedRootSpan, `root span operation is correct [${msg.operation}]`);
 
                 // Remove agent, pass test
-                scout.getAgent()
-                    .removeListener(AgentEvent.RequestSent, listener);
+                scout.removeListener(AgentEvent.RequestSent, listener);
 
                 // Wait a little while for request to finish up, then shutdown
                 TestUtil.waitMs(100)
-                    .then(() => scout.shutdown())
-                    .then(() => t.end())
-                    .catch(t.end);
+                    .then(() => TestUtil.shutdownScout(t, scout))
+                    .catch(err => TestUtil.shutdownScout(t, scout, err));
             };
 
             // Set up listener on the agent
-            scout.getAgent()
-                .on(AgentEvent.RequestSent, listener);
+            scout.on(AgentEvent.RequestSent, listener);
 
             // Make another request to the application
             request(app)
@@ -124,11 +123,12 @@ test("Dynamic segment routes", t => {
         .catch(t.end);
 });
 
-test("Application which errors", t => {
+test("Application which errors", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
     // Create an application and setup scout middleware
     const app: Application & ApplicationWithScout = TestUtil.simpleErrorApp(scoutMiddleware({
         config: buildScoutConfiguration({
             allowShutdown: true,
+            monitor: true,
         }),
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }));

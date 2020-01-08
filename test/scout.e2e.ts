@@ -22,7 +22,7 @@ test("Scout object creation works without config", t => {
 });
 
 test("Scout object setup works without config", t => {
-    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+    const scout = TestUtil.buildTestScoutInstance();
 
     scout
         .setup()
@@ -34,7 +34,7 @@ test("Scout object setup works without config", t => {
 });
 
 test("Request can be created and finished", t => {
-    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+    const scout = TestUtil.buildTestScoutInstance();
     let req: ScoutRequest;
 
     scout
@@ -57,7 +57,7 @@ test("Request can be created and finished", t => {
 });
 
 test("Single span request", t => {
-    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+    const scout = TestUtil.buildTestScoutInstance();
     let req: ScoutRequest;
     let span: ScoutSpan;
 
@@ -87,7 +87,7 @@ test("Single span request", t => {
 });
 
 test("Multi span request (2 top level)", t => {
-    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+    const scout = TestUtil.buildTestScoutInstance();
 
     const spans: ScoutSpan[] = [];
     let req: ScoutRequest;
@@ -120,7 +120,7 @@ test("Multi span request (2 top level)", t => {
 });
 
 test("Multi span request (1 top level, 1 nested)", t => {
-    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+    const scout = TestUtil.buildTestScoutInstance();
 
     let req: ScoutRequest;
     let parent: ScoutSpan;
@@ -162,7 +162,7 @@ test("Multi span request (1 top level, 1 nested)", t => {
 });
 
 test("Parent Span auto close works (1 top level, 1 nested)", t => {
-    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+    const scout = TestUtil.buildTestScoutInstance();
 
     let req: ScoutRequest;
     let parent: ScoutSpan;
@@ -198,7 +198,7 @@ test("Parent Span auto close works (1 top level, 1 nested)", t => {
 });
 
 test("Request auto close works (1 top level, 1 nested)", t => {
-    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+    const scout = TestUtil.buildTestScoutInstance();
 
     let req: ScoutRequest;
     let parent: ScoutSpan;
@@ -231,7 +231,7 @@ test("Request auto close works (1 top level, 1 nested)", t => {
 });
 
 test("Request auto close works (2 top level)", t => {
-    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+    const scout = TestUtil.buildTestScoutInstance();
 
     let req: ScoutRequest;
     const spans: ScoutSpan[] = [];
@@ -266,6 +266,7 @@ test("Download disabling works via top level config", t => {
     const config = buildScoutConfiguration({
         coreAgentDownload: false,
         allowShutdown: true,
+        monitor: true,
     });
     const scout = new Scout(config, {downloadOptions: {disableCache: true}});
 
@@ -287,6 +288,7 @@ test("Launch disabling works via top level config", t => {
     const scout = new Scout(buildScoutConfiguration({
         coreAgentLaunch: false,
         allowShutdown: true,
+        monitor: true,
     }));
 
     scout
@@ -307,6 +309,7 @@ test("Custom version specification works via top level config", t => {
     const scout = new Scout(buildScoutConfiguration({
         coreAgentVersion: "v1.1.8", // older version (default is newer)
         allowShutdown: true,
+        monitor: true,
     }));
 
     scout
@@ -326,7 +329,7 @@ test("Application metadata is built and sent", t => {
     });
 
     const config = buildScoutConfiguration(
-        {allowShutdown: true},
+        {allowShutdown: true, monitor: true},
         {
             env: {
                 SCOUT_FRAMEWORK: "framework-from-env",
@@ -372,7 +375,7 @@ test("Application metadata is built and sent", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/70
 test("Multiple ongoing requests are possible at the same time", t => {
-    const scout = new Scout(buildScoutConfiguration({allowShutdown: true}));
+    const scout = TestUtil.buildTestScoutInstance();
     let first: ScoutRequest;
     let second: ScoutRequest;
 

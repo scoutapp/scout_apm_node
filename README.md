@@ -32,7 +32,8 @@ const app = express();
 const scoutMiddleware = require("scout-apm-client").expressMiddleware;
 
 // Enable the app-wide scout middleware
-app.use(scoutMiddleware());
+// monitoring is *off* by default
+app.use(scoutMiddleware({config: {monitor: true}}));
 
 // Set up the routes for your application
 app.get('/', function (req, res) {
@@ -47,6 +48,12 @@ For more information on configuration, see `docs/configuration.md`
 Scout supports use with any other frameworks through it's `Promise` based API:
 
 ```javascript
+const Scout = require("scout-apm-client").Scout;
+
+// Create a scout instance
+// monitoring is *off* by default
+const scout = new Scout(buildScoutConfiguration({allowShutdown: true, monitor: true}));
+
 // Set up your scout instance
 scout.setup()
     .then(scout => {
