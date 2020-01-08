@@ -19,3 +19,31 @@ export const DEFAULT_SOCKET_FILE_NAME = "scout-agent.sock";
 export const DEFAULT_CORE_AGENT_NAME = "scout_apm_core";
 
 export const SCOUT_PATH_TAG = "path";
+
+// Common parameters to filter, copied from scout_apm_python
+export const DEFAULT_PARAM_FILTER_LOOKUP = {
+    "access": true,
+    "access_token": true,
+    "api_key": true,
+    "apikey": true,
+    "auth": true,
+    "auth_token": true,
+    "card[number]": true,
+    "certificate": true,
+    "credentials": true,
+    "crypt": true,
+    "key": true,
+    "mysql_pwd": true,
+    "otp": true,
+    "passwd": true,
+    "password": true,
+    "private": true,
+    "protected": true,
+    "salt": true,
+    "secret": true,
+    "ssn": true,
+    "stripetoken": true,
+    "token": true,
+};
+
+export const DEFAULT_PARAM_SCRUB_REPLACEMENT = "[FILTERED]";

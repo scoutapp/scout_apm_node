@@ -1,6 +1,7 @@
 import { LogLevel } from "./enum";
 import { snakeCase } from "snake-case";
 import * as winston from "winston";
+import * as Constants from "../constants";
 
 export type LogFn = (message: string, level?: LogLevel) => void;
 
@@ -117,32 +118,6 @@ export function splitAgentResponses(buf: Buffer): FramedHeadersWithRemaining {
     return {framed, remaining};
 }
 
-// Common parameters to filter, copied from scout_apm_python
-const DEFAULT_PARAM_FILTER_LOOKUP = {
-    "access": true,
-    "access_token": true,
-    "api_key": true,
-    "apikey": true,
-    "auth": true,
-    "auth_token": true,
-    "card[number]": true,
-    "certificate": true,
-    "credentials": true,
-    "crypt": true,
-    "key": true,
-    "mysql_pwd": true,
-    "otp": true,
-    "passwd": true,
-    "password": true,
-    "private": true,
-    "protected": true,
-    "salt": true,
-    "secret": true,
-    "ssn": true,
-    "stripetoken": true,
-    "token": true,
-};
-
 /**
  * Scrub the parameters of a given URL
  * this function modifies the provided URL object in-place.
@@ -151,9 +126,13 @@ const DEFAULT_PARAM_FILTER_LOOKUP = {
  * @param {Object} lookup - A lookup dictionary of terms to scrub
  */
 export function scrubURLParams(url: URL, lookup?: { [key: string]: boolean }): URL {
-    lookup = lookup || DEFAULT_PARAM_FILTER_LOOKUP;
+    lookup = lookup || Constants.DEFAULT_PARAM_FILTER_LOOKUP;
 
-    // TODO: implement
+    url.searchParams.forEach((_, k) => {
+        if (lookup && k in lookup) {
+            url.searchParams.set(k, Constants.DEFAULT_PARAM_SCRUB_REPLACEMENT);
+        }
+    });
 
     return url;
 }
@@ -166,8 +145,9 @@ export function scrubURLParams(url: URL, lookup?: { [key: string]: boolean }): U
  * @returns {URL} the scrubbed URL
  */
 export function scrubURLToPath(url: URL) {
-
-    // TODO: implement
+    url.searchParams.forEach((_, k) => {
+        url.searchParams.delete(k);
+    })
 
     return url;
 }
