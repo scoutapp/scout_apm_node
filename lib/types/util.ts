@@ -126,6 +126,8 @@ export function splitAgentResponses(buf: Buffer): FramedHeadersWithRemaining {
  * @param {Object} lookup - A lookup dictionary of terms to scrub
  */
 export function scrubURLParams(url: URL, lookup?: { [key: string]: boolean }): URL {
+    if (!url || !url.searchParams) { return url; }
+
     lookup = lookup || Constants.DEFAULT_PARAM_FILTER_LOOKUP;
 
     url.searchParams.forEach((_, k) => {
@@ -145,6 +147,8 @@ export function scrubURLParams(url: URL, lookup?: { [key: string]: boolean }): U
  * @returns {URL} the scrubbed URL
  */
 export function scrubURLToPath(url: URL) {
+    if (!url || !url.searchParams) { return url; }
+
     url.searchParams.forEach((_, k) => {
         url.searchParams.delete(k);
     });
