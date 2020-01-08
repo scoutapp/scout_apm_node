@@ -31,7 +31,7 @@ app.use("/your-endpoint", (req, res) => {
                     scoutSpan.finish(); // スパン終了(エラーあり場合)
 
                     // // (オプション) エラ情報のタグを付ける
-                    // scoutSpan.tag([
+                    // scoutSpan.addTags([
                     //     {name: "error", value: true},
                     //     {name: "error.stack", value: err.stack},
                     // ]);
@@ -72,7 +72,7 @@ app.use("/your-endpoint", (req, res) => {
             scoutSpan.finish();
 
             // // (オプション) タッグでテンプレート情報保存
-            // scoutSpan.tag([
+            // scoutSpan.addTags([
             //   {name: "template.fileName", value: "template.pug"},
             // ]);
 

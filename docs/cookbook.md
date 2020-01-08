@@ -32,7 +32,7 @@ app.use("/your-endpoint", (req, res) => {
                     scoutSpan.finish();
 
                     // // (OPTIONAL) Add custom tags to help with error classification
-                    // scoutSpan.tag([
+                    // scoutSpan.addTags([
                     //     {name: "error", value: true},
                     //     {name: "error.stack", value: err.stack},
                     // ]);
@@ -73,7 +73,7 @@ app.use("/your-endpoint", (req, res) => {
             scoutSpan.finish();
 
             // // (OPTIONAL) tag the span with some information about the template that was rendered
-            // scoutSpan.tag([
+            // scoutSpan.addTags([
             //   {name: "template.fileName", value: "template.pug"},
             // ]);
 
