@@ -22,6 +22,9 @@ import { Scout } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
 
+// Wait a little longer for requests that use express
+export const EXPRESS_TEST_TIMEOUT = 2000;
+
 // Helper for downloading and creating an agent
 export function bootstrapExternalProcessAgent(
     t: Test,
