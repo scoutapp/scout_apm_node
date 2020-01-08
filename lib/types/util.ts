@@ -1,5 +1,6 @@
 import { LogLevel } from "./enum";
 import { snakeCase } from "snake-case";
+import * as winston from "winston";
 
 export type LogFn = (message: string, level?: LogLevel) => void;
 
@@ -35,6 +36,35 @@ export function consoleLogFn(message: string, level?: LogLevel) {
         default:
             console.log(msg); // tslint:disable-line no-console
     }
+}
+
+/**
+ * Implementation for winston loggers
+ *
+ * @param {string} message
+ * @param {LogLevel} level
+ */
+export function buildWinstonLogFn(logger: winston.Logger): LogFn {
+    return (message: string, level?: LogLevel) => {
+        level = level || LogLevel.Info;
+
+        switch (level) {
+            case LogLevel.Error:
+                logger.error(message);
+                break;
+            case LogLevel.Warn:
+                logger.warn(message);
+                break;
+            case LogLevel.Debug:
+                logger.debug(message);
+                break;
+            case LogLevel.Trace:
+                logger.silly(message);
+                break;
+            default:
+                logger.log({level, message});
+        }
+    };
 }
 
 // Correctly framed headers and the remainder (if any)
