@@ -17,3 +17,5 @@ export const DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS = 5 * MINUTE_MS;
 
 export const DEFAULT_SOCKET_FILE_NAME = "scout-agent.sock";
 export const DEFAULT_CORE_AGENT_NAME = "scout_apm_core";
+
+export const SCOUT_PATH_TAG = "path";

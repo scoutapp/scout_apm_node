@@ -6,20 +6,23 @@ import { v4 as uuidv4 } from "uuid";
 import {
     APIVersion,
     Agent,
-    AgentEvent,
     AgentDownloadOptions,
     AgentDownloader,
+    AgentEvent,
     ApplicationMetadata,
-    CoreAgentVersion,
     BaseAgentRequest,
     BaseAgentResponse,
+    CoreAgentVersion,
     LogFn,
     LogLevel,
     ProcessOptions,
     ScoutConfiguration,
+    URIReportingLevel,
     buildDownloadOptions,
     buildProcessOptions,
     buildScoutConfiguration,
+    scrubURLParams,
+    scrubURLToPath,
 } from "./types";
 import WebAgentDownloader from "./agent-downloaders/web";
 import ExternalProcessAgent from "./agents/external-process";
@@ -638,6 +641,35 @@ export class Scout extends EventEmitter {
 
     public getAgent(): ExternalProcessAgent {
         return this.agent;
+    }
+
+    /**
+     * Function for checking whether a given path (URL) is ignored by scout
+     *
+     * @param {URL} url
+     * @returns {boolean} whether the path should be ignored
+     */
+    public ignoresPath(url: URL): boolean {
+        // TODO: implement
+        return false;
+    }
+
+    /**
+     * Filter a given URL according to logic before storing with Scout
+     * this method modifies the argument URL in place.
+     *
+     * @param {URL} url
+     * @returns {URL} the filtered URL object
+     */
+    public filterURL(url: URL): URL {
+        switch (this.config.uriReporting) {
+            case URIReportingLevel.FilteredParams:
+                return scrubURLParams(url);
+            case URIReportingLevel.Path:
+                return scrubURLToPath(url);
+            default:
+                return url;
+        }
     }
 
     private getSocketPath() {

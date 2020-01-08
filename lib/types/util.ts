@@ -116,3 +116,58 @@ export function splitAgentResponses(buf: Buffer): FramedHeadersWithRemaining {
 
     return {framed, remaining};
 }
+
+// Common parameters to filter, copied from scout_apm_python
+const DEFAULT_PARAM_FILTER_LOOKUP = {
+    "access": true,
+    "access_token": true,
+    "api_key": true,
+    "apikey": true,
+    "auth": true,
+    "auth_token": true,
+    "card[number]": true,
+    "certificate": true,
+    "credentials": true,
+    "crypt": true,
+    "key": true,
+    "mysql_pwd": true,
+    "otp": true,
+    "passwd": true,
+    "password": true,
+    "private": true,
+    "protected": true,
+    "salt": true,
+    "secret": true,
+    "ssn": true,
+    "stripetoken": true,
+    "token": true,
+};
+
+/**
+ * Scrub the parameters of a given URL
+ * this function modifies the provided URL object in-place.
+ *
+ * @param {URL} url
+ * @param {Object} lookup - A lookup dictionary of terms to scrub
+ */
+export function scrubURLParams(url: URL, lookup?: { [key: string]: boolean }): URL {
+    lookup = lookup || DEFAULT_PARAM_FILTER_LOOKUP;
+
+    // TODO: implement
+
+    return url;
+}
+
+/**
+ * Scrub a URL down to only it's path (removing all query parameters)
+ * this function modifies the provided URL object in-place.
+ *
+ * @param {URL} url
+ * @returns {URL} the scrubbed URL
+ */
+export function scrubURLToPath(url: URL) {
+
+    // TODO: implement
+
+    return url;
+}
