@@ -42,6 +42,7 @@
     "sha256-file": "^1.0.0",
     "supertest": "^4.0.2",
     "tape": "^4.12.1",
+    "tempfile": "^3.0.0",
     "tslint": "^5.14.0",
     "typescript": "^3.7.3"
   },
@@ -66,6 +67,7 @@
     "snake-case": "3.0.2",
     "tmp": "0.0.33",
     "tmp-promise": "1.0.5",
-    "uuid": "3.3.2"
+    "uuid": "3.3.2",
+    "winston": "^3.2.1"
   }
 }

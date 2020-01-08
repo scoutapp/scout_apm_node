@@ -6,6 +6,7 @@ export {
     buildScoutConfiguration,
     LogLevel,
     consoleLogFn,
+    buildWinstonLogFn,
 } from "./types";
 
 export {
