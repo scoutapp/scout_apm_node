@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
     APIVersion,
     Agent,
+    ScoutEvent,
     AgentDownloadOptions,
     AgentDownloader,
     AgentEvent,
@@ -650,12 +651,20 @@ export class Scout extends EventEmitter {
      * @returns {boolean} whether the path should be ignored
      */
     public ignoresPath(path: string): boolean {
+        this.logFn("[scout] checking path [${path}] against ignored paths", LogLevel.Trace);
         // If ignore isn't specified or if empty, then nothing is ignored
         if (!this.config.ignore || this.config.ignore.length === 0) {
             return false;
         }
 
-        return this.config.ignore.some(prefix => path.indexOf(prefix) === 0);
+        const matchingPrefix = this.config.ignore.find(prefix => path.indexOf(prefix) === 0);
+
+        if (matchingPrefix) {
+            this.logFn("[scout] ignoring path [${path}] matching prefix [${matchingPrefix}]", LogLevel.Debug);
+            this.emit(ScoutEvent.IgnoredPathDetected, path);
+        }
+
+        return matchingPrefix !== undefined;
     }
 
     /**

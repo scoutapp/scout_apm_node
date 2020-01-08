@@ -13,6 +13,7 @@ export interface ExpressMiddlewareOptions {
     config?: Partial<ScoutConfiguration>;
     requestTimeoutMs?: number;
     logFn?: LogFn;
+    scout?: Scout;
 }
 
 /**
@@ -65,9 +66,13 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         const reqMethod = req.method.toUpperCase();
 
         let getScout: () => Promise<Scout> = () => Promise.resolve(req.app.scout);
+
         // Create the scout agent if not present on the app
         if (!req.app.scout) {
             getScout = () => {
+                // If a scout instance to use was given then let's use that
+                if (opts && opts.scout) { return Promise.resolve(opts.scout); }
+
                 // Use custom scout configuration if provided
                 const overrides = opts && opts.config ? opts.config : {};
                 const config: Partial<ScoutConfiguration> = buildScoutConfiguration(overrides);

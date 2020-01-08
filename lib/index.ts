@@ -2,6 +2,7 @@ export * from "./scout";
 
 export {
     AgentEvent as ScoutAgentEvent,
+    ScoutEvent,
     ApplicationMetadata,
     buildScoutConfiguration,
     LogLevel,

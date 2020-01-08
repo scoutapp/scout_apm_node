@@ -116,3 +116,7 @@ export enum PlatformTriple {
     MuslLinux64 = "x86_64-unknown-linux-musl",
     AppleDarwin64 = "x86_64-apple-darwin",
 }
+
+export enum ScoutEvent {
+    IgnoredPathDetected = "ignored-path-detected",
+}
