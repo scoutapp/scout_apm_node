@@ -60,7 +60,7 @@ test("splitAgentResponse parses multiple responses", t => {
 
 test("scrubURLParams scrubs params properly", t => {
     // Build a buffer with a message
-    let scrubbed: URL = scrubURLParams(new URL("https://localhost/some/path?password=test"));
+    const scrubbed: URL = scrubURLParams(new URL("https://localhost/some/path?password=test"));
 
     t.equals(
         scrubbed.searchParams.get("password"),
@@ -73,9 +73,9 @@ test("scrubURLParams scrubs params properly", t => {
 
 test("scrubURLToPath scrubs URL down to path", t => {
     // Build a buffer with a message
-    let scrubbed: URL = scrubURLToPath(new URL("https://localhost/some/path?password=test"));
+    const scrubbed: URL = scrubURLToPath(new URL("https://localhost/some/path?password=test"));
 
-    t.equals(scrubbed.toString(), "https://localhost/some/path")
+    t.equals(scrubbed.toString(), "https://localhost/some/path");
 
     t.end();
 });

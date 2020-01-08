@@ -147,7 +147,7 @@ export function scrubURLParams(url: URL, lookup?: { [key: string]: boolean }): U
 export function scrubURLToPath(url: URL) {
     url.searchParams.forEach((_, k) => {
         url.searchParams.delete(k);
-    })
+    });
 
     return url;
 }
