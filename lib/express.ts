@@ -94,7 +94,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                             });
 
                         // Create a Controller/ span for the request
-                        const path = matchedRoutes.length > 0 ? matchedRoutes[0].route.path : "Unknown";
+                        const path = matchedRoutes.length > 0 ? matchedRoutes[0].route.path : req.url;
                         const reqMethod = req.method.toUpperCase();
 
                         // Start a span for the request
