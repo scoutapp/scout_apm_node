@@ -41,8 +41,8 @@ interface ChildSpannable {
     getChildSpans(): Promise<ScoutSpan[]>;
 }
 
-interface Taggable {
-    addTags(tags: ScoutTag[]): Promise<this>;
+interface HasContext {
+    addContext(tags: ScoutTag[]): Promise<this>;
 }
 
 interface Stoppable {
@@ -70,7 +70,7 @@ export interface ScoutRequestOptions {
     started?: boolean;
 }
 
-export class ScoutRequest implements ChildSpannable, Taggable, Stoppable, Startable {
+export class ScoutRequest implements ChildSpannable, HasContext, Stoppable, Startable {
     public readonly id: string;
 
     private timestamp: Date;
@@ -138,8 +138,8 @@ export class ScoutRequest implements ChildSpannable, Taggable, Stoppable, Starta
         return Promise.resolve(this.childSpans);
     }
 
-    /** @see Taggable */
-    public addTags(tags: ScoutTag[]): Promise<this> {
+    /** @see HasContext */
+    public addContext(tags: ScoutTag[]): Promise<this> {
         tags.forEach(t => this.tags[t.name] = t.value);
         return Promise.resolve(this);
     }
@@ -227,7 +227,7 @@ export interface ScoutSpanOptions {
     request: ScoutRequest;
 }
 
-export class ScoutSpan implements ChildSpannable, Taggable, Stoppable, Startable {
+export class ScoutSpan implements ChildSpannable, HasContext, Stoppable, Startable {
     public readonly request: ScoutRequest;
     public readonly parent?: ScoutSpan;
     public readonly id: string;
@@ -262,8 +262,8 @@ export class ScoutSpan implements ChildSpannable, Taggable, Stoppable, Startable
         return new Date(this.timestamp);
     }
 
-    /** @see Taggable */
-    public addTags(tags: ScoutTag[]): Promise<this> {
+    /** @see HasContext */
+    public addContext(tags: ScoutTag[]): Promise<this> {
         tags.forEach(t => this.tags[t.name] = t.value);
         return Promise.resolve(this);
     }

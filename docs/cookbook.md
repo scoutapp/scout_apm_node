@@ -31,8 +31,8 @@ app.use("/your-endpoint", (req, res) => {
                 .catch((err: Error) => {
                     scoutSpan.finish();
 
-                    // // (OPTIONAL) Add custom tags to help with error classification
-                    // scoutSpan.addTags([
+                    // // (OPTIONAL) Add custom context to help with error classification
+                    // scoutSpan.addContext([
                     //     {name: "error", value: true},
                     //     {name: "error.stack", value: err.stack},
                     // ]);
@@ -72,8 +72,8 @@ app.use("/your-endpoint", (req, res) => {
             // Finish the scout span
             scoutSpan.finish();
 
-            // // (OPTIONAL) tag the span with some information about the template that was rendered
-            // scoutSpan.addTags([
+            // // (OPTIONAL) add context to the span with some information about the template that was rendered
+            // scoutSpan.addContext([
             //   {name: "template.fileName", value: "template.pug"},
             // ]);
 
