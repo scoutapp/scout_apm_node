@@ -1,5 +1,12 @@
 import * as onFinished from "on-finished";
-import { LogLevel, ScoutConfiguration, buildScoutConfiguration, LogFn, consoleLogFn } from "./types";
+import {
+    LogFn,
+    LogLevel,
+    ScoutConfiguration,
+    ScoutTag,
+    buildScoutConfiguration,
+    consoleLogFn,
+} from "./types";
 import * as Constants from "./constants";
 import { Scout, ScoutRequest, ScoutOptions } from "./scout";
 
@@ -39,8 +46,11 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         }
 
         // Attempt to match the request URL to previous matched middleware first
-        const reqUrl = req.url.toString();
-        let matchedRouteMiddleware = commonRouteMiddlewares.find((m: any) => m.regexp.test(reqUrl));
+        const reqPath = req.url;
+        // The query of the URL needs to be  stripped before attempting to test it against express regexps
+        // i.e. all route regexps end in /..\?$/
+        const preQueryUrl = reqPath.split("?")[0];
+        let matchedRouteMiddleware = commonRouteMiddlewares.find((m: any) => m.regexp.test(preQueryUrl));
 
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
@@ -52,7 +62,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                     if (!middleware || !middleware.route || !middleware.regexp) { return false; }
 
                     // Check if the URL matches the route
-                    const isMatch = middleware.regexp.test(reqUrl);
+                    const isMatch = middleware.regexp.test(preQueryUrl);
 
                     // Add matches in the hope that common routes will be faster than searching everything
                     if (isMatch) { commonRouteMiddlewares.push(middleware); }
@@ -62,7 +72,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         }
 
         // Create a Controller/ span for the request
-        const path = matchedRouteMiddleware.route.path || reqUrl;
+        const path = matchedRouteMiddleware ? matchedRouteMiddleware.route.path : reqPath;
         const reqMethod = req.method.toUpperCase();
 
         let getScout: () => Promise<Scout> = () => Promise.resolve(req.app.scout);
@@ -104,9 +114,14 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                 scout
                     .startRequest()
                 // Tag the request with the pageh
-                    .then(req => req.addTags([
-                        { name: Constants.SCOUT_PATH_TAG, value: scout.filterURL(reqUrl).toString() },
-                    ]))
+                    .then(req => {
+                        const tag: ScoutTag = {
+                            name: Constants.SCOUT_PATH_TAG,
+                            value: scout.filterRequestPath(reqPath),
+                        };
+
+                        return req.addTags([tag]);
+                    })
                 // Perform the rest of the request tracing
                     .then((scoutRequest: ScoutRequest) => {
                         // Save the scout request onto the request object

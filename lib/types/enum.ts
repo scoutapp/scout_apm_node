@@ -27,21 +27,21 @@ export enum ApplicationEventType {
 }
 
 export enum AgentEvent {
-    SocketResponseReceived = "socket-response-received",
-    SocketResponseParseError = "socket-response-parse-error",
-    SocketDisconnected = "socket-disconnected",
-    SocketError = "socket-error",
-    SocketConnected = "socket-connected",
+    SocketResponseReceived = "agent-event-socket-response-received",
+    SocketResponseParseError = "agent-event-socket-response-parse-error",
+    SocketDisconnected = "agent-event-socket-disconnected",
+    SocketError = "agent-event-socket-error",
+    SocketConnected = "agent-event-socket-connected",
 
-    RequestSent = "request-sent",
+    RequestSent = "agent-event-request-sent",
 
-    RequestStarted = "request-started",
-    RequestFinished = "request-finished",
+    RequestStarted = "agent-event-request-started",
+    RequestFinished = "agent-event-request-finished",
 
-    SpanStarted = "span-started",
-    SpanStopped = "span-stopped",
+    SpanStarted = "agent-event-span-started",
+    SpanStopped = "agent-event-span-stopped",
 
-    ApplicationEventReported = "application-event-reported",
+    ApplicationEventReported = "agent-event-application-event-reported",
 }
 
 export enum AgentRequestType {
@@ -118,5 +118,6 @@ export enum PlatformTriple {
 }
 
 export enum ScoutEvent {
-    IgnoredPathDetected = "ignored-path-detected",
+    IgnoredPathDetected = "scout-event-ignored-path-detected",
+    RequestSent = "scout-event-request-sent",
 }
