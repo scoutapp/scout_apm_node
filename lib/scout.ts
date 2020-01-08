@@ -630,6 +630,11 @@ export class Scout extends EventEmitter {
     }
 
     public shutdown(): Promise<void> {
+        if (!this.agent) {
+            this.logFn("[scout] shutdown called but no agent to shutdown is present", LogLevel.Error);
+            return Promise.reject(new Errors.NoAgentPresent());
+        }
+
         return this.agent
             .disconnect()
             .then(() => {
@@ -655,6 +660,7 @@ export class Scout extends EventEmitter {
      */
     public ignoresPath(path: string): boolean {
         this.logFn("[scout] checking path [${path}] against ignored paths", LogLevel.Trace);
+
         // If ignore isn't specified or if empty, then nothing is ignored
         if (!this.config.ignore || this.config.ignore.length === 0) {
             return false;

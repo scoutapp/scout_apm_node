@@ -18,6 +18,7 @@ export enum ErrorCode {
     ConnectionPoolDisabled,
     AgentLaunchDisabled,
     MonitoringDisabled,
+    NoAgentPresent,
 }
 
 class ScoutError extends Error {
@@ -192,5 +193,14 @@ export class MonitoringDisabled extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "Monitoring has been disabled";
+    }
+}
+
+export class NoAgentPresent extends ScoutError {
+    public readonly code: number = ErrorCode.NoAgentPresent;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "No agent is present";
     }
 }

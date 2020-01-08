@@ -14,148 +14,148 @@ import {
 import { Scout } from "../lib/scout";
 import { V1StartSpan } from "../lib/protocol/v1/requests";
 
-// test("Simple operation", t => {
-//     // Create an application and setup scout middleware
-//     const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(scoutMiddleware({
-//         config: buildScoutConfiguration({
-//             allowShutdown: true,
-//             monitor: true,
-//         }),
-//         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
-//     }));
+test("Simple operation", t => {
+    // Create an application and setup scout middleware
+    const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(scoutMiddleware({
+        config: buildScoutConfiguration({
+            allowShutdown: true,
+            monitor: true,
+        }),
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
 
-//     let scout: Scout;
+    let scout: Scout;
 
-//     // Send a request to the application (which should trigger setup of scout)
-//     request(app)
-//         .get("/")
-//         .expect("Content-Type", /json/)
-//         .expect(200)
-//         .then(res => {
-//             if (!app.scout) { throw new Error("Scout was not added to app object"); }
+    // Send a request to the application (which should trigger setup of scout)
+    request(app)
+        .get("/")
+        .expect("Content-Type", /json/)
+        .expect(200)
+        .then(res => {
+            if (!app.scout) { throw new Error("Scout was not added to app object"); }
 
-//             t.assert(app.scout, "scout instance was added to the app object");
-//             t.assert(app.scout.hasAgent(), "the scout instance has an agent");
-//             scout = app.scout;
-//         })
-//     // Set up listeners and make another request to ensure that scout is working
-//         .then(() => {
-//             // Create a listener to watch for the request finished event
-//             const listener = () => {
-//                 t.pass("received RequestFinished agent event");
+            t.assert(app.scout, "scout instance was added to the app object");
+            t.assert(app.scout.hasAgent(), "the scout instance has an agent");
+            scout = app.scout;
+        })
+    // Set up listeners and make another request to ensure that scout is working
+        .then(() => {
+            // Create a listener to watch for the request finished event
+            const listener = () => {
+                t.pass("received RequestFinished agent event");
 
-//                 // Remove listener
-//                 scout.removeListener(AgentEvent.RequestFinished, listener);
+                // Remove listener
+                scout.removeListener(AgentEvent.RequestFinished, listener);
 
-//                 // Wait a little while for request to finish up, then shutdown
-//                 TestUtil.waitMs(100)
-//                     .then(() => TestUtil.shutdownScout(t, scout))
-//                     .catch(err => TestUtil.shutdownScout(t, scout, err));
-//             };
+                // Wait a little while for request to finish up, then shutdown
+                TestUtil.waitMs(100)
+                    .then(() => TestUtil.shutdownScout(t, scout))
+                    .catch(err => TestUtil.shutdownScout(t, scout, err));
+            };
 
-//             // Set up listener on the agent
-//             scout.on(AgentEvent.RequestFinished, listener);
+            // Set up listener on the agent
+            scout.on(AgentEvent.RequestFinished, listener);
 
-//             // Make another request to the application
-//             request(app)
-//                 .get("/")
-//                 .expect("Content-Type", /json/)
-//                 .expect(200)
-//                 .then(() => t.comment("sent second request"));
-//         })
-//         .catch(t.end);
-// });
+            // Make another request to the application
+            request(app)
+                .get("/")
+                .expect("Content-Type", /json/)
+                .expect(200)
+                .then(() => t.comment("sent second request"));
+        })
+        .catch(t.end);
+});
 
-// test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
-//     // Create an application and setup scout middleware
-//     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(
-//         scoutMiddleware({
-//             config: buildScoutConfiguration({
-//                 allowShutdown: true,
-//                 monitor: true,
-//             }),
-//             requestTimeoutMs: 0, // disable request timeout to stop test from hanging
-//         }),
-//     );
+test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+    // Create an application and setup scout middleware
+    const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(
+        scoutMiddleware({
+            config: buildScoutConfiguration({
+                allowShutdown: true,
+                monitor: true,
+            }),
+            requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        }),
+    );
 
-//     let scout: Scout;
-//     const expectedRootSpan = "Controller/GET /dynamic/:segment";
+    let scout: Scout;
+    const expectedRootSpan = "Controller/GET /dynamic/:segment";
 
-//     // Send a request to the application (which should trigger setup of scout)
-//     request(app)
-//         .get("/")
-//         .expect("Content-Type", /json/)
-//         .expect(200)
-//         .then(res => {
-//             if (!app.scout) { throw new Error("Scout was not added to app object"); }
+    // Send a request to the application (which should trigger setup of scout)
+    request(app)
+        .get("/")
+        .expect("Content-Type", /json/)
+        .expect(200)
+        .then(res => {
+            if (!app.scout) { throw new Error("Scout was not added to app object"); }
 
-//             t.assert(app.scout, "scout instance was added to the app object");
-//             t.assert(app.scout.hasAgent(), "the scout instance has an agent");
-//             scout = app.scout;
-//         })
-//     // Set up listeners and make another request to ensure that scout is working
-//         .then(() => {
-//             // Create a listener to watch for the request finished event
-//             const listener = (message: BaseAgentRequest) => {
-//                 // Ignore requests that are sent that aren't span starts
-//                 if (!message || message.type !== AgentRequestType.V1StartSpan) { return; }
+            t.assert(app.scout, "scout instance was added to the app object");
+            t.assert(app.scout.hasAgent(), "the scout instance has an agent");
+            scout = app.scout;
+        })
+    // Set up listeners and make another request to ensure that scout is working
+        .then(() => {
+            // Create a listener to watch for the request finished event
+            const listener = (message: BaseAgentRequest) => {
+                // Ignore requests that are sent that aren't span starts
+                if (!message || message.type !== AgentRequestType.V1StartSpan) { return; }
 
-//                 // Skip requests that aren't the span we expect ( the initial GET / will trigger this)
-//                 const msg: V1StartSpan = message as V1StartSpan;
-//                 if (msg.operation !== expectedRootSpan) { return; }
+                // Skip requests that aren't the span we expect ( the initial GET / will trigger this)
+                const msg: V1StartSpan = message as V1StartSpan;
+                if (msg.operation !== expectedRootSpan) { return; }
 
-//                 // Ensure that the span is what we expect
-//                 t.equals(msg.operation, expectedRootSpan, `root span operation is correct [${msg.operation}]`);
+                // Ensure that the span is what we expect
+                t.equals(msg.operation, expectedRootSpan, `root span operation is correct [${msg.operation}]`);
 
-//                 // Remove agent, pass test
-//                 scout.removeListener(AgentEvent.RequestSent, listener);
+                // Remove agent, pass test
+                scout.removeListener(AgentEvent.RequestSent, listener);
 
-//                 // Wait a little while for request to finish up, then shutdown
-//                 TestUtil.waitMs(100)
-//                     .then(() => TestUtil.shutdownScout(t, scout))
-//                     .catch(err => TestUtil.shutdownScout(t, scout, err));
-//             };
+                // Wait a little while for request to finish up, then shutdown
+                TestUtil.waitMs(100)
+                    .then(() => TestUtil.shutdownScout(t, scout))
+                    .catch(err => TestUtil.shutdownScout(t, scout, err));
+            };
 
-//             // Set up listener on the agent
-//             scout.on(AgentEvent.RequestSent, listener);
+            // Set up listener on the agent
+            scout.on(AgentEvent.RequestSent, listener);
 
-//             // Make another request to the application
-//             request(app)
-//                 .get("/dynamic/1234")
-//                 .expect("Content-Type", /json/)
-//                 .expect(200)
-//                 .then(() => t.comment("sent second request"));
-//         })
-//         .catch(t.end);
-// });
+            // Make another request to the application
+            request(app)
+                .get("/dynamic/1234")
+                .expect("Content-Type", /json/)
+                .expect(200)
+                .then(() => t.comment("sent second request"));
+        })
+        .catch(t.end);
+});
 
-// test("Application which errors", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
-//     // Create an application and setup scout middleware
-//     const app: Application & ApplicationWithScout = TestUtil.simpleErrorApp(scoutMiddleware({
-//         config: buildScoutConfiguration({
-//             allowShutdown: true,
-//             monitor: true,
-//         }),
-//         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
-//     }));
+test("Application which errors", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+    // Create an application and setup scout middleware
+    const app: Application & ApplicationWithScout = TestUtil.simpleErrorApp(scoutMiddleware({
+        config: buildScoutConfiguration({
+            allowShutdown: true,
+            monitor: true,
+        }),
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
 
-//     let scout: Scout;
+    let scout: Scout;
 
-//     // Send a request to the application (which should trigger setup of scout)
-//     request(app)
-//         .get("/")
-//         .expect(500)
-//         .then(res => {
-//             if (!app.scout) { throw new Error("Scout was not added to app object"); }
+    // Send a request to the application (which should trigger setup of scout)
+    request(app)
+        .get("/")
+        .expect(500)
+        .then(res => {
+            if (!app.scout) { throw new Error("Scout was not added to app object"); }
 
-//             t.assert(app.scout, "scout instance was added to the app object");
-//             t.assert(app.scout.hasAgent(), "the scout instance has an agent");
-//             scout = app.scout;
-//         })
-//         .then(() => scout.shutdown())
-//         .then(() => t.end())
-//         .catch(t.end);
-// });
+            t.assert(app.scout, "scout instance was added to the app object");
+            t.assert(app.scout.hasAgent(), "the scout instance has an agent");
+            scout = app.scout;
+        })
+        .then(() => scout.shutdown())
+        .then(() => t.end())
+        .catch(t.end);
+});
 
 test("express ignores a path (exact path, with dynamic segments)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
     const path = "/dynamic/:segment";
@@ -172,7 +172,7 @@ test("express ignores a path (exact path, with dynamic segments)", {timeout: Tes
 
     // Set up a listener that should *not* fire
     const listener = (ignoredPath: string) => {
-        t.equals(path, ignoredPath, "IgnoredPathDetected event was emitted with the expected path [${path}]");
+        t.equals(path, ignoredPath, `IgnoredPathDetected event was emitted with the expected path [${path}]`);
 
         scout.removeListener(AgentEvent.RequestSent, listener);
 
@@ -189,11 +189,103 @@ test("express ignores a path (exact path, with dynamic segments)", {timeout: Tes
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-// test("express ignores a path (exact path, static)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
-// });
+test("express ignores a path (exact path, static)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+    const path = "/";
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+        ignore: [path],
+    }));
+    // Create an application and setup scout middleware
+    const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
 
-// test("express ignores a path (prefix, with dynamic segments)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
-// });
+    // Set up a listener that should *not* fire
+    const listener = (ignoredPath: string) => {
+        t.equals(path, ignoredPath, `IgnoredPathDetected event was emitted with the expected path [${path}]`);
 
-// test("express ignores a path (prefix, static)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
-// });
+        scout.removeListener(AgentEvent.RequestSent, listener);
+
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    scout.on(ScoutEvent.IgnoredPathDetected, listener);
+
+    // Send a request to the application (which should trigger setup of scout)
+    request(app)
+        .get("/")
+        .expect("Content-Type", /json/)
+        .expect(200)
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+test("express ignores a path (prefix, with dynamic segments)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+    const path = "/dynamic/:segment";
+    const prefix = "/dynamic";
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+        ignore: [prefix],
+    }));
+    // Create an application and setup scout middleware
+    const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
+
+    // Set up a listener that should *not* fire
+    const listener = (ignoredPath: string) => {
+        // The trace was ignored due to a prefix match so
+        t.equals(path, ignoredPath, `IgnoredPathDetected event was emitted with the expected path [${path}]`);
+
+        scout.removeListener(AgentEvent.RequestSent, listener);
+
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    scout.on(ScoutEvent.IgnoredPathDetected, listener);
+
+    // Send a request to the application (which should trigger setup of scout)
+    request(app)
+        .get("/dynamic/1234")
+        .expect("Content-Type", /json/)
+        .expect(200)
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+test("express ignores a path (prefix, static)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+    const path = "/echo-by-post";
+    const prefix = "/echo";
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+        ignore: [prefix],
+    }));
+    // Create an application and setup scout middleware
+    const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
+
+    // Set up a listener that should *not* fire
+    const listener = (ignoredPath: string) => {
+        // The trace was ignored due to a prefix match so
+        t.equals(path, ignoredPath, `IgnoredPathDetected event was emitted with the expected path [${path}]`);
+
+        scout.removeListener(AgentEvent.RequestSent, listener);
+
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    scout.on(ScoutEvent.IgnoredPathDetected, listener);
+
+    // Send a request to the application (which should trigger setup of scout)
+    request(app)
+        .post(path)
+        .send("hello")
+        .expect("Content-Type", /json/)
+        .expect(200)
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
