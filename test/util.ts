@@ -240,6 +240,8 @@ export function buildTestScoutInstance(
     configOverride?: Partial<ScoutConfiguration>,
     options?: Partial<ScoutOptions>,
 ): Scout {
-    const cfg = Object.assign({allowShutdown: true, monitor: true}, configOverride);
+    const cfg = buildScoutConfiguration(
+        Object.assign({allowShutdown: true, monitor: true}, configOverride),
+    );
     return new Scout(cfg, options);
 }
