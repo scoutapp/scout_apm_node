@@ -646,12 +646,16 @@ export class Scout extends EventEmitter {
     /**
      * Function for checking whether a given path (URL) is ignored by scout
      *
-     * @param {URL} url
+     * @param {string} path - processed path (ex. "/api/v1/echo/:name")
      * @returns {boolean} whether the path should be ignored
      */
-    public ignoresPath(url: URL): boolean {
-        // TODO: implement
-        return false;
+    public ignoresPath(path: string): boolean {
+        // If ignore isn't specified or if empty, then nothing is ignored
+        if (!this.config.ignore || this.config.ignore.length === 0) {
+            return false;
+        }
+
+        return this.config.ignore.some(prefix => path.indexOf(prefix) === 0);
     }
 
     /**
