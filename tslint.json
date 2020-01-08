@@ -12,6 +12,7 @@
       "max-classes-per-file": false,
       "no-shadowed-variable": false,
       "no-namespace": false,
+      "no-var-requires": false,
       "object-literal-sort-keys": false
     },
     "rulesDirectory": []
