@@ -420,6 +420,9 @@ export class Scout extends EventEmitter {
     }
 
     public setup(): Promise<this> {
+        // Return early if agent has already been set up
+        if (this.agent) { return Promise.resolve(this); }
+
         this.downloader = new WebAgentDownloader({logFn: this.logFn});
 
         // Ensure coreAgentVersion is present

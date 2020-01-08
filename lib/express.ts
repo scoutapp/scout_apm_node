@@ -71,7 +71,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         if (!req.app.scout) {
             getScout = () => {
                 // If a scout instance to use was given then let's use that
-                if (opts && opts.scout) { return Promise.resolve(opts.scout); }
+                if (opts && opts.scout) { return opts.scout.setup(); }
 
                 // Use custom scout configuration if provided
                 const overrides = opts && opts.config ? opts.config : {};
