@@ -16,6 +16,7 @@ import {
     buildScoutConfiguration,
     convertCamelCaseToEnvVar,
 } from "../lib/types";
+import { ScoutOptions } from "../lib/scout";
 import { DEFAULT_SCOUT_CONFIGURATION } from "../lib/types/config";
 import { Scout } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
@@ -230,4 +231,12 @@ export function buildCoreAgentSocketResponse(json: string): Buffer {
     buf.writeUInt32BE(json.length, 0);
 
     return buf;
+}
+
+export function buildTestScoutInstance(
+    configOverride?: Partial<ScoutConfiguration>,
+    options?: Partial<ScoutOptions>,
+): Scout {
+    const cfg = Object.assign({allowShutdown: true, monitor: true}, configOverride);
+    return new Scout(cfg, options);
 }

@@ -28,7 +28,7 @@ test("Winston logger is successfully logged to", t => {
 
             // Build scout instance
             scout = new Scout(
-                buildScoutConfiguration({allowShutdown: true}),
+                buildScoutConfiguration({allowShutdown: true, monitor: true}),
                 {logFn},
             );
         })

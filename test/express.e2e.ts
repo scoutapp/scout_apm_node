@@ -67,6 +67,7 @@ test("Dynamic segment routes", t => {
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
         config: buildScoutConfiguration({
             allowShutdown: true,
+            monitor: true,
         }),
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }));
@@ -94,10 +95,11 @@ test("Dynamic segment routes", t => {
                 if (!message || message.type !== AgentRequestType.V1StartSpan) { return; }
 
                 // Skip requests that aren't the span we expect ( the initial GET / will trigger this)
-                if ((message as V1StartSpan).operation !== expectedRootSpan) { return; }
+                const msg: V1StartSpan = message as V1StartSpan;
+                if (msg.operation !== expectedRootSpan) { return; }
 
                 // Ensure that the span is what we expect
-                t.equals((message as V1StartSpan).operation, expectedRootSpan, "root span operation is correct");
+                t.equals(msg.operation, expectedRootSpan, `root span operation is correct [${msg.operation}]`);
 
                 // Remove agent, pass test
                 scout.getAgent()
@@ -111,8 +113,7 @@ test("Dynamic segment routes", t => {
             };
 
             // Set up listener on the agent
-            scout.getAgent()
-                .on(AgentEvent.RequestSent, listener);
+            scout.on(AgentEvent.RequestSent, listener);
 
             // Make another request to the application
             request(app)
