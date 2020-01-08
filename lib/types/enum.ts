@@ -4,7 +4,7 @@ export enum APIVersion {
 
 export enum URIReportingLevel {
     FilteredParams = "filtered-params",
-    PathOnly = "path-only",
+    Path = "path",
 }
 
 export enum AgentType {

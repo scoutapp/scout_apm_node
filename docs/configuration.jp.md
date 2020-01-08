@@ -105,7 +105,7 @@ enum LogLevel {
 ```typescript
 enum URIReportingLevel {
     FilteredParams = "filtered-params",
-    PathOnly = "path-only",
+    Path = "path",
 }
 ```
 
