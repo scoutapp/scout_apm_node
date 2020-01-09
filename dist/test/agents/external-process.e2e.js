@@ -6,7 +6,7 @@ const Fixtures = require("../fixtures");
 const types_1 = require("../../lib/types");
 const Requests = require("../../lib/protocol/v1/requests");
 const TestConstants = require("../constants");
-const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY;
+const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY || "fake-agent-key";
 test("external process can be launched locally (v1.2.7)", t => {
     let agent;
     let process;

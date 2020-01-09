@@ -47,7 +47,7 @@ test("Simple operation", t => {
                 t.pass("received RequestFinished agent event");
 
                 // Remove listener
-                scout.removeListener(ScoutEvent.IgnoredPathDetected, listener);
+                scout.removeListener(AgentEvent.RequestFinished, listener);
 
                 // Wait a little while for request to finish up, then shutdown
                 TestUtil.waitMs(100)
@@ -110,7 +110,7 @@ test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
                 t.equals(msg.operation, expectedRootSpan, `root span operation is correct [${msg.operation}]`);
 
                 // Remove agent, pass test
-                scout.removeListener(ScoutEvent.IgnoredPathDetected, listener);
+                scout.removeListener(ScoutEvent.RequestSent, listener);
 
                 // Wait a little while for request to finish up, then shutdown
                 TestUtil.waitMs(100)

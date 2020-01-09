@@ -20,7 +20,7 @@ import {
 import * as Requests from "../../lib/protocol/v1/requests";
 import * as TestConstants from "../constants";
 
-const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY;
+const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY || "fake-agent-key";
 
 test("external process can be launched locally (v1.2.7)", t => {
     let agent: ExternalProcessAgent;
