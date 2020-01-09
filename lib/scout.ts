@@ -693,7 +693,7 @@ export class Scout extends EventEmitter {
         }
 
         if (!this.config.monitor) {
-            this.logFn("[scout] monitoring disabled, not sending tag request", LogLevel.Trace);
+            this.logFn("[scout] monitoring disabled, not sending tag request", LogLevel.Warn);
             return Promise.reject(new Errors.MonitoringDisabled());
         }
 

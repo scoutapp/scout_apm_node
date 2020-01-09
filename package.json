@@ -2,7 +2,7 @@
   "name": "scout-apm-client",
   "version": "0.1.0",
   "description": "Scout APM Node Client",
-  "main": "index.js",
+  "main": "dist/lib/index.js",
   "repository": "git@github.com:scoutapp/scout_apm_node.git",
   "author": "vados-scout <vados+scout@vadosware.io>",
   "license": "MIT",
