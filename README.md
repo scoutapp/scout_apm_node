@@ -27,23 +27,31 @@ $ npm install scout-apm-client
 Scout supports use with `express`-based applications by using app-wide middleware:
 
 ```javascript
+const process = require("process");
 const express = require("express");
 const scout = require("scout-apm-client");
 
+// Initialize the express application
 const app = express();
 
 // Enable the app-wide scout middleware
-// monitoring is *off* by default
 app.use(scout.expressMiddleware({
   config: {
-    monitor: true,
+    allowShutdown: true, // allow shutting down spawned scout-agent processes from this program
+    monitor: true, // enable monitoring
   },
-  logFn: scout.consoleLogFn,
 }));
 
 // Set up the routes for your application
 app.get('/', function (req, res) {
   res.send('hello, world!');
+});
+
+// Shut down the core-agent when this program exits
+process.on('exit', () => {
+  if (app && app.scout) {
+    app.scout.shutdown();
+  }
 });
 
 // Start your application
