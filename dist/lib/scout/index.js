@@ -4,6 +4,8 @@ const events_1 = require("events");
 const path = require("path");
 const process = require("process");
 const types_1 = require("../types");
+const index_1 = require("../index");
+const integrations_1 = require("../integrations");
 const web_1 = require("../agent-downloaders/web");
 const external_process_1 = require("../agents/external-process");
 const Requests = require("../protocol/v1/requests");
@@ -83,6 +85,12 @@ class Scout extends events_1.EventEmitter {
             .then(() => this.sendRegistrationRequest())
             // Send the application metadata
             .then(() => this.sendAppMetadataEvent())
+            // Set up integration(s)
+            .then(() => {
+            Object.keys(index_1.EXPORT_BAG)
+                .map(packageName => integrations_1.getIntegrationForPackage(packageName))
+                .forEach(integration => integration.setScoutInstance(this));
+        })
             .then(() => this);
     }
     /**

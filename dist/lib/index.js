@@ -17,6 +17,6 @@ exports.expressMiddleware = express_1.scoutMiddleware;
 __export(require("./errors"));
 const pg_1 = require("./integrations/pg");
 // Create an export bag which will contain
-const exportBag = {};
+exports.EXPORT_BAG = {};
 // Set up PG integration
-pg_1.default.ritmHook(exportBag);
+pg_1.default.ritmHook(exports.EXPORT_BAG);

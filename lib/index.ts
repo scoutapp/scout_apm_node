@@ -21,7 +21,7 @@ import { ExportBag } from "./types/integrations";
 import pgIntegration from "./integrations/pg";
 
 // Create an export bag which will contain
-const exportBag: ExportBag = {};
+export const EXPORT_BAG: ExportBag = {};
 
 // Set up PG integration
-pgIntegration.ritmHook(exportBag);
+pgIntegration.ritmHook(EXPORT_BAG);

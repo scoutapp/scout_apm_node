@@ -25,6 +25,9 @@ import {
     scrubRequestPathParams,
     scrubRequestPath,
 } from "../types";
+import { EXPORT_BAG } from "../index";
+import { getIntegrationForPackage } from "../integrations";
+
 import WebAgentDownloader from "../agent-downloaders/web";
 import ExternalProcessAgent from "../agents/external-process";
 import * as Requests from "../protocol/v1/requests";
@@ -153,6 +156,12 @@ export class Scout extends EventEmitter {
             .then(() => this.sendRegistrationRequest())
         // Send the application metadata
             .then(() => this.sendAppMetadataEvent())
+        // Set up integration(s)
+            .then(() => {
+                Object.keys(EXPORT_BAG)
+                    .map(packageName => getIntegrationForPackage(packageName))
+                    .forEach(integration => integration.setScoutInstance(this));
+            })
             .then(() => this);
     }
 
