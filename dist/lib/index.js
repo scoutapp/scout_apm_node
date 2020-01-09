@@ -15,3 +15,8 @@ exports.buildWinstonLogFn = types_1.buildWinstonLogFn;
 var express_1 = require("./express");
 exports.expressMiddleware = express_1.scoutMiddleware;
 __export(require("./errors"));
+const pg_1 = require("./integrations/pg");
+// Create an export bag which will contain
+const exportBag = {};
+// Set up PG integration
+pg_1.default.ritmHook(exportBag);

@@ -1,6 +1,8 @@
 export const scoutIntegrationSymbol = Symbol("scout");
 
-type ExportBag = {[key: string]: any};
+export interface ExportBag {
+    [key: string]: any;
+}
 
 export interface RequireIntegration {
     /**
