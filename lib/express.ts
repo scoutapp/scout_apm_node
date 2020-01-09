@@ -120,7 +120,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                             value: scout.filterRequestPath(reqPath),
                         };
 
-                        return req.addTags([tag]);
+                        return req.addContext([tag]);
                     })
                 // Perform the rest of the request tracing
                     .then((scoutRequest: ScoutRequest) => {

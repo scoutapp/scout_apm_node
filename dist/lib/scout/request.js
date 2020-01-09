@@ -59,7 +59,7 @@ class ScoutRequest {
         return Promise.resolve(this.childSpans);
     }
     /** @see Taggable */
-    addTags(tags) {
+    addContext(tags) {
         tags.forEach(t => this.tags[t.name] = t.value);
         return Promise.resolve(this);
     }

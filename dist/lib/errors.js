@@ -21,6 +21,7 @@ var ErrorCode;
     ErrorCode[ErrorCode["ConnectionPoolDisabled"] = 16] = "ConnectionPoolDisabled";
     ErrorCode[ErrorCode["AgentLaunchDisabled"] = 17] = "AgentLaunchDisabled";
     ErrorCode[ErrorCode["MonitoringDisabled"] = 18] = "MonitoringDisabled";
+    ErrorCode[ErrorCode["NoAgentPresent"] = 19] = "NoAgentPresent";
 })(ErrorCode = exports.ErrorCode || (exports.ErrorCode = {}));
 class ScoutError extends Error {
 }
@@ -176,3 +177,11 @@ class MonitoringDisabled extends ScoutError {
     }
 }
 exports.MonitoringDisabled = MonitoringDisabled;
+class NoAgentPresent extends ScoutError {
+    constructor(m) {
+        super();
+        this.code = ErrorCode.NoAgentPresent;
+        this.message = m || "No agent is present";
+    }
+}
+exports.NoAgentPresent = NoAgentPresent;

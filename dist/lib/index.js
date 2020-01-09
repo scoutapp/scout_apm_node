@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./scout"));
 var types_1 = require("./types");
 exports.ScoutAgentEvent = types_1.AgentEvent;
+exports.ScoutEvent = types_1.ScoutEvent;
 exports.ApplicationMetadata = types_1.ApplicationMetadata;
 exports.buildScoutConfiguration = types_1.buildScoutConfiguration;
 exports.LogLevel = types_1.LogLevel;

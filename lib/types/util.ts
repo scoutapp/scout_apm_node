@@ -176,5 +176,5 @@ export interface ScoutTag {
 }
 
 export interface Taggable {
-    addTags(tags: ScoutTag[]): Promise<this>;
+    addContext(tags: ScoutTag[]): Promise<this>;
 }

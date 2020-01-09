@@ -18,3 +18,30 @@ exports.AGENT_BUFFER_TIME_MS = 2 * exports.MINUTE_MS;
 exports.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS = 5 * exports.MINUTE_MS;
 exports.DEFAULT_SOCKET_FILE_NAME = "scout-agent.sock";
 exports.DEFAULT_CORE_AGENT_NAME = "scout_apm_core";
+exports.SCOUT_PATH_TAG = "path";
+// Common parameters to filter, copied from scout_apm_python
+exports.DEFAULT_PARAM_FILTER_LOOKUP = {
+    "access": true,
+    "access_token": true,
+    "api_key": true,
+    "apikey": true,
+    "auth": true,
+    "auth_token": true,
+    "card[number]": true,
+    "certificate": true,
+    "credentials": true,
+    "crypt": true,
+    "key": true,
+    "mysql_pwd": true,
+    "otp": true,
+    "passwd": true,
+    "password": true,
+    "private": true,
+    "protected": true,
+    "salt": true,
+    "secret": true,
+    "ssn": true,
+    "stripetoken": true,
+    "token": true,
+};
+exports.DEFAULT_PARAM_SCRUB_REPLACEMENT = "[FILTERED]";

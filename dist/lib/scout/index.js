@@ -295,7 +295,7 @@ class Scout extends events_1.EventEmitter {
             return Promise.reject(err);
         }
         if (!this.config.monitor) {
-            this.logFn("[scout] monitoring disabled, not sending tag request", types_1.LogLevel.Trace);
+            this.logFn("[scout] monitoring disabled, not sending tag request", types_1.LogLevel.Warn);
             return Promise.reject(new Errors.MonitoringDisabled());
         }
         if (opts && opts.async) {

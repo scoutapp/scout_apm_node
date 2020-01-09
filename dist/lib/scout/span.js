@@ -36,7 +36,7 @@ class ScoutSpan {
         return new Date(this.timestamp);
     }
     /** @see Taggable */
-    addTags(tags) {
+    addContext(tags) {
         tags.forEach(t => this.tags[t.name] = t.value);
         return Promise.resolve(this);
     }

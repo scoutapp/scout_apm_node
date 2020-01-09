@@ -77,7 +77,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     }
 
     /** @see Taggable */
-    public addTags(tags: ScoutTag[]): Promise<this> {
+    public addContext(tags: ScoutTag[]): Promise<this> {
         tags.forEach(t => this.tags[t.name] = t.value);
         return Promise.resolve(this);
     }

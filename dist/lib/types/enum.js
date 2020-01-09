@@ -7,7 +7,7 @@ var APIVersion;
 var URIReportingLevel;
 (function (URIReportingLevel) {
     URIReportingLevel["FilteredParams"] = "filtered-params";
-    URIReportingLevel["PathOnly"] = "path-only";
+    URIReportingLevel["Path"] = "path";
 })(URIReportingLevel = exports.URIReportingLevel || (exports.URIReportingLevel = {}));
 var AgentType;
 (function (AgentType) {
@@ -29,17 +29,17 @@ var ApplicationEventType;
 })(ApplicationEventType = exports.ApplicationEventType || (exports.ApplicationEventType = {}));
 var AgentEvent;
 (function (AgentEvent) {
-    AgentEvent["SocketResponseReceived"] = "socket-response-received";
-    AgentEvent["SocketResponseParseError"] = "socket-response-parse-error";
-    AgentEvent["SocketDisconnected"] = "socket-disconnected";
-    AgentEvent["SocketError"] = "socket-error";
-    AgentEvent["SocketConnected"] = "socket-connected";
-    AgentEvent["RequestSent"] = "request-sent";
-    AgentEvent["RequestStarted"] = "request-started";
-    AgentEvent["RequestFinished"] = "request-finished";
-    AgentEvent["SpanStarted"] = "span-started";
-    AgentEvent["SpanStopped"] = "span-stopped";
-    AgentEvent["ApplicationEventReported"] = "application-event-reported";
+    AgentEvent["SocketResponseReceived"] = "agent-event-socket-response-received";
+    AgentEvent["SocketResponseParseError"] = "agent-event-socket-response-parse-error";
+    AgentEvent["SocketDisconnected"] = "agent-event-socket-disconnected";
+    AgentEvent["SocketError"] = "agent-event-socket-error";
+    AgentEvent["SocketConnected"] = "agent-event-socket-connected";
+    AgentEvent["RequestSent"] = "agent-event-request-sent";
+    AgentEvent["RequestStarted"] = "agent-event-request-started";
+    AgentEvent["RequestFinished"] = "agent-event-request-finished";
+    AgentEvent["SpanStarted"] = "agent-event-span-started";
+    AgentEvent["SpanStopped"] = "agent-event-span-stopped";
+    AgentEvent["ApplicationEventReported"] = "agent-event-application-event-reported";
 })(AgentEvent = exports.AgentEvent || (exports.AgentEvent = {}));
 var AgentRequestType;
 (function (AgentRequestType) {
@@ -107,3 +107,8 @@ var PlatformTriple;
     PlatformTriple["MuslLinux64"] = "x86_64-unknown-linux-musl";
     PlatformTriple["AppleDarwin64"] = "x86_64-apple-darwin";
 })(PlatformTriple = exports.PlatformTriple || (exports.PlatformTriple = {}));
+var ScoutEvent;
+(function (ScoutEvent) {
+    ScoutEvent["IgnoredPathDetected"] = "scout-event-ignored-path-detected";
+    ScoutEvent["RequestSent"] = "scout-event-request-sent";
+})(ScoutEvent = exports.ScoutEvent || (exports.ScoutEvent = {}));
