@@ -29,8 +29,12 @@ function scoutMiddleware(opts) {
         if (!req.app.scout) {
             getScout = () => {
                 // Use custom scout configuration if provided
-                const config = types_1.buildScoutConfiguration(opts && opts.config ? opts.config : {});
-                req.app.scout = new scout_1.Scout(config);
+                const overrides = opts && opts.config ? opts.config : {};
+                const config = types_1.buildScoutConfiguration(overrides);
+                const options = {
+                    logFn: opts && opts.logFn ? opts.logFn : undefined,
+                };
+                req.app.scout = new scout_1.Scout(config, options);
                 return req.app.scout.setup();
             };
         }
