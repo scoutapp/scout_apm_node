@@ -19,4 +19,5 @@ const pg_1 = require("./integrations/pg");
 // Create an export bag which will contain
 exports.EXPORT_BAG = {};
 // Set up PG integration
+console.log("DOING THE HOOK?");
 pg_1.default.ritmHook(exports.EXPORT_BAG);

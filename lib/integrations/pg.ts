@@ -25,6 +25,8 @@ export class PGIntegration implements RequireIntegration {
             // Save the exported package in the exportBag for Scout to use later
             exportBag[PACKAGE_NAME] = exports;
 
+            console.log("HERE!"); 
+
             // Return the modified exports
             return exports;
         });

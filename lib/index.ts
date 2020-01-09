@@ -24,4 +24,5 @@ import pgIntegration from "./integrations/pg";
 export const EXPORT_BAG: ExportBag = {};
 
 // Set up PG integration
+console.log("DOING THE HOOK?");
 pgIntegration.ritmHook(EXPORT_BAG);
