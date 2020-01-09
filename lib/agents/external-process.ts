@@ -181,12 +181,12 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * Check if the process is present
      */
     public getProcess(): Promise<ChildProcess> {
-        if (this.detachedProcess === undefined || this.detachedProcess === null) {
-            return Promise.reject(new Errors.NoProcessReference());
-        }
-
         if (this.opts.disallowLaunch) {
             return Promise.reject(new Errors.NoProcessReference("launch disabled"));
+        }
+
+        if (this.detachedProcess === undefined || this.detachedProcess === null) {
+            return Promise.reject(new Errors.NoProcessReference());
         }
 
         return Promise.resolve(this.detachedProcess);
