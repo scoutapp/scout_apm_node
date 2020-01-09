@@ -2,6 +2,8 @@ import * as path from "path";
 import * as Hook from "require-in-the-middle";
 import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout } from "../scout";
+import { Client } from "pg";
+import { LogFn, LogLevel } from "../types";
 
 export const PACKAGE_NAME = "pg";
 
@@ -9,6 +11,7 @@ export const PACKAGE_NAME = "pg";
 export class PGIntegration implements RequireIntegration {
     private readonly packageName: string = PACKAGE_NAME;
     private scout: Scout;
+    private logFn: LogFn = () => undefined;
 
     public getPackageName() {
         return this.packageName;
@@ -16,7 +19,8 @@ export class PGIntegration implements RequireIntegration {
 
     public ritmHook(exportBag: ExportBag): void {
         Hook([PACKAGE_NAME], (exports, name, basedir) => {
-            // TODO: make changes to the pg package to enable integration
+            // Make changes to the pg package to enable integration
+            this.shimPG(exports);
 
             // Save the exported package in the exportBag for Scout to use later
             exportBag[PACKAGE_NAME] = exports;
@@ -28,6 +32,47 @@ export class PGIntegration implements RequireIntegration {
 
     public setScoutInstance(scout: Scout) {
         this.scout = scout;
+    }
+
+    public setLogFn(logFn: LogFn) {
+        this.logFn = logFn;
+    }
+
+    private shimPG(pgExport: any) {
+        const client = pgExport.Client;
+
+        // Shim client
+        this.shimPGConnect(client);
+    }
+
+    /**
+     * Shim for pg's `connect` function
+     *
+     * @param {Client} client - pg's `Client` class
+     */
+    private shimPGConnect(client: Client) {
+        const original = client.connect;
+
+        const fn: any = (userCallback) => {
+            console.log("Connecting to PG, this.scout?", this.scout);
+            this.logFn("Connecting to Postgres db...", LogLevel.Debug);
+
+            const promise = original()
+                .then(() => {
+                    this.logFn("[scout/integrations/pg] Successfully connected to Postgres db", LogLevel.Error);
+                    userCallback();
+                })
+                .catch(err => {
+                    this.logFn("[scout/integrations/pg] Connection to Postgres db failed", LogLevel.Error);
+                    userCallback(err);
+                });
+
+
+            if (userCallback) { return; }
+            return promise;
+        };
+
+        client.connect = fn;
     }
 }
 
