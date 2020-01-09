@@ -522,9 +522,32 @@ test("Request with 'Controller' span works, after waiting for flush (v1.2.7)", t
     // Finish the request
         .then(() => agent.send(new Requests.V1FinishRequest(reqStart.requestId)))
         .then((resp: BaseAgentResponse) => t.assert(resp.succeeded(), "finish-request succeeded"))
-    // Wait for agent to clear internal request buffers (and send the requests)
-    //  .then(() => TestUtil.waitForAgentBufferFlush(t))
     // Cleanup the process & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
+});
+
+test("Support starting scout with a completely external core-agent", t => {
+    // Create the external process agent, with special function for building the proc opts with
+    TestUtil.bootstrapExternalProcessAgent(
+        t,
+        TestConstants.TEST_APP_VERSION,
+        {buildProcOpts: (binPath, uri) => new ProcessOptions(binPath, uri, {disallowLaunch: true})},
+    )
+    // Attempt to shut down the agent immediately which shouldn't work because there is no process
+        .then(agent => agent.getProcess())
+    // Cleanup the process & end test
+        .then(() => {
+            t.fail("shutdown succeeded on an agent with no process");
+            t.end();
+        })
+        .catch(err => {
+            if (err instanceof Errors.NoProcessReference) {
+                t.pass("NoProcessReference error was returned");
+                t.end();
+                return;
+            }
+
+            t.end(err);
+        });
 });
