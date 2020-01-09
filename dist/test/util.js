@@ -121,6 +121,13 @@ function simpleDynamicSegmentExpressApp(middleware, delayMs = 0) {
             status: "success",
         }));
     });
+    app.post("/echo-by-post", (req, res) => {
+        waitMs(delayMs)
+            .then(() => res.send({
+            data: req.body,
+            status: "success",
+        }));
+    });
     return app;
 }
 exports.simpleDynamicSegmentExpressApp = simpleDynamicSegmentExpressApp;

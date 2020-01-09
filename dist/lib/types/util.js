@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const enum_1 = require("./enum");
 const snake_case_1 = require("snake-case");
+const Constants = require("../constants");
 function convertCamelCaseToEnvVar(prop) {
     return `SCOUT_${snake_case_1.snakeCase(prop).toUpperCase()}`;
 }
@@ -99,3 +100,37 @@ function splitAgentResponses(buf) {
     return { framed, remaining };
 }
 exports.splitAgentResponses = splitAgentResponses;
+/**
+ * Scrub the parameters of a given URL
+ * this function modifies the provided URL object in-place.
+ *
+ * @param {string} path
+ * @param {Object} lookup - A lookup dictionary of terms to scrub
+ */
+function scrubRequestPathParams(path, lookup) {
+    lookup = lookup || Constants.DEFAULT_PARAM_FILTER_LOOKUP;
+    const pieces = path.split("?");
+    // If there are no search params, then return the path unchanged
+    if (pieces.length === 1) {
+        return path;
+    }
+    const parsedParams = new URLSearchParams("?" + pieces[1]);
+    parsedParams.forEach((_, k) => {
+        if (lookup && k in lookup) {
+            parsedParams.set(k, Constants.DEFAULT_PARAM_SCRUB_REPLACEMENT);
+        }
+    });
+    return `${pieces[0]}?${decodeURI(parsedParams.toString())}`;
+}
+exports.scrubRequestPathParams = scrubRequestPathParams;
+/**
+ * Scrub a URL down to only it's path (removing all query parameters)
+ * this function modifies the provided URL object in-place.
+ *
+ * @param {string} path
+ * @returns {string} the scrubbed path
+ */
+function scrubRequestPath(path) {
+    return path.split("?")[0];
+}
+exports.scrubRequestPath = scrubRequestPath;

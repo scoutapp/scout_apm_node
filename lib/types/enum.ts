@@ -4,7 +4,7 @@ export enum APIVersion {
 
 export enum URIReportingLevel {
     FilteredParams = "filtered-params",
-    PathOnly = "path-only",
+    Path = "path",
 }
 
 export enum AgentType {
@@ -27,21 +27,21 @@ export enum ApplicationEventType {
 }
 
 export enum AgentEvent {
-    SocketResponseReceived = "socket-response-received",
-    SocketResponseParseError = "socket-response-parse-error",
-    SocketDisconnected = "socket-disconnected",
-    SocketError = "socket-error",
-    SocketConnected = "socket-connected",
+    SocketResponseReceived = "agent-event-socket-response-received",
+    SocketResponseParseError = "agent-event-socket-response-parse-error",
+    SocketDisconnected = "agent-event-socket-disconnected",
+    SocketError = "agent-event-socket-error",
+    SocketConnected = "agent-event-socket-connected",
 
-    RequestSent = "request-sent",
+    RequestSent = "agent-event-request-sent",
 
-    RequestStarted = "request-started",
-    RequestFinished = "request-finished",
+    RequestStarted = "agent-event-request-started",
+    RequestFinished = "agent-event-request-finished",
 
-    SpanStarted = "span-started",
-    SpanStopped = "span-stopped",
+    SpanStarted = "agent-event-span-started",
+    SpanStopped = "agent-event-span-stopped",
 
-    ApplicationEventReported = "application-event-reported",
+    ApplicationEventReported = "agent-event-application-event-reported",
 }
 
 export enum AgentRequestType {
@@ -115,4 +115,9 @@ export enum PlatformTriple {
     GNULinux64 = "x86_64-unknown-linux-gnu",
     MuslLinux64 = "x86_64-unknown-linux-musl",
     AppleDarwin64 = "x86_64-apple-darwin",
+}
+
+export enum ScoutEvent {
+    IgnoredPathDetected = "scout-event-ignored-path-detected",
+    RequestSent = "scout-event-request-sent",
 }

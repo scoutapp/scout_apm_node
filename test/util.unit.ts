@@ -3,9 +3,12 @@ import { Test } from "tape";
 
 import {
     splitAgentResponses,
+    scrubRequestPathParams,
+    scrubRequestPath,
 } from "../lib/types";
 
 import { buildCoreAgentSocketResponse } from "./util";
+import * as Constants from "../lib/constants";
 import * as TestFixtures from "./fixtures";
 
 test("splitAgentResponse parses well formed headers", t => {
@@ -51,6 +54,27 @@ test("splitAgentResponse parses multiple responses", t => {
     t.assert(result, "result was returned");
     t.equals(result.framed.length, 2, "exactly two framed message was returned");
     t.equals(result.remaining.length, 0, "no leftover bytes");
+
+    t.end();
+});
+
+test("scrubURLParams scrubs params properly", t => {
+    // Build a buffer with a message
+    const scrubbed: string = scrubRequestPathParams("https://localhost/some/path?password=test");
+
+    t.assert(
+        scrubbed.includes(`password=${Constants.DEFAULT_PARAM_SCRUB_REPLACEMENT}`),
+        "scrubbed string has password replaced",
+    );
+
+    t.end();
+});
+
+test("scrubURLToPath scrubs URL down to path", t => {
+    // Build a buffer with a message
+    const scrubbed: string = scrubRequestPath("https://localhost/some/path?password=test");
+
+    t.equals(scrubbed, "https://localhost/some/path");
 
     t.end();
 });

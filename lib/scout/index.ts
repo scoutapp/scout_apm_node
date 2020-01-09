@@ -6,369 +6,40 @@ import { v4 as uuidv4 } from "uuid";
 import {
     APIVersion,
     Agent,
-    AgentEvent,
     AgentDownloadOptions,
     AgentDownloader,
+    AgentEvent,
     ApplicationMetadata,
-    CoreAgentVersion,
     BaseAgentRequest,
     BaseAgentResponse,
+    CoreAgentVersion,
     LogFn,
     LogLevel,
     ProcessOptions,
     ScoutConfiguration,
+    ScoutEvent,
+    URIReportingLevel,
     buildDownloadOptions,
     buildProcessOptions,
     buildScoutConfiguration,
-} from "./types";
-import WebAgentDownloader from "./agent-downloaders/web";
-import ExternalProcessAgent from "./agents/external-process";
-import * as Requests from "./protocol/v1/requests";
-import * as Constants from "./constants";
-import * as Errors from "./errors";
+    scrubRequestPathParams,
+    scrubRequestPath,
+} from "../types";
+import WebAgentDownloader from "../agent-downloaders/web";
+import ExternalProcessAgent from "../agents/external-process";
+import * as Requests from "../protocol/v1/requests";
+import * as Constants from "../constants";
+import * as Errors from "../errors";
 
-// A class that represents objects that can have/contain child spans
-interface ChildSpannable {
-    /**
-     * Create a child span inside the request
-     * @abstract
-     */
-    startChildSpan(operation: string): Promise<ScoutSpan>;
+export { default as ScoutRequest } from "./request";
+export { default as ScoutSpan } from "./span";
 
-    /**
-     * Get all active child spans
-     */
-    getChildSpans(): Promise<ScoutSpan[]>;
-}
+import ScoutRequest from "./request";
+import { ScoutRequestOptions } from "./request";
+import ScoutSpan from "./span";
 
-interface HasContext {
-    addContext(tags: ScoutTag[]): Promise<this>;
-}
-
-interface Stoppable {
-    stop(): Promise<this>;
-
-    isStopped(): boolean;
-}
-
-interface Startable {
-    start(): Promise<this>;
-
-    isStarted(): boolean;
-}
-
-export interface ScoutTag {
-    name: string;
-    value: string;
-}
-
-export interface ScoutRequestOptions {
-    id?: string;
-    logFn?: LogFn;
-    scoutInstance?: Scout;
-    timestamp?: Date;
-    started?: boolean;
-}
-
-export class ScoutRequest implements ChildSpannable, HasContext, Stoppable, Startable {
-    public readonly id: string;
-
-    private timestamp: Date;
-
-    private readonly scoutInstance?: Scout;
-
-    private started: boolean = false;
-    private finished: boolean = false;
-    private sent: boolean = false;
-
-    private childSpans: ScoutSpan[] = [];
-    private tags: { [key: string]: string } = {};
-
-    constructor(opts?: ScoutRequestOptions) {
-        this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_REQUEST_PREFIX}${uuidv4()}`;
-
-        if (opts) {
-            if (opts.logFn) { this.logFn = opts.logFn; }
-            if (opts.scoutInstance) { this.scoutInstance = opts.scoutInstance; }
-            if (opts.timestamp)  { this.timestamp = opts.timestamp; }
-
-            // It's possible that the scout request has already been started
-            // ex. when startRequest is used by a Scout instance
-            if (opts.started) { this.started = opts.started; }
-        }
-    }
-
-    public span(operation: string): Promise<ScoutSpan> {
-        return this.startChildSpan(operation);
-    }
-
-    public getTimestamp(): Date {
-        return new Date(this.timestamp);
-    }
-
-    /** @see ChildSpannable */
-    public startChildSpan(operation: string): Promise<ScoutSpan> {
-        if (this.finished) {
-            this.logFn(
-                `[scout/request/${this.id}] Cannot add a child span to a finished request [${this.id}]`,
-                LogLevel.Error,
-            );
-
-            return Promise.reject(new Errors.FinishedRequest(
-                "Cannot add a child span to a finished request",
-            ));
-        }
-
-        // Create a new child span
-        const span = new ScoutSpan({
-            operation,
-            request: this,
-            scoutInstance: this.scoutInstance,
-            logFn: this.logFn,
-        });
-
-        // Add the child span to the list
-        this.childSpans.push(span);
-
-        return span.start();
-    }
-
-    /** @see ChildSpannable */
-    public getChildSpans(): Promise<ScoutSpan[]> {
-        return Promise.resolve(this.childSpans);
-    }
-
-    /** @see HasContext */
-    public addContext(tags: ScoutTag[]): Promise<this> {
-        tags.forEach(t => this.tags[t.name] = t.value);
-        return Promise.resolve(this);
-    }
-
-    public finish(): Promise<this> {
-        return this.stop();
-    }
-
-    public finishAndSend(): Promise<this> {
-        return this.finish()
-            .then(() => this.send());
-    }
-
-    public isStopped(): boolean {
-        return this.finished;
-    }
-
-    public stop(): Promise<this> {
-        if (this.finished) { return Promise.resolve(this); }
-
-        // Stop all child spans
-        this.childSpans.forEach(s => s.stop());
-
-        // Finish the request
-        this.finished = true;
-
-        return Promise.resolve(this);
-    }
-
-    public isStarted(): boolean {
-        return this.started;
-    }
-
-    public start(): Promise<this> {
-        if (this.started) { return Promise.resolve(this); }
-
-        this.timestamp = new Date();
-        this.started = true;
-
-        return Promise.resolve(this);
-    }
-
-    /**
-     * Send this request and internal spans to the scoutInstance
-     *
-     * @returns this request
-     */
-    public send(scoutInstance?: Scout): Promise<this> {
-        const inst = scoutInstance || this.scoutInstance;
-
-        // Ensure a scout instance was available
-        if (!inst) {
-            this.logFn(`[scout/request/${this.id}] No scout instance available, send failed`);
-            return Promise.resolve(this);
-        }
-
-        return inst.sendStartRequest(this)
-        // Send all the child spans
-            .then(() => Promise.all(this.childSpans.map(s => s.send())))
-        // Send tags
-            .then(() => Promise.all(
-                Object.entries(this.tags).map(([name, value]) => inst.sendTagRequest(this, name, value)),
-            ))
-        // End the span
-            .then(() => inst.sendStopRequest(this))
-            .then(() => this.sent = true)
-            .then(() => this)
-            .catch(err => {
-                this.logFn(`[scout/request/${this.id}]Failed to send request`);
-                return this;
-            });
-    }
-
-    private logFn: LogFn = () => undefined;
-}
-
-export interface ScoutSpanOptions {
-    id?: string;
-    scoutInstance?: Scout;
-    logFn?: LogFn;
-    parent?: ScoutSpan;
-    timestamp?: Date;
-    started?: boolean;
-    operation: string;
+export interface ScoutEventRequestSentData {
     request: ScoutRequest;
-}
-
-export class ScoutSpan implements ChildSpannable, HasContext, Stoppable, Startable {
-    public readonly request: ScoutRequest;
-    public readonly parent?: ScoutSpan;
-    public readonly id: string;
-    public readonly operation: string;
-
-    private timestamp: Date;
-    private readonly scoutInstance?: Scout;
-
-    private started: boolean = false;
-    private stopped: boolean = false;
-    private sent: boolean = false;
-    private childSpans: ScoutSpan[] = [];
-    private tags: { [key: string]: string } = {};
-
-    constructor(opts: ScoutSpanOptions) {
-        this.request = opts.request;
-        this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_SPAN_PREFIX}${uuidv4()}`;
-        this.operation = opts.operation;
-
-        if (opts) {
-            if (opts.logFn) { this.logFn = opts.logFn; }
-            if (opts.scoutInstance) { this.scoutInstance = opts.scoutInstance; }
-            if (opts.timestamp)  { this.timestamp = opts.timestamp; }
-
-            // It's possible that the scout span has already been started
-            // ex. when startSpan is used by a Scout instance
-            if (opts.started) { this.started = opts.started; }
-        }
-    }
-
-    public getTimestamp(): Date {
-        return new Date(this.timestamp);
-    }
-
-    /** @see HasContext */
-    public addContext(tags: ScoutTag[]): Promise<this> {
-        tags.forEach(t => this.tags[t.name] = t.value);
-        return Promise.resolve(this);
-    }
-
-    /** @see ChildSpannable */
-    public startChildSpan(operation: string): Promise<ScoutSpan> {
-        if (this.stopped) {
-            this.logFn(
-                `[scout/request/${this.request.id}/span/${this.id}] Cannot add span to stopped span [${this.id}]`,
-                LogLevel.Error,
-            );
-
-            return Promise.reject(new Errors.FinishedRequest(
-                "Cannot add a child span to a finished span",
-            ));
-        }
-
-        const span = new ScoutSpan({
-            operation,
-            request: this.request,
-            scoutInstance: this.scoutInstance,
-            logFn: this.logFn,
-            parent: this,
-        });
-
-        this.childSpans.push(span);
-
-        return span.start();
-    }
-
-    /** @see ChildSpannable */
-    public getChildSpans(): Promise<ScoutSpan[]> {
-        return Promise.resolve(this.childSpans);
-    }
-
-    public finish(): Promise<this> {
-        return this.stop();
-    }
-
-    public finishAndSend(): Promise<this> {
-        return this.finish()
-            .then(() => this.send());
-    }
-
-    public isStopped(): boolean {
-        return this.stopped;
-    }
-
-    public stop(): Promise<this> {
-        if (this.stopped) { return Promise.resolve(this); }
-
-        this.stopped = true;
-
-        // Stop all child spans
-        this.childSpans.forEach(s => s.stop());
-
-        return Promise.resolve(this);
-    }
-
-    public isStarted(): boolean {
-        return this.started;
-    }
-
-    public start(): Promise<this> {
-        if (this.started) { return Promise.resolve(this); }
-
-        this.timestamp = new Date();
-        this.started = true;
-
-        return Promise.resolve(this);
-    }
-
-    /**
-     * Send this span and internal spans to the scoutInstance
-     *
-     * @returns this span
-     */
-    public send(scoutInstance?: Scout): Promise<this> {
-        const inst = scoutInstance || this.scoutInstance;
-
-        // Ensure a scout instance was available
-        if (!inst) {
-            this.logFn(`[scout/request/${this.id}] No scout instance available, send failed`);
-            return Promise.resolve(this);
-        }
-
-        // Start Span
-        return inst.sendStartSpan(this)
-        // Send all the child spans
-            .then(() => Promise.all(this.childSpans.map(s => s.send())))
-        // Send tags
-            .then(() => Promise.all(
-                Object.entries(this.tags).map(([name, value]) => inst.sendTagSpan(this, name, value)),
-            ))
-        // End the span
-            .then(() => inst.sendStopSpan(this))
-            .then(() => this.sent = true)
-            .then(() => this)
-            .catch(err => {
-                this.logFn(`[scout/request/${this.request.id}/span/${this.id}}] Failed to send span`);
-                return this;
-            });
-    }
-
-    private logFn: LogFn = () => undefined;
 }
 
 export interface ScoutOptions {
@@ -416,6 +87,9 @@ export class Scout extends EventEmitter {
     }
 
     public setup(): Promise<this> {
+        // Return early if agent has already been set up
+        if (this.agent) { return Promise.resolve(this); }
+
         this.downloader = new WebAgentDownloader({logFn: this.logFn});
 
         // Ensure coreAgentVersion is present
@@ -525,7 +199,11 @@ export class Scout extends EventEmitter {
 
         return this
             .sendThroughAgent(stopReq)
-            .then(() => req)
+            .then(() => {
+                this.emit(ScoutEvent.RequestSent, {request: req} as ScoutEventRequestSentData);
+
+                return req;
+            })
             .catch(err => {
                 this.logFn("[scout] failed to send stop request request", LogLevel.Error);
                 return req;
@@ -623,6 +301,11 @@ export class Scout extends EventEmitter {
     }
 
     public shutdown(): Promise<void> {
+        if (!this.agent) {
+            this.logFn("[scout] shutdown called but no agent to shutdown is present", LogLevel.Error);
+            return Promise.reject(new Errors.NoAgentPresent());
+        }
+
         return this.agent
             .disconnect()
             .then(() => {
@@ -638,6 +321,47 @@ export class Scout extends EventEmitter {
 
     public getAgent(): ExternalProcessAgent {
         return this.agent;
+    }
+
+    /**
+     * Function for checking whether a given path (URL) is ignored by scout
+     *
+     * @param {string} path - processed path (ex. "/api/v1/echo/:name")
+     * @returns {boolean} whether the path should be ignored
+     */
+    public ignoresPath(path: string): boolean {
+        this.logFn("[scout] checking path [${path}] against ignored paths", LogLevel.Trace);
+
+        // If ignore isn't specified or if empty, then nothing is ignored
+        if (!this.config.ignore || this.config.ignore.length === 0) {
+            return false;
+        }
+
+        const matchingPrefix = this.config.ignore.find(prefix => path.indexOf(prefix) === 0);
+
+        if (matchingPrefix) {
+            this.logFn("[scout] ignoring path [${path}] matching prefix [${matchingPrefix}]", LogLevel.Debug);
+            this.emit(ScoutEvent.IgnoredPathDetected, path);
+        }
+
+        return matchingPrefix !== undefined;
+    }
+
+    /**
+     * Filter a given request path (ex. /path/to/resource) according to logic before storing with Scout
+     *
+     * @param {string} path
+     * @returns {URL} the filtered URL object
+     */
+    public filterRequestPath(path: string): string {
+        switch (this.config.uriReporting) {
+            case URIReportingLevel.FilteredParams:
+                return scrubRequestPathParams(path);
+            case URIReportingLevel.Path:
+                return scrubRequestPath(path);
+            default:
+                return path;
+        }
     }
 
     private getSocketPath() {

@@ -1,6 +1,7 @@
 import { LogLevel } from "./enum";
 import { snakeCase } from "snake-case";
 import * as winston from "winston";
+import * as Constants from "../constants";
 
 export type LogFn = (message: string, level?: LogLevel) => void;
 
@@ -115,4 +116,65 @@ export function splitAgentResponses(buf: Buffer): FramedHeadersWithRemaining {
     }
 
     return {framed, remaining};
+}
+
+/**
+ * Scrub the parameters of a given URL
+ * this function modifies the provided URL object in-place.
+ *
+ * @param {string} path
+ * @param {Object} lookup - A lookup dictionary of terms to scrub
+ */
+export function scrubRequestPathParams(
+    path: string,
+    lookup?: { [key: string]: boolean },
+): string {
+    lookup = lookup || Constants.DEFAULT_PARAM_FILTER_LOOKUP;
+
+    const pieces = path.split("?");
+
+    // If there are no search params, then return the path unchanged
+    if (pieces.length === 1) { return path; }
+
+    const parsedParams = new URLSearchParams("?" + pieces[1]);
+
+    parsedParams.forEach((_, k) => {
+        if (lookup && k in lookup) {
+            parsedParams.set(k, Constants.DEFAULT_PARAM_SCRUB_REPLACEMENT);
+        }
+    });
+
+    return `${pieces[0]}?${decodeURI(parsedParams.toString())}`;
+}
+
+/**
+ * Scrub a URL down to only it's path (removing all query parameters)
+ * this function modifies the provided URL object in-place.
+ *
+ * @param {string} path
+ * @returns {string} the scrubbed path
+ */
+export function scrubRequestPath(path: string): string {
+    return path.split("?")[0];
+}
+
+export interface Stoppable {
+    stop(): Promise<this>;
+
+    isStopped(): boolean;
+}
+
+export interface Startable {
+    start(): Promise<this>;
+
+    isStarted(): boolean;
+}
+
+export interface ScoutTag {
+    name: string;
+    value: string;
+}
+
+export interface Taggable {
+    addContext(tags: ScoutTag[]): Promise<this>;
 }

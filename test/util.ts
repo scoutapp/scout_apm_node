@@ -155,6 +155,14 @@ export function simpleDynamicSegmentExpressApp(middleware: any, delayMs: number 
             }));
     });
 
+    app.post("/echo-by-post", (req: Request, res: Response) => {
+        waitMs(delayMs)
+            .then(() => res.send({
+                data: req.body,
+                status: "success",
+            }));
+    });
+
     return app;
 }
 
