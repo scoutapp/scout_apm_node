@@ -39,10 +39,12 @@ app.use(scout.expressMiddleware({
   config: {
     allowShutdown: true, // allow shutting down spawned scout-agent processes from this program
     monitor: true, // enable monitoring
+    name: "<application name>",
+    key: "<scout key>",
   },
 }));
 
-// Set up the routes for your application
+// Set up the routes for the application
 app.get('/', function (req, res) {
   res.send('hello, world!');
 });
@@ -54,9 +56,11 @@ process.on('exit', () => {
   }
 });
 
-// Start your application
+// Start application
 app.listen(3000);
 ```
+
+In addition to specifying `app` and `name` in the `config` object when building the middleware, you may also specify it via ENV by setting `SCOUT_NAME` and `SCOUT_APP` as environment variables for the process.
 
 For more information on configuration, see `docs/configuration.md`
 
@@ -70,18 +74,20 @@ const Scout = require("scout-apm-client").Scout;
 // Generate configuration for scout with some overrides
 const scoutConfiguration = buildScoutConfiguration({
     monitor: true, // monitoring is *off* by default
+    name: "<application name>",
+    key: "<scout key>",
 });
 
 // Create a scout instance
 const scout = new Scout(config);
 
-// Set up your scout instance
+// Set up the scout instance
 scout.setup()
     .then(scout => {
         // Start a request trace with Scout
         return scout.startRequest()
             .then(scoutRequest => {
-                // Run your code
+                // Run the procedure to be monitored
                 return bigHeavyTaskThatReturnsAPromise()
                     .then(() => scoutRequest.finishAndSend());
             });
@@ -121,7 +127,7 @@ To contribute to development of the NodeJS client:
 0. Clone this repository
 1. Run `make dev-setup` to set up the local development environment
 2. Run `make build` to build the project
-3. Write code for your change/bugfix/feature
+3. Write code for the change/bugfix/feature
 4. Run `make test` to ensure all tests are passing (see `docs/tests.md` for more information)
 5. Submit a PR
 
