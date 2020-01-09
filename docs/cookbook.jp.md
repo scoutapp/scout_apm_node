@@ -17,21 +17,22 @@ const scout = require("scout-apm-client").expressMiddleware;
 app.use("/your-endpoint", (req, res) => {
     // Scoutのデータベーススパン開始
     req.scout
+        .request // このexpressリクエストの中のScoutリクエスト
         .startSpan("Database/expensive-computation")
-        .then(scoutSpan => {
+        .then(span => {
 
             // データベース実行
             yourDatabaseClient
                 .expensiveComputation()
                 .then(result => {
-                    scoutSpan.finish(); // スパン終了（エラーなし場合)
+                    span.finish(); // スパン終了（エラーなし場合)
                     res.send(result);
                 })
                 .catch((err: Error) => {
-                    scoutSpan.finish(); // スパン終了(エラーあり場合)
+                    span.finish(); // スパン終了(エラーあり場合)
 
                     // // (オプション) エラ情報のタグを付ける
-                    // scoutSpan.tag([
+                    // req.scout.request.addContext([
                     //     {name: "error", value: true},
                     //     {name: "error.stack", value: err.stack},
                     // ]);
@@ -61,18 +62,19 @@ const pug = require("pug");
 app.use("/your-endpoint", (req, res) => {
     // Scoutのレンダリングスパン開始
     req.scout
+        .request // このexpressリクエストの中のScoutリクエスト
         .startSpan("Template/template-generation")
-        .then(scoutSpan => {
+        .then(span => {
 
             // テンプレートをロードとレンダリング
             var options = ....;
             var html = pug.renderFile("template.pug", options);
 
             // スパン終了
-            scoutSpan.finish();
+            span.finish();
 
             // // (オプション) タッグでテンプレート情報保存
-            // scoutSpan.tag([
+            // req.scout.request.addContext([
             //   {name: "template.fileName", value: "template.pug"},
             // ]);
 

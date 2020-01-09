@@ -72,9 +72,9 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                         // Set up the request timeout
                         if (requestTimeoutMs > 0) {
                             setTimeout(() => {
-                                // Tag the request as timed out
+                                // Add context to indicate request as timed out
                                 scoutRequest
-                                    .addTags([{name: "timeout", value: "true"}])
+                                    .addContext([{name: "timeout", value: "true"}])
                                     .then(() => scoutRequest.finishAndSend())
                                     .catch(() => {
                                         if (opts && opts.logFn) {

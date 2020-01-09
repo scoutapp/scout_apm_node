@@ -17,22 +17,23 @@ const scout = require("scout-apm-client").expressMiddleware;
 app.use("/your-endpoint", (req, res) => {
     // Start a scout span (one part of an overall request trace)
     req.scout
+        .request // Access the ScoutRequest for this HTTP request
         .startSpan("Database/expensive-computation")
-        .then(scoutSpan => {
+        .then(span => {
 
             // Perform your DB call (mongoose, pg, etc)
             yourDatabaseClient
                 .expensiveComputation()
                 .then(result => {
                     // Conclude the span (which will be rolled up into the request)
-                    scoutSpan.finish();
+                    span.finish();
                     res.send(result);
                 })
                 .catch((err: Error) => {
-                    scoutSpan.finish();
+                    span.finish();
 
-                    // // (OPTIONAL) Add custom tags to help with error classification
-                    // scoutSpan.tag([
+                    // // (OPTIONAL) Add custom context to the request to help with error classification
+                    // req.scout.request.addContext([
                     //     {name: "error", value: true},
                     //     {name: "error.stack", value: err.stack},
                     // ]);
@@ -62,18 +63,19 @@ const pug = require("pug");
 app.use("/your-endpoint", (req, res) => {
     // Start a scout span (one part of an overall request trace)
     req.scout
+        .request // Access the ScoutRequest for this HTTP request
         .startSpan("Template/template-generation")
-        .then(scoutSpan => {
+        .then(span => {
 
             // Perform your templating
             var options = ....;
             var html = pug.renderFile("template.pug", options);
 
             // Finish the scout span
-            scoutSpan.finish();
+            span.finish();
 
-            // // (OPTIONAL) tag the span with some information about the template that was rendered
-            // scoutSpan.tag([
+            // // (OPTIONAL) add context to the span with some information about the template that was rendered
+            // req.scout.request.addContext([
             //   {name: "template.fileName", value: "template.pug"},
             // ]);
 
