@@ -62,6 +62,8 @@ app.listen(3000);
 
 In addition to specifying `app` and `name` in the `config` object when building the middleware, you may also specify it via ENV by setting `SCOUT_NAME` and `SCOUT_APP` as environment variables for the process.
 
+If your `core-agent` instance is running externally and you do not need `scout-apm-client` to start it, you can set the `coreAgentLaunch` setting to `false` or specify the ENV variable `SCOUT_CORE_AGENT_LAUNCH` with value `false`.
+
 For more information on configuration, see `docs/configuration.md`
 
 ## Using `scout-apm-client` with other frameworks ##
