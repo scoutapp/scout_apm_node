@@ -28,17 +28,26 @@ Scout supports use with `express`-based applications by using app-wide middlewar
 
 ```javascript
 const express = require("express");
+const scout = require("scout-apm-client");
+
 const app = express();
-const scoutMiddleware = require("scout-apm-client").expressMiddleware;
 
 // Enable the app-wide scout middleware
 // monitoring is *off* by default
-app.use(scoutMiddleware({config: {monitor: true}}));
+app.use(scout.expressMiddleware({
+  config: {
+    monitor: true,
+  },
+  logFn: scout.consoleLogFn,
+}));
 
 // Set up the routes for your application
 app.get('/', function (req, res) {
-  res.send('hello, world!')
-})
+  res.send('hello, world!');
+});
+
+// Start your application
+app.listen(3000);
 ```
 
 For more information on configuration, see `docs/configuration.md`
@@ -50,9 +59,13 @@ Scout supports use with any other frameworks through it's `Promise` based API:
 ```javascript
 const Scout = require("scout-apm-client").Scout;
 
+// Generate configuration for scout with some overrides
+const scoutConfiguration = buildScoutConfiguration({
+    monitor: true, // monitoring is *off* by default
+});
+
 // Create a scout instance
-// monitoring is *off* by default
-const scout = new Scout(buildScoutConfiguration({allowShutdown: true, monitor: true}));
+const scout = new Scout(config);
 
 // Set up your scout instance
 scout.setup()
