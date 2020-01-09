@@ -185,6 +185,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             return Promise.reject(new Errors.NoProcessReference());
         }
 
+        if (this.opts.disallowLaunch) {
+            return Promise.reject(new Errors.NoProcessReference("launch disabled"));
+        }
+
         return Promise.resolve(this.detachedProcess);
     }
 
@@ -198,7 +202,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                 process.kill();
             })
         // Remove the socket path
-            .then(() => remove(this.getSocketPath()));
+            .then(() => remove(this.getSocketPath()))
+            .catch(err => {
+                this.logFn(`[scout/external-process] Process stop failed:\n${err}`, LogLevel.Error);
+            });
     }
 
     /**
@@ -354,7 +361,12 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private startProcess(): Promise<this> {
         // If core agent launching has been disabled, don't start the process
         if (this.opts.disallowLaunch) {
-            return Promise.reject(new Errors.AgentLaunchDisabled());
+            // disallowing should presume that there is *another* agent already running.
+            this.logFn(
+                "[scout/external-process] Not attempting to launch Core Agent due to 'core_agent_launch' setting.",
+                LogLevel.Debug,
+            );
+            return Promise.resolve(this);
         }
 
         // Build command and arguments
@@ -386,5 +398,4 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             }, Constants.DEFAULT_BIN_STARTUP_WAIT_MS);
         });
     }
-
 }
