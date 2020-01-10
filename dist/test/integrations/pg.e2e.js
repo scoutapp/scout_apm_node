@@ -19,5 +19,5 @@ test("SELECT query during a request is recorded", t => {
     t.ok("TODO");
     t.end();
 });
-// Pseudo test that will stop a containerized postgres instance that was started
-TestUtil.stopContainerizedPostgresTest(test, PG_CONTAINER_AND_OPTS);
+// // Pseudo test that will stop a containerized postgres instance that was started
+// TestUtil.stopContainerizedPostgresTest(test, PG_CONTAINER_AND_OPTS);

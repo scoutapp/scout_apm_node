@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const tmp = require("tmp-promise");
 const express = require("express");
-const randomstring = require("randomstring");
+const randomstring_1 = require("randomstring");
 const promise_timeout_1 = require("promise-timeout");
 const child_process_1 = require("child_process");
 const Constants = require("../lib/constants");
@@ -201,7 +201,7 @@ function buildTestScoutInstance(configOverride, options) {
 exports.buildTestScoutInstance = buildTestScoutInstance;
 class TestContainerStartOpts {
     constructor(opts) {
-        this.dockerBinPath = "/bin/docker";
+        this.dockerBinPath = "/usr/bin/docker";
         // Phrases that should be waited for before the container is "started"
         this.waitFor = {};
         this.startTimeoutMs = 5000;
@@ -236,11 +236,14 @@ class TestContainerStartOpts {
         }
         // Generate a random container name if one wasn't provided
         if (!this.containerName) {
-            this.containerName = `test-${this.imageName}-${randomstring()}`;
+            this.containerName = `test-${this.imageName}-${randomstring_1.generate(5)}`;
         }
     }
     imageWithTag() {
         return `${this.imageName}:${this.tagName}`;
+    }
+    setExecutedStartCommand(cmd) {
+        this.executedStartCommand = cmd;
     }
 }
 exports.TestContainerStartOpts = TestContainerStartOpts;
@@ -255,12 +258,15 @@ exports.TestContainerStartOpts = TestContainerStartOpts;
 function startContainer(t, optOverrides) {
     const opts = new TestContainerStartOpts(optOverrides);
     const args = [
+        "run",
         opts.imageWithTag(),
         "--name", opts.containerName,
+        "--detach",
     ];
     // Spawn the docker container
     t.comment(`spawning container [${opts.imageName}:${opts.tagName}] with name [${opts.containerName}]...`);
     const containerProcess = child_process_1.spawn(opts.dockerBinPath, args, { detached: true, stdio: "pipe" });
+    opts.setExecutedStartCommand(`${opts.dockerBinPath} ${args.join(" ")}`);
     let resolved = false;
     let stdoutListener;
     let stderrListener;
@@ -303,7 +309,18 @@ function startContainer(t, optOverrides) {
             }
             return;
         }
-        resolve({ containerProcess, opts });
+        containerProcess.on("close", code => {
+            if (code !== 0) {
+                t.comment("daemon failed to start container, piping output to stdout...");
+                if (containerProcess.stdout) {
+                    containerProcess.stdout.pipe(process.stdout);
+                }
+                t.comment(`command: [${opts.executedStartCommand}]`);
+                reject(new Error(`Failed to start container (code ${code}), output will be piped to stdout`));
+                return;
+            }
+            resolve({ containerProcess, opts });
+        });
     });
     return promise_timeout_1.timeout(promise, opts.startTimeoutMs)
         .catch(err => {

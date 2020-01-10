@@ -2,7 +2,7 @@ import * as path from "path";
 import * as tmp from "tmp-promise";
 import * as express from "express";
 import { Application, Request, Response } from "express";
-import * as randomstring from "randomstring";
+import { generate as generateRandomString } from "randomstring";
 import { timeout, TimeoutError } from "promise-timeout";
 import { ChildProcess, spawn } from "child_process";
 import { EventEmitter } from "events";
@@ -260,7 +260,7 @@ export function buildTestScoutInstance(
 }
 
 export class TestContainerStartOpts {
-    public readonly dockerBinPath: string = "/bin/docker";
+    public readonly dockerBinPath: string = "/usr/bin/docker";
     // Phrases that should be waited for before the container is "started"
     public readonly waitFor: {stdout?: string, stderr?: string} = {};
     public readonly startTimeoutMs: number = 5000;
@@ -270,6 +270,7 @@ export class TestContainerStartOpts {
     public tagName: string = "latest";
     public containerName: string;
     public env: object = process.env;
+    public executedStartCommand: string;
 
     constructor(opts: Partial<TestContainerStartOpts>) {
         if (opts) {
@@ -285,12 +286,16 @@ export class TestContainerStartOpts {
 
         // Generate a random container name if one wasn't provided
         if (!this.containerName) {
-            this.containerName = `test-${this.imageName}-${randomstring()}`;
+            this.containerName = `test-${this.imageName}-${generateRandomString(5)}`;
         }
     }
 
     public imageWithTag(): string {
         return `${this.imageName}:${this.tagName}`;
+    }
+
+    public setExecutedStartCommand(cmd: string) {
+        this.executedStartCommand = cmd;
     }
 }
 
@@ -313,8 +318,10 @@ export function startContainer(
 ): Promise<ContainerAndOpts> {
     const opts =  new TestContainerStartOpts(optOverrides);
     const args = [
+        "run",
         opts.imageWithTag(),
         "--name", opts.containerName,
+        "--detach",
     ];
 
     // Spawn the docker container
@@ -324,6 +331,7 @@ export function startContainer(
         args,
         { detached: true, stdio: "pipe"},
     );
+    opts.setExecutedStartCommand(`${opts.dockerBinPath} ${args.join(" ")}`);
 
     let resolved = false;
     let stdoutListener;
@@ -349,6 +357,7 @@ export function startContainer(
             if (!resolved) {
                 resolve({containerProcess, opts});
             }
+
             resolved = true;
         };
     };
@@ -371,7 +380,18 @@ export function startContainer(
             return;
         }
 
-        resolve({containerProcess, opts});
+        containerProcess.on("close", code => {
+            if (code !== 0) {
+                t.comment("daemon failed to start container, piping output to stdout...");
+                if (containerProcess.stdout) { containerProcess.stdout.pipe(process.stdout); }
+                t.comment(`command: [${opts.executedStartCommand}]`);
+                reject(new Error(`Failed to start container (code ${code}), output will be piped to stdout`));
+                return;
+            }
+
+            resolve({containerProcess, opts});
+        });
+
     });
 
     return timeout(promise, opts.startTimeoutMs)
