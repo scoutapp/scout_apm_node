@@ -18,12 +18,14 @@ test("the shim works", t => {
 });
 
 // Pseudo test that will start a containerized postgres instance
-TestUtil.startContainerizedPostgresTest(test, cao => PG_CONTAINER_AND_OPTS = cao, "alpine-latest");
+TestUtil.startContainerizedPostgresTest(test, cao => {
+    PG_CONTAINER_AND_OPTS = cao;
+});
 
 test("SELECT query during a request is recorded", t => {
     t.ok("TODO");
     t.end();
 });
 
-// // Pseudo test that will stop a containerized postgres instance that was started
-// TestUtil.stopContainerizedPostgresTest(test, PG_CONTAINER_AND_OPTS);
+// Pseudo test that will stop a containerized postgres instance that was started
+TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);
