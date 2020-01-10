@@ -8,6 +8,8 @@ setupRequireIntegrations(["pg"]);
 
 import { Client } from "pg";
 
+let PG_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
+
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // it may break if import order is changed (require hook would not have taken place)
 test("the shim works", t => {
@@ -15,8 +17,13 @@ test("the shim works", t => {
     t.end();
 });
 
-// TODO: create a wrapper that creates a dockerized postgres instance
+// Pseudo test that will start a containerized postgres instance
+TestUtil.startContainerizedPostgresTest(test, cao => PG_CONTAINER_AND_OPTS = cao, "alpine-latest");
 
-// TODO: test whether SELECT queries are captured
-// test("SELECT query works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
-// });
+test("SELECT query during a request is recorded", t => {
+    t.ok("TODO");
+    t.end();
+});
+
+// Pseudo test that will stop a containerized postgres instance that was started
+TestUtil.stopContainerizedPostgresTest(test, PG_CONTAINER_AND_OPTS);

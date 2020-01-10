@@ -26,7 +26,6 @@ import { DEFAULT_SCOUT_CONFIGURATION } from "../lib/types/config";
 import { Scout } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
-import * as test from "tape";
 
 // Wait a little longer for requests that use express
 export const EXPRESS_TEST_TIMEOUT = 2000;
@@ -270,6 +269,7 @@ export class TestContainerStartOpts {
     public imageName: string;
     public tagName: string = "latest";
     public containerName: string;
+    public env: object = process.env;
 
     constructor(opts: Partial<TestContainerStartOpts>) {
         if (opts) {
@@ -280,11 +280,12 @@ export class TestContainerStartOpts {
             if (opts.containerName) { this.containerName = opts.containerName; }
             if (opts.startTimeoutMs) { this.startTimeoutMs = opts.startTimeoutMs; }
             if (opts.stopTimeoutMs) { this.stopTimeoutMs = opts.stopTimeoutMs; }
+            if (opts.env) { this.env = opts.env; }
         }
 
         // Generate a random container name if one wasn't provided
         if (!this.containerName) {
-            this.containerName = `test-${this.imageName}-${randomstring()}`
+            this.containerName = `test-${this.imageName}-${randomstring()}`;
         }
     }
 
@@ -317,7 +318,7 @@ export function startContainer(
     ];
 
     // Spawn the docker container
-    t.comment(`spawning container [${opts.imageName}:${opts.tagName}] with name [${opts.containerName}]...`)
+    t.comment(`spawning container [${opts.imageName}:${opts.tagName}] with name [${opts.containerName}]...`);
     const containerProcess = spawn(
         opts.dockerBinPath,
         args,
@@ -325,8 +326,16 @@ export function startContainer(
     );
 
     let resolved = false;
-    let stdoutListener, stderrListener;
-    const makeListener = (type: "stdout" | "stderr", emitter: Readable | null, expected: string, resolve: Function, reject: Function) => {
+    let stdoutListener;
+    let stderrListener;
+
+    const makeListener = (
+        type: "stdout" | "stderr",
+        emitter: Readable | null,
+        expected: string,
+        resolve: (res: ContainerAndOpts) => void,
+        reject: (err?: Error) => void,
+    ) => {
         if (!emitter) {
             return () => reject(new Error(`[${type}] pipe was not Readable`));
         }
@@ -341,7 +350,7 @@ export function startContainer(
                 resolve({containerProcess, opts});
             }
             resolved = true;
-        }
+        };
     };
 
     // Wait until process is listening on the given socket port
@@ -395,7 +404,7 @@ export function stopContainer(t: Test, opts: TestContainerStartOpts): Promise<nu
     const promise = new Promise((resolve, reject) => {
         dockerKillProcess.on("close", code => {
             resolve(code);
-        })
+        });
     });
 
     return timeout(promise, opts.stopTimeoutMs);
@@ -403,7 +412,11 @@ export function stopContainer(t: Test, opts: TestContainerStartOpts): Promise<nu
 
 // Utility function to start a postgres instance
 const POSTGRES_IMAGE_NAME = "postgres";
-export function startContainerizedPostgresTest(cb: Function, tagName?: string) {
+export function startContainerizedPostgresTest(
+    test: any,
+    cb: (cao: ContainerAndOpts) => void,
+    tagName?: string,
+) {
     tagName = tagName || "latest-alpine";
     test("Starting postgres instance", (t: Test) => {
         startContainer(t, {imageName: POSTGRES_IMAGE_NAME, tagName})
@@ -413,15 +426,21 @@ export function startContainerizedPostgresTest(cb: Function, tagName?: string) {
             })
             .then(() => t.end())
             .catch(err => t.end(err));
-    })
+    });
 }
 
 // Utility function to stop a postgres instance
-export function stopContainerizedPostgresTest(opts: TestContainerStartOpts) {
+export function stopContainerizedPostgresTest(test: any, containerAndOpts: ContainerAndOpts | null) {
+    if (!containerAndOpts) {
+        throw new Error("no container w/ opts object provided, can't stop container");
+    }
+
+    const opts = containerAndOpts.opts;
+
     test(`Stopping postgres instance in container [${opts.containerName}]`, (t: Test) => {
         stopContainer(t, opts)
             .then(code => t.ok(`successfully stopped container [${opts.containerName}], with code [${code}]`))
             .then(() => t.end())
             .catch(err => t.end(err));
-    })
+    });
 }

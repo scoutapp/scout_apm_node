@@ -13,7 +13,6 @@ const types_1 = require("../lib/types");
 const config_1 = require("../lib/types/config");
 const lib_1 = require("../lib");
 const requests_1 = require("../lib/protocol/v1/requests");
-const test = require("tape");
 // Wait a little longer for requests that use express
 exports.EXPRESS_TEST_TIMEOUT = 2000;
 // Helper for downloading and creating an agent
@@ -208,6 +207,7 @@ class TestContainerStartOpts {
         this.startTimeoutMs = 5000;
         this.stopTimeoutMs = 5000;
         this.tagName = "latest";
+        this.env = process.env;
         if (opts) {
             if (opts.dockerBinPath) {
                 this.dockerBinPath = opts.dockerBinPath;
@@ -229,6 +229,9 @@ class TestContainerStartOpts {
             }
             if (opts.stopTimeoutMs) {
                 this.stopTimeoutMs = opts.stopTimeoutMs;
+            }
+            if (opts.env) {
+                this.env = opts.env;
             }
         }
         // Generate a random container name if one wasn't provided
@@ -259,7 +262,8 @@ function startContainer(t, optOverrides) {
     t.comment(`spawning container [${opts.imageName}:${opts.tagName}] with name [${opts.containerName}]...`);
     const containerProcess = child_process_1.spawn(opts.dockerBinPath, args, { detached: true, stdio: "pipe" });
     let resolved = false;
-    let stdoutListener, stderrListener;
+    let stdoutListener;
+    let stderrListener;
     const makeListener = (type, emitter, expected, resolve, reject) => {
         if (!emitter) {
             return () => reject(new Error(`[${type}] pipe was not Readable`));
@@ -335,7 +339,7 @@ function stopContainer(t, opts) {
 exports.stopContainer = stopContainer;
 // Utility function to start a postgres instance
 const POSTGRES_IMAGE_NAME = "postgres";
-function startContainerizedPostgresTest(cb, tagName) {
+function startContainerizedPostgresTest(test, cb, tagName) {
     tagName = tagName || "latest-alpine";
     test("Starting postgres instance", (t) => {
         startContainer(t, { imageName: POSTGRES_IMAGE_NAME, tagName })
@@ -349,7 +353,11 @@ function startContainerizedPostgresTest(cb, tagName) {
 }
 exports.startContainerizedPostgresTest = startContainerizedPostgresTest;
 // Utility function to stop a postgres instance
-function stopContainerizedPostgresTest(opts) {
+function stopContainerizedPostgresTest(test, containerAndOpts) {
+    if (!containerAndOpts) {
+        throw new Error("no container w/ opts object provided, can't stop container");
+    }
+    const opts = containerAndOpts.opts;
     test(`Stopping postgres instance in container [${opts.containerName}]`, (t) => {
         stopContainer(t, opts)
             .then(code => t.ok(`successfully stopped container [${opts.containerName}], with code [${code}]`))
