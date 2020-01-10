@@ -5,10 +5,11 @@ import * as Constants from "../../lib/constants";
 import { scoutIntegrationSymbol } from "../../lib/types/integrations";
 import {
     Scout,
-    setupRequireIntegrations,
     ScoutEvent,
-    buildScoutConfiguration,
     ScoutEventRequestSentData,
+    ScoutRequest,
+    buildScoutConfiguration,
+    setupRequireIntegrations,
 } from "../../lib";
 setupRequireIntegrations(["pg"]);
 
@@ -53,11 +54,18 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
     };
     scout.on(ScoutEvent.RequestSent, listener);
 
+    let req: ScoutRequest;
+
     scout
         .setup()
-    // Connect to the postgres
+    // Start a request
+        .then(() => scout.startRequest())
+        .then(r => req = r)
+    // Connect to the postgres & perform a query
         .then(() => TestUtil.makeConnectedPGClient(() => PG_CONTAINER_AND_OPTS))
         .then(client => client.query("SELECT NOW()"))
+    // Finish & Send the request
+        .then(() => req.finishAndSend())
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 

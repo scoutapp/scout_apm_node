@@ -38,11 +38,17 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    let req;
     scout
         .setup()
-        // Connect to the postgres
+        // Start a request
+        .then(() => scout.startRequest())
+        .then(r => req = r)
+        // Connect to the postgres & perform a query
         .then(() => TestUtil.makeConnectedPGClient(() => PG_CONTAINER_AND_OPTS))
         .then(client => client.query("SELECT NOW()"))
+        // Finish & Send the request
+        .then(() => req.finishAndSend())
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // Pseudo test that will stop a containerized postgres instance that was started
