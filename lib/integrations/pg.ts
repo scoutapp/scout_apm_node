@@ -5,11 +5,9 @@ import { Scout } from "../scout";
 import { Client } from "pg";
 import { LogFn, LogLevel } from "../types";
 
-export const PACKAGE_NAME = "pg";
-
 // Hook into the express and mongodb module
 export class PGIntegration implements RequireIntegration {
-    private readonly packageName: string = PACKAGE_NAME;
+    private readonly packageName: string = "pg";
     private scout: Scout;
     private logFn: LogFn = () => undefined;
 
@@ -18,12 +16,12 @@ export class PGIntegration implements RequireIntegration {
     }
 
     public ritmHook(exportBag: ExportBag): void {
-        Hook([PACKAGE_NAME], (exports, name, basedir) => {
+        Hook([this.getPackageName()], (exports, name, basedir) => {
             // Make changes to the pg package to enable integration
             this.shimPG(exports);
 
             // Save the exported package in the exportBag for Scout to use later
-            exportBag[PACKAGE_NAME] = exports;
+            exportBag[this.getPackageName()] = exports;
 
             // Add the scoutIntegrationSymbol to show that the shim has run
             exports.Client[scoutIntegrationSymbol] = this;

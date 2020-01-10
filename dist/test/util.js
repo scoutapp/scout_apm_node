@@ -422,7 +422,7 @@ function makeConnectedPGClient(provider) {
     const port = cao.opts.portBinding[5432];
     const client = new pg_1.Client({
         user: "postgres",
-        host: "postgres",
+        host: "localhost",
         database: "postgres",
         password: "postgres",
         port,

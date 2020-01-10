@@ -515,7 +515,7 @@ export function makeConnectedPGClient(provider: () => ContainerAndOpts | null): 
     const port: number = cao.opts.portBinding[5432];
     const client = new Client({
         user: "postgres",
-        host: "postgres",
+        host: "localhost",
         database: "postgres",
         password: "postgres",
         port,

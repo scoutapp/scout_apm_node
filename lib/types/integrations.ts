@@ -24,7 +24,18 @@ export interface RequireIntegration {
     setScoutInstance: (instance: Scout) => void;
 }
 
-export const doNothingRequireIntegration = {
-    packageName: "",
-    ritmHook: () => undefined,
-};
+class NullIntegration implements RequireIntegration {
+    private readonly packageName: string = "";
+
+    public getPackageName() { return this.packageName; }
+
+    public ritmHook(exportBag: ExportBag): void {
+        throw new Error("NullIntegration");
+    }
+
+    public setScoutInstance() {
+        throw new Error("NullIntegration");
+    }
+}
+
+export const doNothingRequireIntegration = new NullIntegration();
