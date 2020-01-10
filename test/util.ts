@@ -7,6 +7,7 @@ import { timeout, TimeoutError } from "promise-timeout";
 import { ChildProcess, spawn } from "child_process";
 import { EventEmitter } from "events";
 import { Readable } from "stream";
+import { Client } from "pg";
 
 import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
@@ -31,6 +32,7 @@ const getPort = require("get-port");
 
 // Wait a little longer for requests that use express
 export const EXPRESS_TEST_TIMEOUT = 2000;
+export const PG_TEST_TIMEOUT = 3000;
 
 // Helper for downloading and creating an agent
 export function bootstrapExternalProcessAgent(
@@ -504,4 +506,20 @@ export function stopContainerizedPostgresTest(test: any, provider: () => Contain
             .then(() => t.end())
             .catch(err => t.end(err));
     });
+}
+
+export function makeConnectedPGClient(provider: () => ContainerAndOpts | null): Promise<Client> {
+    const cao = provider();
+    if (!cao) { return Promise.reject(new Error("no CAO in provider")); }
+
+    const port: number = cao.opts.portBinding[5432];
+    const client = new Client({
+        user: "postgres",
+        host: "postgres",
+        database: "postgres",
+        password: "postgres",
+        port,
+    });
+
+    return client.connect().then(() => client);
 }

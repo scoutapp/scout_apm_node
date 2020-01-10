@@ -3,7 +3,13 @@ import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
 import { scoutIntegrationSymbol } from "../../lib/types/integrations";
-import { Scout, setupRequireIntegrations } from "../../lib";
+import {
+    Scout,
+    setupRequireIntegrations,
+    ScoutEvent,
+    buildScoutConfiguration,
+    ScoutEventRequestSentData,
+} from "../../lib";
 setupRequireIntegrations(["pg"]);
 
 import { Client } from "pg";
@@ -22,9 +28,37 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
 
-test("SELECT query during a request is recorded", t => {
-    t.ok("TODO");
-    t.end();
+test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}, t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    // Set up a listener for the scout request that will contain the DB record
+    const listener = (data: ScoutEventRequestSentData) => {
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        // TODO: look up the database span from the request
+        data.request
+            .getChildSpans()
+            .then(spans => {
+                const dbSpan = spans.find(s => {
+                    return s.operation.includes("database");
+                });
+
+                t.assert(dbSpan, "db span was present on request");
+            })
+            .then(() => TestUtil.shutdownScout(t, scout))
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    scout
+        .setup()
+    // Connect to the postgres
+        .then(() => TestUtil.makeConnectedPGClient(() => PG_CONTAINER_AND_OPTS))
+        .then(client => client.query("SELECT NOW()"))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
 // Pseudo test that will stop a containerized postgres instance that was started

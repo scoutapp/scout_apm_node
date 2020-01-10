@@ -17,9 +17,33 @@ test("the shim works", t => {
 TestUtil.startContainerizedPostgresTest(test, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
-test("SELECT query during a request is recorded", t => {
-    t.ok("TODO");
-    t.end();
+test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TIMEOUT }, t => {
+    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+    // Set up a listener for the scout request that will contain the DB record
+    const listener = (data) => {
+        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        // TODO: look up the database span from the request
+        data.request
+            .getChildSpans()
+            .then(spans => {
+            const dbSpan = spans.find(s => {
+                return s.operation.includes("database");
+            });
+            t.assert(dbSpan, "db span was present on request");
+        })
+            .then(() => TestUtil.shutdownScout(t, scout))
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout
+        .setup()
+        // Connect to the postgres
+        .then(() => TestUtil.makeConnectedPGClient(() => PG_CONTAINER_AND_OPTS))
+        .then(client => client.query("SELECT NOW()"))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // Pseudo test that will stop a containerized postgres instance that was started
 TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);

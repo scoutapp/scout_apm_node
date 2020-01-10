@@ -6,6 +6,7 @@ const express = require("express");
 const randomstring_1 = require("randomstring");
 const promise_timeout_1 = require("promise-timeout");
 const child_process_1 = require("child_process");
+const pg_1 = require("pg");
 const Constants = require("../lib/constants");
 const external_process_1 = require("../lib/agents/external-process");
 const web_1 = require("../lib/agent-downloaders/web");
@@ -16,6 +17,7 @@ const requests_1 = require("../lib/protocol/v1/requests");
 const getPort = require("get-port");
 // Wait a little longer for requests that use express
 exports.EXPRESS_TEST_TIMEOUT = 2000;
+exports.PG_TEST_TIMEOUT = 3000;
 // Helper for downloading and creating an agent
 function bootstrapExternalProcessAgent(t, rawVersion, opts) {
     const downloadOpts = {
@@ -412,3 +414,19 @@ function stopContainerizedPostgresTest(test, provider) {
     });
 }
 exports.stopContainerizedPostgresTest = stopContainerizedPostgresTest;
+function makeConnectedPGClient(provider) {
+    const cao = provider();
+    if (!cao) {
+        return Promise.reject(new Error("no CAO in provider"));
+    }
+    const port = cao.opts.portBinding[5432];
+    const client = new pg_1.Client({
+        user: "postgres",
+        host: "postgres",
+        database: "postgres",
+        password: "postgres",
+        port,
+    });
+    return client.connect().then(() => client);
+}
+exports.makeConnectedPGClient = makeConnectedPGClient;
