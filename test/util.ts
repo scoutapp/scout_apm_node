@@ -27,6 +27,8 @@ import { Scout } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
 
+const getPort = require("get-port");
+
 // Wait a little longer for requests that use express
 export const EXPRESS_TEST_TIMEOUT = 2000;
 
@@ -271,6 +273,7 @@ export class TestContainerStartOpts {
     public containerName: string;
     public env: object = process.env;
     public executedStartCommand: string;
+    public portBinding: {[key: number]: number} = {};
 
     constructor(opts: Partial<TestContainerStartOpts>) {
         if (opts) {
@@ -282,6 +285,7 @@ export class TestContainerStartOpts {
             if (opts.startTimeoutMs) { this.startTimeoutMs = opts.startTimeoutMs; }
             if (opts.killTimeoutMs) { this.killTimeoutMs = opts.killTimeoutMs; }
             if (opts.env) { this.env = opts.env; }
+            if (opts.portBinding) { this.portBinding = opts.portBinding; }
         }
 
         // Generate a random container name if one wasn't provided
@@ -317,10 +321,19 @@ export function startContainer(
     optOverrides: Partial<TestContainerStartOpts>,
 ): Promise<ContainerAndOpts> {
     const opts =  new TestContainerStartOpts(optOverrides);
+
+    // Build port mapping arguments
+    const portMappingArgs: string[] = [];
+    Object.entries(opts.portBinding).forEach(([containerPort, localPort]) => {
+        portMappingArgs.push("-p");
+        portMappingArgs.push(`${localPort}:${containerPort}`);
+    });
+
     const args = [
         "run",
         "--name", opts.containerName,
         "--detach",
+        ...portMappingArgs,
         opts.imageWithTag(),
     ];
 
@@ -415,7 +428,7 @@ export function startContainer(
         });
 }
 
-// Stop a running container
+// Kill a running container
 export function killContainer(t: Test, opts: TestContainerStartOpts): Promise<number> {
     const args = ["kill", opts.containerName];
 
@@ -449,13 +462,30 @@ export function startContainerizedPostgresTest(
     const env = containerEnv || {};
 
     test("Starting postgres instance", (t: Test) => {
-        startContainer(t, {imageName: POSTGRES_IMAGE_NAME, tagName, env})
-            .then(containerAndOpts => {
-                t.comment(`Successfully started postgres container [${containerAndOpts.opts.containerName}]`);
+        let port: number;
+        let containerAndOpts: ContainerAndOpts;
+
+        getPort()
+            .then(p => port = p)
+            .then(() => {
+                const portBinding = {5432: port};
+                return startContainer(t, {imageName: POSTGRES_IMAGE_NAME, tagName, portBinding, env});
+            })
+            .then(cao => containerAndOpts = cao)
+            .then(() => {
+                const opts = containerAndOpts.opts;
+                t.comment(`Started container [${opts.containerName}] on local port ${opts.portBinding[5432]}`);
                 cb(containerAndOpts);
             })
             .then(() => t.end())
-            .catch(err => t.end(err));
+            .catch(err => {
+                if (containerAndOpts) {
+                    return killContainer(t, containerAndOpts.opts)
+                        .then(() => t.end(err));
+                }
+
+                return t.end(err);
+            });
     });
 }
 
