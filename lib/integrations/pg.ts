@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as Hook from "require-in-the-middle";
-import { ExportBag, RequireIntegration } from "../types/integrations";
+import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
 import { Client } from "pg";
 import { LogFn, LogLevel } from "../types";
@@ -25,7 +25,8 @@ export class PGIntegration implements RequireIntegration {
             // Save the exported package in the exportBag for Scout to use later
             exportBag[PACKAGE_NAME] = exports;
 
-            console.log("HERE!"); 
+            // Add the scoutIntegrationSymbol to show that the shim has run
+            exports.Client[scoutIntegrationSymbol] = this;
 
             // Return the modified exports
             return exports;
@@ -56,7 +57,6 @@ export class PGIntegration implements RequireIntegration {
         const original = client.connect;
 
         const fn: any = (userCallback) => {
-            console.log("Connecting to PG, this.scout?", this.scout);
             this.logFn("Connecting to Postgres db...", LogLevel.Debug);
 
             const promise = original()
@@ -68,7 +68,6 @@ export class PGIntegration implements RequireIntegration {
                     this.logFn("[scout/integrations/pg] Connection to Postgres db failed", LogLevel.Error);
                     userCallback(err);
                 });
-
 
             if (userCallback) { return; }
             return promise;

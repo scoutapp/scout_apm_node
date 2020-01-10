@@ -2,9 +2,9 @@ import * as test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
-import { buildScoutConfiguration } from "../../lib/types";
 import { scoutIntegrationSymbol } from "../../lib/types/integrations";
-import { Scout } from "../../lib";
+import { Scout, setupRequireIntegrations } from "../../lib";
+setupRequireIntegrations(["pg"]);
 
 import { Client } from "pg";
 
@@ -14,6 +14,8 @@ test("the shim works", t => {
     t.assert(Client[scoutIntegrationSymbol], "client has the integration symbol");
     t.end();
 });
+
+// TODO: create a wrapper that creates a dockerized postgres instance
 
 // TODO: test whether SELECT queries are captured
 // test("SELECT query works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {

@@ -15,9 +15,24 @@ exports.buildWinstonLogFn = types_1.buildWinstonLogFn;
 var express_1 = require("./express");
 exports.expressMiddleware = express_1.scoutMiddleware;
 __export(require("./errors"));
+const integrations_1 = require("./integrations");
 const pg_1 = require("./integrations/pg");
 // Create an export bag which will contain
 exports.EXPORT_BAG = {};
 // Set up PG integration
-console.log("DOING THE HOOK?");
-pg_1.default.ritmHook(exports.EXPORT_BAG);
+// This is needed for use in Typescript projects since `import` will not
+// run global code unless you do a whole-file import
+function setupRequireIntegrations(packages) {
+    packages = packages || [];
+    packages.forEach(name => {
+        const integration = integrations_1.getIntegrationForPackage(name);
+        if (integration) {
+            pg_1.default.ritmHook(exports.EXPORT_BAG);
+        }
+    });
+}
+exports.setupRequireIntegrations = setupRequireIntegrations;
+// For pure NodeJS contexts this will be run automatically
+setupRequireIntegrations([
+    "pg",
+]);
