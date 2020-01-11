@@ -175,29 +175,34 @@ class Scout extends events_1.EventEmitter {
         const parent = this.getCurrentSpan() || this.getCurrentRequest();
         // If no request is currently underway
         if (!parent) {
-            return Promise.resolve(cb());
             this.logFn("[scout] Failed to start instrumentation, no current transaction/parent instrumentation", types_1.LogLevel.Error);
-            return;
+            return Promise.resolve(cb());
         }
         let result;
         let ranCb = false;
         return parent
+            // Start the child span
             .startChildSpan(operation)
+            // Set up the async namespace, run the function
             .then(span => {
             this.asyncNamespace.set("scout.span", span);
             result = cb();
             ranCb = true;
+            return span;
         })
-            .then(() => span.stop())
+            // Stop the span if it hasn't been stopped already
+            .then(span => span.stop())
+            // Update the async namespace
             .then(() => {
             this.asyncNamespace.set("scout.span", null);
             return result;
         })
             .catch(err => {
-            if (!this.ranCb) {
-                cb();
+            if (!ranCb) {
+                result = cb();
             }
             this.logFn("[scout] failed to send start span", types_1.LogLevel.Error);
+            return result;
         });
     }
     /**
@@ -209,6 +214,14 @@ class Scout extends events_1.EventEmitter {
         return this.asyncNamespace.get("scout.request");
     }
     /**
+     * Reterieve the current span using the async hook/continuation local storage machinery
+     *
+     * @returns {ScoutSpan} the current active span
+     */
+    getCurrentSpan() {
+        return this.asyncNamespace.get("scout.span");
+    }
+    /**
      * Perform some action within a context
      *
      */
@@ -217,12 +230,13 @@ class Scout extends events_1.EventEmitter {
         return new Promise((resolve) => {
             let result;
             let req;
+            let ranCb = false;
             this.asyncNamespace.run(() => {
                 this.startRequest()
                     .then(req => {
                     this.asyncNamespace.set("scout.request", req);
                     result = cb();
-                    this.ranCb = true;
+                    ranCb = true;
                 })
                     .then(() => req.stop())
                     .then(() => {
@@ -230,10 +244,10 @@ class Scout extends events_1.EventEmitter {
                     return result;
                 })
                     .catch(err => {
-                    if (!this.ranCb) {
-                        cb();
+                    if (!ranCb) {
+                        result = cb();
                     }
-                    resolve();
+                    resolve(result);
                     this.logFn("[scout] failed to send start request request", types_1.LogLevel.Error);
                 });
             });

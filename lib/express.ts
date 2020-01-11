@@ -110,63 +110,64 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                     return;
                 }
 
+                const name = `Controller/${reqMethod} ${path}`;
                 // Create a trace
-                scout
-                    .startRequest()
-                // Tag the request with the pageh
-                    .then(req => {
-                        const tag: ScoutTag = {
-                            name: Constants.SCOUT_PATH_TAG,
-                            value: scout.filterRequestPath(reqPath),
-                        };
-
-                        return req.addContext([tag]);
-                    })
-                // Perform the rest of the request tracing
-                    .then((scoutRequest: ScoutRequest) => {
-                        // Save the scout request onto the request object
-                        req.scout = Object.assign(req.scout || {}, {request: req});
-
-                        // Set up the request timeout
-                        if (requestTimeoutMs > 0) {
-                            setTimeout(() => {
-                                // Add context to indicate request as timed out
-                                scoutRequest
-                                    .addContext([{name: "timeout", value: "true"}])
-                                    .then(() => scoutRequest.finishAndSend())
-                                    .catch(() => {
-                                        if (opts && opts.logFn) {
-                                            opts.logFn(
-                                                `[scout] Failed to finish request that timed out: ${scoutRequest}`,
-                                                LogLevel.Warn,
-                                            );
-                                        }
-                                    });
-                            }, requestTimeoutMs);
+                scout.transaction(name, () => {
+                    const scoutReq = scout.getCurrentRequest();
+                    if (!scoutReq) {
+                        if (opts && opts.logFn) {
+                            opts.logFn(`[scout] Failed to start transaction, no current request`, LogLevel.Warn);
                         }
+                        next();
+                        return;
+                    }
 
-                        // Set up handler to act on end of request
-                        onFinished(res, (err, res) => {
-                            // Finish & send request
-                            scoutRequest.finishAndSend();
-                        });
+                    const pathTag: ScoutTag = {
+                        name: Constants.SCOUT_PATH_TAG,
+                        value: scout.filterRequestPath(reqPath),
+                    };
 
-                        // Start a span for the request
-                        scoutRequest
-                            .startChildSpan(`Controller/${reqMethod} ${path}`)
-                            .then(rootSpan => {
+                    // Add the path context
+                    scoutReq.addContext([pathTag])
+                    // Perform the rest of the request tracing
+                        .then(() => {
+                            // Save the scout request onto the request object
+                            req.scout = Object.assign(req.scout || {}, {request: req});
+
+                            // Set up the request timeout
+                            if (requestTimeoutMs > 0) {
+                                setTimeout(() => {
+                                    // Add context to indicate request as timed out
+                                    scoutReq
+                                        .addContext([{name: "timeout", value: "true"}])
+                                        .then(() => scoutReq.finishAndSend())
+                                        .catch(() => {
+                                            if (opts && opts.logFn) {
+                                                opts.logFn(
+                                                    `[scout] Failed to finish request that timed out: ${scoutReq}`,
+                                                    LogLevel.Warn,
+                                                );
+                                            }
+                                        });
+                                }, requestTimeoutMs);
+                            }
+
+                            // Set up handler to act on end of request
+                            onFinished(res, (err, res) => {
+                                // Finish & send request
+                                scoutReq.finishAndSend();
+                            });
+
+                            // Start a span for the request
+                            scout.instrument(name, () => {
+                                const rootSpan = scout.getCurrentSpan();
                                 // Add the span to the request object
                                 Object.assign(req.scout, {rootSpan});
                                 next();
-                            })
-                            .catch(() => next());
-                    })
-                    .catch((err: Error) => {
-                        if (opts && opts.logFn) {
-                            opts.logFn(`[scout] Error setting up tracing for request:\n ${err}`, LogLevel.Error);
-                        }
-                        next();
-                    });
+                            });
+
+                        });
+                });
             })
         // Continue even if getting scout fails
             .catch((err: Error) => {
