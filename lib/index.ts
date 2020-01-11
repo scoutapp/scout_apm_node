@@ -1,6 +1,6 @@
-export { 
-    Scout, 
-    ScoutRequest, 
+export {
+    Scout,
+    ScoutRequest,
     ScoutSpan,
     ScoutEventRequestSentData,
 } from "./scout";

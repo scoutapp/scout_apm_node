@@ -11,7 +11,7 @@ import {
 
 import ScoutRequest from "./request";
 
-import { 
+import {
     Scout,
     sendStartSpan,
     sendStopSpan,

@@ -20,7 +20,6 @@ import {
     sendStopSpan,
 } from "./index";
 
-
 import * as Constants from "../constants";
 import * as Errors from "../errors";
 
