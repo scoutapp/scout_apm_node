@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const uuid_1 = require("uuid");
 const types_1 = require("../types");
 const span_1 = require("./span");
+const index_1 = require("./index");
 const Constants = require("../constants");
 const Errors = require("../errors");
 class ScoutRequest {
@@ -112,13 +113,13 @@ class ScoutRequest {
             this.logFn(`[scout/request/${this.id}] No scout instance available, send failed`);
             return Promise.resolve(this);
         }
-        return inst.sendStartRequest(this)
+        return index_1.sendStartRequest(inst, this)
             // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
             // Send tags
-            .then(() => Promise.all(Object.entries(this.tags).map(([name, value]) => inst.sendTagRequest(this, name, value))))
+            .then(() => Promise.all(Object.entries(this.tags).map(([name, value]) => index_1.sendTagRequest(inst, this, name, value))))
             // End the span
-            .then(() => inst.sendStopRequest(this))
+            .then(() => index_1.sendStopRequest(inst, this))
             .then(() => this.sent = true)
             .then(() => this)
             .catch(err => {

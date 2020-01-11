@@ -1,4 +1,9 @@
-export * from "./scout";
+export { 
+    Scout, 
+    ScoutRequest, 
+    ScoutSpan,
+    ScoutEventRequestSentData,
+} from "./scout";
 
 export {
     AgentEvent as ScoutAgentEvent,

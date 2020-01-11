@@ -3,7 +3,10 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(require("./scout"));
+var scout_1 = require("./scout");
+exports.Scout = scout_1.Scout;
+exports.ScoutRequest = scout_1.ScoutRequest;
+exports.ScoutSpan = scout_1.ScoutSpan;
 var types_1 = require("./types");
 exports.ScoutAgentEvent = types_1.AgentEvent;
 exports.ScoutEvent = types_1.ScoutEvent;

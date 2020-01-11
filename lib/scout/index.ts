@@ -102,6 +102,14 @@ export class Scout extends EventEmitter {
         return Object.assign({}, this.applicationMetadata);
     }
 
+    public getConfig(): ScoutConfiguration {
+        return Object.assign({}, this.config) as ScoutConfiguration;
+    }
+
+    public log(msg: string, lvl: LogLevel) {
+        this.logFn(msg, lvl);
+    }
+
     public setup(): Promise<this> {
         // Return early if agent has already been set up
         if (this.agent) { return Promise.resolve(this); }
@@ -249,6 +257,7 @@ export class Scout extends EventEmitter {
      * @returns void
      */
     public transaction(name: string, cb: () => any): Promise<any> {
+        this.logFn(`[scout] Starting transaction [${name}]`, LogLevel.Debug);
         return this.withAsyncRequestContext(cb);
     }
 
@@ -260,6 +269,8 @@ export class Scout extends EventEmitter {
      * @returns {Promise<any>} a promsie that resolves to the result of the callback
      */
     public instrument(operation: string, cb: () => any): Promise<any> {
+        this.logFn(`[scout] Instrumenting operation [${operation}]`, LogLevel.Debug);
+
         const parent = this.getCurrentSpan() || this.getCurrentRequest();
         // If no request is currently underway
         if (!parent) {
@@ -273,6 +284,11 @@ export class Scout extends EventEmitter {
         let result;
         let ranCb = false;
 
+        this.logFn(
+            `[scout] Starting child span for operation [${operation}], parent id [${parent.id}]`,
+            LogLevel.Debug,
+        );
+
         return parent
         // Start the child span
             .startChildSpan(operation)
@@ -284,7 +300,10 @@ export class Scout extends EventEmitter {
                 return span;
             })
         // Stop the span if it hasn't been stopped already
-            .then(span => span.stop())
+            .then(span => {
+                this.logFn(`[scout] Stopping & sending span with ID [${span.id}]`, LogLevel.Debug);
+                return span.stop();
+            })
         // Update the async namespace
             .then(() => {
                 this.asyncNamespace.set("scout.span", null);
@@ -327,13 +346,20 @@ export class Scout extends EventEmitter {
             let ranCb = false;
 
             this.asyncNamespace.run(() => {
+                this.logFn(`[scout] Starting request in async namespace...`, LogLevel.Debug);
+
                 this.startRequest()
-                    .then(req => {
+                    .then(r => req = r)
+                    .then(() => {
+                        this.logFn(`[scout] Request started w/ ID [${req.id}]`, LogLevel.Debug);
                         this.asyncNamespace.set("scout.request", req);
                         result = cb();
                         ranCb = true;
                     })
-                    .then(() => req.stop())
+                    .then(() => {
+                        this.logFn(`[scout] Finishing and sending request with ID [${req.id}]`, LogLevel.Debug);
+                        return req.finishAndSend();
+                    })
                     .then(() => {
                         this.asyncNamespace.set("scout.request", null);
                         return result;
@@ -341,7 +367,7 @@ export class Scout extends EventEmitter {
                     .catch(err => {
                         if (!ranCb) { result = cb(); }
                         resolve(result);
-                        this.logFn("[scout] failed to send start request request", LogLevel.Error);
+                        this.logFn(`[scout] failed to send start request request: ${err}`, LogLevel.Error);
                     });
             });
         });
@@ -356,139 +382,6 @@ export class Scout extends EventEmitter {
     private startRequest(opts?: ScoutRequestOptions): Promise<ScoutRequest> {
         const request = new ScoutRequest(Object.assign({}, {scoutInstance: this}, opts || {}));
         return request.start();
-    }
-
-    /**
-     * Send the StartRequest message to the agent
-     *
-     * @param {ScoutRequest} req - The original request
-     * @returns {Promise<ScoutRequest>} the passed in request
-     */
-    private sendStartRequest(req: ScoutRequest): Promise<ScoutRequest> {
-        const startReq = new Requests.V1StartRequest({
-            requestId: req.id,
-            timestamp: req.getTimestamp(),
-        });
-
-        return this
-            .sendThroughAgent(startReq)
-            .then(() => req)
-            .catch(err => {
-                this.logFn("[scout] failed to send start request request", LogLevel.Error);
-                return req;
-            });
-    }
-
-    /**
-     * Send the StopRequest message to the agent
-     *
-     * @param {ScoutRequest} req - The original request
-     * @returns {Promise<ScoutRequest>} the passed in request
-     */
-    private sendStopRequest(req: ScoutRequest): Promise<ScoutRequest> {
-        const stopReq = new Requests.V1FinishRequest(req.id);
-
-        return this
-            .sendThroughAgent(stopReq)
-            .then(() => {
-                this.emit(ScoutEvent.RequestSent, {request: req} as ScoutEventRequestSentData);
-
-                return req;
-            })
-            .catch(err => {
-                this.logFn("[scout] failed to send stop request request", LogLevel.Error);
-                return req;
-            });
-    }
-
-    /**
-     * Send the TagRequest message to the agent for a single tag
-     *
-     * @param {ScoutRequest} req - The original request
-     * @param {String} name - The tag name
-     * @param {String} value - The tag value
-     * @returns {Promise<void>} A promise which resolves when the message has been sent
-     */
-    private sendTagRequest(req: ScoutRequest, name: string, value: string): Promise<void> {
-        const tagReq = new Requests.V1TagRequest(name, value, req.id);
-
-        return this
-            .sendThroughAgent(tagReq)
-            .then(() => undefined)
-            .catch(err => {
-                this.logFn("[scout] failed to send tag request", LogLevel.Error);
-            });
-    }
-
-    /**
-     * Send the StartSpan message to the agent
-     *
-     * @param {ScoutSpan} span - The original span
-     * @returns {Promise<ScoutSpan>} the passed in span
-     */
-    private sendStartSpan(span: ScoutSpan): Promise<ScoutSpan> {
-        const opts = {
-            spanId: span.id,
-            parentId: span.parent ? span.parent.id : undefined,
-            timestamp: span.getTimestamp(),
-        };
-
-        const startSpanReq = new Requests.V1StartSpan(
-            span.operation,
-            span.request.id,
-            opts,
-        );
-
-        return this
-            .sendThroughAgent(startSpanReq)
-            .then(() => span)
-            .catch(err => {
-                this.logFn("[scout] failed to send start span request", LogLevel.Error);
-                return span;
-            });
-    }
-
-    /**
-     * Send the TagSpan message to the agent message to the agent
-     *
-     * @param {ScoutSpan} span - The original span
-     * @param {String} name - The tag name
-     * @param {String} value - The tag value
-     * @returns {Promise<void>} A promise which resolves when the message has been
-     */
-    private sendTagSpan(span: ScoutSpan, name: string, value: string): Promise<void> {
-        const tagSpanReq = new Requests.V1TagSpan(
-            name,
-            value,
-            span.id,
-            span.request.id,
-        );
-
-        return this
-            .sendThroughAgent(tagSpanReq)
-            .then(() => undefined)
-            .catch(err => {
-                this.logFn("[scout] failed to send tag span request", LogLevel.Error);
-                return undefined;
-            });
-    }
-
-    /**
-     * Send the StopSpan message to the agent
-     *
-     * @param {ScoutSpan} span - The original span
-     * @returns {Promise<ScoutSpan>} the passed in request
-     */
-    private sendStopSpan(span: ScoutSpan): Promise<ScoutSpan> {
-        const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id);
-
-        return this
-            .sendThroughAgent(stopSpanReq)
-            .then(() => span)
-            .catch(err => {
-                this.logFn("[scout] failed to send stop span request", LogLevel.Error);
-                return span;
-            });
     }
 
     private getSocketPath() {
@@ -506,8 +399,7 @@ export class Scout extends EventEmitter {
 
     // Helper for sending app metadata
     private sendAppMetadataEvent(): Promise<void> {
-        return this
-            .sendThroughAgent(this.buildAppMetadataEvent(), {async: true})
+        return sendThroughAgent(this, this.buildAppMetadataEvent(), {async: true})
             .then(() => undefined)
             .catch(err => {
                 this.logFn("[scout] failed to send start request request", LogLevel.Error);
@@ -515,8 +407,7 @@ export class Scout extends EventEmitter {
     }
 
     private sendRegistrationRequest(): Promise<void> {
-        return this
-            .sendThroughAgent(new Requests.V1Register(
+        return sendThroughAgent(this, new Requests.V1Register(
                 this.config.name || "",
                 this.config.key || "",
                 APIVersion.V1,
@@ -525,34 +416,6 @@ export class Scout extends EventEmitter {
             .catch(err => {
                 this.logFn("[scout] failed to send app registration request", LogLevel.Error);
             });
-    }
-
-    /**
-     * Helper function for sending a given request through the agent
-     *
-     * @param {T extends BaseAgentRequest} msg - The message to send
-     * @returns {Promise<T extends BaseAgentResponse>} resp - The message to send
-     */
-    private sendThroughAgent<T extends BaseAgentRequest, R extends BaseAgentResponse>(
-        msg: T,
-        opts?: {async: boolean},
-    ): Promise<R | void> {
-        if (!this.hasAgent()) {
-            const err = new Errors.Disconnected("No agent is present, please run .setup()");
-            this.logFn(err.message, LogLevel.Error);
-            return Promise.reject(err);
-        }
-
-        if (!this.config.monitor) {
-            this.logFn("[scout] monitoring disabled, not sending tag request", LogLevel.Warn);
-            return Promise.reject(new Errors.MonitoringDisabled());
-        }
-
-        if (opts && opts.async) {
-            return this.agent.sendAsync(msg);
-        }
-
-        return this.agent.send(msg) as Promise<void | R>;
     }
 
     // Helper function for setting up an agent to be part of the scout instance
@@ -567,4 +430,172 @@ export class Scout extends EventEmitter {
         return Promise.resolve();
     }
 
+}
+
+// The functions below are exports for module-level use. They need to be made externally available for
+// code in this module but *not* as part of the public API for a Scout instance.
+
+/**
+ * Send the StartRequest message to the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutRequest} req - The original request
+ * @returns {Promise<ScoutRequest>} the passed in request
+ */
+export function sendStartRequest(scout: Scout, req: ScoutRequest): Promise<ScoutRequest> {
+    const startReq = new Requests.V1StartRequest({
+        requestId: req.id,
+        timestamp: req.getTimestamp(),
+    });
+
+    return sendThroughAgent(scout, startReq)
+        .then(() => req)
+        .catch(err => {
+            scout.log(`[scout] failed to send start request request: ${err}`, LogLevel.Error);
+            return req;
+        });
+}
+
+/**
+ * Send the StopRequest message to the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutRequest} req - The original request
+ * @returns {Promise<ScoutRequest>} the passed in request
+ */
+export function sendStopRequest(scout: Scout, req: ScoutRequest): Promise<ScoutRequest> {
+    const stopReq = new Requests.V1FinishRequest(req.id);
+
+    return sendThroughAgent(scout, stopReq)
+        .then(() => {
+            scout.emit(ScoutEvent.RequestSent, {request: req} as ScoutEventRequestSentData);
+
+            return req;
+        })
+        .catch(err => {
+            scout.log("[scout] failed to send stop request request", LogLevel.Error);
+            return req;
+        });
+}
+
+/**
+ * Send the TagRequest message to the agent for a single tag
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutRequest} req - The original request
+ * @param {String} name - The tag name
+ * @param {String} value - The tag value
+ * @returns {Promise<void>} A promise which resolves when the message has been sent
+ */
+export function sendTagRequest(scout: Scout, req: ScoutRequest, name: string, value: string): Promise<void> {
+    const tagReq = new Requests.V1TagRequest(name, value, req.id);
+
+    return sendThroughAgent(scout, tagReq)
+        .then(() => undefined)
+        .catch(err => {
+            scout.log("[scout] failed to send tag request", LogLevel.Error);
+        });
+}
+
+/**
+ * Send the StartSpan message to the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutSpan} span - The original span
+ * @returns {Promise<ScoutSpan>} the passed in span
+ */
+export function sendStartSpan(scout: Scout, span: ScoutSpan): Promise<ScoutSpan> {
+    const opts = {
+        spanId: span.id,
+        parentId: span.parent ? span.parent.id : undefined,
+        timestamp: span.getTimestamp(),
+    };
+
+    const startSpanReq = new Requests.V1StartSpan(
+        span.operation,
+        span.request.id,
+        opts,
+    );
+
+    return sendThroughAgent(scout, startSpanReq)
+        .then(() => span)
+        .catch(err => {
+            scout.log("[scout] failed to send start span request", LogLevel.Error);
+            return span;
+        });
+}
+
+/**
+ * Send the TagSpan message to the agent message to the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutSpan} span - The original span
+ * @param {String} name - The tag name
+ * @param {String} value - The tag value
+ * @returns {Promise<void>} A promise which resolves when the message has been
+ */
+export function sendTagSpan(scout: Scout, span: ScoutSpan, name: string, value: string): Promise<void> {
+    const tagSpanReq = new Requests.V1TagSpan(
+        name,
+        value,
+        span.id,
+        span.request.id,
+    );
+
+    return sendThroughAgent(scout, tagSpanReq)
+        .then(() => undefined)
+        .catch(err => {
+            scout.log("[scout] failed to send tag span request", LogLevel.Error);
+            return undefined;
+        });
+}
+
+/**
+ * Send the StopSpan message to the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutSpan} span - The original span
+ * @returns {Promise<ScoutSpan>} the passed in request
+ */
+export function sendStopSpan(scout: Scout, span: ScoutSpan): Promise<ScoutSpan> {
+    const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id);
+
+    return sendThroughAgent(scout, stopSpanReq)
+        .then(() => span)
+        .catch(err => {
+            scout.log("[scout] failed to send stop span request", LogLevel.Error);
+            return span;
+        });
+}
+
+/**
+ * Helper function for sending a given request through the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {T extends BaseAgentRequest} msg - The message to send
+ * @returns {Promise<T extends BaseAgentResponse>} resp - The message to send
+ */
+export function sendThroughAgent<T extends BaseAgentRequest, R extends BaseAgentResponse>(
+    scout: Scout,
+    msg: T,
+    opts?: {async: boolean},
+): Promise<R | void> {
+    if (!scout.hasAgent()) {
+        const err = new Errors.Disconnected("No agent is present, please run .setup()");
+        scout.log(err.message, LogLevel.Error);
+        return Promise.reject(err);
+    }
+    const agent = scout.getAgent();
+
+    const config = scout.getConfig();
+    if (!config.monitor) {
+        scout.log("[scout] monitoring disabled, not sending tag request", LogLevel.Warn);
+        return Promise.reject(new Errors.MonitoringDisabled());
+    }
+
+    if (opts && opts.async) {
+        return agent.sendAsync(msg);
+    }
+
+    return agent.send(msg) as Promise<void | R>;
 }

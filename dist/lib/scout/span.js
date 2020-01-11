@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const uuid_1 = require("uuid");
 const types_1 = require("../types");
+const index_1 = require("./index");
 const Constants = require("../constants");
 const Errors = require("../errors");
 class ScoutSpan {
@@ -103,13 +104,13 @@ class ScoutSpan {
             return Promise.resolve(this);
         }
         // Start Span
-        return inst.sendStartSpan(this)
+        return index_1.sendStartSpan(inst, this)
             // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
             // Send tags
-            .then(() => Promise.all(Object.entries(this.tags).map(([name, value]) => inst.sendTagSpan(this, name, value))))
+            .then(() => Promise.all(Object.entries(this.tags).map(([name, value]) => index_1.sendTagSpan(inst, this, name, value))))
             // End the span
-            .then(() => inst.sendStopSpan(this))
+            .then(() => index_1.sendStopSpan(inst, this))
             .then(() => this.sent = true)
             .then(() => this)
             .catch(err => {

@@ -29,45 +29,45 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
 
-test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}, t => {
-    const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
-        monitor: true,
-    }));
+// test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}, t => {
+//     const scout = new Scout(buildScoutConfiguration({
+//         allowShutdown: true,
+//         monitor: true,
+//     }));
 
-    // Set up a listener for the scout request that will contain the DB record
-    const listener = (data: ScoutEventRequestSentData) => {
-        scout.removeListener(ScoutEvent.RequestSent, listener);
+//     // Set up a listener for the scout request that will contain the DB record
+//     const listener = (data: ScoutEventRequestSentData) => {
+//         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        // TODO: look up the database span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => {
-                const dbSpan = spans.find(s => {
-                    return s.operation.includes("database");
-                });
+//         // TODO: look up the database span from the request
+//         data.request
+//             .getChildSpans()
+//             .then(spans => {
+//                 const dbSpan = spans.find(s => {
+//                     return s.operation.includes("database");
+//                 });
 
-                t.assert(dbSpan, "db span was present on request");
-            })
-            .then(() => TestUtil.shutdownScout(t, scout))
-            .catch(err => TestUtil.shutdownScout(t, scout, err));
-    };
-    scout.on(ScoutEvent.RequestSent, listener);
+//                 t.assert(dbSpan, "db span was present on request");
+//             })
+//             .then(() => TestUtil.shutdownScout(t, scout))
+//             .catch(err => TestUtil.shutdownScout(t, scout, err));
+//     };
+//     scout.on(ScoutEvent.RequestSent, listener);
 
-    let req: ScoutRequest;
+//     let req: ScoutRequest;
 
-    scout
-        .setup()
-    // Start a request
-        .then(() => scout.startRequest())
-        .then(r => req = r)
-    // Connect to the postgres & perform a query
-        .then(() => TestUtil.makeConnectedPGClient(() => PG_CONTAINER_AND_OPTS))
-        .then(client => client.query("SELECT NOW()"))
-    // Finish & Send the request
-        .then(() => req.finishAndSend())
-        .catch(err => TestUtil.shutdownScout(t, scout, err));
-});
+//     scout
+//         .setup()
+//     // Start a request
+//         .then(() => scout.startRequest())
+//         .then(r => req = r)
+//     // Connect to the postgres & perform a query
+//         .then(() => TestUtil.makeConnectedPGClient(() => PG_CONTAINER_AND_OPTS))
+//         .then(client => client.query("SELECT NOW()"))
+//     // Finish & Send the request
+//         .then(() => req.finishAndSend())
+//         .catch(err => TestUtil.shutdownScout(t, scout, err));
+// });
 
 // Pseudo test that will stop a containerized postgres instance that was started
 TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);

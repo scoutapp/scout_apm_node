@@ -33,6 +33,7 @@ const getPort = require("get-port");
 // Wait a little longer for requests that use express
 export const EXPRESS_TEST_TIMEOUT = 2000;
 export const PG_TEST_TIMEOUT = 3000;
+export const DASHBOARD_SEND_TIMEOUT = 1000 * 60 * 3; // 3 minutes
 
 // Helper for downloading and creating an agent
 export function bootstrapExternalProcessAgent(
