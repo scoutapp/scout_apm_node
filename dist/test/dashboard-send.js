@@ -21,13 +21,14 @@ test("Scout sends basic controller span to dashboard", { timeout: TestUtil.DASHB
     if (!config.name) {
         throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable");
     }
-    const scout = new lib_1.Scout(config, { appMeta, logFn: lib_1.consoleLogFn });
+    const scout = new lib_1.Scout(config, { appMeta });
     // Set up a listener to wait for scout to report the transaction
     const listener = (message) => {
         // Ignore requests that are sent that aren't span starts
         if (!message || message.type !== types_1.AgentRequestType.V1FinishRequest) {
             return;
         }
+        t.pass("Witnessed V1FinishRequest being sent");
         scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
         TestUtil.waitMinutes(2)
