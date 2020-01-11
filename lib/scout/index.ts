@@ -69,7 +69,8 @@ export class Scout extends EventEmitter {
     private processOptions: ProcessOptions;
     private applicationMetadata: ApplicationMetadata;
     private canUseAsyncHooks: boolean = false;
-    private nrcNaemspace: Namespace;
+
+    private asyncNamespace: any;
 
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         super();
@@ -252,19 +253,75 @@ export class Scout extends EventEmitter {
     }
 
     /**
+     * Start an insrumentation, withing a given transaction
+     *
+     * @param {string} operation
+     * @param {Function} cb
+     * @returns {Promise<any>} a promsie that resolves to the result of the callback
+     */
+    public instrument(operation: string, cb: () => any): Promise<any> {
+        const parent = this.getCurrentSpan() || this.getCurrentRequest();
+        // If no request is currently underway
+        if (!parent) {
+            return Promise.resolve(cb());
+            this.logFn(
+                "[scout] Failed to start instrumentation, no current transaction/parent instrumentation",
+                LogLevel.Error,
+            );
+            return;
+        }
+
+        let result;
+        let ranCb = false;
+
+        return parent
+            .startChildSpan(operation)
+            .then(span => {
+                this.asyncNamespace.set("scout.span", span);
+                result = cb();
+                ranCb = true;
+            })
+            .then(() => span.stop())
+            .then(() => {
+                this.asyncNamespace.set("scout.span", null);
+                return result;
+            })
+            .catch(err => {
+                if (!this.ranCb) { cb(); }
+                this.logFn("[scout] failed to send start span", LogLevel.Error);
+            });
+    }
+
+    /**
+     * Reterieve the current request using the async hook/continuation local storage machinery
+     *
+     * @returns {ScoutRequest} the current active request
+     */
+    public getCurrentRequest(): ScoutRequest | null {
+        return this.asyncNamespace.get("scout.request");
+    }
+
+    /**
      * Perform some action within a context
      *
      */
     private withAsyncRequestContext(cb: () => any): Promise<any> {
         // If we can use async hooks then node-request-context is usable
         return new Promise((resolve) => {
-            this.namespace.run(() => {
+            let result;
+            let req: ScoutRequest;
+
+            this.asyncNamespace.run(() => {
                 this.startRequest()
                     .then(req => {
-                        nrcNamespace.set("scout.request", req);
-                        const result = cb();
+                        this.asyncNamespace.set("scout.request", req);
+                        result = cb();
                         this.ranCb = true;
-                        resolve(result);
+                    })
+                    .then(() => req.stop())
+                    .then(() => {
+                        this.asyncNamespace.set("scout.request", null);
+                        return result;
                     })
                     .catch(err => {
                         if (!this.ranCb) { cb(); }

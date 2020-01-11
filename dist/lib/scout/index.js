@@ -165,19 +165,69 @@ class Scout extends events_1.EventEmitter {
         return this.withAsyncRequestContext(cb);
     }
     /**
+     * Start an insrumentation, withing a given transaction
+     *
+     * @param {string} operation
+     * @param {Function} cb
+     * @returns {Promise<any>} a promsie that resolves to the result of the callback
+     */
+    instrument(operation, cb) {
+        const parent = this.getCurrentSpan() || this.getCurrentRequest();
+        // If no request is currently underway
+        if (!parent) {
+            return Promise.resolve(cb());
+            this.logFn("[scout] Failed to start instrumentation, no current transaction/parent instrumentation", types_1.LogLevel.Error);
+            return;
+        }
+        let result;
+        let ranCb = false;
+        return parent
+            .startChildSpan(operation)
+            .then(span => {
+            this.asyncNamespace.set("scout.span", span);
+            result = cb();
+            ranCb = true;
+        })
+            .then(() => span.stop())
+            .then(() => {
+            this.asyncNamespace.set("scout.span", null);
+            return result;
+        })
+            .catch(err => {
+            if (!this.ranCb) {
+                cb();
+            }
+            this.logFn("[scout] failed to send start span", types_1.LogLevel.Error);
+        });
+    }
+    /**
+     * Reterieve the current request using the async hook/continuation local storage machinery
+     *
+     * @returns {ScoutRequest} the current active request
+     */
+    getCurrentRequest() {
+        return this.asyncNamespace.get("scout.request");
+    }
+    /**
      * Perform some action within a context
      *
      */
     withAsyncRequestContext(cb) {
         // If we can use async hooks then node-request-context is usable
         return new Promise((resolve) => {
-            this.namespace.run(() => {
+            let result;
+            let req;
+            this.asyncNamespace.run(() => {
                 this.startRequest()
                     .then(req => {
-                    nrcNamespace.set("scout.request", req);
-                    const result = cb();
+                    this.asyncNamespace.set("scout.request", req);
+                    result = cb();
                     this.ranCb = true;
-                    resolve(result);
+                })
+                    .then(() => req.stop())
+                    .then(() => {
+                    this.asyncNamespace.set("scout.request", null);
+                    return result;
                 })
                     .catch(err => {
                     if (!this.ranCb) {
