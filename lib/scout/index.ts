@@ -119,7 +119,7 @@ export class Scout extends EventEmitter {
         // Ensure coreAgentVersion is present
         if (!this.config.coreAgentVersion) {
             const err = new Error("No core agent version specified!");
-            this.logFn(err.message, LogLevel.Error);
+            this.log(err.message, LogLevel.Error);
             return Promise.reject(err);
         }
 
@@ -144,7 +144,7 @@ export class Scout extends EventEmitter {
                     path.dirname(this.binPath),
                     "core-agent.sock",
                 );
-                this.logFn(`[scout] using socket path [${this.socketPath}]`, LogLevel.Debug);
+                this.log(`[scout] using socket path [${this.socketPath}]`, LogLevel.Debug);
             })
         // Build options for the agent and create the agent
             .then(() => {
@@ -158,19 +158,19 @@ export class Scout extends EventEmitter {
             })
         // Start, connect, and register
             .then(() => {
-                this.logFn(`[scout] starting process w/ bin @ path [${this.binPath}]`, LogLevel.Debug);
-                this.logFn(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, LogLevel.Debug);
+                this.log(`[scout] starting process w/ bin @ path [${this.binPath}]`, LogLevel.Debug);
+                this.log(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, LogLevel.Debug);
                 return this.agent.start();
             })
-            .then(() => this.logFn("[scout] agent successfully started", LogLevel.Debug))
+            .then(() => this.log("[scout] agent successfully started", LogLevel.Debug))
             .then(() => this.agent.connect())
-            .then(() => this.logFn("[scout] successfully connected to agent", LogLevel.Debug))
+            .then(() => this.log("[scout] successfully connected to agent", LogLevel.Debug))
             .then(() => {
                 if (!this.config.name) {
-                    this.logFn("[scout] 'name' configuration value missing", LogLevel.Warn);
+                    this.log("[scout] 'name' configuration value missing", LogLevel.Warn);
                 }
                 if (!this.config.key) {
-                    this.logFn("[scout] 'key' missing in configuration", LogLevel.Warn);
+                    this.log("[scout] 'key' missing in configuration", LogLevel.Warn);
                 }
             })
         // Register the application
@@ -188,7 +188,7 @@ export class Scout extends EventEmitter {
 
     public shutdown(): Promise<void> {
         if (!this.agent) {
-            this.logFn("[scout] shutdown called but no agent to shutdown is present", LogLevel.Error);
+            this.log("[scout] shutdown called but no agent to shutdown is present", LogLevel.Error);
             return Promise.reject(new Errors.NoAgentPresent());
         }
 
@@ -216,7 +216,7 @@ export class Scout extends EventEmitter {
      * @returns {boolean} whether the path should be ignored
      */
     public ignoresPath(path: string): boolean {
-        this.logFn("[scout] checking path [${path}] against ignored paths", LogLevel.Trace);
+        this.log("[scout] checking path [${path}] against ignored paths", LogLevel.Trace);
 
         // If ignore isn't specified or if empty, then nothing is ignored
         if (!this.config.ignore || this.config.ignore.length === 0) {
@@ -226,7 +226,7 @@ export class Scout extends EventEmitter {
         const matchingPrefix = this.config.ignore.find(prefix => path.indexOf(prefix) === 0);
 
         if (matchingPrefix) {
-            this.logFn("[scout] ignoring path [${path}] matching prefix [${matchingPrefix}]", LogLevel.Debug);
+            this.log("[scout] ignoring path [${path}] matching prefix [${matchingPrefix}]", LogLevel.Debug);
             this.emit(ScoutEvent.IgnoredPathDetected, path);
         }
 
@@ -257,7 +257,7 @@ export class Scout extends EventEmitter {
      * @returns void
      */
     public transaction(name: string, cb: () => any): Promise<any> {
-        this.logFn(`[scout] Starting transaction [${name}]`, LogLevel.Debug);
+        this.log(`[scout] Starting transaction [${name}]`, LogLevel.Debug);
 
         let result;
         let ranContext = false;
@@ -282,12 +282,12 @@ export class Scout extends EventEmitter {
      * @returns {Promise<any>} a promsie that resolves to the result of the callback
      */
     public instrument(operation: string, cb: () => any): Promise<any> {
-        this.logFn(`[scout] Instrumenting operation [${operation}]`, LogLevel.Debug);
+        this.log(`[scout] Instrumenting operation [${operation}]`, LogLevel.Debug);
 
         const parent = this.getCurrentSpan() || this.getCurrentRequest();
         // If no request is currently underway
         if (!parent) {
-            this.logFn(
+            this.log(
                 "[scout] Failed to start instrumentation, no current transaction/parent instrumentation",
                 LogLevel.Error,
             );
@@ -297,7 +297,7 @@ export class Scout extends EventEmitter {
         let result;
         let ranCb = false;
 
-        this.logFn(
+        this.log(
             `[scout] Starting child span for operation [${operation}], parent id [${parent.id}]`,
             LogLevel.Debug,
         );
@@ -314,7 +314,7 @@ export class Scout extends EventEmitter {
             })
         // Stop the span if it hasn't been stopped already
             .then(span => {
-                this.logFn(`[scout] Stopping & sending span with ID [${span.id}]`, LogLevel.Debug);
+                this.log(`[scout] Stopping & sending span with ID [${span.id}]`, LogLevel.Debug);
                 return span.stop();
             })
         // Update the async namespace
@@ -324,7 +324,7 @@ export class Scout extends EventEmitter {
             })
             .catch(err => {
                 if (!ranCb) { result = cb(); }
-                this.logFn("[scout] failed to send start span", LogLevel.Error);
+                this.log("[scout] failed to send start span", LogLevel.Error);
                 return result;
             });
     }
@@ -359,18 +359,18 @@ export class Scout extends EventEmitter {
             let ranCb = false;
 
             this.asyncNamespace.run(() => {
-                this.logFn(`[scout] Starting request in async namespace...`, LogLevel.Debug);
+                this.log(`[scout] Starting request in async namespace...`, LogLevel.Debug);
 
                 this.startRequest()
                     .then(r => req = r)
                     .then(() => {
-                        this.logFn(`[scout] Request started w/ ID [${req.id}]`, LogLevel.Debug);
+                        this.log(`[scout] Request started w/ ID [${req.id}]`, LogLevel.Debug);
                         this.asyncNamespace.set("scout.request", req);
                         result = cb();
                         ranCb = true;
                     })
                     .then(() => {
-                        this.logFn(`[scout] Finishing and sending request with ID [${req.id}]`, LogLevel.Debug);
+                        this.log(`[scout] Finishing and sending request with ID [${req.id}]`, LogLevel.Debug);
                         return req.finishAndSend();
                     })
                     .then(() => {
@@ -380,7 +380,7 @@ export class Scout extends EventEmitter {
                     .catch(err => {
                         if (!ranCb) { result = cb(); }
                         resolve(result);
-                        this.logFn(`[scout] failed to send start request request: ${err}`, LogLevel.Error);
+                        this.log(`[scout] failed to send start request request: ${err}`, LogLevel.Error);
                     });
             });
         });
@@ -415,7 +415,7 @@ export class Scout extends EventEmitter {
         return sendThroughAgent(this, this.buildAppMetadataEvent(), {async: true})
             .then(() => undefined)
             .catch(err => {
-                this.logFn("[scout] failed to send start request request", LogLevel.Error);
+                this.log("[scout] failed to send start request request", LogLevel.Error);
             });
     }
 
@@ -427,7 +427,7 @@ export class Scout extends EventEmitter {
             ))
             .then(() => undefined)
             .catch(err => {
-                this.logFn("[scout] failed to send app registration request", LogLevel.Error);
+                this.log("[scout] failed to send app registration request", LogLevel.Error);
             });
     }
 
