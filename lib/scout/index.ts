@@ -55,6 +55,9 @@ export interface ScoutOptions {
     appMeta?: ApplicationMetadata;
 }
 
+export type DoneCallback = (done: () => void) => any;
+const DONE_NOTHING = () => undefined;
+
 export class Scout extends EventEmitter {
     private readonly config: Partial<ScoutConfiguration>;
 
@@ -256,7 +259,7 @@ export class Scout extends EventEmitter {
      * @param {string} name
      * @returns void
      */
-    public transaction(name: string, cb: () => any): Promise<any> {
+    public transaction(name: string, cb: DoneCallback): Promise<any> {
         this.log(`[scout] Starting transaction [${name}]`, LogLevel.Debug);
 
         let result;
@@ -275,23 +278,24 @@ export class Scout extends EventEmitter {
     }
 
     /**
-     * Start an insrumentation, withing a given transaction
+     * Start an instrumentation, withing a given transaction
      *
      * @param {string} operation
      * @param {Function} cb
      * @returns {Promise<any>} a promsie that resolves to the result of the callback
      */
-    public instrument(operation: string, cb: () => any): Promise<any> {
+    public instrument(operation: string, cb: DoneCallback): Promise<any> {
         this.log(`[scout] Instrumenting operation [${operation}]`, LogLevel.Debug);
 
         const parent = this.getCurrentSpan() || this.getCurrentRequest();
+
         // If no request is currently underway
         if (!parent) {
             this.log(
                 "[scout] Failed to start instrumentation, no current transaction/parent instrumentation",
                 LogLevel.Error,
             );
-            return Promise.resolve(cb());
+            return Promise.resolve(cb(DONE_NOTHING));
         }
 
         let result;
@@ -302,28 +306,28 @@ export class Scout extends EventEmitter {
             LogLevel.Debug,
         );
 
+        let span: ScoutSpan;
+
+        const doneFn = () => {
+            this.log(`[scout] Stopping & sending span with ID [${span.id}]`, LogLevel.Debug);
+            return span.stop();
+        };
+
         return parent
         // Start the child span
             .startChildSpan(operation)
         // Set up the async namespace, run the function
-            .then(span => {
+            .then(s => span = s)
+            .then(() => {
                 this.asyncNamespace.set("scout.span", span);
-                result = cb();
+                result = cb(doneFn);
                 ranCb = true;
                 return span;
             })
-        // Stop the span if it hasn't been stopped already
-            .then(span => {
-                this.log(`[scout] Stopping & sending span with ID [${span.id}]`, LogLevel.Debug);
-                return span.stop();
-            })
-        // Update the async namespace
-            .then(() => {
-                this.asyncNamespace.set("scout.span", null);
-                return result;
-            })
+        // Return the result
+            .then(() => result)
             .catch(err => {
-                if (!ranCb) { result = cb(); }
+                if (!ranCb) { result = cb(doneFn); }
                 this.log("[scout] failed to send start span", LogLevel.Error);
                 return result;
             });
@@ -351,34 +355,36 @@ export class Scout extends EventEmitter {
      * Perform some action within a context
      *
      */
-    private withAsyncRequestContext(cb: () => any): Promise<any> {
+    private withAsyncRequestContext(cb: DoneCallback): Promise<any> {
         // If we can use async hooks then node-request-context is usable
         return new Promise((resolve) => {
             let result;
             let req: ScoutRequest;
             let ranCb = false;
 
+            const doneFn = () => {
+                this.log(`[scout] Finishing and sending request with ID [${req.id}]`, LogLevel.Debug);
+                return req.finishAndSend();
+            };
+
+            // Run in the async namespace
             this.asyncNamespace.run(() => {
                 this.log(`[scout] Starting request in async namespace...`, LogLevel.Debug);
 
+                // Star the request
                 this.startRequest()
                     .then(r => req = r)
+                // Update async namespace, run function
                     .then(() => {
                         this.log(`[scout] Request started w/ ID [${req.id}]`, LogLevel.Debug);
                         this.asyncNamespace.set("scout.request", req);
-                        result = cb();
+                        result = cb(doneFn);
                         ranCb = true;
-                    })
-                    .then(() => {
-                        this.log(`[scout] Finishing and sending request with ID [${req.id}]`, LogLevel.Debug);
-                        return req.finishAndSend();
-                    })
-                    .then(() => {
-                        this.asyncNamespace.set("scout.request", null);
                         return result;
                     })
+                // If an error occurs then run the fn and log
                     .catch(err => {
-                        if (!ranCb) { result = cb(); }
+                        if (!ranCb) { result = cb(doneFn); }
                         resolve(result);
                         this.log(`[scout] failed to send start request request: ${err}`, LogLevel.Error);
                     });

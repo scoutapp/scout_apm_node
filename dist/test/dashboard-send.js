@@ -37,10 +37,11 @@ test("Scout sends basic controller span to dashboard", { timeout: TestUtil.DASHB
     // Set up listener on the agent to listen for the stop request to be sent
     scout.on(types_1.AgentEvent.RequestSent, listener);
     const name = `Controller/GET /`;
-    scout.transaction(name, () => {
+    scout.transaction(name, (transactionDone) => {
         return scout.instrument(name, () => {
-            return TestUtil.waitMs(200)
+            TestUtil.waitMs(200)
                 .then(() => t.pass("wait completed"))
+                .then(() => transactionDone())
                 .catch(err => t.fail("some error occurred"));
         });
     })

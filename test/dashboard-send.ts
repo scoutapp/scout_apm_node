@@ -64,10 +64,11 @@ test("Scout sends basic controller span to dashboard", {timeout: TestUtil.DASHBO
 
     const name = `Controller/GET /`;
 
-    scout.transaction(name, () => {
+    scout.transaction(name, (transactionDone) => {
         return scout.instrument(name, () => {
-            return TestUtil.waitMs(200)
+            TestUtil.waitMs(200)
                 .then(() => t.pass("wait completed"))
+                .then(() => transactionDone())
                 .catch(err => t.fail("some error occurred"));
         });
     })
