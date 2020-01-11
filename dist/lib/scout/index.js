@@ -3,6 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const path = require("path");
 const process = require("process");
+const nrc = require("node-request-context");
+const cls = require("continuation-local-storage");
+const semver = require("semver");
 const types_1 = require("../types");
 const index_1 = require("../index");
 const integrations_1 = require("../integrations");
@@ -20,12 +23,17 @@ class Scout extends events_1.EventEmitter {
     constructor(config, opts) {
         super();
         this.downloaderOptions = {};
+        this.canUseAsyncHooks = false;
         this.config = config || types_1.buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
         if (opts && opts.downloadOptions) {
             this.downloaderOptions = opts.downloadOptions;
         }
         this.applicationMetadata = new types_1.ApplicationMetadata(this.config, opts && opts.appMeta ? opts.appMeta : {});
+        // Check node version for before/after
+        this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
+        // Create async namespace
+        this.asyncNamespace = this.canUseAsyncHooks ? nrc.createNamespace("scout") : cls.createNamespace("scout");
     }
     getCoreAgentVersion() {
         return new types_1.CoreAgentVersion(this.coreAgentVersion.raw);
@@ -92,6 +100,94 @@ class Scout extends events_1.EventEmitter {
                 .forEach(integration => integration.setScoutInstance(this));
         })
             .then(() => this);
+    }
+    shutdown() {
+        if (!this.agent) {
+            this.logFn("[scout] shutdown called but no agent to shutdown is present", types_1.LogLevel.Error);
+            return Promise.reject(new Errors.NoAgentPresent());
+        }
+        return this.agent
+            .disconnect()
+            .then(() => {
+            if (this.config.allowShutdown) {
+                return this.agent.stopProcess();
+            }
+        });
+    }
+    hasAgent() {
+        return this.agent !== null;
+    }
+    getAgent() {
+        return this.agent;
+    }
+    /**
+     * Function for checking whether a given path (URL) is ignored by scout
+     *
+     * @param {string} path - processed path (ex. "/api/v1/echo/:name")
+     * @returns {boolean} whether the path should be ignored
+     */
+    ignoresPath(path) {
+        this.logFn("[scout] checking path [${path}] against ignored paths", types_1.LogLevel.Trace);
+        // If ignore isn't specified or if empty, then nothing is ignored
+        if (!this.config.ignore || this.config.ignore.length === 0) {
+            return false;
+        }
+        const matchingPrefix = this.config.ignore.find(prefix => path.indexOf(prefix) === 0);
+        if (matchingPrefix) {
+            this.logFn("[scout] ignoring path [${path}] matching prefix [${matchingPrefix}]", types_1.LogLevel.Debug);
+            this.emit(types_1.ScoutEvent.IgnoredPathDetected, path);
+        }
+        return matchingPrefix !== undefined;
+    }
+    /**
+     * Filter a given request path (ex. /path/to/resource) according to logic before storing with Scout
+     *
+     * @param {string} path
+     * @returns {URL} the filtered URL object
+     */
+    filterRequestPath(path) {
+        switch (this.config.uriReporting) {
+            case types_1.URIReportingLevel.FilteredParams:
+                return types_1.scrubRequestPathParams(path);
+            case types_1.URIReportingLevel.Path:
+                return types_1.scrubRequestPath(path);
+            default:
+                return path;
+        }
+    }
+    /**
+     * Start a transaction
+     *
+     * @param {string} name
+     * @returns void
+     */
+    transaction(name, cb) {
+        return this.withAsyncRequestContext(cb);
+    }
+    /**
+     * Perform some action within a context
+     *
+     */
+    withAsyncRequestContext(cb) {
+        // If we can use async hooks then node-request-context is usable
+        return new Promise((resolve) => {
+            this.namespace.run(() => {
+                this.startRequest()
+                    .then(req => {
+                    nrcNamespace.set("scout.request", req);
+                    const result = cb();
+                    this.ranCb = true;
+                    resolve(result);
+                })
+                    .catch(err => {
+                    if (!this.ranCb) {
+                        cb();
+                    }
+                    resolve();
+                    this.logFn("[scout] failed to send start request request", types_1.LogLevel.Error);
+                });
+            });
+        });
     }
     /**
      * Helper function for starting a scout request with the instance
@@ -185,7 +281,7 @@ class Scout extends events_1.EventEmitter {
      * @param {ScoutSpan} span - The original span
      * @param {String} name - The tag name
      * @param {String} value - The tag value
-     * @returns {Promise<void>} A promise which resolves when the message has been sent
+     * @returns {Promise<void>} A promise which resolves when the message has been
      */
     sendTagSpan(span, name, value) {
         const tagSpanReq = new Requests.V1TagSpan(name, value, span.id, span.request.id);
@@ -212,60 +308,6 @@ class Scout extends events_1.EventEmitter {
             this.logFn("[scout] failed to send stop span request", types_1.LogLevel.Error);
             return span;
         });
-    }
-    shutdown() {
-        if (!this.agent) {
-            this.logFn("[scout] shutdown called but no agent to shutdown is present", types_1.LogLevel.Error);
-            return Promise.reject(new Errors.NoAgentPresent());
-        }
-        return this.agent
-            .disconnect()
-            .then(() => {
-            if (this.config.allowShutdown) {
-                return this.agent.stopProcess();
-            }
-        });
-    }
-    hasAgent() {
-        return this.agent !== null;
-    }
-    getAgent() {
-        return this.agent;
-    }
-    /**
-     * Function for checking whether a given path (URL) is ignored by scout
-     *
-     * @param {string} path - processed path (ex. "/api/v1/echo/:name")
-     * @returns {boolean} whether the path should be ignored
-     */
-    ignoresPath(path) {
-        this.logFn("[scout] checking path [${path}] against ignored paths", types_1.LogLevel.Trace);
-        // If ignore isn't specified or if empty, then nothing is ignored
-        if (!this.config.ignore || this.config.ignore.length === 0) {
-            return false;
-        }
-        const matchingPrefix = this.config.ignore.find(prefix => path.indexOf(prefix) === 0);
-        if (matchingPrefix) {
-            this.logFn("[scout] ignoring path [${path}] matching prefix [${matchingPrefix}]", types_1.LogLevel.Debug);
-            this.emit(types_1.ScoutEvent.IgnoredPathDetected, path);
-        }
-        return matchingPrefix !== undefined;
-    }
-    /**
-     * Filter a given request path (ex. /path/to/resource) according to logic before storing with Scout
-     *
-     * @param {string} path
-     * @returns {URL} the filtered URL object
-     */
-    filterRequestPath(path) {
-        switch (this.config.uriReporting) {
-            case types_1.URIReportingLevel.FilteredParams:
-                return types_1.scrubRequestPathParams(path);
-            case types_1.URIReportingLevel.Path:
-                return types_1.scrubRequestPath(path);
-            default:
-                return path;
-        }
     }
     getSocketPath() {
         return `unix://${this.socketPath}`;
