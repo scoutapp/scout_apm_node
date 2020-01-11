@@ -42,7 +42,7 @@ class Scout extends events_1.EventEmitter {
         return Object.assign({}, this.applicationMetadata);
     }
     getConfig() {
-        return Object.assign({}, this.config);
+        return this.config;
     }
     log(msg, lvl) {
         this.logFn(msg, lvl);
@@ -121,7 +121,7 @@ class Scout extends events_1.EventEmitter {
         });
     }
     hasAgent() {
-        return this.agent !== null;
+        return typeof this.agent !== "undefined" && this.agent !== null;
     }
     getAgent() {
         return this.agent;
@@ -169,7 +169,20 @@ class Scout extends events_1.EventEmitter {
      */
     transaction(name, cb) {
         this.logFn(`[scout] Starting transaction [${name}]`, types_1.LogLevel.Debug);
-        return this.withAsyncRequestContext(cb);
+        let result;
+        let ranContext = false;
+        // Setup if necessary then then perform the async request context
+        return this.setup()
+            .then(() => {
+            result = this.withAsyncRequestContext(cb);
+            ranContext = true;
+        })
+            .catch(err => {
+            this.log("[scout] Scout setup failed: ${err}", types_1.LogLevel.Error);
+            if (!ranContext) {
+                result = this.withAsyncRequestContext(cb);
+            }
+        });
     }
     /**
      * Start an insrumentation, withing a given transaction

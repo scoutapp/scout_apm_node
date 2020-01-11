@@ -102,8 +102,8 @@ export class Scout extends EventEmitter {
         return Object.assign({}, this.applicationMetadata);
     }
 
-    public getConfig(): ScoutConfiguration {
-        return Object.assign({}, this.config) as ScoutConfiguration;
+    public getConfig(): Partial<ScoutConfiguration> {
+        return this.config;
     }
 
     public log(msg: string, lvl: LogLevel) {
@@ -202,7 +202,7 @@ export class Scout extends EventEmitter {
     }
 
     public hasAgent(): boolean {
-        return this.agent !== null;
+        return typeof this.agent !== "undefined" && this.agent !== null;
     }
 
     public getAgent(): ExternalProcessAgent {
@@ -258,7 +258,20 @@ export class Scout extends EventEmitter {
      */
     public transaction(name: string, cb: () => any): Promise<any> {
         this.logFn(`[scout] Starting transaction [${name}]`, LogLevel.Debug);
-        return this.withAsyncRequestContext(cb);
+
+        let result;
+        let ranContext = false;
+
+        // Setup if necessary then then perform the async request context
+        return this.setup()
+            .then(() => {
+                result = this.withAsyncRequestContext(cb);
+                ranContext = true;
+            })
+            .catch(err => {
+                this.log("[scout] Scout setup failed: ${err}", LogLevel.Error);
+                if (!ranContext) { result = this.withAsyncRequestContext(cb); }
+            });
     }
 
     /**
@@ -585,9 +598,10 @@ export function sendThroughAgent<T extends BaseAgentRequest, R extends BaseAgent
         scout.log(err.message, LogLevel.Error);
         return Promise.reject(err);
     }
-    const agent = scout.getAgent();
 
+    const agent = scout.getAgent();
     const config = scout.getConfig();
+
     if (!config.monitor) {
         scout.log("[scout] monitoring disabled, not sending tag request", LogLevel.Warn);
         return Promise.reject(new Errors.MonitoringDisabled());
