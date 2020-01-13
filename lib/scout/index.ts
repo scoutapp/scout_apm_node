@@ -58,6 +58,10 @@ export interface ScoutOptions {
 export type DoneCallback = (done: () => void) => any;
 const DONE_NOTHING = () => undefined;
 
+const ASYNC_NS = "scout";
+const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
+const ASYNC_NS_SPAN = `${ASYNC_NS}.span`;
+
 export class Scout extends EventEmitter {
     private readonly config: Partial<ScoutConfiguration>;
 
@@ -93,8 +97,8 @@ export class Scout extends EventEmitter {
         // Check node version for before/after
         this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
 
-        // Create async namespace
-        this.asyncNamespace = this.canUseAsyncHooks ? nrc.createNamespace("scout") : cls.createNamespace("scout");
+        // Create async namespace if it does not exist
+        this.createAsyncNamespace();
     }
 
     public getCoreAgentVersion(): CoreAgentVersion {
@@ -287,11 +291,6 @@ export class Scout extends EventEmitter {
     public instrument(operation: string, cb: DoneCallback): Promise<any> {
         this.log(`[scout] Instrumenting operation [${operation}]`, LogLevel.Debug);
 
-        // Detecting whether the instrument calls are nested is a little difficult.
-        // TODO: FIX THIS?
-        // const instrumentCallCount = 0;
-        // if (instrumentCallCount >
-
         const parent = this.getCurrentSpan() || this.getCurrentRequest();
 
         // If no request is currently underway
@@ -315,7 +314,7 @@ export class Scout extends EventEmitter {
 
         const doneFn = () => {
             this.log(`[scout] Stopping span with ID [${span.id}]`, LogLevel.Debug);
-            this.asyncNamespace.set("scout.span", undefined);
+            this.asyncNamespace.set(ASYNC_NS_SPAN, undefined);
             return span.stop();
         };
 
@@ -325,7 +324,7 @@ export class Scout extends EventEmitter {
         // Set up the async namespace, run the function
             .then(s => span = s)
             .then(() => {
-                this.asyncNamespace.set("scout.span", span);
+                this.asyncNamespace.set(ASYNC_NS_SPAN, span);
                 result = cb(doneFn);
                 ranCb = true;
                 return span;
@@ -348,7 +347,7 @@ export class Scout extends EventEmitter {
      * @returns {ScoutRequest} the current active request
      */
     public getCurrentRequest(): ScoutRequest | null {
-        return this.asyncNamespace.get("scout.request");
+        return this.asyncNamespace.get(ASYNC_NS_REQUEST);
     }
 
     /**
@@ -357,7 +356,20 @@ export class Scout extends EventEmitter {
      * @returns {ScoutSpan} the current active span
      */
     public getCurrentSpan(): ScoutSpan | null {
-        return this.asyncNamespace.get("scout.span");
+        return this.asyncNamespace.get(ASYNC_NS_SPAN);
+    }
+
+    /**
+     * Create an async namespace internally for use with tracking if not already present
+     */
+    private createAsyncNamespace() {
+        const implementation = this.canUseAsyncHooks ? nrc : cls;
+        this.asyncNamespace = implementation.getNamespace(ASYNC_NS);
+
+        // Create if it doesn't exist
+        if (!this.asyncNamespace) {
+            this.asyncNamespace = implementation.createNamespace(ASYNC_NS);
+        }
     }
 
     /**
@@ -375,7 +387,7 @@ export class Scout extends EventEmitter {
                 this.log(`[scout] Finishing and sending request with ID [${req.id}]`, LogLevel.Debug);
                 return req
                     .finishAndSend()
-                    .then(() => this.asyncNamespace.set("scout.request", undefined));
+                    .then(() => this.asyncNamespace.set(ASYNC_NS_REQUEST, undefined));
             };
 
             // Run in the async namespace
@@ -388,7 +400,7 @@ export class Scout extends EventEmitter {
                 // Update async namespace, run function
                     .then(() => {
                         this.log(`[scout] Request started w/ ID [${req.id}]`, LogLevel.Debug);
-                        this.asyncNamespace.set("scout.request", req);
+                        this.asyncNamespace.set(ASYNC_NS_REQUEST, req);
                         result = cb(doneFn);
                         ranCb = true;
                         return result;

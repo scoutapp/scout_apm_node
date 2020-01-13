@@ -66,7 +66,8 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
         .then(c => client = c)
         // Start a scout transaction & perform a query
         .then(() => scout.transaction("Controller/select-now-test", done => {
-        client.query(PG_QUERIES.SELECT_TIME)
+        return client
+            .query(PG_QUERIES.SELECT_TIME)
             .then(() => {
             t.comment("performed query");
             done();
@@ -127,7 +128,7 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
         // Start a scout transaction & perform a query
         .then(() => scout.transaction("Controller/create-and-insert-test", done => {
         // Create a string KV table
-        client
+        return client
             .query(PG_QUERIES.CREATE_STRING_KV_TABLE)
             // Insert a value into the string KV
             .then(() => {
@@ -137,9 +138,6 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
             .then(results => {
             t.equals(results.rowCount, 1, "one row was inserted");
             done();
-        })
-            .catch(err => {
-            console.log("ERROR:", err);
         });
     }))
         // Finish & Send the request

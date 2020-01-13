@@ -20,6 +20,9 @@ var span_1 = require("./span");
 exports.ScoutSpan = span_1.default;
 const request_2 = require("./request");
 const DONE_NOTHING = () => undefined;
+const ASYNC_NS = "scout";
+const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
+const ASYNC_NS_SPAN = `${ASYNC_NS}.span`;
 class Scout extends events_1.EventEmitter {
     constructor(config, opts) {
         super();
@@ -33,8 +36,8 @@ class Scout extends events_1.EventEmitter {
         this.applicationMetadata = new types_1.ApplicationMetadata(this.config, opts && opts.appMeta ? opts.appMeta : {});
         // Check node version for before/after
         this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
-        // Create async namespace
-        this.asyncNamespace = this.canUseAsyncHooks ? nrc.createNamespace("scout") : cls.createNamespace("scout");
+        // Create async namespace if it does not exist
+        this.createAsyncNamespace();
     }
     getCoreAgentVersion() {
         return new types_1.CoreAgentVersion(this.coreAgentVersion.raw);
@@ -194,10 +197,6 @@ class Scout extends events_1.EventEmitter {
      */
     instrument(operation, cb) {
         this.log(`[scout] Instrumenting operation [${operation}]`, types_1.LogLevel.Debug);
-        // Detecting whether the instrument calls are nested is a little difficult.
-        // TODO: FIX THIS?
-        // const instrumentCallCount = 0;
-        // if (instrumentCallCount >
         const parent = this.getCurrentSpan() || this.getCurrentRequest();
         // If no request is currently underway
         if (!parent) {
@@ -210,7 +209,7 @@ class Scout extends events_1.EventEmitter {
         let span;
         const doneFn = () => {
             this.log(`[scout] Stopping span with ID [${span.id}]`, types_1.LogLevel.Debug);
-            this.asyncNamespace.set("scout.span", undefined);
+            this.asyncNamespace.set(ASYNC_NS_SPAN, undefined);
             return span.stop();
         };
         return parent
@@ -219,7 +218,7 @@ class Scout extends events_1.EventEmitter {
             // Set up the async namespace, run the function
             .then(s => span = s)
             .then(() => {
-            this.asyncNamespace.set("scout.span", span);
+            this.asyncNamespace.set(ASYNC_NS_SPAN, span);
             result = cb(doneFn);
             ranCb = true;
             return span;
@@ -241,7 +240,7 @@ class Scout extends events_1.EventEmitter {
      * @returns {ScoutRequest} the current active request
      */
     getCurrentRequest() {
-        return this.asyncNamespace.get("scout.request");
+        return this.asyncNamespace.get(ASYNC_NS_REQUEST);
     }
     /**
      * Reterieve the current span using the async hook/continuation local storage machinery
@@ -249,7 +248,18 @@ class Scout extends events_1.EventEmitter {
      * @returns {ScoutSpan} the current active span
      */
     getCurrentSpan() {
-        return this.asyncNamespace.get("scout.span");
+        return this.asyncNamespace.get(ASYNC_NS_SPAN);
+    }
+    /**
+     * Create an async namespace internally for use with tracking if not already present
+     */
+    createAsyncNamespace() {
+        const implementation = this.canUseAsyncHooks ? nrc : cls;
+        this.asyncNamespace = implementation.getNamespace(ASYNC_NS);
+        // Create if it doesn't exist
+        if (!this.asyncNamespace) {
+            this.asyncNamespace = implementation.createNamespace(ASYNC_NS);
+        }
     }
     /**
      * Perform some action within a context
@@ -265,7 +275,7 @@ class Scout extends events_1.EventEmitter {
                 this.log(`[scout] Finishing and sending request with ID [${req.id}]`, types_1.LogLevel.Debug);
                 return req
                     .finishAndSend()
-                    .then(() => this.asyncNamespace.set("scout.request", undefined));
+                    .then(() => this.asyncNamespace.set(ASYNC_NS_REQUEST, undefined));
             };
             // Run in the async namespace
             this.asyncNamespace.run(() => {
@@ -276,7 +286,7 @@ class Scout extends events_1.EventEmitter {
                     // Update async namespace, run function
                     .then(() => {
                     this.log(`[scout] Request started w/ ID [${req.id}]`, types_1.LogLevel.Debug);
-                    this.asyncNamespace.set("scout.request", req);
+                    this.asyncNamespace.set(ASYNC_NS_REQUEST, req);
                     result = cb(doneFn);
                     ranCb = true;
                     return result;
