@@ -11,11 +11,18 @@ import {
     buildScoutConfiguration,
     setupRequireIntegrations,
 } from "../../lib";
-setupRequireIntegrations(["pg"]);
+
+// The hook for PG has to be triggered this way in a typescript context
+// since a partial improt like { Client } will not trigger a require
+const pg = require("pg");
 
 import { Client } from "pg";
 
 let PG_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
+
+const PG_QUERIES = {
+    SELECT_TIME: "SELECT NOW()",
+};
 
 // // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // // it may break if import order is changed (require hook would not have taken place)
@@ -50,15 +57,17 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
                     throw new Error("No DB Span");
                 }
 
-                t.equals(dbSpan.getContextValue("db.statement"), "SQL/Query", "db.statement tag is correct");
+                t.equals(dbSpan.getContextValue("db.statement"), PG_QUERIES.SELECT_TIME, "db.statement tag is correct");
 
             })
+            .then(() => client.end())
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
+
+    // Activate the listener
     scout.on(ScoutEvent.RequestSent, listener);
 
-    let req: ScoutRequest;
     let client: Client;
 
     scout
@@ -68,11 +77,17 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
         .then(c => client = c)
     // Start a scout transaction & perform a query
         .then(() => scout.transaction("SQL/Query", done => {
-            client.query("SELECT NOW()")
-                .then(() => t.comment("performed query"));
+            client.query(PG_QUERIES.SELECT_TIME)
+                .then(() => {
+                    t.comment("performed query");
+                    done();
+                });
         }))
     // Finish & Send the request
-        .catch(err => TestUtil.shutdownScout(t, scout, err));
+        .catch(err => {
+            client.end()
+                .then(() => TestUtil.shutdownScout(t, scout, err));
+        });
 });
 
 // TODO: test with a query that include parameters

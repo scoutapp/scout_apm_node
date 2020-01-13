@@ -37,7 +37,7 @@ export function setupRequireIntegrations(packages: string[]) {
     packages.forEach(name => {
         const integration = getIntegrationForPackage(name);
         if (integration) {
-            pgIntegration.ritmHook(EXPORT_BAG);
+            integration.ritmHook(EXPORT_BAG);
         }
     });
 }

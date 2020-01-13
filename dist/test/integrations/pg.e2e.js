@@ -3,8 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const TestUtil = require("../util");
 const lib_1 = require("../../lib");
-lib_1.setupRequireIntegrations(["pg"]);
+// The hook for PG has to be triggered this way in a typescript context
+// since a partial improt like { Client } will not trigger a require
+const pg = require("pg");
 let PG_CONTAINER_AND_OPTS = null;
+const PG_QUERIES = {
+    SELECT_TIME: "SELECT NOW()",
+};
 // // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // // it may break if import order is changed (require hook would not have taken place)
 // test("the shim works", t => {
@@ -33,13 +38,14 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
                 t.fail("no DB span present on request");
                 throw new Error("No DB Span");
             }
-            t.equals(dbSpan.getContextValue("db.statement"), "SQL/Query", "db.statement tag is correct");
+            t.equals(dbSpan.getContextValue("db.statement"), PG_QUERIES.SELECT_TIME, "db.statement tag is correct");
         })
+            .then(() => client.end())
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
+    // Activate the listener
     scout.on(lib_1.ScoutEvent.RequestSent, listener);
-    let req;
     let client;
     scout
         .setup()
@@ -48,11 +54,17 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
         .then(c => client = c)
         // Start a scout transaction & perform a query
         .then(() => scout.transaction("SQL/Query", done => {
-        client.query("SELECT NOW()")
-            .then(() => t.comment("performed query"));
+        client.query(PG_QUERIES.SELECT_TIME)
+            .then(() => {
+            t.comment("performed query");
+            done();
+        });
     }))
         // Finish & Send the request
-        .catch(err => TestUtil.shutdownScout(t, scout, err));
+        .catch(err => {
+        client.end()
+            .then(() => TestUtil.shutdownScout(t, scout, err));
+    });
 });
 // TODO: test with a query that include parameters
 // Pseudo test that will stop a containerized postgres instance that was started
