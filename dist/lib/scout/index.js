@@ -194,6 +194,10 @@ class Scout extends events_1.EventEmitter {
      */
     instrument(operation, cb) {
         this.log(`[scout] Instrumenting operation [${operation}]`, types_1.LogLevel.Debug);
+        // Detecting whether the instrument calls are nested is a little difficult.
+        // TODO: FIX THIS?
+        // const instrumentCallCount = 0;
+        // if (instrumentCallCount >
         const parent = this.getCurrentSpan() || this.getCurrentRequest();
         // If no request is currently underway
         if (!parent) {
@@ -205,7 +209,8 @@ class Scout extends events_1.EventEmitter {
         this.log(`[scout] Starting child span for operation [${operation}], parent id [${parent.id}]`, types_1.LogLevel.Debug);
         let span;
         const doneFn = () => {
-            this.log(`[scout] Stopping & sending span with ID [${span.id}]`, types_1.LogLevel.Debug);
+            this.log(`[scout] Stopping span with ID [${span.id}]`, types_1.LogLevel.Debug);
+            this.asyncNamespace.set("scout.span", undefined);
             return span.stop();
         };
         return parent
@@ -222,8 +227,9 @@ class Scout extends events_1.EventEmitter {
             // Return the result
             .then(() => result)
             .catch(err => {
+            // It's possible that an error happened *before* the span could be set
             if (!ranCb) {
-                result = cb(doneFn);
+                result = span ? cb(doneFn) : cb(() => undefined);
             }
             this.log("[scout] failed to send start span", types_1.LogLevel.Error);
             return result;
@@ -257,7 +263,9 @@ class Scout extends events_1.EventEmitter {
             let ranCb = false;
             const doneFn = () => {
                 this.log(`[scout] Finishing and sending request with ID [${req.id}]`, types_1.LogLevel.Debug);
-                return req.finishAndSend();
+                return req
+                    .finishAndSend()
+                    .then(() => this.asyncNamespace.set("scout.request", undefined));
             };
             // Run in the async namespace
             this.asyncNamespace.run(() => {
@@ -275,8 +283,9 @@ class Scout extends events_1.EventEmitter {
                 })
                     // If an error occurs then run the fn and log
                     .catch(err => {
+                    // In the case that an error occurs before the request gets made we can't run doneFn
                     if (!ranCb) {
-                        result = cb(doneFn);
+                        result = req ? cb(doneFn) : cb(() => undefined);
                     }
                     resolve(result);
                     this.log(`[scout] failed to send start request request: ${err}`, types_1.LogLevel.Error);
