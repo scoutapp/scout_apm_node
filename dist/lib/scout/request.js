@@ -64,6 +64,10 @@ class ScoutRequest {
         tags.forEach(t => this.tags[t.name] = t.value);
         return Promise.resolve(this);
     }
+    /** @see Taggable */
+    getContextValue(name) {
+        return this.tags[name];
+    }
     getTags() {
         return Object.entries(this.tags)
             .map(([name, value]) => {

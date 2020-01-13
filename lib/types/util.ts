@@ -177,4 +177,6 @@ export interface ScoutTag {
 
 export interface Taggable {
     addContext(tags: ScoutTag[]): Promise<this>;
+
+    getContextValue(name: string): string | undefined;
 }

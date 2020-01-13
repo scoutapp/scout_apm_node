@@ -41,6 +41,10 @@ class ScoutSpan {
         tags.forEach(t => this.tags[t.name] = t.value);
         return Promise.resolve(this);
     }
+    /** @see Taggable */
+    getContextValue(name) {
+        return this.tags[name];
+    }
     /** @see ChildSpannable */
     startChildSpan(operation) {
         if (this.stopped) {

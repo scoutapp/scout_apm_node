@@ -87,6 +87,11 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         return Promise.resolve(this);
     }
 
+    /** @see Taggable */
+    public getContextValue(name: string): string | undefined {
+        return this.tags[name];
+    }
+
     /** @see ChildSpannable */
     public startChildSpan(operation: string): Promise<ScoutSpan> {
         if (this.stopped) {

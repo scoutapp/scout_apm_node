@@ -105,6 +105,11 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         return Promise.resolve(this);
     }
 
+    /** @see Taggable */
+    public getContextValue(name: string): string | undefined {
+        return this.tags[name];
+    }
+
     public getTags(): ScoutTag[] {
         return Object.entries(this.tags)
             .map(([name, value]) => {
