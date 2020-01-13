@@ -24,12 +24,12 @@ const PG_QUERIES = {
     SELECT_TIME: "SELECT NOW()",
 };
 
-// // NOTE: this test *presumes* that the integration is working, since the integration is require-based
-// // it may break if import order is changed (require hook would not have taken place)
-// test("the shim works", t => {
-//     t.assert(Client[scoutIntegrationSymbol], "client has the integration symbol");
-//     t.end();
-// });
+// NOTE: this test *presumes* that the integration is working, since the integration is require-based
+// it may break if import order is changed (require hook would not have taken place)
+test("the shim works", t => {
+    t.assert(Client[scoutIntegrationSymbol], "client has the integration symbol");
+    t.end();
+});
 
 // Pseudo test that will start a containerized postgres instance
 TestUtil.startContainerizedPostgresTest(test, cao => {

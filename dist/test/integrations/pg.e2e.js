@@ -2,20 +2,22 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const TestUtil = require("../util");
+const integrations_1 = require("../../lib/types/integrations");
 const lib_1 = require("../../lib");
 // The hook for PG has to be triggered this way in a typescript context
 // since a partial improt like { Client } will not trigger a require
 const pg = require("pg");
+const pg_1 = require("pg");
 let PG_CONTAINER_AND_OPTS = null;
 const PG_QUERIES = {
     SELECT_TIME: "SELECT NOW()",
 };
-// // NOTE: this test *presumes* that the integration is working, since the integration is require-based
-// // it may break if import order is changed (require hook would not have taken place)
-// test("the shim works", t => {
-//     t.assert(Client[scoutIntegrationSymbol], "client has the integration symbol");
-//     t.end();
-// });
+// NOTE: this test *presumes* that the integration is working, since the integration is require-based
+// it may break if import order is changed (require hook would not have taken place)
+test("the shim works", t => {
+    t.assert(pg_1.Client[integrations_1.scoutIntegrationSymbol], "client has the integration symbol");
+    t.end();
+});
 // Pseudo test that will start a containerized postgres instance
 TestUtil.startContainerizedPostgresTest(test, cao => {
     PG_CONTAINER_AND_OPTS = cao;
