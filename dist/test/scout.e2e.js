@@ -36,10 +36,8 @@ test("Request can be created and finished", t => {
         .setup()
         // Create the request
         .then(() => scout.transaction("test-request-create-and-finish", done => {
-        // Wait a little then finish the transaction
-        TestUtil.waitMs(100)
-            .then(() => t.pass("successfully waited"))
-            .then(() => done());
+        t.pass("transaction started");
+        done();
     }))
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
@@ -114,11 +112,13 @@ test("Multi span request (2 top level)", t => {
         .then(() => scout.transaction("test-multi-span-2-top-level", finishRequest => {
         // Create the first span
         return scout.instrument("Controller/test.first", stopSpan => {
-            return TestUtil.waitMs(100).then(() => stopSpan());
+            t.pass("first span ran");
+            stopSpan();
         })
             // Create the second span
             .then(() => scout.instrument("Controller/test.second", stopSpan => {
-            return TestUtil.waitMs(100).then(() => stopSpan());
+            t.pass("second span ran");
+            stopSpan();
         }))
             // Finish the request
             .then(() => finishRequest());
@@ -389,7 +389,6 @@ test("Application metadata is built and sent", t => {
         // Ensure that the span is what we expect
         t.pass("application event was sent");
         t.equals(msg.eventType, types_1.ApplicationEventType.ScoutMetadata, "eventType is scout metadata");
-        t.equals(msg.eventValue["framework_version"], "framework-version-from-app-meta", "framework version is right");
         // Remove agent, pass test
         scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
         // Wait a little while for request to finish up, then shutdown
@@ -434,8 +433,7 @@ test("Multiple ongoing requests are possible at the same time", t => {
         });
         // Start overlapping transaction that will finish in 100ms
         scout.transaction("Controller/test.first", done => {
-            TestUtil.waitMs(100)
-                .then(() => done());
+            done();
         });
     })
         // Teardown and end test
@@ -455,9 +453,11 @@ test("Ensure that no requests are received by the agent if monitoring is off", t
         .setup()
         // Create the first & second request
         .then(() => scout.transaction("Controller/test-no-requests-when-monitoring-off", done => {
-        return TestUtil.waitMs(100)
-            .then(() => done())
-            .then(() => TestUtil.shutdownScout(t, scout));
+        t.pass("transaction started");
+        done();
+        TestUtil
+            .shutdownScout(t, scout)
+            .then(() => t.pass("shutdown ran"));
     }))
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));

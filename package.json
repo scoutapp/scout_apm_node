@@ -23,7 +23,7 @@
     "build": "./node_modules/.bin/tsc",
     "build-watch": "./node_modules/.bin/tsc --watch",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json",
-    "test": "yarn test-unit && yarn test-int",
+    "test": "yarn lint && yarn test-unit && yarn test-int && yarn test-e2e && yarn test-integration-pg",
     "test-unit": "./node_modules/.bin/tape 'dist/test/**/*.unit.js'",
     "test-int": "./node_modules/.bin/tape 'dist/test/**/*.int.js'",
     "test-e2e": "./node_modules/.bin/tape 'dist/test/**/*.e2e.js'",
