@@ -11,7 +11,7 @@ before_script:
   # this is done from make normally but must be done
   - docker pull postgres:alpine
 
-script: make test
+script: make lint test
 
 services:
   - docker

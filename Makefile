@@ -50,7 +50,7 @@ build-watch: dist
 clean:
 	rm -rf dist/*
 
-test: test-unit test-int test-e2e
+test: test-unit test-int test-e2e test-integrations
 
 test-unit: check-tool-yarn
 	$(YARN) test-unit
