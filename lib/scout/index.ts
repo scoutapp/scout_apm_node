@@ -6,6 +6,7 @@ import * as nrc from "node-request-context";
 import * as cls from "continuation-local-storage";
 import { Namespace } from "node-request-context";
 import * as semver from "semver";
+import { pathExists } from "fs-extra";
 
 import {
     APIVersion,
@@ -121,6 +122,56 @@ export class Scout extends EventEmitter {
         // Return early if agent has already been set up
         if (this.agent) { return Promise.resolve(this); }
 
+        // If the socket path exists then we may skip downloading and launching
+        this.log(`[scout] checking for socket @ [${this.socketPath}]`, LogLevel.Debug);
+        const socketPath = this.getSocketPath();
+
+        return pathExists(socketPath)
+            .then(exists => exists ? this.createAgentForExistingSocket() : this.downloadAndLaunchAgent())
+        // Start, connect, and register
+            .then(() => {
+                this.log(`[scout] starting process w/ bin @ path [${this.binPath}]`, LogLevel.Debug);
+                this.log(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, LogLevel.Debug);
+                return this.agent.start();
+            })
+            .then(() => this.log("[scout] agent successfully started", LogLevel.Debug))
+            .then(() => this.agent.connect())
+            .then(() => this.log("[scout] successfully connected to agent", LogLevel.Debug))
+            .then(() => {
+                if (!this.config.name) {
+                    this.log("[scout] 'name' configuration value missing", LogLevel.Warn);
+                }
+                if (!this.config.key) {
+                    this.log("[scout] 'key' missing in configuration", LogLevel.Warn);
+                }
+            })
+        // Register the application
+            .then(() => this.sendRegistrationRequest())
+        // Send the application metadata
+            .then(() => this.sendAppMetadataEvent())
+        // Set up integration(s)
+            .then(() => {
+                Object.keys(EXPORT_BAG)
+                    .map(packageName => getIntegrationForPackage(packageName))
+                    .forEach(integration => integration.setScoutInstance(this));
+            })
+            .then(() => this);
+    }
+
+    // Helper for creating an ExternalProcessAgent for an existing, listening agent
+    private createAgentForExistingSocket(): Promise<ExternalProcessAgent> {
+        this.processOptions = new ProcessOptions(
+            this.binPath,
+            this.getSocketPath(),
+            buildProcessOptions(this.config),
+        );
+
+        const agent = new ExternalProcessAgent(this.processOptions, this.logFn);
+        return this.setupAgent(agent);
+    }
+
+    // Helper for downloading and launching an agent
+    private downloadAndLaunchAgent(): Promise<ExternalProcessAgent> {
         this.downloader = new WebAgentDownloader({logFn: this.logFn});
 
         // Ensure coreAgentVersion is present
@@ -161,36 +212,9 @@ export class Scout extends EventEmitter {
                     buildProcessOptions(this.config),
                 );
 
-                this.setupAgent(new ExternalProcessAgent(this.processOptions, this.logFn));
-            })
-        // Start, connect, and register
-            .then(() => {
-                this.log(`[scout] starting process w/ bin @ path [${this.binPath}]`, LogLevel.Debug);
-                this.log(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, LogLevel.Debug);
-                return this.agent.start();
-            })
-            .then(() => this.log("[scout] agent successfully started", LogLevel.Debug))
-            .then(() => this.agent.connect())
-            .then(() => this.log("[scout] successfully connected to agent", LogLevel.Debug))
-            .then(() => {
-                if (!this.config.name) {
-                    this.log("[scout] 'name' configuration value missing", LogLevel.Warn);
-                }
-                if (!this.config.key) {
-                    this.log("[scout] 'key' missing in configuration", LogLevel.Warn);
-                }
-            })
-        // Register the application
-            .then(() => this.sendRegistrationRequest())
-        // Send the application metadata
-            .then(() => this.sendAppMetadataEvent())
-        // Set up integration(s)
-            .then(() => {
-                Object.keys(EXPORT_BAG)
-                    .map(packageName => getIntegrationForPackage(packageName))
-                    .forEach(integration => integration.setScoutInstance(this));
-            })
-            .then(() => this);
+                const agent = new ExternalProcessAgent(this.processOptions, this.logFn);
+                return this.setupAgent(agent);
+            });
     }
 
     public shutdown(): Promise<void> {
@@ -449,6 +473,7 @@ export class Scout extends EventEmitter {
             });
     }
 
+    // Send the app registration request to the current agent
     private sendRegistrationRequest(): Promise<void> {
         return sendThroughAgent(this, new Requests.V1Register(
                 this.config.name || "",
@@ -462,7 +487,7 @@ export class Scout extends EventEmitter {
     }
 
     // Helper function for setting up an agent to be part of the scout instance
-    private setupAgent(agent: ExternalProcessAgent): Promise<void> {
+    private setupAgent(agent: ExternalProcessAgent): Promise<ExternalProcessAgent> {
         this.agent = agent;
 
         // Setup forwarding of all events of the agent through the scout instance
@@ -470,7 +495,7 @@ export class Scout extends EventEmitter {
             this.agent.on(evt, msg => this.emit(evt, msg));
         });
 
-        return Promise.resolve();
+        return Promise.resolve(this.agent);
     }
 
 }
