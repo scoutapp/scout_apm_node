@@ -85,7 +85,7 @@ function scoutMiddleware(opts) {
             }
             const name = `Controller/${reqMethod} ${path}`;
             // Create a trace
-            scout.transaction(name, () => {
+            scout.transaction(name, (finishTransaction) => {
                 const scoutReq = scout.getCurrentRequest();
                 if (!scoutReq) {
                     if (opts && opts.logFn) {
@@ -111,6 +111,7 @@ function scoutMiddleware(opts) {
                             scoutReq
                                 .addContext([{ name: "timeout", value: "true" }])
                                 .then(() => scoutReq.finishAndSend())
+                                .then(() => finishTransaction())
                                 .catch(() => {
                                 if (opts && opts.logFn) {
                                     opts.logFn(`[scout] Failed to finish request that timed out: ${scoutReq}`, types_1.LogLevel.Warn);
@@ -121,7 +122,9 @@ function scoutMiddleware(opts) {
                     // Set up handler to act on end of request
                     onFinished(res, (err, res) => {
                         // Finish & send request
-                        scoutReq.finishAndSend();
+                        scoutReq
+                            .finishAndSend()
+                            .then(() => finishTransaction());
                     });
                     // Start a span for the request
                     scout.instrument(name, () => {

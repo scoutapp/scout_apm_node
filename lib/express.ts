@@ -112,7 +112,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
                 const name = `Controller/${reqMethod} ${path}`;
                 // Create a trace
-                scout.transaction(name, () => {
+                scout.transaction(name, (finishTransaction) => {
                     const scoutReq = scout.getCurrentRequest();
                     if (!scoutReq) {
                         if (opts && opts.logFn) {
@@ -141,6 +141,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                                     scoutReq
                                         .addContext([{name: "timeout", value: "true"}])
                                         .then(() => scoutReq.finishAndSend())
+                                        .then(() => finishTransaction())
                                         .catch(() => {
                                             if (opts && opts.logFn) {
                                                 opts.logFn(
@@ -155,7 +156,9 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                             // Set up handler to act on end of request
                             onFinished(res, (err, res) => {
                                 // Finish & send request
-                                scoutReq.finishAndSend();
+                                scoutReq
+                                    .finishAndSend()
+                                    .then(() => finishTransaction());
                             });
 
                             // Start a span for the request
