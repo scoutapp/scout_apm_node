@@ -14,7 +14,7 @@ exports.V1GetVersionRequest = V1GetVersionRequest;
 class V1Register extends types_1.BaseAgentRequest {
     constructor(app, key, version) {
         super();
-        this.type = types_1.AgentRequestType.V1StartRequest;
+        this.type = types_1.AgentRequestType.V1Register;
         this.json = {
             Register: {
                 api_version: version,

@@ -82,6 +82,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             this.pool.acquire()
                 .then(socket => {
                 socket.write(msg.toBinary());
+                this.emit(types_1.AgentEvent.RequestSent, msg);
                 return this.pool.release(socket);
             }, err => { throw err; })
                 .then(() => resolve());
@@ -282,7 +283,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if (this.opts.disallowLaunch) {
             // disallowing should presume that there is *another* agent already running.
             this.logFn("[scout/external-process] Not attempting to launch Core Agent due to 'core_agent_launch' setting.", types_1.LogLevel.Debug);
-            return Promise.resolve(this);
+            return Promise.reject(new Errors.AgentLaunchDisabled());
         }
         // Build command and arguments
         const socketPath = this.getSocketPath();

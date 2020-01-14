@@ -6,6 +6,7 @@ const process = require("process");
 const nrc = require("node-request-context");
 const cls = require("continuation-local-storage");
 const semver = require("semver");
+const fs_extra_1 = require("fs-extra");
 const types_1 = require("../types");
 const index_1 = require("../index");
 const integrations_1 = require("../integrations");
@@ -34,10 +35,17 @@ class Scout extends events_1.EventEmitter {
             this.downloaderOptions = opts.downloadOptions;
         }
         this.applicationMetadata = new types_1.ApplicationMetadata(this.config, opts && opts.appMeta ? opts.appMeta : {});
+        // Build expected bin & socket path based on current version
+        const version = (this.config.coreAgentVersion || Constants.DEFAULT_CORE_AGENT_VERSION).slice(1);
+        this.binPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, version, Constants.CORE_AGENT_BIN_FILE_NAME);
+        this.socketPath = path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
         // Check node version for before/after
         this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
         // Create async namespace if it does not exist
         this.createAsyncNamespace();
+    }
+    getSocketFilePath() {
+        return this.socketPath.slice();
     }
     getCoreAgentVersion() {
         return new types_1.CoreAgentVersion(this.coreAgentVersion.raw);
@@ -56,39 +64,13 @@ class Scout extends events_1.EventEmitter {
         if (this.agent) {
             return Promise.resolve(this);
         }
-        this.downloader = new web_1.default({ logFn: this.logFn });
-        // Ensure coreAgentVersion is present
-        if (!this.config.coreAgentVersion) {
-            const err = new Error("No core agent version specified!");
-            this.log(err.message, types_1.LogLevel.Error);
-            return Promise.reject(err);
-        }
-        this.coreAgentVersion = new types_1.CoreAgentVersion(this.config.coreAgentVersion);
-        // Build options for download
-        this.downloaderOptions = Object.assign({
-            cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
-            updateCache: true,
-        }, this.downloaderOptions, types_1.buildDownloadOptions(this.config));
-        // Download the appropriate binary
-        return this.downloader
-            .download(this.coreAgentVersion, this.downloaderOptions)
-            .then(bp => {
-            this.binPath = bp;
-            this.socketPath = path.join(path.dirname(this.binPath), "core-agent.sock");
-            this.log(`[scout] using socket path [${this.socketPath}]`, types_1.LogLevel.Debug);
+        // If the socket path exists then we may be able to skip downloading and launching
+        return fs_extra_1.pathExists(this.socketPath)
+            .then(exists => {
+            // if `coreAgentLaunch` is set to true, then force launch
+            const useExisting = exists && !this.config.coreAgentLaunch;
+            return useExisting ? this.createAgentForExistingSocket() : this.downloadAndLaunchAgent();
         })
-            // Build options for the agent and create the agent
-            .then(() => {
-            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
-            this.setupAgent(new external_process_1.default(this.processOptions, this.logFn));
-        })
-            // Start, connect, and register
-            .then(() => {
-            this.log(`[scout] starting process w/ bin @ path [${this.binPath}]`, types_1.LogLevel.Debug);
-            this.log(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, types_1.LogLevel.Debug);
-            return this.agent.start();
-        })
-            .then(() => this.log("[scout] agent successfully started", types_1.LogLevel.Debug))
             .then(() => this.agent.connect())
             .then(() => this.log("[scout] successfully connected to agent", types_1.LogLevel.Debug))
             .then(() => {
@@ -250,6 +232,52 @@ class Scout extends events_1.EventEmitter {
     getCurrentSpan() {
         return this.asyncNamespace.get(ASYNC_NS_SPAN);
     }
+    // Helper for creating an ExternalProcessAgent for an existing, listening agent
+    createAgentForExistingSocket() {
+        this.log(`[scout] detected existing socket @ [${this.socketPath}], skipping agent launch`, types_1.LogLevel.Debug);
+        this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
+        const agent = new external_process_1.default(this.processOptions, this.logFn);
+        return this.setupAgent(agent);
+    }
+    // Helper for downloading and launching an agent
+    downloadAndLaunchAgent() {
+        this.log(`[scout] downloading and launching agent`, types_1.LogLevel.Debug);
+        this.downloader = new web_1.default({ logFn: this.logFn });
+        // Ensure coreAgentVersion is present
+        if (!this.config.coreAgentVersion) {
+            const err = new Error("No core agent version specified!");
+            this.log(err.message, types_1.LogLevel.Error);
+            return Promise.reject(err);
+        }
+        this.coreAgentVersion = new types_1.CoreAgentVersion(this.config.coreAgentVersion);
+        // Build options for download
+        this.downloaderOptions = Object.assign({
+            cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+            updateCache: true,
+        }, this.downloaderOptions, types_1.buildDownloadOptions(this.config));
+        // Download the appropriate binary
+        return this.downloader
+            .download(this.coreAgentVersion, this.downloaderOptions)
+            .then(bp => {
+            this.binPath = bp;
+            this.socketPath = path.join(path.dirname(this.binPath), "core-agent.sock");
+            this.log(`[scout] using socket path [${this.socketPath}]`, types_1.LogLevel.Debug);
+        })
+            // Build options for the agent and create the agent
+            .then(() => {
+            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
+            const agent = new external_process_1.default(this.processOptions, this.logFn);
+            return this.setupAgent(agent);
+        })
+            // Once we have an agent (this.agent is also set), then start, connect, and register
+            .then(() => {
+            this.log(`[scout] starting process w/ bin @ path [${this.binPath}]`, types_1.LogLevel.Debug);
+            this.log(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, types_1.LogLevel.Debug);
+            return this.agent.start();
+        })
+            .then(() => this.log("[scout] agent successfully started", types_1.LogLevel.Debug))
+            .then(() => this.agent);
+    }
     /**
      * Create an async namespace internally for use with tracking if not already present
      */
@@ -327,6 +355,7 @@ class Scout extends events_1.EventEmitter {
             this.log("[scout] failed to send start request request", types_1.LogLevel.Error);
         });
     }
+    // Send the app registration request to the current agent
     sendRegistrationRequest() {
         return sendThroughAgent(this, new Requests.V1Register(this.config.name || "", this.config.key || "", types_1.APIVersion.V1))
             .then(() => undefined)
@@ -341,7 +370,7 @@ class Scout extends events_1.EventEmitter {
         Object.values(types_1.AgentEvent).forEach(evt => {
             this.agent.on(evt, msg => this.emit(evt, msg));
         });
-        return Promise.resolve();
+        return Promise.resolve(this.agent);
     }
 }
 exports.Scout = Scout;

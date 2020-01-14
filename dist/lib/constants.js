@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DEFAULT_CORE_AGENT_VERSION = "v1.2.7";
 exports.DOMAIN_SOCKET_URI_SCHEME_RGX = /^(unix|file):\/\//;
 exports.TMP_DIR_PREFIX = "core-agent-dl-";
 exports.CORE_AGENT_BIN_FILE_NAME = "core-agent";
@@ -16,7 +17,7 @@ exports.DEFAULT_CONNECTION_POOL_OPTS = {
 exports.MINUTE_MS = 60000;
 exports.AGENT_BUFFER_TIME_MS = 2 * exports.MINUTE_MS;
 exports.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS = 5 * exports.MINUTE_MS;
-exports.DEFAULT_SOCKET_FILE_NAME = "scout-agent.sock";
+exports.DEFAULT_SOCKET_FILE_NAME = "core-agent.sock";
 exports.DEFAULT_CORE_AGENT_NAME = "scout_apm_core";
 exports.SCOUT_PATH_TAG = "path";
 // Common parameters to filter, copied from scout_apm_python
