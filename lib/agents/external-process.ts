@@ -119,6 +119,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                 .then(
                     socket => {
                         socket.write(msg.toBinary());
+                        this.emit(AgentEvent.RequestSent, msg);
                         return this.pool.release(socket);
                     },
                     err => { throw err; },

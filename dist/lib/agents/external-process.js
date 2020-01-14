@@ -82,6 +82,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             this.pool.acquire()
                 .then(socket => {
                 socket.write(msg.toBinary());
+                this.emit(types_1.AgentEvent.RequestSent, msg);
                 return this.pool.release(socket);
             }, err => { throw err; })
                 .then(() => resolve());
