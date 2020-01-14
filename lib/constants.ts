@@ -1,3 +1,4 @@
+export const DEFAULT_CORE_AGENT_VERSION = "v1.2.7";
 export const DOMAIN_SOCKET_URI_SCHEME_RGX = /^(unix|file):\/\//;
 export const TMP_DIR_PREFIX = "core-agent-dl-";
 export const CORE_AGENT_BIN_FILE_NAME = "core-agent";
@@ -15,7 +16,7 @@ export const MINUTE_MS = 60000;
 export const AGENT_BUFFER_TIME_MS = 2 * MINUTE_MS;
 export const DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS = 5 * MINUTE_MS;
 
-export const DEFAULT_SOCKET_FILE_NAME = "scout-agent.sock";
+export const DEFAULT_SOCKET_FILE_NAME = "core-agent.sock";
 export const DEFAULT_CORE_AGENT_NAME = "scout_apm_core";
 
 export const SCOUT_PATH_TAG = "path";

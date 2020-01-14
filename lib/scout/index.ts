@@ -95,6 +95,18 @@ export class Scout extends EventEmitter {
             opts && opts.appMeta ? opts.appMeta : {},
         );
 
+        // Build expected bin & socket path based on current version
+        const version = (this.config.coreAgentVersion || Constants.DEFAULT_CORE_AGENT_VERSION).slice(1);
+        this.binPath = path.join(
+            Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+            version,
+            Constants.CORE_AGENT_BIN_FILE_NAME,
+        );
+        this.socketPath = path.join(
+            path.dirname(this.binPath),
+            Constants.DEFAULT_SOCKET_FILE_NAME,
+        );
+
         // Check node version for before/after
         this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
 
@@ -123,12 +135,9 @@ export class Scout extends EventEmitter {
         if (this.agent) { return Promise.resolve(this); }
 
         // If the socket path exists then we may skip downloading and launching
-        this.log(`[scout] checking for socket @ [${this.socketPath}]`, LogLevel.Debug);
-        const socketPath = this.getSocketPath();
-
-        return pathExists(socketPath)
+        return pathExists(this.socketPath)
             .then(exists => exists ? this.createAgentForExistingSocket() : this.downloadAndLaunchAgent())
-        // Start, connect, and register
+        // Once we have an agent (this.agent is also set), then start, connect, and register
             .then(() => {
                 this.log(`[scout] starting process w/ bin @ path [${this.binPath}]`, LogLevel.Debug);
                 this.log(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, LogLevel.Debug);
@@ -160,6 +169,8 @@ export class Scout extends EventEmitter {
 
     // Helper for creating an ExternalProcessAgent for an existing, listening agent
     private createAgentForExistingSocket(): Promise<ExternalProcessAgent> {
+        this.log(`[scout] detected existing socket @ [${this.socketPath}], skipping agent launch`, LogLevel.Debug);
+
         this.processOptions = new ProcessOptions(
             this.binPath,
             this.getSocketPath(),
@@ -172,6 +183,7 @@ export class Scout extends EventEmitter {
 
     // Helper for downloading and launching an agent
     private downloadAndLaunchAgent(): Promise<ExternalProcessAgent> {
+        this.log(`[scout] downloading and launching agent`, LogLevel.Debug);
         this.downloader = new WebAgentDownloader({logFn: this.logFn});
 
         // Ensure coreAgentVersion is present
