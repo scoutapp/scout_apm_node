@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const uuid_1 = require("uuid");
+const stacktrace_js_1 = require("stacktrace-js");
 const types_1 = require("../types");
 const index_1 = require("./index");
+const enum_1 = require("../types/enum");
 const Constants = require("../constants");
 const Errors = require("../errors");
 class ScoutSpan {
@@ -82,7 +84,25 @@ class ScoutSpan {
         this.stopped = true;
         // Stop all child spans
         this.childSpans.forEach(s => s.stop());
-        return Promise.resolve(this);
+        // Add stack trace to the span
+        return stacktrace_js_1.get()
+            .then(frames => {
+            return frames
+                // Filter out scout_apm_node related traces
+                .filter(f => !f.fileName || !f.fileName.includes("scout_apm_node"))
+                // Simplify the traces
+                .map(f => ({
+                line: f.lineNumber,
+                file: f.fileName,
+                function: f.functionName || "<anonymous>",
+            }));
+        })
+            .then(minimalFrames => ({
+            name: enum_1.ScoutContextNames.Traceback,
+            value: minimalFrames,
+        }))
+            .then(tracebackTag => this.addContext([tracebackTag]))
+            .then(() => this);
     }
     isStarted() {
         return this.started;
@@ -112,7 +132,8 @@ class ScoutSpan {
             // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
             // Send tags
-            .then(() => Promise.all(Object.entries(this.tags).map(([name, value]) => index_1.sendTagSpan(inst, this, name, value))))
+            .then(() => Promise.all(Object.entries(this.tags)
+            .map(([name, value]) => index_1.sendTagSpan(inst, this, name, value))))
             // End the span
             .then(() => index_1.sendStopSpan(inst, this))
             .then(() => this.sent = true)

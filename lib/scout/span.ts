@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { get as getStackTrace } from "stacktrace-js";
 
 import {
     LogFn,
@@ -7,6 +8,7 @@ import {
     Stoppable,
     Startable,
     ScoutTag,
+    JSONValue,
 } from "../types";
 
 import ScoutRequest from "./request";
@@ -17,6 +19,8 @@ import {
     sendStopSpan,
     sendTagSpan,
 } from "./index";
+
+import { ScoutContextNames } from "../types/enum";
 
 import * as Constants from "../constants";
 import * as Errors from "../errors";
@@ -59,7 +63,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private stopped: boolean = false;
     private sent: boolean = false;
     private childSpans: ScoutSpan[] = [];
-    private tags: { [key: string]: string } = {};
+    private tags: { [key: string]: JSONValue | JSONValue[] } = {};
 
     constructor(opts: ScoutSpanOptions) {
         this.request = opts.request;
@@ -88,7 +92,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     }
 
     /** @see Taggable */
-    public getContextValue(name: string): string | undefined {
+    public getContextValue(name: string): JSONValue | JSONValue[] | undefined {
         return this.tags[name];
     }
 
@@ -144,7 +148,25 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         // Stop all child spans
         this.childSpans.forEach(s => s.stop());
 
-        return Promise.resolve(this);
+        // Add stack trace to the span
+        return getStackTrace()
+            .then(frames => {
+                return frames
+                // Filter out scout_apm_node related traces
+                    .filter(f => !f.fileName || !f.fileName.includes("scout_apm_node"))
+                // Simplify the traces
+                    .map(f => ({
+                        line: f.lineNumber,
+                        file: f.fileName,
+                        function: f.functionName || "<anonymous>",
+                    }));
+            })
+            .then(minimalFrames => ({
+                name: ScoutContextNames.Traceback,
+                value: minimalFrames,
+            }))
+            .then(tracebackTag => this.addContext([tracebackTag]))
+            .then(() => this);
     }
 
     public isStarted(): boolean {
@@ -180,7 +202,8 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
         // Send tags
             .then(() => Promise.all(
-                Object.entries(this.tags).map(([name, value]) => sendTagSpan(inst, this, name, value)),
+                Object.entries(this.tags)
+                    .map(([name, value]) => sendTagSpan(inst, this, name, value)),
             ))
         // End the span
             .then(() => sendStopSpan(inst, this))
