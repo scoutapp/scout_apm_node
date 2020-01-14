@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const tmp = require("tmp-promise");
 const express = require("express");
+const net = require("net");
 const randomstring_1 = require("randomstring");
 const promise_timeout_1 = require("promise-timeout");
 const child_process_1 = require("child_process");
@@ -437,3 +438,18 @@ function makeConnectedPGClient(provider) {
     return client.connect().then(() => client);
 }
 exports.makeConnectedPGClient = makeConnectedPGClient;
+// A server that does nothing but collect the clients that connect to it
+function createClientCollectingServer() {
+    const clients = [];
+    const server = net.createServer((c) => {
+        // When a client connects, update the clients list
+        clients.push(c);
+    });
+    const shutdown = () => {
+        // Disconnect all the clients and close the server
+        clients.forEach(c => c.end());
+        server.close();
+    };
+    return [server, shutdown];
+}
+exports.createClientCollectingServer = createClientCollectingServer;

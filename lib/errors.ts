@@ -1,3 +1,5 @@
+export { TimeoutError } from "promise-timeout";
+
 export enum ErrorCode {
     NotImplemented,
     InvalidVersion,

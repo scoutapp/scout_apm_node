@@ -7,6 +7,7 @@ const fs_extra_1 = require("fs-extra");
 const net_1 = require("net");
 const child_process_1 = require("child_process");
 const generic_pool_1 = require("generic-pool");
+const promise_timeout_1 = require("promise-timeout");
 const types_1 = require("../types");
 const responses_1 = require("../protocol/v1/responses");
 class ExternalProcessAgent extends events_1.EventEmitter {
@@ -98,7 +99,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         }
         const requestType = msg.type;
         this.logFn(`[scout/external-process] sending message:\n ${JSON.stringify(msg.json)}`, types_1.LogLevel.Debug);
-        return new Promise((resolve, reject) => {
+        const sendPromise = new Promise((resolve, reject) => {
             // Get a socket from the pool
             this.pool
                 .acquire()
@@ -129,6 +130,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             // Socket acquisition failed
             err => { throw err; });
         });
+        return promise_timeout_1.timeout(sendPromise, 5000);
     }
     /**
      * Check if the process is present

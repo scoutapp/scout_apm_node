@@ -173,6 +173,8 @@ export type AgentOptions = ProcessOptions;
 
 export type ConnectionPoolOptions = Partial<GenericPoolOptions>;
 
+const DEFAULT_AGENT_SEND_TIMEOUT_MS = 5000;
+
 /**
  * Options for agents that are in a separate process not managed by this one
  */
@@ -200,6 +202,9 @@ export class ProcessOptions {
     public readonly configFilePath?: string;
     public readonly disallowLaunch?: boolean;
 
+    // Amount of time to wait before timing out messages
+    public readonly sendTimeoutMs?: number = DEFAULT_AGENT_SEND_TIMEOUT_MS;
+
     // Customize conection pool
     public readonly connPoolOpts?: ConnectionPoolOptions = Constants.DEFAULT_CONNECTION_POOL_OPTS;
 
@@ -213,6 +218,7 @@ export class ProcessOptions {
             if (opts.configFilePath) { this.configFilePath = opts.configFilePath; }
             if (opts.connPoolOpts) { this.connPoolOpts = opts.connPoolOpts; }
             if (opts.disallowLaunch) { this.disallowLaunch = opts.disallowLaunch; }
+            if (opts.sendTimeoutMs) { this.sendTimeoutMs = opts.sendTimeoutMs; }
         }
     }
 

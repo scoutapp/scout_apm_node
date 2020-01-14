@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as tmp from "tmp-promise";
 import * as express from "express";
+import * as net from "net";
 import { Application, Request, Response } from "express";
 import { generate as generateRandomString } from "randomstring";
 import { timeout, TimeoutError } from "promise-timeout";
@@ -530,4 +531,23 @@ export function makeConnectedPGClient(provider: () => ContainerAndOpts | null): 
     });
 
     return client.connect().then(() => client);
+}
+
+type ServerShutdownFn = () => void;
+
+// A server that does nothing but collect the clients that connect to it
+export function createClientCollectingServer(): [net.Server, ServerShutdownFn] {
+    const clients: net.Socket[] = [];
+    const server = net.createServer((c) => {
+        // When a client connects, update the clients list
+        clients.push(c);
+    });
+
+    const shutdown = () => {
+        // Disconnect all the clients and close the server
+        clients.forEach(c => c.end());
+        server.close();
+    };
+
+    return [server, shutdown];
 }

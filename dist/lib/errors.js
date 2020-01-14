@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var promise_timeout_1 = require("promise-timeout");
+exports.TimeoutError = promise_timeout_1.TimeoutError;
 var ErrorCode;
 (function (ErrorCode) {
     ErrorCode[ErrorCode["NotImplemented"] = 0] = "NotImplemented";
