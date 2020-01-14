@@ -3,7 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const path = require("path");
 const process = require("process");
+const nrc = require("node-request-context");
+const cls = require("continuation-local-storage");
+const semver = require("semver");
 const types_1 = require("../types");
+const index_1 = require("../index");
+const integrations_1 = require("../integrations");
 const web_1 = require("../agent-downloaders/web");
 const external_process_1 = require("../agents/external-process");
 const Requests = require("../protocol/v1/requests");
@@ -14,22 +19,37 @@ exports.ScoutRequest = request_1.default;
 var span_1 = require("./span");
 exports.ScoutSpan = span_1.default;
 const request_2 = require("./request");
+const DONE_NOTHING = () => undefined;
+const ASYNC_NS = "scout";
+const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
+const ASYNC_NS_SPAN = `${ASYNC_NS}.span`;
 class Scout extends events_1.EventEmitter {
     constructor(config, opts) {
         super();
         this.downloaderOptions = {};
+        this.canUseAsyncHooks = false;
         this.config = config || types_1.buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
         if (opts && opts.downloadOptions) {
             this.downloaderOptions = opts.downloadOptions;
         }
         this.applicationMetadata = new types_1.ApplicationMetadata(this.config, opts && opts.appMeta ? opts.appMeta : {});
+        // Check node version for before/after
+        this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
+        // Create async namespace if it does not exist
+        this.createAsyncNamespace();
     }
     getCoreAgentVersion() {
         return new types_1.CoreAgentVersion(this.coreAgentVersion.raw);
     }
     getApplicationMetadata() {
         return Object.assign({}, this.applicationMetadata);
+    }
+    getConfig() {
+        return this.config;
+    }
+    log(msg, lvl) {
+        this.logFn(msg, lvl);
     }
     setup() {
         // Return early if agent has already been set up
@@ -40,7 +60,7 @@ class Scout extends events_1.EventEmitter {
         // Ensure coreAgentVersion is present
         if (!this.config.coreAgentVersion) {
             const err = new Error("No core agent version specified!");
-            this.logFn(err.message, types_1.LogLevel.Error);
+            this.log(err.message, types_1.LogLevel.Error);
             return Promise.reject(err);
         }
         this.coreAgentVersion = new types_1.CoreAgentVersion(this.config.coreAgentVersion);
@@ -55,7 +75,7 @@ class Scout extends events_1.EventEmitter {
             .then(bp => {
             this.binPath = bp;
             this.socketPath = path.join(path.dirname(this.binPath), "core-agent.sock");
-            this.logFn(`[scout] using socket path [${this.socketPath}]`, types_1.LogLevel.Debug);
+            this.log(`[scout] using socket path [${this.socketPath}]`, types_1.LogLevel.Debug);
         })
             // Build options for the agent and create the agent
             .then(() => {
@@ -64,150 +84,36 @@ class Scout extends events_1.EventEmitter {
         })
             // Start, connect, and register
             .then(() => {
-            this.logFn(`[scout] starting process w/ bin @ path [${this.binPath}]`, types_1.LogLevel.Debug);
-            this.logFn(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, types_1.LogLevel.Debug);
+            this.log(`[scout] starting process w/ bin @ path [${this.binPath}]`, types_1.LogLevel.Debug);
+            this.log(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, types_1.LogLevel.Debug);
             return this.agent.start();
         })
-            .then(() => this.logFn("[scout] agent successfully started", types_1.LogLevel.Debug))
+            .then(() => this.log("[scout] agent successfully started", types_1.LogLevel.Debug))
             .then(() => this.agent.connect())
-            .then(() => this.logFn("[scout] successfully connected to agent", types_1.LogLevel.Debug))
+            .then(() => this.log("[scout] successfully connected to agent", types_1.LogLevel.Debug))
             .then(() => {
             if (!this.config.name) {
-                this.logFn("[scout] 'name' configuration value missing", types_1.LogLevel.Warn);
+                this.log("[scout] 'name' configuration value missing", types_1.LogLevel.Warn);
             }
             if (!this.config.key) {
-                this.logFn("[scout] 'key' missing in configuration", types_1.LogLevel.Warn);
+                this.log("[scout] 'key' missing in configuration", types_1.LogLevel.Warn);
             }
         })
             // Register the application
             .then(() => this.sendRegistrationRequest())
             // Send the application metadata
             .then(() => this.sendAppMetadataEvent())
-            .then(() => this);
-    }
-    /**
-     * Helper function for starting a scout request with the instance
-     *
-     * @param {ScoutRequestOptions} [options]
-     * @returns {Promise<ScoutRequest>} a new scout request
-     */
-    startRequest(opts) {
-        const request = new request_2.default(Object.assign({}, { scoutInstance: this }, opts || {}));
-        return request.start();
-    }
-    /**
-     * Send the StartRequest message to the agent
-     *
-     * @param {ScoutRequest} req - The original request
-     * @returns {Promise<ScoutRequest>} the passed in request
-     */
-    sendStartRequest(req) {
-        const startReq = new Requests.V1StartRequest({
-            requestId: req.id,
-            timestamp: req.getTimestamp(),
-        });
-        return this
-            .sendThroughAgent(startReq)
-            .then(() => req)
-            .catch(err => {
-            this.logFn("[scout] failed to send start request request", types_1.LogLevel.Error);
-            return req;
-        });
-    }
-    /**
-     * Send the StopRequest message to the agent
-     *
-     * @param {ScoutRequest} req - The original request
-     * @returns {Promise<ScoutRequest>} the passed in request
-     */
-    sendStopRequest(req) {
-        const stopReq = new Requests.V1FinishRequest(req.id);
-        return this
-            .sendThroughAgent(stopReq)
+            // Set up integration(s)
             .then(() => {
-            this.emit(types_1.ScoutEvent.RequestSent, { request: req });
-            return req;
+            Object.keys(index_1.EXPORT_BAG)
+                .map(packageName => integrations_1.getIntegrationForPackage(packageName))
+                .forEach(integration => integration.setScoutInstance(this));
         })
-            .catch(err => {
-            this.logFn("[scout] failed to send stop request request", types_1.LogLevel.Error);
-            return req;
-        });
-    }
-    /**
-     * Send the TagRequest message to the agent for a single tag
-     *
-     * @param {ScoutRequest} req - The original request
-     * @param {String} name - The tag name
-     * @param {String} value - The tag value
-     * @returns {Promise<void>} A promise which resolves when the message has been sent
-     */
-    sendTagRequest(req, name, value) {
-        const tagReq = new Requests.V1TagRequest(name, value, req.id);
-        return this
-            .sendThroughAgent(tagReq)
-            .then(() => undefined)
-            .catch(err => {
-            this.logFn("[scout] failed to send tag request", types_1.LogLevel.Error);
-        });
-    }
-    /**
-     * Send the StartSpan message to the agent
-     *
-     * @param {ScoutSpan} span - The original span
-     * @returns {Promise<ScoutSpan>} the passed in span
-     */
-    sendStartSpan(span) {
-        const opts = {
-            spanId: span.id,
-            parentId: span.parent ? span.parent.id : undefined,
-            timestamp: span.getTimestamp(),
-        };
-        const startSpanReq = new Requests.V1StartSpan(span.operation, span.request.id, opts);
-        return this
-            .sendThroughAgent(startSpanReq)
-            .then(() => span)
-            .catch(err => {
-            this.logFn("[scout] failed to send start span request", types_1.LogLevel.Error);
-            return span;
-        });
-    }
-    /**
-     * Send the TagSpan message to the agent message to the agent
-     *
-     * @param {ScoutSpan} span - The original span
-     * @param {String} name - The tag name
-     * @param {String} value - The tag value
-     * @returns {Promise<void>} A promise which resolves when the message has been sent
-     */
-    sendTagSpan(span, name, value) {
-        const tagSpanReq = new Requests.V1TagSpan(name, value, span.id, span.request.id);
-        return this
-            .sendThroughAgent(tagSpanReq)
-            .then(() => undefined)
-            .catch(err => {
-            this.logFn("[scout] failed to send tag span request", types_1.LogLevel.Error);
-            return undefined;
-        });
-    }
-    /**
-     * Send the StopSpan message to the agent
-     *
-     * @param {ScoutSpan} span - The original span
-     * @returns {Promise<ScoutSpan>} the passed in request
-     */
-    sendStopSpan(span) {
-        const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id);
-        return this
-            .sendThroughAgent(stopSpanReq)
-            .then(() => span)
-            .catch(err => {
-            this.logFn("[scout] failed to send stop span request", types_1.LogLevel.Error);
-            return span;
-        });
+            .then(() => this);
     }
     shutdown() {
         if (!this.agent) {
-            this.logFn("[scout] shutdown called but no agent to shutdown is present", types_1.LogLevel.Error);
+            this.log("[scout] shutdown called but no agent to shutdown is present", types_1.LogLevel.Error);
             return Promise.reject(new Errors.NoAgentPresent());
         }
         return this.agent
@@ -219,7 +125,7 @@ class Scout extends events_1.EventEmitter {
         });
     }
     hasAgent() {
-        return this.agent !== null;
+        return typeof this.agent !== "undefined" && this.agent !== null;
     }
     getAgent() {
         return this.agent;
@@ -231,14 +137,14 @@ class Scout extends events_1.EventEmitter {
      * @returns {boolean} whether the path should be ignored
      */
     ignoresPath(path) {
-        this.logFn("[scout] checking path [${path}] against ignored paths", types_1.LogLevel.Trace);
+        this.log("[scout] checking path [${path}] against ignored paths", types_1.LogLevel.Trace);
         // If ignore isn't specified or if empty, then nothing is ignored
         if (!this.config.ignore || this.config.ignore.length === 0) {
             return false;
         }
         const matchingPrefix = this.config.ignore.find(prefix => path.indexOf(prefix) === 0);
         if (matchingPrefix) {
-            this.logFn("[scout] ignoring path [${path}] matching prefix [${matchingPrefix}]", types_1.LogLevel.Debug);
+            this.log("[scout] ignoring path [${path}] matching prefix [${matchingPrefix}]", types_1.LogLevel.Debug);
             this.emit(types_1.ScoutEvent.IgnoredPathDetected, path);
         }
         return matchingPrefix !== undefined;
@@ -259,6 +165,154 @@ class Scout extends events_1.EventEmitter {
                 return path;
         }
     }
+    /**
+     * Start a transaction
+     *
+     * @param {string} name
+     * @returns void
+     */
+    transaction(name, cb) {
+        this.log(`[scout] Starting transaction [${name}]`, types_1.LogLevel.Debug);
+        let result;
+        let ranContext = false;
+        // Setup if necessary then then perform the async request context
+        return this.setup()
+            .then(() => {
+            result = this.withAsyncRequestContext(cb);
+            ranContext = true;
+        })
+            .catch(err => {
+            this.log("[scout] Scout setup failed: ${err}", types_1.LogLevel.Error);
+            if (!ranContext) {
+                result = this.withAsyncRequestContext(cb);
+            }
+        });
+    }
+    /**
+     * Start an instrumentation, withing a given transaction
+     *
+     * @param {string} operation
+     * @param {Function} cb
+     * @returns {Promise<any>} a promsie that resolves to the result of the callback
+     */
+    instrument(operation, cb) {
+        this.log(`[scout] Instrumenting operation [${operation}]`, types_1.LogLevel.Debug);
+        const parent = this.getCurrentSpan() || this.getCurrentRequest();
+        // If no request is currently underway
+        if (!parent) {
+            this.log("[scout] Failed to start instrumentation, no current transaction/parent instrumentation", types_1.LogLevel.Error);
+            return Promise.resolve(cb(DONE_NOTHING));
+        }
+        let result;
+        let ranCb = false;
+        this.log(`[scout] Starting child span for operation [${operation}], parent id [${parent.id}]`, types_1.LogLevel.Debug);
+        let span;
+        const doneFn = () => {
+            this.log(`[scout] Stopping span with ID [${span.id}]`, types_1.LogLevel.Debug);
+            this.asyncNamespace.set(ASYNC_NS_SPAN, undefined);
+            return span.stop();
+        };
+        return parent
+            // Start the child span
+            .startChildSpan(operation)
+            // Set up the async namespace, run the function
+            .then(s => span = s)
+            .then(() => {
+            this.asyncNamespace.set(ASYNC_NS_SPAN, span);
+            result = cb(doneFn);
+            ranCb = true;
+            return span;
+        })
+            // Return the result
+            .then(() => result)
+            .catch(err => {
+            // It's possible that an error happened *before* the span could be set
+            if (!ranCb) {
+                result = span ? cb(doneFn) : cb(() => undefined);
+            }
+            this.log("[scout] failed to send start span", types_1.LogLevel.Error);
+            return result;
+        });
+    }
+    /**
+     * Reterieve the current request using the async hook/continuation local storage machinery
+     *
+     * @returns {ScoutRequest} the current active request
+     */
+    getCurrentRequest() {
+        return this.asyncNamespace.get(ASYNC_NS_REQUEST);
+    }
+    /**
+     * Reterieve the current span using the async hook/continuation local storage machinery
+     *
+     * @returns {ScoutSpan} the current active span
+     */
+    getCurrentSpan() {
+        return this.asyncNamespace.get(ASYNC_NS_SPAN);
+    }
+    /**
+     * Create an async namespace internally for use with tracking if not already present
+     */
+    createAsyncNamespace() {
+        const implementation = this.canUseAsyncHooks ? nrc : cls;
+        this.asyncNamespace = implementation.getNamespace(ASYNC_NS);
+        // Create if it doesn't exist
+        if (!this.asyncNamespace) {
+            this.asyncNamespace = implementation.createNamespace(ASYNC_NS);
+        }
+    }
+    /**
+     * Perform some action within a context
+     *
+     */
+    withAsyncRequestContext(cb) {
+        // If we can use async hooks then node-request-context is usable
+        return new Promise((resolve) => {
+            let result;
+            let req;
+            let ranCb = false;
+            const doneFn = () => {
+                this.log(`[scout] Finishing and sending request with ID [${req.id}]`, types_1.LogLevel.Debug);
+                return req
+                    .finishAndSend()
+                    .then(() => this.asyncNamespace.set(ASYNC_NS_REQUEST, undefined));
+            };
+            // Run in the async namespace
+            this.asyncNamespace.run(() => {
+                this.log(`[scout] Starting request in async namespace...`, types_1.LogLevel.Debug);
+                // Star the request
+                this.startRequest()
+                    .then(r => req = r)
+                    // Update async namespace, run function
+                    .then(() => {
+                    this.log(`[scout] Request started w/ ID [${req.id}]`, types_1.LogLevel.Debug);
+                    this.asyncNamespace.set(ASYNC_NS_REQUEST, req);
+                    result = cb(doneFn);
+                    ranCb = true;
+                    return result;
+                })
+                    // If an error occurs then run the fn and log
+                    .catch(err => {
+                    // In the case that an error occurs before the request gets made we can't run doneFn
+                    if (!ranCb) {
+                        result = req ? cb(doneFn) : cb(() => undefined);
+                    }
+                    resolve(result);
+                    this.log(`[scout] failed to send start request request: ${err}`, types_1.LogLevel.Error);
+                });
+            });
+        });
+    }
+    /**
+     * Helper function for starting a scout request with the instance
+     *
+     * @param {ScoutRequestOptions} [options]
+     * @returns {Promise<ScoutRequest>} a new scout request
+     */
+    startRequest(opts) {
+        const request = new request_2.default(Object.assign({}, { scoutInstance: this }, opts || {}));
+        return request.start();
+    }
     getSocketPath() {
         return `unix://${this.socketPath}`;
     }
@@ -267,41 +321,18 @@ class Scout extends events_1.EventEmitter {
     }
     // Helper for sending app metadata
     sendAppMetadataEvent() {
-        return this
-            .sendThroughAgent(this.buildAppMetadataEvent(), { async: true })
+        return sendThroughAgent(this, this.buildAppMetadataEvent(), { async: true })
             .then(() => undefined)
             .catch(err => {
-            this.logFn("[scout] failed to send start request request", types_1.LogLevel.Error);
+            this.log("[scout] failed to send start request request", types_1.LogLevel.Error);
         });
     }
     sendRegistrationRequest() {
-        return this
-            .sendThroughAgent(new Requests.V1Register(this.config.name || "", this.config.key || "", types_1.APIVersion.V1))
+        return sendThroughAgent(this, new Requests.V1Register(this.config.name || "", this.config.key || "", types_1.APIVersion.V1))
             .then(() => undefined)
             .catch(err => {
-            this.logFn("[scout] failed to send app registration request", types_1.LogLevel.Error);
+            this.log("[scout] failed to send app registration request", types_1.LogLevel.Error);
         });
-    }
-    /**
-     * Helper function for sending a given request through the agent
-     *
-     * @param {T extends BaseAgentRequest} msg - The message to send
-     * @returns {Promise<T extends BaseAgentResponse>} resp - The message to send
-     */
-    sendThroughAgent(msg, opts) {
-        if (!this.hasAgent()) {
-            const err = new Errors.Disconnected("No agent is present, please run .setup()");
-            this.logFn(err.message, types_1.LogLevel.Error);
-            return Promise.reject(err);
-        }
-        if (!this.config.monitor) {
-            this.logFn("[scout] monitoring disabled, not sending tag request", types_1.LogLevel.Warn);
-            return Promise.reject(new Errors.MonitoringDisabled());
-        }
-        if (opts && opts.async) {
-            return this.agent.sendAsync(msg);
-        }
-        return this.agent.send(msg);
     }
     // Helper function for setting up an agent to be part of the scout instance
     setupAgent(agent) {
@@ -314,3 +345,146 @@ class Scout extends events_1.EventEmitter {
     }
 }
 exports.Scout = Scout;
+// The functions below are exports for module-level use. They need to be made externally available for
+// code in this module but *not* as part of the public API for a Scout instance.
+/**
+ * Send the StartRequest message to the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutRequest} req - The original request
+ * @returns {Promise<ScoutRequest>} the passed in request
+ */
+function sendStartRequest(scout, req) {
+    const startReq = new Requests.V1StartRequest({
+        requestId: req.id,
+        timestamp: req.getTimestamp(),
+    });
+    return sendThroughAgent(scout, startReq)
+        .then(() => req)
+        .catch(err => {
+        scout.log(`[scout] failed to send start request request: ${err}`, types_1.LogLevel.Error);
+        return req;
+    });
+}
+exports.sendStartRequest = sendStartRequest;
+/**
+ * Send the StopRequest message to the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutRequest} req - The original request
+ * @returns {Promise<ScoutRequest>} the passed in request
+ */
+function sendStopRequest(scout, req) {
+    const stopReq = new Requests.V1FinishRequest(req.id);
+    return sendThroughAgent(scout, stopReq)
+        .then(() => {
+        scout.emit(types_1.ScoutEvent.RequestSent, { request: req });
+        return req;
+    })
+        .catch(err => {
+        scout.log("[scout] failed to send stop request request", types_1.LogLevel.Error);
+        return req;
+    });
+}
+exports.sendStopRequest = sendStopRequest;
+/**
+ * Send the TagRequest message to the agent for a single tag
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutRequest} req - The original request
+ * @param {String} name - The tag name
+ * @param {String} value - The tag value
+ * @returns {Promise<void>} A promise which resolves when the message has been sent
+ */
+function sendTagRequest(scout, req, name, value) {
+    const tagReq = new Requests.V1TagRequest(name, value, req.id);
+    return sendThroughAgent(scout, tagReq)
+        .then(() => undefined)
+        .catch(err => {
+        scout.log("[scout] failed to send tag request", types_1.LogLevel.Error);
+    });
+}
+exports.sendTagRequest = sendTagRequest;
+/**
+ * Send the StartSpan message to the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutSpan} span - The original span
+ * @returns {Promise<ScoutSpan>} the passed in span
+ */
+function sendStartSpan(scout, span) {
+    const opts = {
+        spanId: span.id,
+        parentId: span.parent ? span.parent.id : undefined,
+        timestamp: span.getTimestamp(),
+    };
+    const startSpanReq = new Requests.V1StartSpan(span.operation, span.request.id, opts);
+    return sendThroughAgent(scout, startSpanReq)
+        .then(() => span)
+        .catch(err => {
+        scout.log("[scout] failed to send start span request", types_1.LogLevel.Error);
+        return span;
+    });
+}
+exports.sendStartSpan = sendStartSpan;
+/**
+ * Send the TagSpan message to the agent message to the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutSpan} span - The original span
+ * @param {String} name - The tag name
+ * @param {String} value - The tag value
+ * @returns {Promise<void>} A promise which resolves when the message has been
+ */
+function sendTagSpan(scout, span, name, value) {
+    const tagSpanReq = new Requests.V1TagSpan(name, value, span.id, span.request.id);
+    return sendThroughAgent(scout, tagSpanReq)
+        .then(() => undefined)
+        .catch(err => {
+        scout.log("[scout] failed to send tag span request", types_1.LogLevel.Error);
+        return undefined;
+    });
+}
+exports.sendTagSpan = sendTagSpan;
+/**
+ * Send the StopSpan message to the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {ScoutSpan} span - The original span
+ * @returns {Promise<ScoutSpan>} the passed in request
+ */
+function sendStopSpan(scout, span) {
+    const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id);
+    return sendThroughAgent(scout, stopSpanReq)
+        .then(() => span)
+        .catch(err => {
+        scout.log("[scout] failed to send stop span request", types_1.LogLevel.Error);
+        return span;
+    });
+}
+exports.sendStopSpan = sendStopSpan;
+/**
+ * Helper function for sending a given request through the agent
+ *
+ * @param {Scout} scout - A scout instance
+ * @param {T extends BaseAgentRequest} msg - The message to send
+ * @returns {Promise<T extends BaseAgentResponse>} resp - The message to send
+ */
+function sendThroughAgent(scout, msg, opts) {
+    if (!scout.hasAgent()) {
+        const err = new Errors.Disconnected("No agent is present, please run .setup()");
+        scout.log(err.message, types_1.LogLevel.Error);
+        return Promise.reject(err);
+    }
+    const agent = scout.getAgent();
+    const config = scout.getConfig();
+    if (!config.monitor) {
+        scout.log("[scout] monitoring disabled, not sending tag request", types_1.LogLevel.Warn);
+        return Promise.reject(new Errors.MonitoringDisabled());
+    }
+    if (opts && opts.async) {
+        return agent.sendAsync(msg);
+    }
+    return agent.send(msg);
+}
+exports.sendThroughAgent = sendThroughAgent;

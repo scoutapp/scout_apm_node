@@ -13,6 +13,7 @@
       "no-shadowed-variable": false,
       "no-namespace": false,
       "no-var-requires": false,
+      "member-ordering": false,
       "object-literal-sort-keys": false
     },
     "rulesDirectory": []

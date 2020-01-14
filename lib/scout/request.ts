@@ -12,7 +12,13 @@ import {
 import ScoutSpan from "./span";
 import { ChildSpannable } from "./span";
 
-import { Scout } from "./index";
+import {
+    Scout,
+    sendStartRequest,
+    sendStopRequest,
+    sendTagRequest,
+    sendStopSpan,
+} from "./index";
 
 import * as Constants from "../constants";
 import * as Errors from "../errors";
@@ -99,6 +105,11 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         return Promise.resolve(this);
     }
 
+    /** @see Taggable */
+    public getContextValue(name: string): string | undefined {
+        return this.tags[name];
+    }
+
     public getTags(): ScoutTag[] {
         return Object.entries(this.tags)
             .map(([name, value]) => {
@@ -158,15 +169,15 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
             return Promise.resolve(this);
         }
 
-        return inst.sendStartRequest(this)
+        return sendStartRequest(inst, this)
         // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
         // Send tags
             .then(() => Promise.all(
-                Object.entries(this.tags).map(([name, value]) => inst.sendTagRequest(this, name, value)),
+                Object.entries(this.tags).map(([name, value]) => sendTagRequest(inst, this, name, value)),
             ))
         // End the span
-            .then(() => inst.sendStopRequest(this))
+            .then(() => sendStopRequest(inst, this))
             .then(() => this.sent = true)
             .then(() => this)
             .catch(err => {

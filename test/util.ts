@@ -2,6 +2,12 @@ import * as path from "path";
 import * as tmp from "tmp-promise";
 import * as express from "express";
 import { Application, Request, Response } from "express";
+import { generate as generateRandomString } from "randomstring";
+import { timeout, TimeoutError } from "promise-timeout";
+import { ChildProcess, spawn } from "child_process";
+import { EventEmitter } from "events";
+import { Readable } from "stream";
+import { Client } from "pg";
 
 import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
@@ -22,8 +28,14 @@ import { Scout } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
 
+const getPort = require("get-port");
+
 // Wait a little longer for requests that use express
 export const EXPRESS_TEST_TIMEOUT = 2000;
+export const PG_TEST_TIMEOUT = 3000;
+export const DASHBOARD_SEND_TIMEOUT = 1000 * 60 * 3; // 3 minutes
+
+const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
 
 // Helper for downloading and creating an agent
 export function bootstrapExternalProcessAgent(
@@ -252,4 +264,270 @@ export function buildTestScoutInstance(
         Object.assign({allowShutdown: true, monitor: true}, configOverride),
     );
     return new Scout(cfg, options);
+}
+
+export class TestContainerStartOpts {
+    public readonly dockerBinPath: string = "/usr/bin/docker";
+    // Phrases that should be waited for before the container is "started"
+    public readonly waitFor: {stdout?: string, stderr?: string} = {};
+    public readonly startTimeoutMs: number = 5000;
+    public readonly killTimeoutMs: number = 5000;
+
+    public imageName: string;
+    public tagName: string = "latest";
+    public containerName: string;
+    public env: object = process.env;
+    public executedStartCommand: string;
+    public portBinding: {[key: number]: number} = {};
+
+    constructor(opts: Partial<TestContainerStartOpts>) {
+        if (opts) {
+            if (opts.dockerBinPath) { this.dockerBinPath = opts.dockerBinPath; }
+            if (opts.waitFor) { this.waitFor = opts.waitFor; }
+            if (opts.imageName) { this.imageName = opts.imageName; }
+            if (opts.tagName) { this.tagName = opts.tagName; }
+            if (opts.containerName) { this.containerName = opts.containerName; }
+            if (opts.startTimeoutMs) { this.startTimeoutMs = opts.startTimeoutMs; }
+            if (opts.killTimeoutMs) { this.killTimeoutMs = opts.killTimeoutMs; }
+            if (opts.env) { this.env = opts.env; }
+            if (opts.portBinding) { this.portBinding = opts.portBinding; }
+        }
+
+        // Generate a random container name if one wasn't provided
+        if (!this.containerName) {
+            this.containerName = `test-${this.imageName}-${generateRandomString(5)}`;
+        }
+    }
+
+    public imageWithTag(): string {
+        return `${this.imageName}:${this.tagName}`;
+    }
+
+    public setExecutedStartCommand(cmd: string) {
+        this.executedStartCommand = cmd;
+    }
+}
+
+export interface ContainerAndOpts {
+    containerProcess: ChildProcess;
+    opts: TestContainerStartOpts;
+}
+
+/**
+ * Start a container in a child process for use with tests
+ *
+ * @param {Test} t - the test (tape) instance
+ * @param {string} image - the image name (ex. "postgres")
+ * @param {string} tag - the image tag (ex. "12")
+ * @returns {Promise<ChildProcess>} A promise that resolves to the spawned child process
+ */
+export function startContainer(
+    t: Test,
+    optOverrides: Partial<TestContainerStartOpts>,
+): Promise<ContainerAndOpts> {
+    const opts =  new TestContainerStartOpts(optOverrides);
+
+    // Build port mapping arguments
+    const portMappingArgs: string[] = [];
+    Object.entries(opts.portBinding).forEach(([containerPort, localPort]) => {
+        portMappingArgs.push("-p");
+        portMappingArgs.push(`${localPort}:${containerPort}`);
+    });
+
+    const args = [
+        "run",
+        "--name", opts.containerName,
+        ...portMappingArgs,
+        opts.imageWithTag(),
+    ];
+
+    // Spawn the docker container
+    t.comment(`spawning container [${opts.imageName}:${opts.tagName}] with name [${opts.containerName}]...`);
+    const containerProcess = spawn(
+        opts.dockerBinPath,
+        args,
+        { detached: true, stdio: "pipe"},
+    );
+    opts.setExecutedStartCommand(`${opts.dockerBinPath} ${args.join(" ")}`);
+
+    let resolved = false;
+    let stdoutListener;
+    let stderrListener;
+
+    const makeListener = (
+        type: "stdout" | "stderr",
+        emitter: Readable | null,
+        expected: string,
+        resolve: (res: ContainerAndOpts) => void,
+        reject: (err?: Error) => void,
+    ) => {
+        if (!emitter) {
+            return () => reject(new Error(`[${type}] pipe was not Readable`));
+        }
+
+        return (line: string) => {
+            if (!line.includes(expected)) { return; }
+
+            if (type === "stdout" && stdoutListener) { emitter.removeListener("data", stdoutListener); }
+            if (type === "stderr" && stderrListener) { emitter.removeListener("data", stderrListener); }
+
+            if (!resolved) {
+                resolve({containerProcess, opts});
+            }
+
+            resolved = true;
+        };
+    };
+
+    // Wait until process is listening on the given socket port
+    const promise = new Promise((resolve, reject) => {
+        // If there's a waitFor specified then we're going to have to listen before we return
+
+        if (opts.waitFor && opts.waitFor.stdout) {
+            // TODO: wait for output on stdout
+            stdoutListener = makeListener("stdout", containerProcess.stdout, opts.waitFor.stdout, resolve, reject);
+            if (containerProcess.stdout) { containerProcess.stdout.on("data", stdoutListener); }
+            return;
+        }
+
+        if (opts.waitFor && opts.waitFor.stderr) {
+            // TODO: wait for output on stderr
+            stderrListener = makeListener("stderr", containerProcess.stderr, opts.waitFor.stderr, resolve, reject);
+            if (containerProcess.stderr) { containerProcess.stderr.on("data", stderrListener); }
+            return;
+        }
+
+        containerProcess.on("close", code => {
+            if (code !== 0) {
+                t.comment("daemon failed to start container, piping output to stdout...");
+                if (containerProcess.stdout) { containerProcess.stdout.pipe(process.stdout); }
+                t.comment(`command: [${opts.executedStartCommand}]`);
+                reject(new Error(`Failed to start container (code ${code}), output will be piped to stdout`));
+                return;
+            }
+
+            resolve({containerProcess, opts});
+        });
+
+    });
+
+    return timeout(promise, opts.startTimeoutMs)
+        .catch(err => {
+            // If we timed out clean up some waiting stuff, shutdown the process
+            // since none of the listeners may have triggered, clean them up
+            if (err instanceof TimeoutError) {
+                if (opts.waitFor && opts.waitFor.stdout && containerProcess.stdout) {
+                    containerProcess.stdout.on("data", stdoutListener);
+                }
+
+                if (opts.waitFor && opts.waitFor.stderr && containerProcess.stderr) {
+                    containerProcess.stderr.on("data", stderrListener);
+                }
+
+                containerProcess.kill();
+            }
+
+            // Re-throw the error
+            throw err;
+        });
+}
+
+// Kill a running container
+export function killContainer(t: Test, opts: TestContainerStartOpts): Promise<number> {
+    const args = ["kill", opts.containerName];
+
+    // Spawn the docker container
+    t.comment(`attempting to kill [${opts.containerName}]...`);
+    const dockerKillProcess = spawn(
+        opts.dockerBinPath,
+        args,
+        { detached: true, stdio: "ignore"},
+    );
+
+    const promise = new Promise((resolve, reject) => {
+        dockerKillProcess.on("close", code => {
+            resolve(code);
+        });
+    });
+
+    return timeout(promise, opts.killTimeoutMs);
+}
+
+const POSTGRES_IMAGE_NAME = "postgres";
+
+// Utility function to start a postgres instance
+export function startContainerizedPostgresTest(
+    test: any,
+    cb: (cao: ContainerAndOpts) => void,
+    containerEnv?: object,
+    tagName?: string,
+) {
+    tagName = tagName || "alpine";
+    const env = containerEnv || {};
+
+    test("Starting postgres instance", (t: Test) => {
+        let port: number;
+        let containerAndOpts: ContainerAndOpts;
+
+        getPort()
+            .then(p => port = p)
+            .then(() => {
+                const portBinding = {5432: port};
+                return startContainer(t, {
+                    imageName: POSTGRES_IMAGE_NAME,
+                    tagName,
+                    portBinding,
+                    env,
+                    waitFor: {stdout: POSTGRES_STARTUP_MESSAGE},
+                });
+            })
+            .then(cao => containerAndOpts = cao)
+            .then(() => {
+                const opts = containerAndOpts.opts;
+                t.comment(`Started container [${opts.containerName}] on local port ${opts.portBinding[5432]}`);
+                cb(containerAndOpts);
+            })
+            .then(() => t.end())
+            .catch(err => {
+                if (containerAndOpts) {
+                    return killContainer(t, containerAndOpts.opts)
+                        .then(() => t.end(err));
+                }
+
+                return t.end(err);
+            });
+    });
+}
+
+// Utility function to stop a postgres instance
+export function stopContainerizedPostgresTest(test: any, provider: () => ContainerAndOpts | null) {
+    test(`Stopping containerized postgres instance...`, (t: Test) => {
+        const containerAndOpts = provider();
+        if (!containerAndOpts) {
+            throw new Error("no container w/ opts object provided, can't stop container");
+        }
+
+        const opts = containerAndOpts.opts;
+
+        killContainer(t, opts)
+            .then(code => t.ok(`successfully stopped container [${opts.containerName}], with code [${code}]`))
+            .then(() => t.end())
+            .catch(err => t.end(err));
+    });
+}
+
+export function makeConnectedPGClient(provider: () => ContainerAndOpts | null): Promise<Client> {
+    const cao = provider();
+    if (!cao) { return Promise.reject(new Error("no CAO in provider")); }
+
+    const port: number = cao.opts.portBinding[5432];
+    const client = new Client({
+        user: "postgres",
+        host: "localhost",
+        database: "postgres",
+        password: "postgres",
+        port,
+    });
+
+    return client.connect().then(() => client);
 }

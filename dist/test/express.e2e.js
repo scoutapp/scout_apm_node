@@ -256,7 +256,7 @@ test("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t =>
         requestTimeoutMs: 0,
     }));
     // Set up a listener that should *not* fire
-    const listener = (data, another) => {
+    const listener = (data) => {
         const pathTag = data.request.getTags().find(t => t.name === Constants.SCOUT_PATH_TAG);
         // Remove listener since this should fire once
         scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
