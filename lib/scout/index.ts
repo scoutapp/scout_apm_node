@@ -18,6 +18,7 @@ import {
     BaseAgentRequest,
     BaseAgentResponse,
     CoreAgentVersion,
+    JSONValue,
     LogFn,
     LogLevel,
     ProcessOptions,
@@ -27,8 +28,8 @@ import {
     buildDownloadOptions,
     buildProcessOptions,
     buildScoutConfiguration,
-    scrubRequestPathParams,
     scrubRequestPath,
+    scrubRequestPathParams,
 } from "../types";
 import { EXPORT_BAG } from "../index";
 import { getIntegrationForPackage } from "../integrations";
@@ -576,7 +577,12 @@ export function sendStopRequest(scout: Scout, req: ScoutRequest): Promise<ScoutR
  * @param {String} value - The tag value
  * @returns {Promise<void>} A promise which resolves when the message has been sent
  */
-export function sendTagRequest(scout: Scout, req: ScoutRequest, name: string, value: string): Promise<void> {
+export function sendTagRequest(
+    scout: Scout,
+    req: ScoutRequest,
+    name: string,
+    value: JSONValue | JSONValue[],
+): Promise<void> {
     const tagReq = new Requests.V1TagRequest(name, value, req.id);
 
     return sendThroughAgent(scout, tagReq)
@@ -623,7 +629,12 @@ export function sendStartSpan(scout: Scout, span: ScoutSpan): Promise<ScoutSpan>
  * @param {String} value - The tag value
  * @returns {Promise<void>} A promise which resolves when the message has been
  */
-export function sendTagSpan(scout: Scout, span: ScoutSpan, name: string, value: string): Promise<void> {
+export function sendTagSpan(
+    scout: Scout,
+    span: ScoutSpan,
+    name: string,
+    value: JSONValue | JSONValue[],
+): Promise<void> {
     const tagSpanReq = new Requests.V1TagSpan(
         name,
         value,

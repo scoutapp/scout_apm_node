@@ -8,6 +8,7 @@ import {
     Stoppable,
     Startable,
     ScoutTag,
+    JSONValue,
 } from "../types";
 
 import ScoutRequest from "./request";
@@ -62,7 +63,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private stopped: boolean = false;
     private sent: boolean = false;
     private childSpans: ScoutSpan[] = [];
-    private tags: { [key: string]: string } = {};
+    private tags: { [key: string]: JSONValue | JSONValue[] } = {};
 
     constructor(opts: ScoutSpanOptions) {
         this.request = opts.request;
@@ -91,7 +92,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     }
 
     /** @see Taggable */
-    public getContextValue(name: string): string | undefined {
+    public getContextValue(name: string): JSONValue | JSONValue[] | undefined {
         return this.tags[name];
     }
 
@@ -162,7 +163,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             })
             .then(minimalFrames => ({
                 name: ScoutContextNames.Traceback,
-                value: JSON.stringify(minimalFrames),
+                value: minimalFrames,
             }))
             .then(tracebackTag => this.addContext([tracebackTag]))
             .then(() => this);
@@ -201,7 +202,8 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
         // Send tags
             .then(() => Promise.all(
-                Object.entries(this.tags).map(([name, value]) => sendTagSpan(inst, this, name, value)),
+                Object.entries(this.tags)
+                    .map(([name, value]) => sendTagSpan(inst, this, name, value)),
             ))
         // End the span
             .then(() => sendStopSpan(inst, this))

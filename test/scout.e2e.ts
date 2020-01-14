@@ -16,7 +16,14 @@ import {
 
 import { ScoutEventRequestSentData } from "../lib/scout";
 
-import { BaseAgentRequest, AgentRequestType, AgentEvent, ApplicationEventType, ScoutContextNames } from "../lib/types";
+import {
+    BaseAgentRequest,
+    AgentRequestType,
+    AgentEvent,
+    ApplicationEventType,
+    ScoutContextNames,
+    JSONValue,
+} from "../lib/types";
 import { V1ApplicationEvent } from "../lib/protocol/v1/requests";
 
 import { pathExists, remove } from "fs-extra";
@@ -562,11 +569,10 @@ test("spans should have traces attached", t => {
             .getChildSpans()
             .then(spans => {
                 t.equals(spans.length, 1, "one span was present");
-                const stackJson = spans[0].getContextValue(ScoutContextNames.Traceback);
-                t.assert(stackJson, "traceback context is present on span");
-
-                const stack = JSON.parse(stackJson || "[]");
-                t.equals(stack.find(s => s.file.includes("scout_apm_node")), undefined, "no scout APM traces");
+                const stack = spans[0].getContextValue(ScoutContextNames.Traceback);
+                t.assert(stack, "traceback context is present on span");
+                const scoutTrace = (stack as JSONValue[]).find((s: any) => s.file.includes("scout_apm_node"));
+                t.equals(scoutTrace, undefined, "no scout APM traces");
             })
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => TestUtil.shutdownScout(t, scout, err));

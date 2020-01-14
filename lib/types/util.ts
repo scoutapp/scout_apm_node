@@ -172,11 +172,11 @@ export interface Startable {
 
 export interface ScoutTag {
     name: string;
-    value: string;
+    value: JSONValue | JSONValue[];
 }
 
 export interface Taggable {
     addContext(tags: ScoutTag[]): Promise<this>;
 
-    getContextValue(name: string): string | undefined;
+    getContextValue(name: string): JSONValue | JSONValue[] | undefined;
 }

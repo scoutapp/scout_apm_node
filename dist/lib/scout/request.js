@@ -121,7 +121,8 @@ class ScoutRequest {
             // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
             // Send tags
-            .then(() => Promise.all(Object.entries(this.tags).map(([name, value]) => index_1.sendTagRequest(inst, this, name, value))))
+            .then(() => Promise.all(Object.entries(this.tags)
+            .map(([name, value]) => index_1.sendTagRequest(inst, this, name, value))))
             // End the span
             .then(() => index_1.sendStopRequest(inst, this))
             .then(() => this.sent = true)

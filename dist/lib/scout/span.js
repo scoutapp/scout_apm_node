@@ -99,7 +99,7 @@ class ScoutSpan {
         })
             .then(minimalFrames => ({
             name: enum_1.ScoutContextNames.Traceback,
-            value: JSON.stringify(minimalFrames),
+            value: minimalFrames,
         }))
             .then(tracebackTag => this.addContext([tracebackTag]))
             .then(() => this);
@@ -132,7 +132,8 @@ class ScoutSpan {
             // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
             // Send tags
-            .then(() => Promise.all(Object.entries(this.tags).map(([name, value]) => index_1.sendTagSpan(inst, this, name, value))))
+            .then(() => Promise.all(Object.entries(this.tags)
+            .map(([name, value]) => index_1.sendTagSpan(inst, this, name, value))))
             // End the span
             .then(() => index_1.sendStopSpan(inst, this))
             .then(() => this.sent = true)

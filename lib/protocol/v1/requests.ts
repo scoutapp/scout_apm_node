@@ -78,7 +78,7 @@ export class V1TagRequest extends BaseAgentRequest {
 
     constructor(
         tagName: string,
-        tagValue: string,
+        tagValue: JSONValue | JSONValue[],
         requestId: string,
         opts?: {timestamp?: Date},
     ) {

@@ -476,10 +476,10 @@ test("spans should have traces attached", t => {
             .getChildSpans()
             .then(spans => {
             t.equals(spans.length, 1, "one span was present");
-            const stackJson = spans[0].getContextValue(types_1.ScoutContextNames.Traceback);
-            t.assert(stackJson, "traceback context is present on span");
-            const stack = JSON.parse(stackJson || "[]");
-            t.equals(stack.find(s => s.file.includes("scout_apm_node")), undefined, "no scout APM traces");
+            const stack = spans[0].getContextValue(types_1.ScoutContextNames.Traceback);
+            t.assert(stack, "traceback context is present on span");
+            const scoutTrace = stack.find((s) => s.file.includes("scout_apm_node"));
+            t.equals(scoutTrace, undefined, "no scout APM traces");
         })
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => TestUtil.shutdownScout(t, scout, err));
