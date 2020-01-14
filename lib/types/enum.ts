@@ -121,3 +121,7 @@ export enum ScoutEvent {
     IgnoredPathDetected = "scout-event-ignored-path-detected",
     RequestSent = "scout-event-request-sent",
 }
+
+export enum ScoutContextNames {
+    Traceback = "stack",
+}

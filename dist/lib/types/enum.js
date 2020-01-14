@@ -112,3 +112,7 @@ var ScoutEvent;
     ScoutEvent["IgnoredPathDetected"] = "scout-event-ignored-path-detected";
     ScoutEvent["RequestSent"] = "scout-event-request-sent";
 })(ScoutEvent = exports.ScoutEvent || (exports.ScoutEvent = {}));
+var ScoutContextNames;
+(function (ScoutContextNames) {
+    ScoutContextNames["Traceback"] = "stack";
+})(ScoutContextNames = exports.ScoutContextNames || (exports.ScoutContextNames = {}));

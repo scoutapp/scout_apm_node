@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { get as getStackTrace } from "stacktrace-js";
 
 import {
     LogFn,
@@ -17,6 +18,8 @@ import {
     sendStopSpan,
     sendTagSpan,
 } from "./index";
+
+import { ScoutContextNames } from "../types/enum";
 
 import * as Constants from "../constants";
 import * as Errors from "../errors";
@@ -144,7 +147,25 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         // Stop all child spans
         this.childSpans.forEach(s => s.stop());
 
-        return Promise.resolve(this);
+        // Add stack trace to the span
+        return getStackTrace()
+            .then(frames => {
+                return frames
+                // Filter out scout_apm_node related traces
+                    .filter(f => !f.fileName || !f.fileName.includes("scout_apm_node"))
+                // Simplify the traces
+                    .map(f => ({
+                        line: f.lineNumber,
+                        file: f.fileName,
+                        function: f.functionName || "<anonymous>",
+                    }));
+            })
+            .then(minimalFrames => ({
+                name: ScoutContextNames.Traceback,
+                value: JSON.stringify(minimalFrames),
+            }))
+            .then(tracebackTag => this.addContext([tracebackTag]))
+            .then(() => this);
     }
 
     public isStarted(): boolean {
