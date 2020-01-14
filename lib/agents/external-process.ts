@@ -74,6 +74,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                 if (exists) {
                     this.logFn("[scout/external-process] Socket already present", LogLevel.Warn);
                 }
+
                 return this.startProcess();
             });
     }
@@ -366,7 +367,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                 "[scout/external-process] Not attempting to launch Core Agent due to 'core_agent_launch' setting.",
                 LogLevel.Debug,
             );
-            return Promise.resolve(this);
+            return Promise.reject(new Errors.AgentLaunchDisabled());
         }
 
         // Build command and arguments

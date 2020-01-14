@@ -14,7 +14,7 @@ export class V1GetVersionRequest extends BaseAgentRequest {
 }
 
 export class V1Register extends BaseAgentRequest {
-    public readonly type: AgentRequestType = AgentRequestType.V1StartRequest;
+    public readonly type: AgentRequestType = AgentRequestType.V1Register;
 
     constructor(app: string, key: string, version: APIVersion) {
         super();

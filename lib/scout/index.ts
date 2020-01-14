@@ -114,6 +114,10 @@ export class Scout extends EventEmitter {
         this.createAsyncNamespace();
     }
 
+    public getSocketFilePath(): string {
+        return this.socketPath.slice();
+    }
+
     public getCoreAgentVersion(): CoreAgentVersion {
         return new CoreAgentVersion(this.coreAgentVersion.raw);
     }
@@ -134,16 +138,13 @@ export class Scout extends EventEmitter {
         // Return early if agent has already been set up
         if (this.agent) { return Promise.resolve(this); }
 
-        // If the socket path exists then we may skip downloading and launching
+        // If the socket path exists then we may be able to skip downloading and launching
         return pathExists(this.socketPath)
-            .then(exists => exists ? this.createAgentForExistingSocket() : this.downloadAndLaunchAgent())
-        // Once we have an agent (this.agent is also set), then start, connect, and register
-            .then(() => {
-                this.log(`[scout] starting process w/ bin @ path [${this.binPath}]`, LogLevel.Debug);
-                this.log(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, LogLevel.Debug);
-                return this.agent.start();
+            .then(exists => {
+                // if `coreAgentLaunch` is set to true, then force launch
+                const useExisting = exists && !this.config.coreAgentLaunch;
+                return useExisting ? this.createAgentForExistingSocket() : this.downloadAndLaunchAgent();
             })
-            .then(() => this.log("[scout] agent successfully started", LogLevel.Debug))
             .then(() => this.agent.connect())
             .then(() => this.log("[scout] successfully connected to agent", LogLevel.Debug))
             .then(() => {
@@ -165,68 +166,6 @@ export class Scout extends EventEmitter {
                     .forEach(integration => integration.setScoutInstance(this));
             })
             .then(() => this);
-    }
-
-    // Helper for creating an ExternalProcessAgent for an existing, listening agent
-    private createAgentForExistingSocket(): Promise<ExternalProcessAgent> {
-        this.log(`[scout] detected existing socket @ [${this.socketPath}], skipping agent launch`, LogLevel.Debug);
-
-        this.processOptions = new ProcessOptions(
-            this.binPath,
-            this.getSocketPath(),
-            buildProcessOptions(this.config),
-        );
-
-        const agent = new ExternalProcessAgent(this.processOptions, this.logFn);
-        return this.setupAgent(agent);
-    }
-
-    // Helper for downloading and launching an agent
-    private downloadAndLaunchAgent(): Promise<ExternalProcessAgent> {
-        this.log(`[scout] downloading and launching agent`, LogLevel.Debug);
-        this.downloader = new WebAgentDownloader({logFn: this.logFn});
-
-        // Ensure coreAgentVersion is present
-        if (!this.config.coreAgentVersion) {
-            const err = new Error("No core agent version specified!");
-            this.log(err.message, LogLevel.Error);
-            return Promise.reject(err);
-        }
-
-        this.coreAgentVersion = new CoreAgentVersion(this.config.coreAgentVersion);
-
-        // Build options for download
-        this.downloaderOptions = Object.assign(
-            {
-                cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
-                updateCache: true,
-            },
-            this.downloaderOptions,
-            buildDownloadOptions(this.config),
-        );
-
-        // Download the appropriate binary
-        return this.downloader
-            .download(this.coreAgentVersion, this.downloaderOptions)
-            .then(bp => {
-                this.binPath = bp;
-                this.socketPath = path.join(
-                    path.dirname(this.binPath),
-                    "core-agent.sock",
-                );
-                this.log(`[scout] using socket path [${this.socketPath}]`, LogLevel.Debug);
-            })
-        // Build options for the agent and create the agent
-            .then(() => {
-                this.processOptions = new ProcessOptions(
-                    this.binPath,
-                    this.getSocketPath(),
-                    buildProcessOptions(this.config),
-                );
-
-                const agent = new ExternalProcessAgent(this.processOptions, this.logFn);
-                return this.setupAgent(agent);
-            });
     }
 
     public shutdown(): Promise<void> {
@@ -393,6 +332,76 @@ export class Scout extends EventEmitter {
      */
     public getCurrentSpan(): ScoutSpan | null {
         return this.asyncNamespace.get(ASYNC_NS_SPAN);
+    }
+
+    // Helper for creating an ExternalProcessAgent for an existing, listening agent
+    private createAgentForExistingSocket(): Promise<ExternalProcessAgent> {
+        this.log(`[scout] detected existing socket @ [${this.socketPath}], skipping agent launch`, LogLevel.Debug);
+
+        this.processOptions = new ProcessOptions(
+            this.binPath,
+            this.getSocketPath(),
+            buildProcessOptions(this.config),
+        );
+
+        const agent = new ExternalProcessAgent(this.processOptions, this.logFn);
+        return this.setupAgent(agent);
+    }
+
+    // Helper for downloading and launching an agent
+    private downloadAndLaunchAgent(): Promise<ExternalProcessAgent> {
+        this.log(`[scout] downloading and launching agent`, LogLevel.Debug);
+        this.downloader = new WebAgentDownloader({logFn: this.logFn});
+
+        // Ensure coreAgentVersion is present
+        if (!this.config.coreAgentVersion) {
+            const err = new Error("No core agent version specified!");
+            this.log(err.message, LogLevel.Error);
+            return Promise.reject(err);
+        }
+
+        this.coreAgentVersion = new CoreAgentVersion(this.config.coreAgentVersion);
+
+        // Build options for download
+        this.downloaderOptions = Object.assign(
+            {
+                cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+                updateCache: true,
+            },
+            this.downloaderOptions,
+            buildDownloadOptions(this.config),
+        );
+
+        // Download the appropriate binary
+        return this.downloader
+            .download(this.coreAgentVersion, this.downloaderOptions)
+            .then(bp => {
+                this.binPath = bp;
+                this.socketPath = path.join(
+                    path.dirname(this.binPath),
+                    "core-agent.sock",
+                );
+                this.log(`[scout] using socket path [${this.socketPath}]`, LogLevel.Debug);
+            })
+        // Build options for the agent and create the agent
+            .then(() => {
+                this.processOptions = new ProcessOptions(
+                    this.binPath,
+                    this.getSocketPath(),
+                    buildProcessOptions(this.config),
+                );
+
+                const agent = new ExternalProcessAgent(this.processOptions, this.logFn);
+                return this.setupAgent(agent);
+            })
+        // Once we have an agent (this.agent is also set), then start, connect, and register
+            .then(() => {
+                this.log(`[scout] starting process w/ bin @ path [${this.binPath}]`, LogLevel.Debug);
+                this.log(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, LogLevel.Debug);
+                return this.agent.start();
+            })
+            .then(() => this.log("[scout] agent successfully started", LogLevel.Debug))
+            .then(() => this.agent);
     }
 
     /**
