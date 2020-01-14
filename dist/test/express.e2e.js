@@ -38,8 +38,7 @@ test("Simple operation", t => {
             // Remove listener
             scout.removeListener(types_1.AgentEvent.RequestFinished, listener);
             // Wait a little while for request to finish up, then shutdown
-            TestUtil.waitMs(100)
-                .then(() => TestUtil.shutdownScout(t, scout))
+            TestUtil.shutdownScout(t, scout)
                 .catch(err => TestUtil.shutdownScout(t, scout, err));
         };
         // Set up listener on the agent
@@ -95,8 +94,7 @@ test("Dynamic segment routes", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => 
             // Remove agent, pass test
             scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
             // Wait a little while for request to finish up, then shutdown
-            TestUtil.waitMs(100)
-                .then(() => TestUtil.shutdownScout(t, scout))
+            TestUtil.shutdownScout(t, scout)
                 .catch(err => TestUtil.shutdownScout(t, scout, err));
         };
         // Set up listener on the agent

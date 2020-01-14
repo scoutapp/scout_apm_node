@@ -50,8 +50,7 @@ test("Simple operation", t => {
                 scout.removeListener(AgentEvent.RequestFinished, listener);
 
                 // Wait a little while for request to finish up, then shutdown
-                TestUtil.waitMs(100)
-                    .then(() => TestUtil.shutdownScout(t, scout))
+                TestUtil.shutdownScout(t, scout)
                     .catch(err => TestUtil.shutdownScout(t, scout, err));
             };
 
@@ -113,8 +112,7 @@ test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
                 scout.removeListener(ScoutEvent.RequestSent, listener);
 
                 // Wait a little while for request to finish up, then shutdown
-                TestUtil.waitMs(100)
-                    .then(() => TestUtil.shutdownScout(t, scout))
+                TestUtil.shutdownScout(t, scout)
                     .catch(err => TestUtil.shutdownScout(t, scout, err));
             };
 
