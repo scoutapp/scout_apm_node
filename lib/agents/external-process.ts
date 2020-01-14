@@ -5,6 +5,7 @@ import { pathExists, remove } from "fs-extra";
 import { Socket, createConnection } from "net";
 import { spawn, ChildProcess } from "child_process";
 import { createPool, Pool } from "generic-pool";
+import { timeout, TimeoutError } from "promise-timeout";
 
 import {
     Agent,
@@ -136,7 +137,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         this.logFn(`[scout/external-process] sending message:\n ${JSON.stringify(msg.json)}`, LogLevel.Debug);
 
-        return new Promise((resolve, reject) => {
+        const sendPromise = new Promise((resolve, reject) => {
             // Get a socket from the pool
             this.pool
                 .acquire()
@@ -177,6 +178,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                     err => { throw err; },
                 );
         });
+
+        return timeout(sendPromise, 5000);
     }
 
     /**

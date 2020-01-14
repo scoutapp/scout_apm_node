@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
+const fs_extra_1 = require("fs-extra");
+const path = require("path");
 const Errors = require("../../lib/errors");
 const TestUtil = require("../util");
 const Fixtures = require("../fixtures");
@@ -468,6 +470,43 @@ test("Support starting scout with a completely external core-agent", t => {
             t.end();
             return;
         }
+        t.end(err);
+    });
+});
+test("Timeout agent messages", t => {
+    let agent;
+    // When the server receives a message, it should increment the count
+    let tmpSocketPath;
+    const [socketServer, shutdownSocketServer] = TestUtil.createClientCollectingServer();
+    // Create a temp directory for the do-nothing server's socket
+    fs_extra_1.mkdtemp("/tmp/timeout-test-")
+        .then(dir => tmpSocketPath = path.join(dir, "core-agent.sock"))
+        // Create the socket server that will count connections
+        .then(() => socketServer.listen(tmpSocketPath))
+        // Create the external process agent, configured to not launch
+        .then(() => TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION, { buildProcOpts: (binPath, uri) => new types_1.ProcessOptions(binPath, `unix://${tmpSocketPath}`, { disallowLaunch: true, sendTimeoutMs: 100 }) }))
+        .then(a => agent = a)
+        // Connect the agent
+        .then(() => agent.connect())
+        // Since we have the agent connected to a server that does nothing with messages,
+        // sending a start request shoudl time out since it will wait for a well-formed response
+        .then(() => agent.send(new Requests.V1StartRequest()))
+        // Cleanup the process & end test
+        .then(() => {
+        t.fail("agent should have thrown a timeout error after 500ms");
+        t.end();
+    })
+        .catch(err => {
+        // If we get the TimeoutError, pass the test and close the socket server
+        if (err instanceof Errors.TimeoutError) {
+            t.pass("TimeoutError was returned");
+            t.end();
+            // Disconnect all the clients and close the server
+            shutdownSocketServer();
+            return;
+        }
+        // If an unexpected error happened shutdown the socket server and end the test
+        shutdownSocketServer();
         t.end(err);
     });
 });
