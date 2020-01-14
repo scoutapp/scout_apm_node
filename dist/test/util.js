@@ -19,6 +19,7 @@ const getPort = require("get-port");
 exports.EXPRESS_TEST_TIMEOUT = 2000;
 exports.PG_TEST_TIMEOUT = 3000;
 exports.DASHBOARD_SEND_TIMEOUT = 1000 * 60 * 3; // 3 minutes
+const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
 // Helper for downloading and creating an agent
 function bootstrapExternalProcessAgent(t, rawVersion, opts) {
     const downloadOpts = {
@@ -274,7 +275,6 @@ function startContainer(t, optOverrides) {
     const args = [
         "run",
         "--name", opts.containerName,
-        "--detach",
         ...portMappingArgs,
         opts.imageWithTag(),
     ];
@@ -381,7 +381,13 @@ function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
             .then(p => port = p)
             .then(() => {
             const portBinding = { 5432: port };
-            return startContainer(t, { imageName: POSTGRES_IMAGE_NAME, tagName, portBinding, env });
+            return startContainer(t, {
+                imageName: POSTGRES_IMAGE_NAME,
+                tagName,
+                portBinding,
+                env,
+                waitFor: { stdout: POSTGRES_STARTUP_MESSAGE },
+            });
         })
             .then(cao => containerAndOpts = cao)
             .then(() => {

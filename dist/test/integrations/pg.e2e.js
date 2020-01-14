@@ -25,6 +25,8 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
         allowShutdown: true,
         monitor: true,
     }));
+    // Setup a PG Client that we'll use later
+    let client;
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data) => {
         scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
@@ -49,7 +51,6 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
     };
     // Activate the listener
     scout.on(lib_1.ScoutEvent.RequestSent, listener);
-    let client;
     scout
         .setup()
         // Connect to the postgres

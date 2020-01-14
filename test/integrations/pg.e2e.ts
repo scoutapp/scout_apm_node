@@ -16,6 +16,7 @@ import { PG_QUERIES } from "../fixtures";
 
 // The hook for PG has to be triggered this way in a typescript context
 // since a partial improt like { Client } will not trigger a require
+
 const pg = require("pg");
 
 import { Client } from "pg";
@@ -39,6 +40,9 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
         allowShutdown: true,
         monitor: true,
     }));
+
+    // Setup a PG Client that we'll use later
+    let client: Client;
 
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data: ScoutEventRequestSentData) => {
@@ -68,8 +72,6 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
 
     // Activate the listener
     scout.on(ScoutEvent.RequestSent, listener);
-
-    let client: Client;
 
     scout
         .setup()
