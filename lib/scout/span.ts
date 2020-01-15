@@ -81,8 +81,14 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         }
     }
 
+    // Get the start of this span
     public getTimestamp(): Date {
         return new Date(this.timestamp);
+    }
+
+    // Get the amount of time this span has been running in milliseconds
+    public getDurationMs(): number {
+        return new Date().getMilliseconds() - this.getTimestamp().getMilliseconds();
     }
 
     /** @see Taggable */
@@ -147,6 +153,11 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
         // Stop all child spans
         this.childSpans.forEach(s => s.stop());
+
+        // If the span request is still under the threshold then don't save the traceback
+        if (this.scoutInstance && this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {
+            return Promise.resolve(this);
+        }
 
         // Add stack trace to the span
         return getStackTrace()

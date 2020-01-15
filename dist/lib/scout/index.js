@@ -28,11 +28,17 @@ class Scout extends events_1.EventEmitter {
     constructor(config, opts) {
         super();
         this.downloaderOptions = {};
+        this.slowRequestThresholdMs = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
         this.canUseAsyncHooks = false;
         this.config = config || types_1.buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
-        if (opts && opts.downloadOptions) {
-            this.downloaderOptions = opts.downloadOptions;
+        if (opts) {
+            if (opts.downloadOptions) {
+                this.downloaderOptions = opts.downloadOptions;
+            }
+            if (opts.slowRequestThresholdMs) {
+                this.slowRequestThresholdMs = opts.slowRequestThresholdMs;
+            }
         }
         this.applicationMetadata = new types_1.ApplicationMetadata(this.config, opts && opts.appMeta ? opts.appMeta : {});
         // Build expected bin & socket path based on current version
@@ -55,6 +61,12 @@ class Scout extends events_1.EventEmitter {
     }
     getConfig() {
         return this.config;
+    }
+    getAgent() {
+        return this.agent;
+    }
+    getSlowRequestThresholdMs() {
+        return this.slowRequestThresholdMs;
     }
     log(msg, lvl) {
         this.logFn(msg, lvl);
@@ -108,9 +120,6 @@ class Scout extends events_1.EventEmitter {
     }
     hasAgent() {
         return typeof this.agent !== "undefined" && this.agent !== null;
-    }
-    getAgent() {
-        return this.agent;
     }
     /**
      * Function for checking whether a given path (URL) is ignored by scout
