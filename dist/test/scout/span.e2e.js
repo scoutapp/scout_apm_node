@@ -33,7 +33,7 @@ test("spans should have traces attached", t => {
         // Create the first & second request
         .then(() => scout.transaction("Controller/test-span-trace", finishRequest => {
         return scout.instrument("test-span-trace", stopSpan => {
-            return TestUtil.waitMs(50)
+            return TestUtil.waitMs(100)
                 .then(() => t.pass("span ran after 50ms delay"));
         })
             .then(res => finishRequest());
