@@ -1,8 +1,9 @@
 .PHONY: all dev-setup git-hook-install clean \
 				lint lint-watch build build-watch \
 				test test-unit test-int test-e2e \
-				test-dashboard-send \
-				ensure-pg-docker-image test-integrations test-integration-pg \
+				test-dashboard-send test-integrations \
+				ensure-pg-docker-image test-integration-pg \
+				ensure-mysql-docker-image test-integration-mysql \
 				generate-agent-configs
 
 all: install build
@@ -65,15 +66,21 @@ test-dashboard-send: check-tool-yarn
 	@echo -e "running a test that will send a test to the dashboard, it should take ~ 30 seconds to run..."
 	$(YARN) test-dashboard-send
 
-test-integrations: test-integration-pg
+test-integrations: test-integration-pg test-integration-mysql
 
 PG_INTEGRATION_DOCKER_IMAGE ?= postgres:alpine
-
 ensure-pg-docker-image:
 	$(DOCKER) pull $(PG_INTEGRATION_DOCKER_IMAGE)
 
 test-integration-pg:
 	$(YARN) test-integration-pg
+
+MYSQL_INTEGRATION_DOCKER_IMAGE ?= postgres:alpine
+ensure-mysql-docker-image:
+	$(DOCKER) pull $(MSYQL_INTEGRATION_DOCKER_IMAGE)
+
+test-integration-mysql:
+	$(YARN) test-integration-mysql
 
 generate-agent-configs:
 	$(DEV_SCRIPTS)/generate-download-configs.js lib/download-configs.ts

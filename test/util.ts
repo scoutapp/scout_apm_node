@@ -455,6 +455,7 @@ export function killContainer(t: Test, opts: TestContainerStartOpts): Promise<nu
 }
 
 const POSTGRES_IMAGE_NAME = "postgres";
+const POSTGRES_IMAGE_TAG = "alpine";
 
 // Utility function to start a postgres instance
 export function startContainerizedPostgresTest(
@@ -463,7 +464,7 @@ export function startContainerizedPostgresTest(
     containerEnv?: object,
     tagName?: string,
 ) {
-    tagName = tagName || "alpine";
+    tagName = tagName || POSTGRES_IMAGE_TAG;
     const env = containerEnv || {};
 
     test("Starting postgres instance", (t: Test) => {
@@ -550,4 +551,69 @@ export function createClientCollectingServer(): [net.Server, ServerShutdownFn] {
     };
 
     return [server, shutdown];
+}
+
+const MYSQL_IMAGE_NAME = "mysql";
+const MYSQL_IMAGE_TAG = "8.0.19";
+const MYSQL_STARTUP_MESSAGE = "started";
+
+// Utility function to start a postgres instance
+export function startContainerizedMySQLTest(
+    test: any,
+    cb: (cao: ContainerAndOpts) => void,
+    containerEnv?: object,
+    tagName?: string,
+) {
+    tagName = tagName || MYSQL_IMAGE_TAG;
+    const env = containerEnv || {};
+
+    test("Starting mysql instance", (t: Test) => {
+        let port: number;
+        let containerAndOpts: ContainerAndOpts;
+
+        getPort()
+            .then(p => port = p)
+            .then(() => {
+                const portBinding = {3306: port};
+                return startContainer(t, {
+                    imageName: MYSQL_IMAGE_NAME,
+                    tagName,
+                    portBinding,
+                    env,
+                    waitFor: {stdout: MYSQL_STARTUP_MESSAGE},
+                });
+            })
+            .then(cao => containerAndOpts = cao)
+            .then(() => {
+                const opts = containerAndOpts.opts;
+                t.comment(`Started container [${opts.containerName}] on local port ${opts.portBinding[5432]}`);
+                cb(containerAndOpts);
+            })
+            .then(() => t.end())
+            .catch(err => {
+                if (containerAndOpts) {
+                    return killContainer(t, containerAndOpts.opts)
+                        .then(() => t.end(err));
+                }
+
+                return t.end(err);
+            });
+    });
+}
+
+// Utility function to stop a mysql instance
+export function stopContainerizedMySQLTest(test: any, provider: () => ContainerAndOpts | null) {
+    test(`Stopping containerized mysql instance...`, (t: Test) => {
+        const containerAndOpts = provider();
+        if (!containerAndOpts) {
+            throw new Error("no container w/ opts object provided, can't stop container");
+        }
+
+        const opts = containerAndOpts.opts;
+
+        killContainer(t, opts)
+            .then(code => t.ok(`successfully stopped container [${opts.containerName}], with code [${code}]`))
+            .then(() => t.end())
+            .catch(err => t.end(err));
+    });
 }
