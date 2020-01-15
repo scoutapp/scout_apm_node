@@ -8,6 +8,7 @@ const randomstring_1 = require("randomstring");
 const promise_timeout_1 = require("promise-timeout");
 const child_process_1 = require("child_process");
 const pg_1 = require("pg");
+const mysql_1 = require("mysql");
 const Constants = require("../lib/constants");
 const external_process_1 = require("../lib/agents/external-process");
 const web_1 = require("../lib/agent-downloaders/web");
@@ -18,8 +19,10 @@ const requests_1 = require("../lib/protocol/v1/requests");
 const getPort = require("get-port");
 // Wait a little longer for requests that use express
 exports.EXPRESS_TEST_TIMEOUT_MS = 2000;
+// The timeouts for PG & MSQL assume an instance is *already running*
+// for control over the amount of start time alotted see `startTimeoutMs`
 exports.PG_TEST_TIMEOUT_MS = 3000;
-exports.MYSQL_TEST_TIMEOUT_MS = 10000;
+exports.MYSQL_TEST_TIMEOUT_MS = 3000;
 exports.DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
 // Helper for downloading and creating an agent
@@ -214,7 +217,7 @@ class TestContainerStartOpts {
         this.startTimeoutMs = 5000;
         this.killTimeoutMs = 5000;
         this.tagName = "latest";
-        this.env = process.env;
+        this.envBinding = {};
         this.portBinding = {};
         if (opts) {
             if (opts.dockerBinPath) {
@@ -238,8 +241,8 @@ class TestContainerStartOpts {
             if (opts.killTimeoutMs) {
                 this.killTimeoutMs = opts.killTimeoutMs;
             }
-            if (opts.env) {
-                this.env = opts.env;
+            if (opts.envBinding) {
+                this.envBinding = opts.envBinding;
             }
             if (opts.portBinding) {
                 this.portBinding = opts.portBinding;
@@ -274,19 +277,22 @@ function startContainer(t, optOverrides) {
         portMappingArgs.push("-p");
         portMappingArgs.push(`${localPort}:${containerPort}`);
     });
+    // Build env mapping arguments
+    const envMappingArgs = [];
+    Object.entries(opts.envBinding).forEach(([envVarName, value]) => {
+        envMappingArgs.push("-e");
+        envMappingArgs.push(`${envVarName}=${value}`);
+    });
     const args = [
         "run",
         "--name", opts.containerName,
         ...portMappingArgs,
+        ...envMappingArgs,
         opts.imageWithTag(),
     ];
     // Spawn the docker container
     t.comment(`spawning container [${opts.imageName}:${opts.tagName}] with name [${opts.containerName}]...`);
-    const spawnOptions = { detached: true, stdio: "pipe" };
-    if (opts.env) {
-        spawnOptions.env = opts.env;
-    }
-    const containerProcess = child_process_1.spawn(opts.dockerBinPath, args, spawnOptions);
+    const containerProcess = child_process_1.spawn(opts.dockerBinPath, args, { detached: true, stdio: "pipe" });
     opts.setExecutedStartCommand(`${opts.dockerBinPath} ${args.join(" ")}`);
     let resolved = false;
     let stdoutListener;
@@ -387,7 +393,7 @@ const POSTGRES_IMAGE_TAG = "alpine";
 // Utility function to start a postgres instance
 function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
     tagName = tagName || POSTGRES_IMAGE_TAG;
-    const env = containerEnv || {};
+    const envBinding = containerEnv || {};
     test("Starting postgres instance", (t) => {
         let port;
         let containerAndOpts;
@@ -399,7 +405,7 @@ function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
                 imageName: POSTGRES_IMAGE_NAME,
                 tagName,
                 portBinding,
-                env,
+                envBinding,
                 waitFor: { stdout: POSTGRES_STARTUP_MESSAGE },
             });
         })
@@ -472,18 +478,23 @@ function createClientCollectingServer() {
 }
 exports.createClientCollectingServer = createClientCollectingServer;
 const MYSQL_IMAGE_NAME = "mysql";
-const MYSQL_IMAGE_TAG = "8.0.19";
-const MYSQL_CONTAINER_STARTUP_TIME_MS = 5000;
+const MYSQL_IMAGE_TAG = "5.7.29";
+// mysql takes this long to start up, can't wait for output because
+// even when it says it's ready to accept connections it will drop them.
+// this startup time was arrived at by trial and error and may need to be adjusted.
+const MYSQL_CONTAINER_STARTUP_TIME_MS = 14000;
 const MYSQL_STARTUP_MESSAGE = "ready for connections";
 const MYSQL_CONTAINER_DEFAULT_ENV = {
-    MYSQL_USER: "mysql",
     MYSQL_ROOT_PASSWORD: "mysql",
+    MYSQL_PASSWORD: "mysql",
+    MYSQL_USER: "mysql",
 };
 // Utility function to start a postgres instance
 function startContainerizedMySQLTest(test, cb, containerEnv, tagName) {
     tagName = tagName || MYSQL_IMAGE_TAG;
-    const env = Object.assign({}, MYSQL_CONTAINER_DEFAULT_ENV, containerEnv);
-    test("Starting mysql instance", (t) => {
+    const envBinding = Object.assign({}, MYSQL_CONTAINER_DEFAULT_ENV, containerEnv);
+    // We'll need to set the timeout of the test to startup time + 1s to prevent test timeout
+    test("Starting mysql instance", { timeout: MYSQL_CONTAINER_STARTUP_TIME_MS + 1000 }, (t) => {
         let port;
         let containerAndOpts;
         getPort()
@@ -494,16 +505,15 @@ function startContainerizedMySQLTest(test, cb, containerEnv, tagName) {
                 imageName: MYSQL_IMAGE_NAME,
                 tagName,
                 portBinding,
-                env,
-                // Mysql containers don't correctly forward entrypoint script output
+                envBinding,
                 waitFor: { milliseconds: MYSQL_CONTAINER_STARTUP_TIME_MS },
-                startTimeoutMs: exports.MYSQL_TEST_TIMEOUT_MS,
+                startTimeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
             });
         })
             .then(cao => containerAndOpts = cao)
             .then(() => {
             const opts = containerAndOpts.opts;
-            t.comment(`Started container [${opts.containerName}] on local port ${opts.portBinding[5432]}`);
+            t.comment(`Started container [${opts.containerName}] on local port ${opts.portBinding[3306]}`);
             cb(containerAndOpts);
         })
             .then(() => t.end())
@@ -522,3 +532,27 @@ function stopContainerizedMySQLTest(test, provider) {
     stopContainerizedInstanceTest(test, provider, "msyql");
 }
 exports.stopContainerizedMySQLTest = stopContainerizedMySQLTest;
+// Helper for creating a connected connection for MySQL
+function makeConnectedMySQLConnection(provider) {
+    const cao = provider();
+    if (!cao) {
+        return Promise.reject(new Error("no CAO in provider"));
+    }
+    const port = cao.opts.portBinding[3306];
+    const conn = mysql_1.createConnection({
+        user: "mysql",
+        password: "mysql",
+        host: "localhost",
+        port,
+    });
+    return new Promise((resolve, reject) => {
+        conn.connect((err) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(conn);
+        });
+    });
+}
+exports.makeConnectedMySQLConnection = makeConnectedMySQLConnection;

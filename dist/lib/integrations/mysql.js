@@ -31,6 +31,11 @@ class MySQLIntegration {
         this.logFn = logFn;
     }
     shimMySQL(mysqlExport) {
+        // Check if the shim has already been performed
+        const c = mysqlExport.createConnection("localhost");
+        if (c[integrations_1.scoutIntegrationSymbol]) {
+            return;
+        }
         this.shimMySQLCreateConnection(mysqlExport.createConnection);
     }
     /**

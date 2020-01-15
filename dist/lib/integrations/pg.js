@@ -32,7 +32,11 @@ class PGIntegration {
         this.logFn = logFn;
     }
     shimPG(pgExport) {
+        // Check if the shim has already been performed
         const client = pgExport.Client;
+        if (client[integrations_1.scoutIntegrationSymbol]) {
+            return;
+        }
         // Shim client
         this.shimPGConnect(client);
         this.shimPGQuery(client);

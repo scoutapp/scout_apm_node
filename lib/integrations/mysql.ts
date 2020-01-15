@@ -43,6 +43,10 @@ export class MySQLIntegration implements RequireIntegration {
     }
 
     private shimMySQL(mysqlExport: any) {
+        // Check if the shim has already been performed
+        const c = mysqlExport.createConnection("localhost");
+        if (c[scoutIntegrationSymbol]) { return; }
+
         this.shimMySQLCreateConnection(mysqlExport.createConnection);
     }
 

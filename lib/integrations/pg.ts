@@ -40,7 +40,9 @@ export class PGIntegration implements RequireIntegration {
     }
 
     private shimPG(pgExport: any) {
+        // Check if the shim has already been performed
         const client = pgExport.Client;
+        if (client[scoutIntegrationSymbol]) { return; }
 
         // Shim client
         this.shimPGConnect(client);
