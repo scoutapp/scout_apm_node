@@ -35,8 +35,13 @@ class ScoutSpan {
             }
         }
     }
+    // Get the start of this span
     getTimestamp() {
         return new Date(this.timestamp);
+    }
+    // Get the amount of time this span has been running in milliseconds
+    getDurationMs() {
+        return new Date().getMilliseconds() - this.getTimestamp().getMilliseconds();
     }
     /** @see Taggable */
     addContext(tags) {
@@ -84,6 +89,10 @@ class ScoutSpan {
         this.stopped = true;
         // Stop all child spans
         this.childSpans.forEach(s => s.stop());
+        // If the span request is still under the threshold then don't save the traceback
+        if (this.scoutInstance && this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {
+            return Promise.resolve(this);
+        }
         // Add stack trace to the span
         return stacktrace_js_1.get()
             .then(frames => {

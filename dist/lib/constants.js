@@ -14,7 +14,8 @@ exports.DEFAULT_CONNECTION_POOL_OPTS = {
     min: 0,
     testOnBorrow: true,
 };
-exports.MINUTE_MS = 60000;
+exports.SECOND_MS = 1000;
+exports.MINUTE_MS = 60 * exports.SECOND_MS;
 exports.AGENT_BUFFER_TIME_MS = 2 * exports.MINUTE_MS;
 exports.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS = 5 * exports.MINUTE_MS;
 exports.DEFAULT_SOCKET_FILE_NAME = "core-agent.sock";
@@ -46,3 +47,4 @@ exports.DEFAULT_PARAM_FILTER_LOOKUP = {
     "token": true,
 };
 exports.DEFAULT_PARAM_SCRUB_REPLACEMENT = "[FILTERED]";
+exports.DEFAULT_SLOW_REQUEST_THRESHOLD_MS = exports.SECOND_MS / 2;

@@ -12,7 +12,8 @@ export const DEFAULT_CONNECTION_POOL_OPTS = {
     min: 0,
     testOnBorrow: true,
 };
-export const MINUTE_MS = 60000;
+export const SECOND_MS = 1000;
+export const MINUTE_MS = 60 * SECOND_MS;
 export const AGENT_BUFFER_TIME_MS = 2 * MINUTE_MS;
 export const DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS = 5 * MINUTE_MS;
 
@@ -48,3 +49,5 @@ export const DEFAULT_PARAM_FILTER_LOOKUP = {
 };
 
 export const DEFAULT_PARAM_SCRUB_REPLACEMENT = "[FILTERED]";
+
+export const DEFAULT_SLOW_REQUEST_THRESHOLD_MS = SECOND_MS / 2;

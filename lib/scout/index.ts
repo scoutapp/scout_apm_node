@@ -55,6 +55,7 @@ export interface ScoutOptions {
     logFn?: LogFn;
     downloadOptions?: Partial<AgentDownloadOptions>;
     appMeta?: ApplicationMetadata;
+    slowRequestThresholdMs?: number;
 }
 
 export type DoneCallback = (done: () => void) => any;
@@ -72,6 +73,7 @@ export class Scout extends EventEmitter {
     private binPath: string;
     private socketPath: string;
     private logFn: LogFn;
+    private slowRequestThresholdMs: number = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
 
     private coreAgentVersion: CoreAgentVersion;
     private agent: ExternalProcessAgent;
@@ -87,8 +89,9 @@ export class Scout extends EventEmitter {
         this.config = config || buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
 
-        if (opts && opts.downloadOptions) {
-            this.downloaderOptions = opts.downloadOptions;
+        if (opts) {
+            if (opts.downloadOptions) { this.downloaderOptions = opts.downloadOptions; }
+            if (opts.slowRequestThresholdMs) { this.slowRequestThresholdMs = opts.slowRequestThresholdMs; }
         }
 
         this.applicationMetadata = new ApplicationMetadata(
@@ -129,6 +132,14 @@ export class Scout extends EventEmitter {
 
     public getConfig(): Partial<ScoutConfiguration> {
         return this.config;
+    }
+
+    public getAgent(): ExternalProcessAgent {
+        return this.agent;
+    }
+
+    public getSlowRequestThresholdMs(): number {
+        return this.slowRequestThresholdMs;
     }
 
     public log(msg: string, lvl: LogLevel) {
@@ -186,10 +197,6 @@ export class Scout extends EventEmitter {
 
     public hasAgent(): boolean {
         return typeof this.agent !== "undefined" && this.agent !== null;
-    }
-
-    public getAgent(): ExternalProcessAgent {
-        return this.agent;
     }
 
     /**
@@ -303,17 +310,20 @@ export class Scout extends EventEmitter {
                 this.asyncNamespace.set(ASYNC_NS_SPAN, span);
                 result = cb(doneFn);
                 ranCb = true;
-                return span;
+
+                // Ensure that the result is a promise
+                return Promise.resolve(result);
             })
         // Return the result
-            .then(() => result)
             .catch(err => {
                 // It's possible that an error happened *before* the span could be set
                 if (!ranCb) {
                     result = span ? cb(doneFn) : cb(() => undefined);
                 }
                 this.log("[scout] failed to send start span", LogLevel.Error);
-                return result;
+
+                // Ensure that the result is a promise
+                return Promise.resolve(result);
             });
     }
 
@@ -449,7 +459,9 @@ export class Scout extends EventEmitter {
                         this.asyncNamespace.set(ASYNC_NS_REQUEST, req);
                         result = cb(doneFn);
                         ranCb = true;
-                        return result;
+
+                        // Ensure that the result is a promise
+                        resolve(result);
                     })
                 // If an error occurs then run the fn and log
                     .catch(err => {
