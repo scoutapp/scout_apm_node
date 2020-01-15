@@ -310,17 +310,20 @@ export class Scout extends EventEmitter {
                 this.asyncNamespace.set(ASYNC_NS_SPAN, span);
                 result = cb(doneFn);
                 ranCb = true;
-                return span;
+
+                // Ensure that the result is a promise
+                return Promise.resolve(result);
             })
         // Return the result
-            .then(() => result)
             .catch(err => {
                 // It's possible that an error happened *before* the span could be set
                 if (!ranCb) {
                     result = span ? cb(doneFn) : cb(() => undefined);
                 }
                 this.log("[scout] failed to send start span", LogLevel.Error);
-                return result;
+
+                // Ensure that the result is a promise
+                return Promise.resolve(result);
             });
     }
 
@@ -456,7 +459,9 @@ export class Scout extends EventEmitter {
                         this.asyncNamespace.set(ASYNC_NS_REQUEST, req);
                         result = cb(doneFn);
                         ranCb = true;
-                        return result;
+
+                        // Ensure that the result is a promise
+                        resolve(result);
                     })
                 // If an error occurs then run the fn and log
                     .catch(err => {
