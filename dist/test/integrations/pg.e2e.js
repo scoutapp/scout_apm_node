@@ -20,7 +20,7 @@ test("the shim works", t => {
 TestUtil.startContainerizedPostgresTest(test, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
-test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TIMEOUT }, t => {
+test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
     const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -71,7 +71,7 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
             .then(() => TestUtil.shutdownScout(t, scout, err));
     });
 });
-test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT }, t => {
+test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
     const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,

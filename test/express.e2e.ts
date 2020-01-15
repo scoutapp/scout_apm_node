@@ -67,7 +67,7 @@ test("Simple operation", t => {
         .catch(t.end);
 });
 
-test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     // Create an application and setup scout middleware
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(
         scoutMiddleware({
@@ -129,7 +129,7 @@ test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
         .catch(t.end);
 });
 
-test("Application which errors", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+test("Application which errors", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     // Create an application and setup scout middleware
     const app: Application & ApplicationWithScout = TestUtil.simpleErrorApp(scoutMiddleware({
         config: buildScoutConfiguration({
@@ -157,7 +157,7 @@ test("Application which errors", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => 
         .catch(t.end);
 });
 
-test("express ignores a path (exact path, with dynamic segments)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+test("express ignores a path (exact path, with dynamic segments)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const path = "/dynamic/:segment";
     const scout = new Scout(buildScoutConfiguration({
         allowShutdown: true,
@@ -189,7 +189,7 @@ test("express ignores a path (exact path, with dynamic segments)", {timeout: Tes
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-test("express ignores a path (exact path, static)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+test("express ignores a path (exact path, static)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const path = "/";
     const scout = new Scout(buildScoutConfiguration({
         allowShutdown: true,
@@ -221,7 +221,7 @@ test("express ignores a path (exact path, static)", {timeout: TestUtil.EXPRESS_T
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-test("express ignores a path (prefix, with dynamic segments)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+test("express ignores a path (prefix, with dynamic segments)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const path = "/dynamic/:segment";
     const prefix = "/dynamic";
     const scout = new Scout(buildScoutConfiguration({
@@ -255,7 +255,7 @@ test("express ignores a path (prefix, with dynamic segments)", {timeout: TestUti
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-test("express ignores a path (prefix, static)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+test("express ignores a path (prefix, static)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const path = "/echo-by-post";
     const prefix = "/echo";
     const scout = new Scout(buildScoutConfiguration({
@@ -290,7 +290,7 @@ test("express ignores a path (prefix, static)", {timeout: TestUtil.EXPRESS_TEST_
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-test("URI params are filtered", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+test("URI params are filtered", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -336,7 +336,7 @@ test("URI params are filtered", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-test("URI filtered down to path", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT}, t => {
+test("URI filtered down to path", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,

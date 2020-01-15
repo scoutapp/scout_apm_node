@@ -10,7 +10,7 @@ let PG_CONTAINER_AND_OPTS = null;
 // This "test" is made to send to the dashboard
 // it does not shut down scout in order to give it time to actually send data
 // https://github.com/scoutapp/scout_apm_node/issues/71
-test("Scout sends basic controller span to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT }, t => {
+test("Scout sends basic controller span to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
     const config = types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -55,7 +55,7 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
 });
 // For the postgres integration
 // https://github.com/scoutapp/scout_apm_node/issues/83
-test("Scout sends controller span with DB query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT }, t => {
+test("Scout sends controller span with DB query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
     const config = types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
