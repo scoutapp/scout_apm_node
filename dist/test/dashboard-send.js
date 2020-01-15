@@ -95,7 +95,7 @@ test("Scout sends controller span with DB query to dashboard", { timeout: TestUt
                 // Do a query
                 .then(() => {
                 return client
-                    .query(fixtures_1.PG_QUERIES.SELECT_TIME)
+                    .query(fixtures_1.SQL_QUERIES.SELECT_TIME)
                     .then(() => t.comment("performed query"));
             })
                 // Finish the span

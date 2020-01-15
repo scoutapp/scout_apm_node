@@ -26,7 +26,7 @@ import { Client } from "pg";
 import * as TestUtil from "./util";
 import * as TestConstants from "./constants";
 
-import { PG_QUERIES } from "./fixtures";
+import { SQL_QUERIES } from "./fixtures";
 
 let PG_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 
@@ -136,7 +136,7 @@ test("Scout sends controller span with DB query to dashboard", {timeout: TestUti
             // Do a query
                 .then(() => {
                     return client
-                        .query(PG_QUERIES.SELECT_TIME)
+                        .query(SQL_QUERIES.SELECT_TIME)
                         .then(() => t.comment("performed query"));
                 })
             // Finish the span

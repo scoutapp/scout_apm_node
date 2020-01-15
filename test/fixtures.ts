@@ -15,7 +15,7 @@ export const RESPONSES = {
     },
 };
 
-export const PG_QUERIES = {
+export const SQL_QUERIES = {
     SELECT_TIME: "SELECT NOW();",
     CREATE_STRING_KV_TABLE: `
 CREATE TABLE kv(

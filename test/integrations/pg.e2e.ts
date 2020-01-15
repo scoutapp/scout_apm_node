@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { PG_QUERIES } from "../fixtures";
+import { SQL_QUERIES } from "../fixtures";
 
 // The hook for PG has to be triggered this way in a typescript context
 // since a partial improt like { Client } will not trigger a require
@@ -59,8 +59,11 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
                     throw new Error("No DB Span");
                 }
 
-                t.equals(dbSpan.getContextValue("db.statement"), PG_QUERIES.SELECT_TIME, "db.statement tag is correct");
-
+                t.equals(
+                    dbSpan.getContextValue("db.statement"),
+                    SQL_QUERIES.SELECT_TIME,
+                    "db.statement tag is correct",
+                );
             })
             .then(() => client.end())
             .then(() => TestUtil.shutdownScout(t, scout))
@@ -81,7 +84,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
     // Start a scout transaction & perform a query
         .then(() => scout.transaction("Controller/select-now-test", done => {
             return client
-                .query(PG_QUERIES.SELECT_TIME)
+                .query(SQL_QUERIES.SELECT_TIME)
                 .then(() => {
                     t.comment("performed query");
                     done();
@@ -113,7 +116,7 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}
 
                 // Ensure span for CREATE TABLE is present
                 const createTableSpan = dbSpans.find(s => {
-                    return s.getContextValue("db.statement") === PG_QUERIES.CREATE_STRING_KV_TABLE;
+                    return s.getContextValue("db.statement") === SQL_QUERIES.CREATE_STRING_KV_TABLE;
                 });
                 if (!createTableSpan) {
                     t.fail("span for CREATE TABLE not found");
@@ -122,7 +125,7 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}
 
                 // Ensure span for INSERT is present
                 const insertSpan = dbSpans.find(s => {
-                    return s.getContextValue("db.statement") === PG_QUERIES.INSERT_STRING_KV_TABLE;
+                    return s.getContextValue("db.statement") === SQL_QUERIES.INSERT_STRING_KV_TABLE;
                 });
                 if (!insertSpan) {
                     t.fail("span for INSERT not found");
@@ -151,10 +154,10 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}
         .then(() => scout.transaction("Controller/create-and-insert-test", done => {
             // Create a string KV table
             return client
-                .query(PG_QUERIES.CREATE_STRING_KV_TABLE)
+                .query(SQL_QUERIES.CREATE_STRING_KV_TABLE)
             // Insert a value into the string KV
                 .then(() => {
-                    const query = PG_QUERIES.INSERT_STRING_KV_TABLE;
+                    const query = SQL_QUERIES.INSERT_STRING_KV_TABLE;
                     return client.query(query, ["testKey", "testValue"]);
                 })
                 .then(results => {

@@ -40,7 +40,7 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
                 t.fail("no DB span present on request");
                 throw new Error("No DB Span");
             }
-            t.equals(dbSpan.getContextValue("db.statement"), fixtures_1.PG_QUERIES.SELECT_TIME, "db.statement tag is correct");
+            t.equals(dbSpan.getContextValue("db.statement"), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
         })
             .then(() => client.end())
             .then(() => TestUtil.shutdownScout(t, scout))
@@ -59,7 +59,7 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
         // Start a scout transaction & perform a query
         .then(() => scout.transaction("Controller/select-now-test", done => {
         return client
-            .query(fixtures_1.PG_QUERIES.SELECT_TIME)
+            .query(fixtures_1.SQL_QUERIES.SELECT_TIME)
             .then(() => {
             t.comment("performed query");
             done();
@@ -87,7 +87,7 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
             t.equal(dbSpans.length, 2, "two db spans were present");
             // Ensure span for CREATE TABLE is present
             const createTableSpan = dbSpans.find(s => {
-                return s.getContextValue("db.statement") === fixtures_1.PG_QUERIES.CREATE_STRING_KV_TABLE;
+                return s.getContextValue("db.statement") === fixtures_1.SQL_QUERIES.CREATE_STRING_KV_TABLE;
             });
             if (!createTableSpan) {
                 t.fail("span for CREATE TABLE not found");
@@ -95,7 +95,7 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
             }
             // Ensure span for INSERT is present
             const insertSpan = dbSpans.find(s => {
-                return s.getContextValue("db.statement") === fixtures_1.PG_QUERIES.INSERT_STRING_KV_TABLE;
+                return s.getContextValue("db.statement") === fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE;
             });
             if (!insertSpan) {
                 t.fail("span for INSERT not found");
@@ -121,10 +121,10 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
         .then(() => scout.transaction("Controller/create-and-insert-test", done => {
         // Create a string KV table
         return client
-            .query(fixtures_1.PG_QUERIES.CREATE_STRING_KV_TABLE)
+            .query(fixtures_1.SQL_QUERIES.CREATE_STRING_KV_TABLE)
             // Insert a value into the string KV
             .then(() => {
-            const query = fixtures_1.PG_QUERIES.INSERT_STRING_KV_TABLE;
+            const query = fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE;
             return client.query(query, ["testKey", "testValue"]);
         })
             .then(results => {
