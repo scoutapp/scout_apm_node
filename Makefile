@@ -72,14 +72,14 @@ PG_INTEGRATION_DOCKER_IMAGE ?= postgres:alpine
 ensure-pg-docker-image:
 	$(DOCKER) pull $(PG_INTEGRATION_DOCKER_IMAGE)
 
-test-integration-pg:
+test-integration-pg: ensure-pg-docker-image
 	$(YARN) test-integration-pg
 
 MYSQL_INTEGRATION_DOCKER_IMAGE ?= postgres:alpine
 ensure-mysql-docker-image:
 	$(DOCKER) pull $(MSYQL_INTEGRATION_DOCKER_IMAGE)
 
-test-integration-mysql:
+test-integration-mysql: ensure-mysql-docker-image
 	$(YARN) test-integration-mysql
 
 generate-agent-configs:
