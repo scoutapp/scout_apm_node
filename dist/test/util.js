@@ -303,6 +303,7 @@ function startContainer(t, optOverrides) {
         }
         return (line) => {
             line = line.toString();
+            console.log("LINE =>", line);
             if (!line.includes(expected)) {
                 return;
             }
@@ -506,7 +507,7 @@ function startContainerizedMySQLTest(test, cb, containerEnv, tagName) {
                 tagName,
                 portBinding,
                 envBinding,
-                waitFor: { milliseconds: MYSQL_CONTAINER_STARTUP_TIME_MS },
+                waitFor: { stdout: "never happens" },
                 startTimeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
             });
         })

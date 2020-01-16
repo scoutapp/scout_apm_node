@@ -389,6 +389,7 @@ export function startContainer(
 
         return (line: string | Buffer) => {
             line = line.toString();
+            console.log("LINE =>", line);
             if (!line.includes(expected)) { return; }
 
             if (type === "stdout" && stdoutListener) { emitter.removeListener("data", stdoutListener); }
@@ -624,7 +625,7 @@ export function startContainerizedMySQLTest(
                     tagName,
                     portBinding,
                     envBinding,
-                    waitFor: {milliseconds: MYSQL_CONTAINER_STARTUP_TIME_MS},
+                    waitFor: {stdout: "never happens"},
                     startTimeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
                 });
             })
