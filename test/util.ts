@@ -592,7 +592,7 @@ const MYSQL_IMAGE_TAG = "5.7.29";
 // mysql takes this long to start up, can't wait for output because
 // even when it says it's ready to accept connections it will drop them.
 // this startup time was arrived at by trial and error and may need to be adjusted.
-const MYSQL_CONTAINER_STARTUP_TIME_MS = 14000;
+const MYSQL_CONTAINER_STARTUP_TIME_MS = 20000;
 const MYSQL_STARTUP_MESSAGE = "ready for connections";
 const MYSQL_CONTAINER_DEFAULT_ENV = {
     MYSQL_ROOT_PASSWORD: "mysql",
