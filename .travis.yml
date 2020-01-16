@@ -6,7 +6,8 @@ node_js:
 cache:
   yarn: true
 
-script: make lint test
+script:
+  - make lint test
 
 services:
   - docker
