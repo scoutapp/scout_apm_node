@@ -100,9 +100,9 @@ export class MySQLIntegration implements RequireIntegration {
 
             // We need to find which one of the arguments was the callback if there was one)
             const originalArgsArr = Array.from(originalArgs);
-            let cbIdx = originalArgsArr.findIndex(a => typeof a === "function");
+            const cbIdx = originalArgsArr.findIndex(a => typeof a === "function");
             // If a callback wasn't provided use a function that does nothing
-            const cb = cbIdx >= 0 ? originalArgsArr[cbIdx]: () => undefined;
+            const cb = cbIdx >= 0 ? originalArgsArr[cbIdx] : () => undefined;
 
             // We have to assume that the first argument is the SQL string (or object)
             const sql = originalArgsArr[0];
@@ -111,12 +111,13 @@ export class MySQLIntegration implements RequireIntegration {
             const builtQuery = exports.createQuery(sql);
             let ranFn = false;
 
+            // Start the instrumentation
             integration.scout.instrument(Constants.SCOUT_SQL_QUERY, stopSpan => {
                 // Get span, exit early if there was an issue getting the current span
                 const span = integration.scout.getCurrentSpan();
                 if (!span) {
-                    originalFn.apply(this, originalArgs as any);
                     ranFn = true;
+                    originalFn.apply(this, originalArgs as any);
                     return;
                 }
 
@@ -141,8 +142,8 @@ export class MySQLIntegration implements RequireIntegration {
                     integration.logFn("[scout/integrations/pg] Successfully queried Postgres db", LogLevel.Debug);
                     // If no errors ocurred stop the span and run the user's callback
                     stopSpan();
-                    cb(err, results);
                     ranFn = true;
+                    cb(err, results);
                 };
 
                 // After making the wrapped cb, we have to replace the argument
@@ -153,16 +154,12 @@ export class MySQLIntegration implements RequireIntegration {
                     .addContext([{name: ScoutContextNames.DBStatement, value: builtQuery.sql}])
                 // Do the query
                     .then(() => {
-                        console.log("About to run original FN");
-                        originalFn.apply(this, originalArgs as any);
                         ranFn = true;
+                        originalFn.apply(this, originalArgs as any);
                     })
                 // If an error occurred adding the scout context
                     .catch(err => {
-                        integration.logFn("[scout/integrations/mysql] Internal failure", LogLevel.Debug);
-
-                        console.log("OTHER ERR?", err);
-
+                        integration.logFn("[scout/integrations/mysql] Internal failure", LogLevel.Error);
                         // If the original function has not been run yet we need to run it at least
                         if (!ranFn) {
                             // Run the function with the original requests

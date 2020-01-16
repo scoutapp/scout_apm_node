@@ -60,7 +60,7 @@ class PGIntegration {
             if (userCallback) {
                 return original.bind(this)(err => {
                     if (err) {
-                        integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Debug);
+                        integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Error);
                         userCallback(err);
                         return;
                     }
@@ -73,7 +73,7 @@ class PGIntegration {
                 integration.logFn("[scout/integrations/pg] Successfully connected to Postgres db", types_1.LogLevel.Debug);
             })
                 .catch(err => {
-                integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Debug);
+                integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Error);
                 // Re-throw error
                 throw err;
             });
@@ -121,7 +121,7 @@ class PGIntegration {
                     return res;
                 })
                     .catch(err => {
-                    integration.logFn("[scout/integrations/pg] Query failed", types_1.LogLevel.Debug);
+                    integration.logFn("[scout/integrations/pg] Query failed", types_1.LogLevel.Error);
                     // Mark the span as errored
                     if (span) {
                         span.addContext([{ name: "error", value: "true" }]);

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const TestUtil = require("../util");
+const Constants = require("../../lib/constants");
 const integrations_1 = require("../../lib/types/integrations");
 const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
@@ -35,7 +36,7 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
         data.request
             .getChildSpans()
             .then(spans => {
-            const dbSpan = spans.find(s => s.operation === "SQL/Query");
+            const dbSpan = spans.find(s => s.operation === Constants.SCOUT_SQL_QUERY);
             t.assert(dbSpan, "db span was present on request");
             if (!dbSpan) {
                 t.fail("no DB span present on request");

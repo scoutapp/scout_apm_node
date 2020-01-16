@@ -81,7 +81,7 @@ class MySQLIntegration {
             }
             // We need to find which one of the arguments was the callback if there was one)
             const originalArgsArr = Array.from(originalArgs);
-            let cbIdx = originalArgsArr.findIndex(a => typeof a === "function");
+            const cbIdx = originalArgsArr.findIndex(a => typeof a === "function");
             // If a callback wasn't provided use a function that does nothing
             const cb = cbIdx >= 0 ? originalArgsArr[cbIdx] : () => undefined;
             // We have to assume that the first argument is the SQL string (or object)
@@ -89,12 +89,13 @@ class MySQLIntegration {
             // Build a version of the query to take advantage of the string/object parsing of mysql
             const builtQuery = exports.createQuery(sql);
             let ranFn = false;
+            // Start the instrumentation
             integration.scout.instrument(Constants.SCOUT_SQL_QUERY, stopSpan => {
                 // Get span, exit early if there was an issue getting the current span
                 const span = integration.scout.getCurrentSpan();
                 if (!span) {
-                    originalFn.apply(this, originalArgs);
                     ranFn = true;
+                    originalFn.apply(this, originalArgs);
                     return;
                 }
                 // Create a callback that will intercept the results
@@ -115,8 +116,8 @@ class MySQLIntegration {
                     integration.logFn("[scout/integrations/pg] Successfully queried Postgres db", types_1.LogLevel.Debug);
                     // If no errors ocurred stop the span and run the user's callback
                     stopSpan();
-                    cb(err, results);
                     ranFn = true;
+                    cb(err, results);
                 };
                 // After making the wrapped cb, we have to replace the argument
                 arguments[cbIdx] = wrappedCb;
@@ -125,14 +126,12 @@ class MySQLIntegration {
                     .addContext([{ name: types_1.ScoutContextNames.DBStatement, value: builtQuery.sql }])
                     // Do the query
                     .then(() => {
-                    console.log("About to run original FN");
-                    originalFn.apply(this, originalArgs);
                     ranFn = true;
+                    originalFn.apply(this, originalArgs);
                 })
                     // If an error occurred adding the scout context
                     .catch(err => {
-                    integration.logFn("[scout/integrations/mysql] Internal failure", types_1.LogLevel.Debug);
-                    console.log("OTHER ERR?", err);
+                    integration.logFn("[scout/integrations/mysql] Internal failure", types_1.LogLevel.Error);
                     // If the original function has not been run yet we need to run it at least
                     if (!ranFn) {
                         // Run the function with the original requests

@@ -52,4 +52,4 @@ export const DEFAULT_PARAM_SCRUB_REPLACEMENT = "[FILTERED]";
 
 export const DEFAULT_SLOW_REQUEST_THRESHOLD_MS = SECOND_MS / 2;
 
-export const SCOUT_SQL_QUERY = "SQL/Query"
+export const SCOUT_SQL_QUERY = "SQL/Query";

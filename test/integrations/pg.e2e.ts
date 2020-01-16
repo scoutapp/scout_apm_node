@@ -53,7 +53,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
         data.request
             .getChildSpans()
             .then(spans => {
-                const dbSpan = spans.find(s => s.operation === "SQL/Query");
+                const dbSpan = spans.find(s => s.operation === Constants.SCOUT_SQL_QUERY);
                 t.assert(dbSpan, "db span was present on request");
                 if (!dbSpan) {
                     t.fail("no DB span present on request");
