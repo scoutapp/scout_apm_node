@@ -31,7 +31,7 @@ test("the shim works", t => {
     t.end();
 });
 
-// Pseudo test that will start a containerized postgres instance
+// Pseudo test that will start a containerized mysql instance
 TestUtil.startContainerizedMySQLTest(test, cao => {
     MYSQL_CONTAINER_AND_OPTS = cao;
 });
@@ -80,7 +80,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.MYSQL_TEST_
 
     scout
         .setup()
-    // Connect to the postgres
+    // Connect to the mysql
         .then(() => TestUtil.makeConnectedMySQLConnection(() => MYSQL_CONTAINER_AND_OPTS))
         .then(c => conn = c)
     // Start a scout transaction & perform a query
@@ -107,5 +107,5 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.MYSQL_TEST_
         });
 });
 
-// Pseudo test that will stop a containerized postgres instance that was started
+// Pseudo test that will stop a containerized mysql instance that was started
 TestUtil.stopContainerizedMySQLTest(test, () => MYSQL_CONTAINER_AND_OPTS);
