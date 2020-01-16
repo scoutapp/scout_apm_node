@@ -12,21 +12,22 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
+import { ScoutContextNames } from "../../lib/types";
 import { SQL_QUERIES } from "../fixtures";
 
 // The hook for MYSQL has to be triggered this way in a typescript context
-// since a partial improt like { Client } will not trigger a require
-const mysql = require("mysql");
+// since a partial import like { Client } will not trigger a require
+setupRequireIntegrations(["mysql"]);
 
-import { Connection } from "mysql";
+import { Connection, createConnection as createMySQLConnection } from "mysql";
 
 let MYSQL_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // it may break if import order is changed (require hook would not have taken place)
 test("the shim works", t => {
-    const connection = mysql.createConnection({host: "localhost", user: "mysql", password: "mysql"});
-    t.assert([scoutIntegrationSymbol], "client has the integration symbol");
+    const connection = createMySQLConnection({host: "localhost", user: "mysql", password: "mysql"});
+    t.assert(scoutIntegrationSymbol in connection, "created connection has the integration symbol");
     t.end();
 });
 
@@ -60,7 +61,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.MYSQL_TEST_
                 }
 
                 t.equals(
-                    dbSpan.getContextValue("db.statement"),
+                    dbSpan.getContextValue(ScoutContextNames.DBStatement),
                     SQL_QUERIES.SELECT_TIME,
                     "db.statement tag is correct",
                 );

@@ -3,7 +3,8 @@ import * as Hook from "require-in-the-middle";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
 import { Client, Query } from "pg";
-import { LogFn, LogLevel } from "../types";
+import { LogFn, LogLevel, ScoutContextNames } from "../types";
+import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
 export class PGIntegration implements RequireIntegration {
@@ -17,6 +18,11 @@ export class PGIntegration implements RequireIntegration {
 
     public ritmHook(exportBag: ExportBag): void {
         Hook([this.getPackageName()], (exports, name, basedir) => {
+            // If the shim has already been run, then finish
+            if (!exports || scoutIntegrationSymbol in exports) {
+                return exports;
+            }
+
             // Make changes to the pg package to enable integration
             this.shimPG(exports);
 
@@ -116,7 +122,7 @@ export class PGIntegration implements RequireIntegration {
                 query = new Query(...arguments);
             }
 
-            return integration.scout.instrument("SQL/Query", done => {
+            return integration.scout.instrument(Constants.SCOUT_SQL_QUERY, done => {
                 const span = integration.scout.getCurrentSpan();
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {
@@ -126,7 +132,7 @@ export class PGIntegration implements RequireIntegration {
 
                 return span
                 // Update span context with the DB statement
-                    .addContext([{name: "db.statement", value: (query as any).text}])
+                    .addContext([{name: ScoutContextNames.DBStatement, value: (query as any).text}])
                 // Run pg's query function
                     .then(() => original.bind(this)(config, values, userCallback))
                     .then(res => {

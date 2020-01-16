@@ -115,4 +115,6 @@ var ScoutEvent;
 var ScoutContextNames;
 (function (ScoutContextNames) {
     ScoutContextNames["Traceback"] = "stack";
+    ScoutContextNames["DBStatement"] = "db.statement";
+    ScoutContextNames["Error"] = "error";
 })(ScoutContextNames = exports.ScoutContextNames || (exports.ScoutContextNames = {}));

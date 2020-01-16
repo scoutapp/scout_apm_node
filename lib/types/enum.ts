@@ -124,4 +124,6 @@ export enum ScoutEvent {
 
 export enum ScoutContextNames {
     Traceback = "stack",
+    DBStatement = "db.statement",
+    Error = "error",
 }

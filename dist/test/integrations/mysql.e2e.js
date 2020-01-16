@@ -4,16 +4,18 @@ const test = require("tape");
 const TestUtil = require("../util");
 const integrations_1 = require("../../lib/types/integrations");
 const lib_1 = require("../../lib");
+const types_1 = require("../../lib/types");
 const fixtures_1 = require("../fixtures");
 // The hook for MYSQL has to be triggered this way in a typescript context
-// since a partial improt like { Client } will not trigger a require
-const mysql = require("mysql");
+// since a partial import like { Client } will not trigger a require
+lib_1.setupRequireIntegrations(["mysql"]);
+const mysql_1 = require("mysql");
 let MYSQL_CONTAINER_AND_OPTS = null;
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // it may break if import order is changed (require hook would not have taken place)
 test("the shim works", t => {
-    const connection = mysql.createConnection({ host: "localhost", user: "mysql", password: "mysql" });
-    t.assert([integrations_1.scoutIntegrationSymbol], "client has the integration symbol");
+    const connection = mysql_1.createConnection({ host: "localhost", user: "mysql", password: "mysql" });
+    t.assert(integrations_1.scoutIntegrationSymbol in connection, "created connection has the integration symbol");
     t.end();
 });
 // Pseudo test that will start a containerized postgres instance
@@ -40,7 +42,7 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.MYSQL_TEST
                 t.fail("no DB span present on request");
                 throw new Error("No DB Span");
             }
-            t.equals(dbSpan.getContextValue("db.statement"), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
+            t.equals(dbSpan.getContextValue(types_1.ScoutContextNames.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
         })
             .then(() => conn.end())
             .then(() => TestUtil.shutdownScout(t, scout))
