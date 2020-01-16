@@ -152,19 +152,17 @@ test("transaction with mysql query to dashboard", { timeout: TestUtil.DASHBOARD_
         t.pass("witnessed V1FinishRequest being sent");
         scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         // Fire off disconnect
-        conn.end();
-        // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
-        TestUtil.waitMinutes(2)
-            .then(() => TestUtil.shutdownScout(t, scout));
+        conn.end(() => {
+            // Wait ~2 minutes for scout to clear requests
+            TestUtil.waitMinutes(2)
+                .then(() => TestUtil.shutdownScout(t, scout));
+        });
     };
     // Set up listener on the agent to listen for the stop request to be sent
     scout.on(types_1.AgentEvent.RequestSent, listener);
     const name = `Controller/GET /`;
     scout
         .setup()
-        // Connect to the mysql server
-        .then(() => TestUtil.makeConnectedMySQLConnection(() => MYSQL_CONTAINER_AND_OPTS))
-        .then(c => conn = c)
         // Run the transaction
         .then(() => scout.transaction(name, (transactionDone) => {
         return scout.instrument(name, (spanDone) => {
@@ -188,8 +186,12 @@ test("transaction with mysql query to dashboard", { timeout: TestUtil.DASHBOARD_
     }))
         // If an error occurs shutdown scout and end connection
         .catch(err => {
-        TestUtil.shutdownScout(t, scout, err)
-            .then(() => conn ? conn.end() : undefined);
+        if (conn) {
+            conn.end(() => {
+                TestUtil.shutdownScout(t, scout, err);
+            });
+        }
+        TestUtil.shutdownScout(t, scout, err);
     });
 });
 // Pseudo test that will stop a containerized mysql instance that was started
