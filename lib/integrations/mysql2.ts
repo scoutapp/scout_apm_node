@@ -95,23 +95,14 @@ export class MySQL2Integration implements RequireIntegration {
         const originalFn = conn.query;
         const integration = this;
 
-        const modified: any = function(this: Connection) {
+        const modified: any = function(this: Connection, sql, values, cb) {
             const originalArgs = arguments;
 
             // If no scout instance is available then run the function normally
-            if (!integration.scout) { return originalFn.apply(this, originalArgs as any); }
-
-            // We need to find which one of the arguments was the callback if there was one)
-            const originalArgsArr = Array.from(originalArgs);
-            const cbIdx = originalArgsArr.findIndex(a => typeof a === "function");
-            // If a callback wasn't provided use a function that does nothing
-            const cb = cbIdx >= 0 ? originalArgsArr[cbIdx] : () => undefined;
-
-            // We have to assume that the first argument is the SQL string (or object)
-            const sql = originalArgsArr[0];
+            if (!integration.scout) { return originalFn.bind(this)(sql, values, cb); }
 
             // Build a version of the query to take advantage of the string/object parsing of mysql
-            const builtQuery = exports.createQuery(sql);
+            const builtQuery = exports.createQuery(sql, values, cb, this.config);
             let ranFn = false;
 
             // Start the instrumentation
@@ -120,7 +111,7 @@ export class MySQL2Integration implements RequireIntegration {
                 const span = integration.scout.getCurrentSpan();
                 if (!span) {
                     ranFn = true;
-                    originalFn.apply(this, originalArgs as any);
+                    originalFn.bind(this)(sql, values, cb);
                     return;
                 }
 
@@ -149,16 +140,13 @@ export class MySQL2Integration implements RequireIntegration {
                     cb(err, results);
                 };
 
-                // After making the wrapped cb, we have to replace the argument
-                arguments[cbIdx] = wrappedCb;
-
                 span
                 // Add query to the context
                     .addContext([{name: ScoutContextNames.DBStatement, value: builtQuery.sql}])
                 // Do the query
                     .then(() => {
                         ranFn = true;
-                        originalFn.apply(this, originalArgs as any);
+                        originalFn.bind(this)(sql, values, cb);
                     })
                 // If an error occurred adding the scout context
                     .catch(err => {
@@ -166,7 +154,7 @@ export class MySQL2Integration implements RequireIntegration {
                         // If the original function has not been run yet we need to run it at least
                         if (!ranFn) {
                             // Run the function with the original requests
-                            originalFn.apply(this, originalArgs as any);
+                            originalFn.bind(this)(sql, values, cb);
                             ranFn = true;
                         }
                     });
