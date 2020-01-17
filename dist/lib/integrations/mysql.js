@@ -37,8 +37,7 @@ class MySQLIntegration {
     }
     shimMySQL(mysqlExport) {
         // Check if the shim has already been performed
-        const c = mysqlExport.createConnection("localhost");
-        if (c[integrations_1.scoutIntegrationSymbol]) {
+        if (integrations_1.scoutIntegrationSymbol in mysqlExport) {
             return;
         }
         return this.shimMySQLCreateConnection(mysqlExport);

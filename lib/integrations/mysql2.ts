@@ -50,8 +50,7 @@ export class MySQL2Integration implements RequireIntegration {
 
     private shimMySQL2(mysql2Export: any): any {
         // Check if the shim has already been performed
-        const c = mysql2Export.createConnection("localhost");
-        if (c[scoutIntegrationSymbol]) { return; }
+        if (scoutIntegrationSymbol in mysql2Export) { return; }
 
         return this.shimMySQL2CreateConnection(mysql2Export);
     }
@@ -63,22 +62,26 @@ export class MySQL2Integration implements RequireIntegration {
      * @param {Connection} client - mysql's `Connection` class
      */
     private shimMySQL2CreateConnection(mysql2Export: any): any {
-        const original = mysql2Export.createConnection;
+        // We need to shim the constructor of the connection class itself
+        const originalCtor = mysql2Export.Connection;
         const integration = this;
 
-        const createConnection = function(this: Connection, uriOrCfg: string | ConnectionConfig) {
-            const connection: Connection = original.bind(this)(uriOrCfg);
-            integration.logFn("[scout/integrations/mysql] Creating connection to Mysql db...", LogLevel.Debug);
+        const modifiedCtor = function(this: Connection, uriOrCfg: string | ConnectionConfig) {
+            const conn = new originalCtor(uriOrCfg);
+
+            integration.logFn("[scout/integrations/mysql2] Creating connection to Mysql db...", LogLevel.Debug);
 
             // Add the scout integration symbol so we know the connection itself has been
             // created by our shimmed createConnection
-            connection[scoutIntegrationSymbol] = this;
+            conn[scoutIntegrationSymbol] = integration;
 
             // Shim the connection instance itself
-            return integration.shimMySQL2ConnectionQuery(mysql2Export, connection);
+            integration.shimMySQL2ConnectionQuery(mysql2Export, conn);
+
+            return conn;
         };
 
-        mysql2Export.createConnection = createConnection;
+        mysql2Export.Connection = modifiedCtor;
         return mysql2Export;
     }
 

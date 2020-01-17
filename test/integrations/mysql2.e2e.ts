@@ -17,7 +17,11 @@ import { SQL_QUERIES } from "../fixtures";
 
 // The hook for MYSQL2 has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
-setupRequireIntegrations(["mysql2"]);
+const mysql2 = require("mysql2");
+
+// TODO: msyql2 requires this kind of require rather than `setupRequireIntegrations`,
+// likely because of the use of new Connection directly in test/util, need to check if
+// user use-case won't cause an issue (either require or setupRequireIntegrations should work)
 
 import { Connection, createConnection as createMySQL2Connection } from "mysql2/promise";
 
@@ -31,14 +35,14 @@ TestUtil.startContainerizedMySQLTest(
 );
 
 // NOTE: This test must be run after mysql starts up, since create mysql2's create connection fails intantly
-// test("the shim works", t => {
-//     const connection = createMySQL2Connection({host: "localhost"})
-//         .then(conn => {
-//             t.assert(scoutIntegrationSymbol in conn, "created connection has the integration symbol");
-//         })
-//         .then(() => t.end())
-//         .catch(err => t.end(err));
-// });
+test("the shim works", t => {
+    TestUtil.makeConnectedMySQL2Connection(() => MYSQL2_CONTAINER_AND_OPTS)
+        .then(conn => {
+            t.assert(scoutIntegrationSymbol in conn, "created connection has the integration symbol");
+        })
+        .then(() => t.end())
+        .catch(err => t.end(err));
+});
 
 // test("SELECT query during a request is recorded", t => {
 //     const scout = new Scout(buildScoutConfiguration({

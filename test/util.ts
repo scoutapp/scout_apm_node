@@ -8,8 +8,11 @@ import { timeout, TimeoutError } from "promise-timeout";
 import { ChildProcess, spawn, SpawnOptions } from "child_process";
 import { EventEmitter } from "events";
 import { Readable } from "stream";
+
 import { Client } from "pg";
+
 import { Connection, createConnection as createMySQLConnection } from "mysql";
+
 import { Connection as MySQL2Connection, createConnection as createMySQL2Connection } from "mysql2";
 import * as ConnectionConfig from "mysql2/lib/connection_config";
 

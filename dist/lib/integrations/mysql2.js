@@ -37,8 +37,7 @@ class MySQL2Integration {
     }
     shimMySQL2(mysql2Export) {
         // Check if the shim has already been performed
-        const c = mysql2Export.createConnection("localhost");
-        if (c[integrations_1.scoutIntegrationSymbol]) {
+        if (integrations_1.scoutIntegrationSymbol in mysql2Export) {
             return;
         }
         return this.shimMySQL2CreateConnection(mysql2Export);
@@ -50,18 +49,20 @@ class MySQL2Integration {
      * @param {Connection} client - mysql's `Connection` class
      */
     shimMySQL2CreateConnection(mysql2Export) {
-        const original = mysql2Export.createConnection;
+        // We need to shim the constructor of the connection class itself
+        const originalCtor = mysql2Export.Connection;
         const integration = this;
-        const createConnection = function (uriOrCfg) {
-            const connection = original.bind(this)(uriOrCfg);
-            integration.logFn("[scout/integrations/mysql] Creating connection to Mysql db...", types_1.LogLevel.Debug);
+        const modifiedCtor = function (uriOrCfg) {
+            const conn = new originalCtor(uriOrCfg);
+            integration.logFn("[scout/integrations/mysql2] Creating connection to Mysql db...", types_1.LogLevel.Debug);
             // Add the scout integration symbol so we know the connection itself has been
             // created by our shimmed createConnection
-            connection[integrations_1.scoutIntegrationSymbol] = this;
+            conn[integrations_1.scoutIntegrationSymbol] = integration;
             // Shim the connection instance itself
-            return integration.shimMySQL2ConnectionQuery(mysql2Export, connection);
+            integration.shimMySQL2ConnectionQuery(mysql2Export, conn);
+            return conn;
         };
-        mysql2Export.createConnection = createConnection;
+        mysql2Export.Connection = modifiedCtor;
         return mysql2Export;
     }
     /**

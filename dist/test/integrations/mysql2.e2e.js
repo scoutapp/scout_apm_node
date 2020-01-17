@@ -2,22 +2,22 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const TestUtil = require("../util");
-const lib_1 = require("../../lib");
+const integrations_1 = require("../../lib/types/integrations");
 // The hook for MYSQL2 has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
-lib_1.setupRequireIntegrations(["mysql2"]);
+const mysql2 = require("mysql2");
 let MYSQL2_CONTAINER_AND_OPTS = null;
 // Pseudo test that will start a containerized mysql2 instance
 TestUtil.startContainerizedMySQLTest(test, cao => { MYSQL2_CONTAINER_AND_OPTS = cao; }, { mysqlPackageName: "mysql2" });
 // NOTE: This test must be run after mysql starts up, since create mysql2's create connection fails intantly
-// test("the shim works", t => {
-//     const connection = createMySQL2Connection({host: "localhost"})
-//         .then(conn => {
-//             t.assert(scoutIntegrationSymbol in conn, "created connection has the integration symbol");
-//         })
-//         .then(() => t.end())
-//         .catch(err => t.end(err));
-// });
+test("the shim works", t => {
+    TestUtil.makeConnectedMySQL2Connection(() => MYSQL2_CONTAINER_AND_OPTS)
+        .then(conn => {
+        t.assert(integrations_1.scoutIntegrationSymbol in conn, "created connection has the integration symbol");
+    })
+        .then(() => t.end())
+        .catch(err => t.end(err));
+});
 // test("SELECT query during a request is recorded", t => {
 //     const scout = new Scout(buildScoutConfiguration({
 //         allowShutdown: true,
