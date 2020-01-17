@@ -654,15 +654,20 @@ export function startContainerizedMySQLTest(
         let port: number;
         let containerAndOpts: ContainerAndOpts;
 
+        // Get a random port for mysql to use
         getPort()
             .then(p => port = p)
             .then(() => {
                 const portBinding = {3306: port};
+                // Attempt to start the container
                 return startContainer(t, {
                     imageName: MYSQL_IMAGE_NAME,
                     tagName,
                     portBinding,
                     envBinding,
+                    // since we don't want the test to actually take MYSQL_CONTAINER_STARTUP_TIME_MS time,
+                    // we use the waitfor.fn feature to attempt to connect repeatedly until it lets us
+                    // wait time is still constrained by timeoutMs
                     waitFor: {
                         fn: {
                             timeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
