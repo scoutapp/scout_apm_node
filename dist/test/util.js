@@ -329,9 +329,6 @@ function startContainer(t, optOverrides) {
             }
             return;
         }
-        // Hook up listener to test travis ci
-        containerProcess.stdout.on("data", data => console.log("stdout => ", data.toString()));
-        containerProcess.stderr.on("data", data => console.log("stderr => ", data.toString()));
         // Wait for specific output on stderr
         if (opts.waitFor && opts.waitFor.stderr) {
             stderrListener = makeListener("stderr", containerProcess.stderr, opts.waitFor.stderr, resolve, reject);
@@ -485,12 +482,10 @@ const MYSQL_IMAGE_TAG = "5.7.29";
 // mysql takes this long to start up, can't wait for output because
 // even when it says it's ready to accept connections it will drop them.
 // this startup time was arrived at by trial and error and may need to be adjusted.
-const MYSQL_CONTAINER_STARTUP_TIME_MS = 20000;
+const MYSQL_CONTAINER_STARTUP_TIME_MS = process.env.CI ? 60000 : 15000;
 const MYSQL_STARTUP_MESSAGE = "ready for connections";
 const MYSQL_CONTAINER_DEFAULT_ENV = {
     MYSQL_ROOT_PASSWORD: "mysql",
-    MYSQL_PASSWORD: "mysql",
-    MYSQL_USER: "mysql",
 };
 // Utility function to start a postgres instance
 function startContainerizedMySQLTest(test, cb, containerEnv, tagName) {
@@ -543,7 +538,7 @@ function makeConnectedMySQLConnection(provider) {
     }
     const port = cao.opts.portBinding[3306];
     const conn = mysql_1.createConnection({
-        user: "mysql",
+        user: "root",
         password: "mysql",
         host: "localhost",
         port,
