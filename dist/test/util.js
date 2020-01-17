@@ -9,6 +9,7 @@ const promise_timeout_1 = require("promise-timeout");
 const child_process_1 = require("child_process");
 const pg_1 = require("pg");
 const mysql_1 = require("mysql");
+const mysql2_1 = require("mysql2");
 const Constants = require("../lib/constants");
 const external_process_1 = require("../lib/agents/external-process");
 const web_1 = require("../lib/agent-downloaders/web");
@@ -614,3 +615,27 @@ function makeConnectedMySQLConnection(provider) {
     });
 }
 exports.makeConnectedMySQLConnection = makeConnectedMySQLConnection;
+// Helper for creating a connected connection for MySQL
+function makeConnectedMySQL2Connection(provider) {
+    const cao = provider();
+    if (!cao) {
+        return Promise.reject(new Error("no CAO in provider"));
+    }
+    const port = cao.opts.portBinding[3306];
+    const conn = mysql2_1.createConnection({
+        user: "root",
+        password: "mysql",
+        host: "localhost",
+        port,
+    });
+    return new Promise((resolve, reject) => {
+        conn.connect((err) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(conn);
+        });
+    });
+}
+exports.makeConnectedMySQL2Connection = makeConnectedMySQL2Connection;

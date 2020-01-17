@@ -24,7 +24,6 @@ export * from "./errors";
 
 import { ExportBag } from "./types/integrations";
 import { getIntegrationForPackage } from "./integrations";
-import pgIntegration from "./integrations/pg";
 
 // Create an export bag which will contain
 export const EXPORT_BAG: ExportBag = {};
@@ -46,4 +45,5 @@ export function setupRequireIntegrations(packages: string[]) {
 setupRequireIntegrations([
     "pg",
     "mysql",
+    "mysql2",
 ]);

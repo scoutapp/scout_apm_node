@@ -10,6 +10,7 @@ import { EventEmitter } from "events";
 import { Readable } from "stream";
 import { Client } from "pg";
 import { Connection, createConnection as createMySQLConnection } from "mysql";
+import { createConnection as createMySQL2Connection } from "mysql2";
 
 import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
@@ -723,6 +724,31 @@ export function makeConnectedMySQLConnection(provider: () => ContainerAndOpts | 
 
     const port: number = cao.opts.portBinding[3306];
     const conn = createMySQLConnection({
+        user: "root",
+        password: "mysql",
+        host: "localhost",
+        port,
+    });
+
+    return new Promise((resolve, reject) => {
+        conn.connect((err) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            resolve(conn);
+        });
+    });
+}
+
+// Helper for creating a connected connection for MySQL
+export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts | null): Promise<Connection> {
+    const cao = provider();
+    if (!cao) { return Promise.reject(new Error("no CAO in provider")); }
+
+    const port: number = cao.opts.portBinding[3306];
+    const conn = createMySQL2Connection({
         user: "root",
         password: "mysql",
         host: "localhost",
