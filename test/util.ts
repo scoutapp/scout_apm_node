@@ -274,6 +274,11 @@ export function buildTestScoutInstance(
     return new Scout(cfg, options);
 }
 
+export interface WaitForConfigFn {
+    timeoutMs: number;
+    check: (cao: ContainerAndOpts) => Promise<boolean>;
+}
+
 export interface WaitForConfig {
     // Wait for output on stdout
     stdout?: string;
@@ -281,6 +286,8 @@ export interface WaitForConfig {
     stderr?: string;
     // Wait a certain number of milliseconds
     milliseconds?: number;
+    // Wait until a given function that returns a promise evaluates to true
+    fn?: WaitForConfigFn;
 }
 
 export class TestContainerStartOpts {
@@ -409,12 +416,6 @@ export function startContainer(
     const promise = new Promise((resolve, reject) => {
         // If there's a waitFor specified then we're going to have to listen before we return
 
-        // Hook up listener to test travis ci
-        // tslint:disable-next-line no-console
-        containerProcess!.stdout!.on("data", data => console.log("stdout => ", data.toString()));
-        // tslint:disable-next-line no-console
-        containerProcess!.stderr!.on("data", data => console.log("stderr => ", data.toString()));
-
         // Wait for specific output on stdout
         if (opts.waitFor && opts.waitFor.stdout) {
             stdoutListener = makeListener("stdout", containerProcess.stdout, opts.waitFor.stdout, resolve, reject);
@@ -436,6 +437,37 @@ export function startContainer(
             return;
         }
 
+        // Wait for a given function to evaluate to true
+        if (opts.waitFor && opts.waitFor.fn) {
+            // Check every second for function to evaluate to true
+            const startTime = new Date().getMilliseconds();
+            const interval = setInterval(() => {
+                // Ensure opts are still properly formed
+                if (!opts || !opts.waitFor || !opts.waitFor.fn || !opts.waitFor.fn.timeoutMs) {
+                    clearInterval(interval);
+                    reject(new Error("waitFor object became improperly formed"));
+                    return;
+                }
+
+                // If we've waited too long then clear interval and exit
+                const elapsedMs = new Date().getMilliseconds() - startTime;
+                if (elapsedMs >= opts.waitFor.fn.timeoutMs) {
+                    clearInterval(interval);
+                    reject(new Error("function never resolved to true before timeout"));
+                    return;
+                }
+
+                // If we haven't waited too long, check the function
+                opts.waitFor.fn.check({containerProcess, opts})
+                    .then(res => {
+                        if (!res) { return; }
+                        clearInterval(interval);
+                        resolve({containerProcess, opts});
+                    })
+                    .catch(() => undefined);
+            }, 1000);
+        }
+
         containerProcess.on("close", code => {
             if (code !== 0) {
                 t.comment("daemon failed to start container, piping output to stdout...");
@@ -450,7 +482,6 @@ export function startContainer(
 
     });
 
-    console.log(`timing out after [${opts.startTimeoutMs}ms]`); // tslint:disable-line no-console
     return timeout(promise, opts.startTimeoutMs)
         .catch(err => {
             // If we timed out clean up some waiting stuff, shutdown the process
@@ -602,8 +633,8 @@ const MYSQL_IMAGE_TAG = "5.7.29";
 // mysql takes this long to start up, can't wait for output because
 // even when it says it's ready to accept connections it will drop them.
 // this startup time was arrived at by trial and error and may need to be adjusted.
-const MYSQL_CONTAINER_STARTUP_TIME_MS = process.env.CI ? 600000 : 15000;
-const MYSQL_STARTUP_MESSAGE = "ready for connections";
+const MYSQL_CONTAINER_STARTUP_TIME_MS = process.env.CI ? 60000 : 20000;
+const MYSQL_STARTUP_MESSAGE = "MySQL init process done. Ready for startup.";
 const MYSQL_CONTAINER_DEFAULT_ENV = {
     MYSQL_ROOT_PASSWORD: "mysql",
 };
@@ -632,7 +663,28 @@ export function startContainerizedMySQLTest(
                     tagName,
                     portBinding,
                     envBinding,
-                    waitFor: {milliseconds: MYSQL_CONTAINER_STARTUP_TIME_MS},
+                    waitFor: {
+                        fn: {
+                            timeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
+                            // check for the container to have started if we can make a connection
+                            check: (cao) => {
+                                return makeConnectedMySQLConnection(() => cao)
+                                    .then(conn => {
+                                        // if we make a connection, immediately close it and return true
+                                        return new Promise((resolve, reject) => {
+                                            conn.end((err) => {
+                                                if (err) {
+                                                    reject(err);
+                                                    return;
+                                                }
+
+                                                resolve(true);
+                                            });
+                                        });
+                                    });
+                            },
+                        },
+                    },
                     startTimeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
                 });
             })
