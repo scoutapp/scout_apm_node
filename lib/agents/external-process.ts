@@ -86,6 +86,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         // Initialize the pool if not already present
         return (this.pool ? Promise.resolve(this.pool) : this.initPool())
+            .then(() => this.stopped = false)
             .then(() => this.status());
     }
 
@@ -235,9 +236,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                     return this.disconnect()
                         .then(() => Promise.reject(new Errors.ConnectionPoolDisabled()));
                 }
-
-                // Ensure the pool is no longer marked as stopped
-                this.stopped = false;
 
                 return this.createDomainSocket();
             },

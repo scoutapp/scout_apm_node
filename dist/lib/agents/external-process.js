@@ -56,6 +56,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         this.logFn("[scout/external-process] connecting to agent", types_1.LogLevel.Debug);
         // Initialize the pool if not already present
         return (this.pool ? Promise.resolve(this.pool) : this.initPool())
+            .then(() => this.stopped = false)
             .then(() => this.status());
     }
     /** @see Agent */
@@ -180,8 +181,6 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                     return this.disconnect()
                         .then(() => Promise.reject(new Errors.ConnectionPoolDisabled()));
                 }
-                // Ensure the pool is no longer marked as stopped
-                this.stopped = false;
                 return this.createDomainSocket();
             },
             destroy: (socket) => Promise.resolve(socket.destroy()),
