@@ -10,7 +10,8 @@ import { EventEmitter } from "events";
 import { Readable } from "stream";
 import { Client } from "pg";
 import { Connection, createConnection as createMySQLConnection } from "mysql";
-import { createConnection as createMySQL2Connection } from "mysql2";
+import { Connection as MySQL2Connection, createConnection as createMySQL2Connection } from "mysql2";
+import * as ConnectionConfig from "mysql2/lib/connection_config";
 
 import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
@@ -413,6 +414,9 @@ export function startContainer(
         };
     };
 
+    containerProcess!.stdout!.on("data", data => console.log("stdout =>", data.toString())); // tslint:disable-line no-console
+    containerProcess!.stderr!.on("data", data => console.log("stderr =>", data.toString())); // tslint:disable-line no-console
+
     // Wait until process is listening on the given socket port
     const promise = new Promise((resolve, reject) => {
         // If there's a waitFor specified then we're going to have to listen before we return
@@ -467,13 +471,15 @@ export function startContainer(
                     })
                     .catch(() => undefined);
             }, 1000);
+
+            return;
         }
 
         containerProcess.on("close", code => {
             if (code !== 0) {
-                t.comment("daemon failed to start container, piping output to stdout...");
+                t.comment("container process closing, piping output to stdout...");
                 if (containerProcess.stdout) { containerProcess.stdout.pipe(process.stdout); }
-                t.comment(`command: [${opts.executedStartCommand}]`);
+                // t.comment(`command: [${opts.executedStartCommand}]`);
                 reject(new Error(`Failed to start container (code ${code}), output will be piped to stdout`));
                 return;
             }
@@ -583,7 +589,7 @@ export function stopContainerizedInstanceTest(test: any, provider: () => Contain
         const opts = containerAndOpts.opts;
 
         killContainer(t, opts)
-            .then(code => t.ok(`successfully stopped container [${opts.containerName}], with code [${code}]`))
+            .then(code => t.pass(`successfully stopped container [${opts.containerName}], with code [${code}]`))
             .then(() => t.end())
             .catch(err => t.end(err));
     });
@@ -644,11 +650,21 @@ const MYSQL_CONTAINER_DEFAULT_ENV = {
 export function startContainerizedMySQLTest(
     test: any,
     cb: (cao: ContainerAndOpts) => void,
-    containerEnv?: object,
-    tagName?: string,
+    opts?: {
+        containerEnv?: object,
+        tagName?: string,
+        mysqlPackageName?: "mysql" | "mysql2",
+    },
 ) {
-    tagName = tagName || MYSQL_IMAGE_TAG;
+    const tagName = opts && opts.tagName ? opts.tagName : MYSQL_IMAGE_TAG;
+    const containerEnv = opts && opts.containerEnv ? opts.containerEnv : {};
     const envBinding = Object.assign({}, MYSQL_CONTAINER_DEFAULT_ENV, containerEnv);
+
+    const isMysql2 = opts && opts.mysqlPackageName && opts.mysqlPackageName === "mysql2";
+
+    // Use the mysql2 connection function if necessary
+    let connFn = makeConnectedMySQLConnection;
+    if (isMysql2) { connFn = makeConnectedMySQL2Connection; }
 
     // We'll need to set the timeout of the test to startup time + 1s to prevent test timeout
     test("Starting mysql instance", {timeout: MYSQL_CONTAINER_STARTUP_TIME_MS + 1000}, (t: Test) => {
@@ -674,8 +690,19 @@ export function startContainerizedMySQLTest(
                             timeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
                             // check for the container to have started if we can make a connection
                             check: (cao) => {
-                                return makeConnectedMySQLConnection(() => cao)
+                                return connFn(() => cao)
                                     .then(conn => {
+                                        // if we're using mysql2 things are a little different
+                                        if (isMysql2) {
+                                            // We have to handle "error" events, because once the server dies (ex. at the end of tests),
+                                            // a timeout is going to be thrown by mysql2 driver, and node will crash if it's not handled
+                                            (conn as MySQL2Connection).on("error", () => undefined);
+                                            return (conn as MySQL2Connection)
+                                                .end()
+                                                .then(() => true)
+                                                .catch(() => false);
+                                        }
+
                                         // if we make a connection, immediately close it and return true
                                         return new Promise((resolve, reject) => {
                                             conn.end((err) => {
@@ -748,21 +775,26 @@ export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts |
     if (!cao) { return Promise.reject(new Error("no CAO in provider")); }
 
     const port: number = cao.opts.portBinding[3306];
-    const conn = createMySQL2Connection({
+    console.log("MySQL2Connection?", MySQL2Connection);
+    console.log("connection config?", ConnectionConfig);
+    const conn = new MySQL2Connection(new ConnectionConfig({
         user: "root",
         password: "mysql",
         host: "localhost",
         port,
+        // Connect timeout to enable using this as a check in waitFor
+        connectTimeout: 9999,
+    }));
+
+    conn.on("error", err => {
+        console.log("HANDLER ERR?", err);
     });
 
-    return new Promise((resolve, reject) => {
-        conn.connect((err) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            resolve(conn);
+    console.log("ADDED HANDLER");
+    return conn.promise()
+        .connect()
+        .catch(err => {
+            console.log("ERR:", err);
+            throw err;
         });
-    });
 }
