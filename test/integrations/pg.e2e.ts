@@ -12,12 +12,13 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { PG_QUERIES } from "../fixtures";
+import { ScoutContextNames } from "../../lib/types";
+
+import { SQL_QUERIES } from "../fixtures";
 
 // The hook for PG has to be triggered this way in a typescript context
-// since a partial improt like { Client } will not trigger a require
-
-const pg = require("pg");
+// since a partial import like { Client } will not trigger a require
+setupRequireIntegrations(["pg"]);
 
 import { Client } from "pg";
 
@@ -35,7 +36,7 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
 
-test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}, t => {
+test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -52,15 +53,18 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
         data.request
             .getChildSpans()
             .then(spans => {
-                const dbSpan = spans.find(s => s.operation === "SQL/Query");
+                const dbSpan = spans.find(s => s.operation === Constants.SCOUT_SQL_QUERY);
                 t.assert(dbSpan, "db span was present on request");
                 if (!dbSpan) {
                     t.fail("no DB span present on request");
                     throw new Error("No DB Span");
                 }
 
-                t.equals(dbSpan.getContextValue("db.statement"), PG_QUERIES.SELECT_TIME, "db.statement tag is correct");
-
+                t.equals(
+                    dbSpan.getContextValue(ScoutContextNames.DBStatement),
+                    SQL_QUERIES.SELECT_TIME,
+                    "db.statement tag is correct",
+                );
             })
             .then(() => client.end())
             .then(() => TestUtil.shutdownScout(t, scout))
@@ -81,7 +85,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
     // Start a scout transaction & perform a query
         .then(() => scout.transaction("Controller/select-now-test", done => {
             return client
-                .query(PG_QUERIES.SELECT_TIME)
+                .query(SQL_QUERIES.SELECT_TIME)
                 .then(() => {
                     t.comment("performed query");
                     done();
@@ -94,7 +98,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
         });
 });
 
-test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}, t => {
+test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -113,7 +117,7 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}
 
                 // Ensure span for CREATE TABLE is present
                 const createTableSpan = dbSpans.find(s => {
-                    return s.getContextValue("db.statement") === PG_QUERIES.CREATE_STRING_KV_TABLE;
+                    return s.getContextValue(ScoutContextNames.DBStatement) === SQL_QUERIES.CREATE_STRING_KV_TABLE;
                 });
                 if (!createTableSpan) {
                     t.fail("span for CREATE TABLE not found");
@@ -122,7 +126,7 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}
 
                 // Ensure span for INSERT is present
                 const insertSpan = dbSpans.find(s => {
-                    return s.getContextValue("db.statement") === PG_QUERIES.INSERT_STRING_KV_TABLE;
+                    return s.getContextValue(ScoutContextNames.DBStatement) === SQL_QUERIES.INSERT_STRING_KV_TABLE;
                 });
                 if (!insertSpan) {
                     t.fail("span for INSERT not found");
@@ -151,10 +155,10 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT}
         .then(() => scout.transaction("Controller/create-and-insert-test", done => {
             // Create a string KV table
             return client
-                .query(PG_QUERIES.CREATE_STRING_KV_TABLE)
+                .query(SQL_QUERIES.CREATE_STRING_KV_TABLE)
             // Insert a value into the string KV
                 .then(() => {
-                    const query = PG_QUERIES.INSERT_STRING_KV_TABLE;
+                    const query = SQL_QUERIES.INSERT_STRING_KV_TABLE;
                     return client.query(query, ["testKey", "testValue"]);
                 })
                 .then(results => {

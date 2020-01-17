@@ -296,8 +296,9 @@ export class Scout extends EventEmitter {
         let span: ScoutSpan;
 
         const doneFn = () => {
+            // Sometimes the async namespace is actually gone *before* doneFn gets called
+            this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
             this.log(`[scout] Stopping span with ID [${span.id}]`, LogLevel.Debug);
-            this.asyncNamespace.set(ASYNC_NS_SPAN, undefined);
             return span.stop();
         };
 
@@ -343,6 +344,21 @@ export class Scout extends EventEmitter {
      */
     public getCurrentSpan(): ScoutSpan | null {
         return this.asyncNamespace.get(ASYNC_NS_SPAN);
+    }
+
+    /**
+     * Attempt to clear an async name space entry
+     *
+     * this.asyncNamespace.set can fail if the async context ID is already gone
+     * before someone tries to clear it. This can happen if some caller moves calls to
+     * another async context or if it's cleaned up suddenly
+     */
+    private clearAsyncNamespaceEntry(key: string) {
+        try {
+            this.asyncNamespace.set(key, undefined);
+        } catch {
+            this.logFn("failed to clear async namespace", LogLevel.Debug);
+        }
     }
 
     // Helper for creating an ExternalProcessAgent for an existing, listening agent
@@ -443,7 +459,7 @@ export class Scout extends EventEmitter {
                 this.log(`[scout] Finishing and sending request with ID [${req.id}]`, LogLevel.Debug);
                 return req
                     .finishAndSend()
-                    .then(() => this.asyncNamespace.set(ASYNC_NS_REQUEST, undefined));
+                    .then(() => this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST));
             };
 
             // Run in the async namespace

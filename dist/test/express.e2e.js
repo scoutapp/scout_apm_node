@@ -50,9 +50,9 @@ test("Simple operation", t => {
             .expect(200)
             .then(() => t.comment("sent second request"));
     })
-        .catch(t.end);
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("Dynamic segment routes", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => {
+test("Dynamic segment routes", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     // Create an application and setup scout middleware
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         config: types_1.buildScoutConfiguration({
@@ -92,7 +92,7 @@ test("Dynamic segment routes", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => 
             // Ensure that the span is what we expect
             t.equals(msg.operation, expectedRootSpan, `root span operation is correct [${msg.operation}]`);
             // Remove agent, pass test
-            scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+            scout.removeListener(types_1.AgentEvent.RequestSent, listener);
             // Wait a little while for request to finish up, then shutdown
             TestUtil.shutdownScout(t, scout)
                 .catch(err => TestUtil.shutdownScout(t, scout, err));
@@ -108,7 +108,7 @@ test("Dynamic segment routes", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => 
     })
         .catch(t.end);
 });
-test("Application which errors", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => {
+test("Application which errors", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     // Create an application and setup scout middleware
     const app = TestUtil.simpleErrorApp(express_1.scoutMiddleware({
         config: types_1.buildScoutConfiguration({
@@ -130,11 +130,10 @@ test("Application which errors", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t =
         t.assert(app.scout.hasAgent(), "the scout instance has an agent");
         scout = app.scout;
     })
-        .then(() => scout.shutdown())
-        .then(() => t.end())
-        .catch(t.end);
+        .then(() => TestUtil.shutdownScout(t, scout))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("express ignores a path (exact path, with dynamic segments)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => {
+test("express ignores a path (exact path, with dynamic segments)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/dynamic/:segment";
     const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
@@ -150,7 +149,8 @@ test("express ignores a path (exact path, with dynamic segments)", { timeout: Te
     const listener = (ignoredPath) => {
         t.equals(path, ignoredPath, `IgnoredPathDetected event was emitted with the expected path [${path}]`);
         scout.removeListener(types_1.ScoutEvent.IgnoredPathDetected, listener);
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     scout.on(types_1.ScoutEvent.IgnoredPathDetected, listener);
     // Send a request to the application (which should trigger setup of scout)
@@ -160,7 +160,7 @@ test("express ignores a path (exact path, with dynamic segments)", { timeout: Te
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("express ignores a path (exact path, static)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => {
+test("express ignores a path (exact path, static)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/";
     const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
@@ -176,7 +176,8 @@ test("express ignores a path (exact path, static)", { timeout: TestUtil.EXPRESS_
     const listener = (ignoredPath) => {
         t.equals(path, ignoredPath, `IgnoredPathDetected event was emitted with the expected path [${path}]`);
         scout.removeListener(types_1.ScoutEvent.IgnoredPathDetected, listener);
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     scout.on(types_1.ScoutEvent.IgnoredPathDetected, listener);
     // Send a request to the application (which should trigger setup of scout)
@@ -186,7 +187,7 @@ test("express ignores a path (exact path, static)", { timeout: TestUtil.EXPRESS_
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("express ignores a path (prefix, with dynamic segments)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => {
+test("express ignores a path (prefix, with dynamic segments)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/dynamic/:segment";
     const prefix = "/dynamic";
     const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
@@ -204,7 +205,8 @@ test("express ignores a path (prefix, with dynamic segments)", { timeout: TestUt
         // The trace was ignored due to a prefix match so
         t.equals(path, ignoredPath, `IgnoredPathDetected event was emitted with the expected path [${path}]`);
         scout.removeListener(types_1.ScoutEvent.IgnoredPathDetected, listener);
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     scout.on(types_1.ScoutEvent.IgnoredPathDetected, listener);
     // Send a request to the application (which should trigger setup of scout)
@@ -214,7 +216,7 @@ test("express ignores a path (prefix, with dynamic segments)", { timeout: TestUt
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("express ignores a path (prefix, static)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => {
+test("express ignores a path (prefix, static)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/echo-by-post";
     const prefix = "/echo";
     const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
@@ -232,7 +234,8 @@ test("express ignores a path (prefix, static)", { timeout: TestUtil.EXPRESS_TEST
         // The trace was ignored due to a prefix match so
         t.equals(path, ignoredPath, `IgnoredPathDetected event was emitted with the expected path [${path}]`);
         scout.removeListener(types_1.ScoutEvent.IgnoredPathDetected, listener);
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     scout.on(types_1.ScoutEvent.IgnoredPathDetected, listener);
     // Send a request to the application (which should trigger setup of scout)
@@ -243,7 +246,7 @@ test("express ignores a path (prefix, static)", { timeout: TestUtil.EXPRESS_TEST
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => {
+test("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -266,7 +269,8 @@ test("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t =>
         // Check that the tag has the right value
         t.assert(pathTag, "Context with the path was present on the request");
         t.equals(pathTag.value, `/echo-by-post?password=${Constants.DEFAULT_PARAM_SCRUB_REPLACEMENT}`, `The path tag value is correct [${pathTag.value}]`);
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
     // Send a request to the application (which should trigger setup of scout)
@@ -277,7 +281,7 @@ test("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t =>
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t => {
+test("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -301,7 +305,8 @@ test("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT }, t 
         // Check that the tag has the right value
         t.assert(pathTag, "Context with the path was present on the request");
         t.equals(pathTag.value, "/echo-by-post", `The path tag value is correct [${pathTag.value}]`);
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
     // Send a request to the application (which should trigger setup of scout)

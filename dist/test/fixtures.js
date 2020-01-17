@@ -13,7 +13,7 @@ exports.RESPONSES = {
         },
     },
 };
-exports.PG_QUERIES = {
+exports.SQL_QUERIES = {
     SELECT_TIME: "SELECT NOW();",
     CREATE_STRING_KV_TABLE: `
 CREATE TABLE kv(

@@ -2,12 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const TestUtil = require("../util");
+const Constants = require("../../lib/constants");
 const integrations_1 = require("../../lib/types/integrations");
 const lib_1 = require("../../lib");
+const types_1 = require("../../lib/types");
 const fixtures_1 = require("../fixtures");
 // The hook for PG has to be triggered this way in a typescript context
-// since a partial improt like { Client } will not trigger a require
-const pg = require("pg");
+// since a partial import like { Client } will not trigger a require
+lib_1.setupRequireIntegrations(["pg"]);
 const pg_1 = require("pg");
 let PG_CONTAINER_AND_OPTS = null;
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
@@ -20,7 +22,7 @@ test("the shim works", t => {
 TestUtil.startContainerizedPostgresTest(test, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
-test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TIMEOUT }, t => {
+test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
     const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -34,13 +36,13 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
         data.request
             .getChildSpans()
             .then(spans => {
-            const dbSpan = spans.find(s => s.operation === "SQL/Query");
+            const dbSpan = spans.find(s => s.operation === Constants.SCOUT_SQL_QUERY);
             t.assert(dbSpan, "db span was present on request");
             if (!dbSpan) {
                 t.fail("no DB span present on request");
                 throw new Error("No DB Span");
             }
-            t.equals(dbSpan.getContextValue("db.statement"), fixtures_1.PG_QUERIES.SELECT_TIME, "db.statement tag is correct");
+            t.equals(dbSpan.getContextValue(types_1.ScoutContextNames.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
         })
             .then(() => client.end())
             .then(() => TestUtil.shutdownScout(t, scout))
@@ -59,7 +61,7 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
         // Start a scout transaction & perform a query
         .then(() => scout.transaction("Controller/select-now-test", done => {
         return client
-            .query(fixtures_1.PG_QUERIES.SELECT_TIME)
+            .query(fixtures_1.SQL_QUERIES.SELECT_TIME)
             .then(() => {
             t.comment("performed query");
             done();
@@ -71,7 +73,7 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
             .then(() => TestUtil.shutdownScout(t, scout, err));
     });
 });
-test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT }, t => {
+test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
     const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -87,7 +89,7 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
             t.equal(dbSpans.length, 2, "two db spans were present");
             // Ensure span for CREATE TABLE is present
             const createTableSpan = dbSpans.find(s => {
-                return s.getContextValue("db.statement") === fixtures_1.PG_QUERIES.CREATE_STRING_KV_TABLE;
+                return s.getContextValue(types_1.ScoutContextNames.DBStatement) === fixtures_1.SQL_QUERIES.CREATE_STRING_KV_TABLE;
             });
             if (!createTableSpan) {
                 t.fail("span for CREATE TABLE not found");
@@ -95,7 +97,7 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
             }
             // Ensure span for INSERT is present
             const insertSpan = dbSpans.find(s => {
-                return s.getContextValue("db.statement") === fixtures_1.PG_QUERIES.INSERT_STRING_KV_TABLE;
+                return s.getContextValue(types_1.ScoutContextNames.DBStatement) === fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE;
             });
             if (!insertSpan) {
                 t.fail("span for INSERT not found");
@@ -121,10 +123,10 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
         .then(() => scout.transaction("Controller/create-and-insert-test", done => {
         // Create a string KV table
         return client
-            .query(fixtures_1.PG_QUERIES.CREATE_STRING_KV_TABLE)
+            .query(fixtures_1.SQL_QUERIES.CREATE_STRING_KV_TABLE)
             // Insert a value into the string KV
             .then(() => {
-            const query = fixtures_1.PG_QUERIES.INSERT_STRING_KV_TABLE;
+            const query = fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE;
             return client.query(query, ["testKey", "testValue"]);
         })
             .then(results => {

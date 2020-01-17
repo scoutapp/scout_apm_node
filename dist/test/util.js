@@ -8,6 +8,7 @@ const randomstring_1 = require("randomstring");
 const promise_timeout_1 = require("promise-timeout");
 const child_process_1 = require("child_process");
 const pg_1 = require("pg");
+const mysql_1 = require("mysql");
 const Constants = require("../lib/constants");
 const external_process_1 = require("../lib/agents/external-process");
 const web_1 = require("../lib/agent-downloaders/web");
@@ -17,9 +18,12 @@ const lib_1 = require("../lib");
 const requests_1 = require("../lib/protocol/v1/requests");
 const getPort = require("get-port");
 // Wait a little longer for requests that use express
-exports.EXPRESS_TEST_TIMEOUT = 2000;
-exports.PG_TEST_TIMEOUT = 3000;
-exports.DASHBOARD_SEND_TIMEOUT = 1000 * 60 * 3; // 3 minutes
+exports.EXPRESS_TEST_TIMEOUT_MS = 2000;
+// The timeouts for PG & MSQL assume an instance is *already running*
+// for control over the amount of start time alotted see `startTimeoutMs`
+exports.PG_TEST_TIMEOUT_MS = 3000;
+exports.MYSQL_TEST_TIMEOUT_MS = 3000;
+exports.DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
 // Helper for downloading and creating an agent
 function bootstrapExternalProcessAgent(t, rawVersion, opts) {
@@ -95,7 +99,12 @@ exports.waitForAgentBufferFlush = waitForAgentBufferFlush;
 // Helper function to clean up an official (user-facing) scout instance
 function shutdownScout(t, scout, err) {
     return scout.shutdown()
-        .then(() => t.end(err));
+        .then(() => {
+        if (err) {
+            console.log("ERROR:", err);
+        } // tslint:disable-line no-console
+        t.end(err);
+    });
 }
 exports.shutdownScout = shutdownScout;
 // Make a simple express application that just returns
@@ -213,7 +222,7 @@ class TestContainerStartOpts {
         this.startTimeoutMs = 5000;
         this.killTimeoutMs = 5000;
         this.tagName = "latest";
-        this.env = process.env;
+        this.envBinding = {};
         this.portBinding = {};
         if (opts) {
             if (opts.dockerBinPath) {
@@ -237,8 +246,8 @@ class TestContainerStartOpts {
             if (opts.killTimeoutMs) {
                 this.killTimeoutMs = opts.killTimeoutMs;
             }
-            if (opts.env) {
-                this.env = opts.env;
+            if (opts.envBinding) {
+                this.envBinding = opts.envBinding;
             }
             if (opts.portBinding) {
                 this.portBinding = opts.portBinding;
@@ -273,10 +282,17 @@ function startContainer(t, optOverrides) {
         portMappingArgs.push("-p");
         portMappingArgs.push(`${localPort}:${containerPort}`);
     });
+    // Build env mapping arguments
+    const envMappingArgs = [];
+    Object.entries(opts.envBinding).forEach(([envVarName, value]) => {
+        envMappingArgs.push("-e");
+        envMappingArgs.push(`${envVarName}=${value}`);
+    });
     const args = [
         "run",
         "--name", opts.containerName,
         ...portMappingArgs,
+        ...envMappingArgs,
         opts.imageWithTag(),
     ];
     // Spawn the docker container
@@ -291,6 +307,7 @@ function startContainer(t, optOverrides) {
             return () => reject(new Error(`[${type}] pipe was not Readable`));
         }
         return (line) => {
+            line = line.toString();
             if (!line.includes(expected)) {
                 return;
             }
@@ -309,21 +326,57 @@ function startContainer(t, optOverrides) {
     // Wait until process is listening on the given socket port
     const promise = new Promise((resolve, reject) => {
         // If there's a waitFor specified then we're going to have to listen before we return
+        // Wait for specific output on stdout
         if (opts.waitFor && opts.waitFor.stdout) {
-            // TODO: wait for output on stdout
             stdoutListener = makeListener("stdout", containerProcess.stdout, opts.waitFor.stdout, resolve, reject);
             if (containerProcess.stdout) {
                 containerProcess.stdout.on("data", stdoutListener);
             }
             return;
         }
+        // Wait for specific output on stderr
         if (opts.waitFor && opts.waitFor.stderr) {
-            // TODO: wait for output on stderr
             stderrListener = makeListener("stderr", containerProcess.stderr, opts.waitFor.stderr, resolve, reject);
             if (containerProcess.stderr) {
                 containerProcess.stderr.on("data", stderrListener);
             }
             return;
+        }
+        // Wait for a given amount of time
+        if (opts.waitFor && opts.waitFor.milliseconds) {
+            waitMs(opts.waitFor.milliseconds)
+                .then(() => resolve({ containerProcess, opts }));
+            return;
+        }
+        // Wait for a given function to evaluate to true
+        if (opts.waitFor && opts.waitFor.fn) {
+            // Check every second for function to evaluate to true
+            const startTime = new Date().getMilliseconds();
+            const interval = setInterval(() => {
+                // Ensure opts are still properly formed
+                if (!opts || !opts.waitFor || !opts.waitFor.fn || !opts.waitFor.fn.timeoutMs) {
+                    clearInterval(interval);
+                    reject(new Error("waitFor object became improperly formed"));
+                    return;
+                }
+                // If we've waited too long then clear interval and exit
+                const elapsedMs = new Date().getMilliseconds() - startTime;
+                if (elapsedMs >= opts.waitFor.fn.timeoutMs) {
+                    clearInterval(interval);
+                    reject(new Error("function never resolved to true before timeout"));
+                    return;
+                }
+                // If we haven't waited too long, check the function
+                opts.waitFor.fn.check({ containerProcess, opts })
+                    .then(res => {
+                    if (!res) {
+                        return;
+                    }
+                    clearInterval(interval);
+                    resolve({ containerProcess, opts });
+                })
+                    .catch(() => undefined);
+            }, 1000);
         }
         containerProcess.on("close", code => {
             if (code !== 0) {
@@ -371,10 +424,11 @@ function killContainer(t, opts) {
 }
 exports.killContainer = killContainer;
 const POSTGRES_IMAGE_NAME = "postgres";
+const POSTGRES_IMAGE_TAG = "alpine";
 // Utility function to start a postgres instance
 function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
-    tagName = tagName || "alpine";
-    const env = containerEnv || {};
+    tagName = tagName || POSTGRES_IMAGE_TAG;
+    const envBinding = containerEnv || {};
     test("Starting postgres instance", (t) => {
         let port;
         let containerAndOpts;
@@ -386,7 +440,7 @@ function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
                 imageName: POSTGRES_IMAGE_NAME,
                 tagName,
                 portBinding,
-                env,
+                envBinding,
                 waitFor: { stdout: POSTGRES_STARTUP_MESSAGE },
             });
         })
@@ -407,9 +461,9 @@ function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
     });
 }
 exports.startContainerizedPostgresTest = startContainerizedPostgresTest;
-// Utility function to stop a postgres instance
-function stopContainerizedPostgresTest(test, provider) {
-    test(`Stopping containerized postgres instance...`, (t) => {
+// Generic function for making a test that stops a containered instance of some dependency
+function stopContainerizedInstanceTest(test, provider, name) {
+    test(`Stopping containerized ${name} instance...`, (t) => {
         const containerAndOpts = provider();
         if (!containerAndOpts) {
             throw new Error("no container w/ opts object provided, can't stop container");
@@ -420,6 +474,11 @@ function stopContainerizedPostgresTest(test, provider) {
             .then(() => t.end())
             .catch(err => t.end(err));
     });
+}
+exports.stopContainerizedInstanceTest = stopContainerizedInstanceTest;
+// Utility function to stop a postgres instance
+function stopContainerizedPostgresTest(test, provider) {
+    stopContainerizedInstanceTest(test, provider, "postgres");
 }
 exports.stopContainerizedPostgresTest = stopContainerizedPostgresTest;
 function makeConnectedPGClient(provider) {
@@ -453,3 +512,105 @@ function createClientCollectingServer() {
     return [server, shutdown];
 }
 exports.createClientCollectingServer = createClientCollectingServer;
+const MYSQL_IMAGE_NAME = "mysql";
+const MYSQL_IMAGE_TAG = "5.7.29";
+// mysql takes this long to start up, can't wait for output because
+// even when it says it's ready to accept connections it will drop them.
+// this startup time was arrived at by trial and error and may need to be adjusted.
+const MYSQL_CONTAINER_STARTUP_TIME_MS = process.env.CI ? 60000 : 20000;
+const MYSQL_STARTUP_MESSAGE = "MySQL init process done. Ready for startup.";
+const MYSQL_CONTAINER_DEFAULT_ENV = {
+    MYSQL_ROOT_PASSWORD: "mysql",
+};
+// Utility function to start a postgres instance
+function startContainerizedMySQLTest(test, cb, containerEnv, tagName) {
+    tagName = tagName || MYSQL_IMAGE_TAG;
+    const envBinding = Object.assign({}, MYSQL_CONTAINER_DEFAULT_ENV, containerEnv);
+    // We'll need to set the timeout of the test to startup time + 1s to prevent test timeout
+    test("Starting mysql instance", { timeout: MYSQL_CONTAINER_STARTUP_TIME_MS + 1000 }, (t) => {
+        let port;
+        let containerAndOpts;
+        // Get a random port for mysql to use
+        getPort()
+            .then(p => port = p)
+            .then(() => {
+            const portBinding = { 3306: port };
+            // Attempt to start the container
+            return startContainer(t, {
+                imageName: MYSQL_IMAGE_NAME,
+                tagName,
+                portBinding,
+                envBinding,
+                // since we don't want the test to actually take MYSQL_CONTAINER_STARTUP_TIME_MS time,
+                // we use the waitfor.fn feature to attempt to connect repeatedly until it lets us
+                // wait time is still constrained by timeoutMs
+                waitFor: {
+                    fn: {
+                        timeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
+                        // check for the container to have started if we can make a connection
+                        check: (cao) => {
+                            return makeConnectedMySQLConnection(() => cao)
+                                .then(conn => {
+                                // if we make a connection, immediately close it and return true
+                                return new Promise((resolve, reject) => {
+                                    conn.end((err) => {
+                                        if (err) {
+                                            reject(err);
+                                            return;
+                                        }
+                                        resolve(true);
+                                    });
+                                });
+                            });
+                        },
+                    },
+                },
+                startTimeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
+            });
+        })
+            .then(cao => containerAndOpts = cao)
+            .then(() => {
+            const opts = containerAndOpts.opts;
+            t.comment(`Started container [${opts.containerName}] on local port ${opts.portBinding[3306]}`);
+            cb(containerAndOpts);
+        })
+            .then(() => t.end())
+            .catch(err => {
+            if (containerAndOpts) {
+                return killContainer(t, containerAndOpts.opts)
+                    .then(() => t.end(err));
+            }
+            return t.end(err);
+        });
+    });
+}
+exports.startContainerizedMySQLTest = startContainerizedMySQLTest;
+// Utility function to stop a mysql instance
+function stopContainerizedMySQLTest(test, provider) {
+    stopContainerizedInstanceTest(test, provider, "msyql");
+}
+exports.stopContainerizedMySQLTest = stopContainerizedMySQLTest;
+// Helper for creating a connected connection for MySQL
+function makeConnectedMySQLConnection(provider) {
+    const cao = provider();
+    if (!cao) {
+        return Promise.reject(new Error("no CAO in provider"));
+    }
+    const port = cao.opts.portBinding[3306];
+    const conn = mysql_1.createConnection({
+        user: "root",
+        password: "mysql",
+        host: "localhost",
+        port,
+    });
+    return new Promise((resolve, reject) => {
+        conn.connect((err) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(conn);
+        });
+    });
+}
+exports.makeConnectedMySQLConnection = makeConnectedMySQLConnection;

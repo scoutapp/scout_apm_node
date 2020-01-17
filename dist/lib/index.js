@@ -37,4 +37,5 @@ exports.setupRequireIntegrations = setupRequireIntegrations;
 // For pure NodeJS contexts this will be run automatically
 setupRequireIntegrations([
     "pg",
+    "mysql",
 ]);

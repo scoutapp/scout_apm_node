@@ -6,12 +6,8 @@ node_js:
 cache:
   yarn: true
 
-before_script:
-  # Pre-pulling the docker images used is needed for preventing timeouts
-  # this is done from make normally but must be done
-  - docker pull postgres:alpine
-
-script: make lint test
+script:
+  - make test
 
 services:
   - docker

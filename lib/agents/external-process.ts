@@ -86,12 +86,17 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         // Initialize the pool if not already present
         return (this.pool ? Promise.resolve(this.pool) : this.initPool())
+            .then(() => this.stopped = false)
             .then(() => this.status());
     }
 
     /** @see Agent */
     public disconnect(): Promise<AgentStatus> {
         if (!this.pool) { return this.status(); }
+
+        // If disconnect is called ensure that no new sends get accepted
+        this.stopped = true;
+
         return new Promise((resolve, reject) => {
             // :( generic-pool uses PromiseLike, and it's usage is *awkward*.
             this.pool
@@ -132,6 +137,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     /** @see Agent */
     public send<T extends BaseAgentRequest, R extends BaseAgentResponse>(msg: T): Promise<R> {
         if (!this.pool) { return Promise.reject(new Errors.Disconnected()); }
+        if (this.stopped) { return Promise.reject(new Errors.Disconnected()); }
         if (!msg) { return Promise.reject(new Errors.UnexpectedError("No message provided to send()")); }
         const requestType = msg.type;
 

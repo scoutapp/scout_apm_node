@@ -4,6 +4,7 @@ const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const pg_1 = require("pg");
 const types_1 = require("../types");
+const Constants = require("../constants");
 // Hook into the express and mongodb module
 class PGIntegration {
     constructor() {
@@ -15,6 +16,10 @@ class PGIntegration {
     }
     ritmHook(exportBag) {
         Hook([this.getPackageName()], (exports, name, basedir) => {
+            // If the shim has already been run, then finish
+            if (!exports || integrations_1.scoutIntegrationSymbol in exports) {
+                return exports;
+            }
             // Make changes to the pg package to enable integration
             this.shimPG(exports);
             // Save the exported package in the exportBag for Scout to use later
@@ -32,7 +37,11 @@ class PGIntegration {
         this.logFn = logFn;
     }
     shimPG(pgExport) {
+        // Check if the shim has already been performed
         const client = pgExport.Client;
+        if (client[integrations_1.scoutIntegrationSymbol]) {
+            return;
+        }
         // Shim client
         this.shimPGConnect(client);
         this.shimPGQuery(client);
@@ -51,7 +60,7 @@ class PGIntegration {
             if (userCallback) {
                 return original.bind(this)(err => {
                     if (err) {
-                        integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Debug);
+                        integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Error);
                         userCallback(err);
                         return;
                     }
@@ -64,7 +73,7 @@ class PGIntegration {
                 integration.logFn("[scout/integrations/pg] Successfully connected to Postgres db", types_1.LogLevel.Debug);
             })
                 .catch(err => {
-                integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Debug);
+                integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Error);
                 // Re-throw error
                 throw err;
             });
@@ -95,7 +104,7 @@ class PGIntegration {
             else {
                 query = new pg_1.Query(...arguments);
             }
-            return integration.scout.instrument("SQL/Query", done => {
+            return integration.scout.instrument(Constants.SCOUT_SQL_QUERY, done => {
                 const span = integration.scout.getCurrentSpan();
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {
@@ -104,7 +113,7 @@ class PGIntegration {
                 }
                 return span
                     // Update span context with the DB statement
-                    .addContext([{ name: "db.statement", value: query.text }])
+                    .addContext([{ name: types_1.ScoutContextNames.DBStatement, value: query.text }])
                     // Run pg's query function
                     .then(() => original.bind(this)(config, values, userCallback))
                     .then(res => {
@@ -112,7 +121,7 @@ class PGIntegration {
                     return res;
                 })
                     .catch(err => {
-                    integration.logFn("[scout/integrations/pg] Query failed", types_1.LogLevel.Debug);
+                    integration.logFn("[scout/integrations/pg] Query failed", types_1.LogLevel.Error);
                     // Mark the span as errored
                     if (span) {
                         span.addContext([{ name: "error", value: "true" }]);

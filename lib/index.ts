@@ -41,7 +41,9 @@ export function setupRequireIntegrations(packages: string[]) {
         }
     });
 }
+
 // For pure NodeJS contexts this will be run automatically
 setupRequireIntegrations([
     "pg",
+    "mysql",
 ]);
