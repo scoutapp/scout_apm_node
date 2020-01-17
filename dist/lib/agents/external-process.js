@@ -63,6 +63,8 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if (!this.pool) {
             return this.status();
         }
+        // If disconnect is called ensure that no new sends get accepted
+        this.stopped = true;
         return new Promise((resolve, reject) => {
             // :( generic-pool uses PromiseLike, and it's usage is *awkward*.
             this.pool
@@ -92,6 +94,9 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     /** @see Agent */
     send(msg) {
         if (!this.pool) {
+            return Promise.reject(new Errors.Disconnected());
+        }
+        if (this.stopped) {
             return Promise.reject(new Errors.Disconnected());
         }
         if (!msg) {
@@ -175,6 +180,8 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                     return this.disconnect()
                         .then(() => Promise.reject(new Errors.ConnectionPoolDisabled()));
                 }
+                // Ensure the pool is no longer marked as stopped
+                this.stopped = false;
                 return this.createDomainSocket();
             },
             destroy: (socket) => Promise.resolve(socket.destroy()),

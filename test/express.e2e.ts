@@ -50,8 +50,7 @@ test("Simple operation", t => {
                 scout.removeListener(AgentEvent.RequestFinished, listener);
 
                 // Wait a little while for request to finish up, then shutdown
-                TestUtil.waitMs(200)
-                    .then(() => TestUtil.shutdownScout(t, scout))
+                TestUtil.shutdownScout(t, scout)
                     .catch(err => TestUtil.shutdownScout(t, scout, err));
             };
 
@@ -110,11 +109,10 @@ test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t =>
                 t.equals(msg.operation, expectedRootSpan, `root span operation is correct [${msg.operation}]`);
 
                 // Remove agent, pass test
-                scout.removeListener(ScoutEvent.RequestSent, listener);
+                scout.removeListener(AgentEvent.RequestSent, listener);
 
                 // Wait a little while for request to finish up, then shutdown
-                TestUtil.waitMs(200)
-                    .then(() => TestUtil.shutdownScout(t, scout))
+                TestUtil.shutdownScout(t, scout)
                     .catch(err => TestUtil.shutdownScout(t, scout, err));
             };
 
@@ -155,7 +153,10 @@ test("Application which errors", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t 
             scout = app.scout;
         })
         .then(() => TestUtil.shutdownScout(t, scout))
-        .catch(err => TestUtil.shutdownScout(t, scout, err));
+        .catch(err => {
+            console.log("ERR?", err);
+            TestUtil.shutdownScout(t, scout, err);
+        });
 });
 
 test("express ignores a path (exact path, with dynamic segments)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
@@ -177,8 +178,7 @@ test("express ignores a path (exact path, with dynamic segments)", {timeout: Tes
 
         scout.removeListener(ScoutEvent.IgnoredPathDetected, listener);
 
-        TestUtil.waitMs(200)
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -211,8 +211,7 @@ test("express ignores a path (exact path, static)", {timeout: TestUtil.EXPRESS_T
 
         scout.removeListener(ScoutEvent.IgnoredPathDetected, listener);
 
-        TestUtil.waitMs(200)
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -247,8 +246,7 @@ test("express ignores a path (prefix, with dynamic segments)", {timeout: TestUti
 
         scout.removeListener(ScoutEvent.IgnoredPathDetected, listener);
 
-        TestUtil.waitMs(200)
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -283,8 +281,7 @@ test("express ignores a path (prefix, static)", {timeout: TestUtil.EXPRESS_TEST_
 
         scout.removeListener(ScoutEvent.IgnoredPathDetected, listener);
 
-        TestUtil.waitMs(200)
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -331,8 +328,7 @@ test("URI params are filtered", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t =
             `The path tag value is correct [${pathTag.value}]`,
         );
 
-        TestUtil.waitMs(200)
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -380,8 +376,7 @@ test("URI filtered down to path", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t
             `The path tag value is correct [${pathTag.value}]`,
         );
 
-        TestUtil.waitMs(200)
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
