@@ -8,8 +8,13 @@ import { timeout, TimeoutError } from "promise-timeout";
 import { ChildProcess, spawn, SpawnOptions } from "child_process";
 import { EventEmitter } from "events";
 import { Readable } from "stream";
+
 import { Client } from "pg";
+
 import { Connection, createConnection as createMySQLConnection } from "mysql";
+
+import { Connection as MySQL2Connection, createConnection as createMySQL2Connection } from "mysql2";
+import * as ConnectionConfig from "mysql2/lib/connection_config";
 
 import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
@@ -466,13 +471,15 @@ export function startContainer(
                     })
                     .catch(() => undefined);
             }, 1000);
+
+            return;
         }
 
         containerProcess.on("close", code => {
             if (code !== 0) {
-                t.comment("daemon failed to start container, piping output to stdout...");
+                t.comment("container process closing, piping output to stdout...");
                 if (containerProcess.stdout) { containerProcess.stdout.pipe(process.stdout); }
-                t.comment(`command: [${opts.executedStartCommand}]`);
+                // t.comment(`command: [${opts.executedStartCommand}]`);
                 reject(new Error(`Failed to start container (code ${code}), output will be piped to stdout`));
                 return;
             }
@@ -582,7 +589,7 @@ export function stopContainerizedInstanceTest(test: any, provider: () => Contain
         const opts = containerAndOpts.opts;
 
         killContainer(t, opts)
-            .then(code => t.ok(`successfully stopped container [${opts.containerName}], with code [${code}]`))
+            .then(code => t.pass(`successfully stopped container [${opts.containerName}], with code [${code}]`))
             .then(() => t.end())
             .catch(err => t.end(err));
     });
@@ -643,11 +650,21 @@ const MYSQL_CONTAINER_DEFAULT_ENV = {
 export function startContainerizedMySQLTest(
     test: any,
     cb: (cao: ContainerAndOpts) => void,
-    containerEnv?: object,
-    tagName?: string,
+    opts?: {
+        containerEnv?: object,
+        tagName?: string,
+        mysqlPackageName?: "mysql" | "mysql2",
+    },
 ) {
-    tagName = tagName || MYSQL_IMAGE_TAG;
+    const tagName = opts && opts.tagName ? opts.tagName : MYSQL_IMAGE_TAG;
+    const containerEnv = opts && opts.containerEnv ? opts.containerEnv : {};
     const envBinding = Object.assign({}, MYSQL_CONTAINER_DEFAULT_ENV, containerEnv);
+
+    const isMysql2 = opts && opts.mysqlPackageName && opts.mysqlPackageName === "mysql2";
+
+    // Use the mysql2 connection function if necessary
+    let connFn = makeConnectedMySQLConnection;
+    if (isMysql2) { connFn = makeConnectedMySQL2Connection; }
 
     // We'll need to set the timeout of the test to startup time + 1s to prevent test timeout
     test("Starting mysql instance", {timeout: MYSQL_CONTAINER_STARTUP_TIME_MS + 1000}, (t: Test) => {
@@ -673,7 +690,7 @@ export function startContainerizedMySQLTest(
                             timeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
                             // check for the container to have started if we can make a connection
                             check: (cao) => {
-                                return makeConnectedMySQLConnection(() => cao)
+                                return connFn(() => cao)
                                     .then(conn => {
                                         // if we make a connection, immediately close it and return true
                                         return new Promise((resolve, reject) => {
@@ -739,4 +756,40 @@ export function makeConnectedMySQLConnection(provider: () => ContainerAndOpts | 
             resolve(conn);
         });
     });
+}
+
+// Helper for creating a connected connection for MySQL
+export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts | null): Promise<Connection> {
+    const cao = provider();
+    if (!cao) { return Promise.reject(new Error("no CAO in provider")); }
+
+    const config = new ConnectionConfig({
+        user: "root",
+        password: "mysql",
+        host: "localhost",
+        port: cao.opts.portBinding[3306],
+        // Connect timeout to enable using this as a check in waitFor
+        connectTimeout: 9999,
+    });
+    const conn = new MySQL2Connection({config});
+
+    // We have to ignore errors that are emitted by the mysl2 Connection object
+    // because they will crash the node runtime otherwise.
+    // Unsucessful creation attempts will hang until they crash
+    conn.on("error", (err) => undefined);
+
+    try {
+        return new Promise((resolve, reject) => {
+            conn.connect((err) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve(conn);
+            });
+        });
+    } catch {
+        return Promise.reject(new Error("connect failed"));
+    }
 }

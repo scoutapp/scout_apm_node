@@ -10,8 +10,8 @@ import * as Constants from "../constants";
 type CreateConnectionFn = (connectionUri: string | ConnectionConfig) => Connection;
 
 // Hook into the express and mongodb module
-export class MySQLIntegration implements RequireIntegration {
-    private readonly packageName: string = "mysql";
+export class MySQL2Integration implements RequireIntegration {
+    private readonly packageName: string = "mysql2";
     private scout: Scout;
     private logFn: LogFn = () => undefined;
 
@@ -26,8 +26,8 @@ export class MySQLIntegration implements RequireIntegration {
                 return exports;
             }
 
-            // Make changes to the mysql package to enable integration
-            exports = this.shimMySQL(exports);
+            // Make changes to the mysql2 package to enable integration
+            exports = this.shimMySQL2(exports);
 
             // Save the exported package in the exportBag for Scout to use later
             exportBag[this.getPackageName()] = exports;
@@ -48,11 +48,11 @@ export class MySQLIntegration implements RequireIntegration {
         this.logFn = logFn;
     }
 
-    private shimMySQL(mysqlExport: any): any {
+    private shimMySQL2(mysql2Export: any): any {
         // Check if the shim has already been performed
-        if (scoutIntegrationSymbol in mysqlExport) { return; }
+        if (scoutIntegrationSymbol in mysql2Export) { return; }
 
-        return this.shimMySQLCreateConnection(mysqlExport);
+        return this.shimMySQL2CreateConnection(mysql2Export);
     }
 
     /**
@@ -61,53 +61,48 @@ export class MySQLIntegration implements RequireIntegration {
      *
      * @param {Connection} client - mysql's `Connection` class
      */
-    private shimMySQLCreateConnection(mysqlExport: any): any {
-        const original = mysqlExport.createConnection;
+    private shimMySQL2CreateConnection(mysql2Export: any): any {
+        // We need to shim the constructor of the connection class itself
+        const originalCtor = mysql2Export.Connection;
         const integration = this;
 
-        const createConnection = function(this: Connection, uriOrCfg: string | ConnectionConfig) {
-            const connection: Connection = original.bind(this)(uriOrCfg);
-            integration.logFn("[scout/integrations/mysql] Creating connection to Mysql db...", LogLevel.Debug);
+        const modifiedCtor = function(this: Connection, uriOrCfg: string | ConnectionConfig) {
+            const conn = new originalCtor(uriOrCfg);
+
+            integration.logFn("[scout/integrations/mysql2] Creating connection to Mysql db...", LogLevel.Debug);
 
             // Add the scout integration symbol so we know the connection itself has been
             // created by our shimmed createConnection
-            connection[scoutIntegrationSymbol] = this;
+            conn[scoutIntegrationSymbol] = integration;
 
             // Shim the connection instance itself
-            return integration.shimMySQLConnectionQuery(mysqlExport, connection);
+            integration.shimMySQL2ConnectionQuery(mysql2Export, conn);
+
+            return conn;
         };
 
-        mysqlExport.createConnection = createConnection;
-        return mysqlExport;
+        mysql2Export.Connection = modifiedCtor;
+        return mysql2Export;
     }
 
     /**
-     * Shims the `query` function of a MySQL Connection
+     * Shims the `query` function of a MySQL2 Connection
      *
-     * @param {any} exports - the mysql exports
-     * @param {Connection} conn - the mysql connection
+     * @param {any} exports - the mysql2 exports
+     * @param {Connection} conn - the mysql2 connection
      */
-    private shimMySQLConnectionQuery(exports: any, conn: Connection): Connection {
+    private shimMySQL2ConnectionQuery(exports: any, conn: Connection): Connection {
         const originalFn = conn.query;
         const integration = this;
 
-        const modified: any = function(this: Connection) {
+        const modified: any = function(this: Connection, sql, values, cb) {
             const originalArgs = arguments;
 
             // If no scout instance is available then run the function normally
-            if (!integration.scout) { return originalFn.apply(this, originalArgs as any); }
-
-            // We need to find which one of the arguments was the callback if there was one)
-            const originalArgsArr = Array.from(originalArgs);
-            const cbIdx = originalArgsArr.findIndex(a => typeof a === "function");
-            // If a callback wasn't provided use a function that does nothing
-            const cb = cbIdx >= 0 ? originalArgsArr[cbIdx] : () => undefined;
-
-            // We have to assume that the first argument is the SQL string (or object)
-            const sql = originalArgsArr[0];
+            if (!integration.scout) { return originalFn.bind(this)(sql, values, cb); }
 
             // Build a version of the query to take advantage of the string/object parsing of mysql
-            const builtQuery = exports.createQuery(sql);
+            const builtQuery = exports.createQuery(sql, values, cb, this.config);
             let ranFn = false;
 
             // Start the instrumentation
@@ -116,7 +111,7 @@ export class MySQLIntegration implements RequireIntegration {
                 const span = integration.scout.getCurrentSpan();
                 if (!span) {
                     ranFn = true;
-                    originalFn.apply(this, originalArgs as any);
+                    originalFn.bind(this)(sql, values, cb);
                     return;
                 }
 
@@ -124,7 +119,7 @@ export class MySQLIntegration implements RequireIntegration {
                 const wrappedCb = (err, results) => {
                     // If an error occurred mark the span as errored and then stop it
                     if (err) {
-                        integration.logFn("[scout/integrations/mysql] Query failed", LogLevel.Debug);
+                        integration.logFn("[scout/integrations/mysql2] Query failed", LogLevel.Debug);
                         if (!span) {
                             cb(err, results);
                             return;
@@ -138,15 +133,12 @@ export class MySQLIntegration implements RequireIntegration {
                         return;
                     }
 
-                    integration.logFn("[scout/integrations/mysql] Successfully queried MySQL db", LogLevel.Debug);
+                    integration.logFn("[scout/integrations/mysql2] Successfully queried MySQL db", LogLevel.Debug);
                     // If no errors ocurred stop the span and run the user's callback
                     stopSpan();
                     ranFn = true;
                     cb(err, results);
                 };
-
-                // After making the wrapped cb, we have to replace the argument
-                arguments[cbIdx] = wrappedCb;
 
                 span
                 // Add query to the context
@@ -154,15 +146,15 @@ export class MySQLIntegration implements RequireIntegration {
                 // Do the query
                     .then(() => {
                         ranFn = true;
-                        originalFn.apply(this, originalArgs as any);
+                        originalFn.bind(this)(sql, values, cb);
                     })
                 // If an error occurred adding the scout context
                     .catch(err => {
-                        integration.logFn("[scout/integrations/mysql] Internal failure", LogLevel.Error);
+                        integration.logFn("[scout/integrations/mysql2] Internal failure", LogLevel.Error);
                         // If the original function has not been run yet we need to run it at least
                         if (!ranFn) {
                             // Run the function with the original requests
-                            originalFn.apply(this, originalArgs as any);
+                            originalFn.bind(this)(sql, values, cb);
                             ranFn = true;
                         }
                     });
@@ -174,4 +166,4 @@ export class MySQLIntegration implements RequireIntegration {
     }
 }
 
-export default new MySQLIntegration();
+export default new MySQL2Integration();

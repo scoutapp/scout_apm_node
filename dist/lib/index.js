@@ -38,4 +38,5 @@ exports.setupRequireIntegrations = setupRequireIntegrations;
 setupRequireIntegrations([
     "pg",
     "mysql",
+    "mysql2",
 ]);
