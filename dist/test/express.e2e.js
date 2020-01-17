@@ -131,10 +131,7 @@ test("Application which errors", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, 
         scout = app.scout;
     })
         .then(() => TestUtil.shutdownScout(t, scout))
-        .catch(err => {
-        console.log("ERR?", err);
-        TestUtil.shutdownScout(t, scout, err);
-    });
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 test("express ignores a path (exact path, with dynamic segments)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/dynamic/:segment";

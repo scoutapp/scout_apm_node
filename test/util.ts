@@ -410,7 +410,9 @@ export function startContainer(
         // If there's a waitFor specified then we're going to have to listen before we return
 
         // Hook up listener to test travis ci
+        // tslint:disable-next-line no-console
         containerProcess!.stdout!.on("data", data => console.log("stdout => ", data.toString()));
+        // tslint:disable-next-line no-console
         containerProcess!.stderr!.on("data", data => console.log("stderr => ", data.toString()));
 
         // Wait for specific output on stdout
