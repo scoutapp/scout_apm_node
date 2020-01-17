@@ -414,9 +414,6 @@ export function startContainer(
         };
     };
 
-    containerProcess!.stdout!.on("data", data => console.log("stdout =>", data.toString())); // tslint:disable-line no-console
-    containerProcess!.stderr!.on("data", data => console.log("stderr =>", data.toString())); // tslint:disable-line no-console
-
     // Wait until process is listening on the given socket port
     const promise = new Promise((resolve, reject) => {
         // If there's a waitFor specified then we're going to have to listen before we return
@@ -692,17 +689,6 @@ export function startContainerizedMySQLTest(
                             check: (cao) => {
                                 return connFn(() => cao)
                                     .then(conn => {
-                                        // if we're using mysql2 things are a little different
-                                        if (isMysql2) {
-                                            // We have to handle "error" events, because once the server dies (ex. at the end of tests),
-                                            // a timeout is going to be thrown by mysql2 driver, and node will crash if it's not handled
-                                            (conn as MySQL2Connection).on("error", () => undefined);
-                                            return (conn as MySQL2Connection)
-                                                .end()
-                                                .then(() => true)
-                                                .catch(() => false);
-                                        }
-
                                         // if we make a connection, immediately close it and return true
                                         return new Promise((resolve, reject) => {
                                             conn.end((err) => {
@@ -774,27 +760,33 @@ export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts |
     const cao = provider();
     if (!cao) { return Promise.reject(new Error("no CAO in provider")); }
 
-    const port: number = cao.opts.portBinding[3306];
-    console.log("MySQL2Connection?", MySQL2Connection);
-    console.log("connection config?", ConnectionConfig);
-    const conn = new MySQL2Connection(new ConnectionConfig({
+    const config = new ConnectionConfig({
         user: "root",
         password: "mysql",
         host: "localhost",
-        port,
+        port: cao.opts.portBinding[3306],
         // Connect timeout to enable using this as a check in waitFor
         connectTimeout: 9999,
-    }));
-
-    conn.on("error", err => {
-        console.log("HANDLER ERR?", err);
     });
+    const conn = new MySQL2Connection({config});
 
-    console.log("ADDED HANDLER");
-    return conn.promise()
-        .connect()
-        .catch(err => {
-            console.log("ERR:", err);
-            throw err;
+    // We have to ignore errors that are emitted by the mysl2 Connection object
+    // because they will crash the node runtime otherwise.
+    // Unsucessful creation attempts will hang until they crash
+    conn.on("error", (err) => undefined);
+
+    try {
+        return new Promise((resolve, reject) => {
+            conn.connect((err) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve(conn);
+            });
         });
+    } catch {
+        return Promise.reject(new Error("connect failed"));
+    }
 }
