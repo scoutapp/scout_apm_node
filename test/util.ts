@@ -389,7 +389,6 @@ export function startContainer(
 
         return (line: string | Buffer) => {
             line = line.toString();
-            console.log("LINE =>", line);
             if (!line.includes(expected)) { return; }
 
             if (type === "stdout" && stdoutListener) { emitter.removeListener("data", stdoutListener); }
@@ -413,6 +412,10 @@ export function startContainer(
             if (containerProcess.stdout) { containerProcess.stdout.on("data", stdoutListener); }
             return;
         }
+
+        // Hook up listener to test travis ci
+        containerProcess!.stdout!.on("data", data => console.log("stdout => ", data.toString()));
+        containerProcess!.stderr!.on("data", data => console.log("stderr => ", data.toString()));
 
         // Wait for specific output on stderr
         if (opts.waitFor && opts.waitFor.stderr) {
@@ -625,7 +628,7 @@ export function startContainerizedMySQLTest(
                     tagName,
                     portBinding,
                     envBinding,
-                    waitFor: {stdout: "never happens"},
+                    waitFor: {milliseconds: MYSQL_CONTAINER_STARTUP_TIME_MS},
                     startTimeoutMs: MYSQL_CONTAINER_STARTUP_TIME_MS,
                 });
             })
