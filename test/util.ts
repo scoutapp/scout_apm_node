@@ -130,7 +130,10 @@ export function waitForAgentBufferFlush(t?: Test): Promise<void> {
 // Helper function to clean up an official (user-facing) scout instance
 export function shutdownScout(t: Test, scout: Scout, err?: Error): Promise<void> {
     return scout.shutdown()
-        .then(() => t.end(err));
+        .then(() => {
+            if (err) { console.log("ERROR:", err); } // tslint:disable-line no-console
+            t.end(err);
+        });
 }
 
 // Make a simple express application that just returns
@@ -406,6 +409,10 @@ export function startContainer(
     const promise = new Promise((resolve, reject) => {
         // If there's a waitFor specified then we're going to have to listen before we return
 
+        // Hook up listener to test travis ci
+        containerProcess!.stdout!.on("data", data => console.log("stdout => ", data.toString()));
+        containerProcess!.stderr!.on("data", data => console.log("stderr => ", data.toString()));
+
         // Wait for specific output on stdout
         if (opts.waitFor && opts.waitFor.stdout) {
             stdoutListener = makeListener("stdout", containerProcess.stdout, opts.waitFor.stdout, resolve, reject);
@@ -441,6 +448,7 @@ export function startContainer(
 
     });
 
+    console.log(`timing out after [${opts.startTimeoutMs}ms]`); // tslint:disable-line no-console
     return timeout(promise, opts.startTimeoutMs)
         .catch(err => {
             // If we timed out clean up some waiting stuff, shutdown the process

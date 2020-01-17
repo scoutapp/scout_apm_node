@@ -99,7 +99,12 @@ exports.waitForAgentBufferFlush = waitForAgentBufferFlush;
 // Helper function to clean up an official (user-facing) scout instance
 function shutdownScout(t, scout, err) {
     return scout.shutdown()
-        .then(() => t.end(err));
+        .then(() => {
+        if (err) {
+            console.log("ERROR:", err);
+        } // tslint:disable-line no-console
+        t.end(err);
+    });
 }
 exports.shutdownScout = shutdownScout;
 // Make a simple express application that just returns
@@ -321,6 +326,9 @@ function startContainer(t, optOverrides) {
     // Wait until process is listening on the given socket port
     const promise = new Promise((resolve, reject) => {
         // If there's a waitFor specified then we're going to have to listen before we return
+        // Hook up listener to test travis ci
+        containerProcess.stdout.on("data", data => console.log("stdout => ", data.toString()));
+        containerProcess.stderr.on("data", data => console.log("stderr => ", data.toString()));
         // Wait for specific output on stdout
         if (opts.waitFor && opts.waitFor.stdout) {
             stdoutListener = makeListener("stdout", containerProcess.stdout, opts.waitFor.stdout, resolve, reject);
@@ -356,6 +364,7 @@ function startContainer(t, optOverrides) {
             resolve({ containerProcess, opts });
         });
     });
+    console.log(`timing out after [${opts.startTimeoutMs}ms]`); // tslint:disable-line no-console
     return promise_timeout_1.timeout(promise, opts.startTimeoutMs)
         .catch(err => {
         // If we timed out clean up some waiting stuff, shutdown the process

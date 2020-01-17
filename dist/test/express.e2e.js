@@ -132,9 +132,8 @@ test("Application which errors", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, 
         t.assert(app.scout.hasAgent(), "the scout instance has an agent");
         scout = app.scout;
     })
-        .then(() => scout.shutdown())
-        .then(() => t.end())
-        .catch(t.end);
+        .then(() => TestUtil.shutdownScout(t, scout))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 test("express ignores a path (exact path, with dynamic segments)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/dynamic/:segment";
