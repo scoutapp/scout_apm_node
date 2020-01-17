@@ -198,5 +198,73 @@ test("transaction with mysql query to dashboard", { timeout: TestUtil.DASHBOARD_
         TestUtil.shutdownScout(t, scout, err);
     });
 });
+test("transaction with mysql2 query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
+    // Build scout config & app meta for test
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+        name: TestConstants.TEST_SCOUT_NAME,
+    });
+    if (!config.key) {
+        throw new Error("No Scout key! Provide one with the SCOUT_KEY ENV variable");
+    }
+    if (!config.name) {
+        throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable");
+    }
+    const appMeta = new lib_1.ApplicationMetadata(config, { frameworkVersion: "test" });
+    // Build scout instance, get ready to hold an active mysql connection
+    const scout = new lib_1.Scout(config, { appMeta });
+    let conn;
+    // Set up a listener to wait for scout to report the transaction
+    const listener = (message) => {
+        // Ignore requests that are sent that aren't span starts
+        if (!message || message.type !== types_1.AgentRequestType.V1FinishRequest) {
+            return;
+        }
+        t.pass("witnessed V1FinishRequest being sent");
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        // Fire off disconnect
+        conn.end(() => {
+            // Wait ~2 minutes for scout to clear requests
+            TestUtil.waitMinutes(2)
+                .then(() => TestUtil.shutdownScout(t, scout));
+        });
+    };
+    // Set up listener on the agent to listen for the stop request to be sent
+    scout.on(types_1.AgentEvent.RequestSent, listener);
+    const name = `Controller/GET /`;
+    scout
+        .setup()
+        // Run the transaction
+        .then(() => scout.transaction(name, (transactionDone) => {
+        return scout.instrument(name, (spanDone) => {
+            return TestUtil.makeConnectedMySQL2Connection(() => MYSQL_CONTAINER_AND_OPTS)
+                .then(c => conn = c)
+                .then(() => new Promise((resolve, reject) => {
+                // mysql's query function needs to be wrapped in a promise
+                conn.query(fixtures_1.SQL_QUERIES.SELECT_TIME, (err, result) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    t.pass("query performed");
+                    // End the span and the request
+                    spanDone();
+                    transactionDone();
+                    resolve(result);
+                });
+            }));
+        });
+    }))
+        // If an error occurs shutdown scout and end connection
+        .catch(err => {
+        if (conn) {
+            conn.end(() => {
+                TestUtil.shutdownScout(t, scout, err);
+            });
+        }
+        TestUtil.shutdownScout(t, scout, err);
+    });
+});
 // Pseudo test that will stop a containerized mysql instance that was started
 TestUtil.stopContainerizedMySQLTest(test, () => MYSQL_CONTAINER_AND_OPTS);
