@@ -4,6 +4,7 @@ import * as Constants from "../lib/constants";
 import * as request from "supertest";
 
 import { Application } from "express";
+import { Server } from "http";
 import { scoutMiddleware, ApplicationWithScout } from "../lib/express";
 import {
     AgentEvent,
@@ -408,42 +409,50 @@ test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
     }));
 
     // Create an application that's set up to use pug templating
-    const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({scout}), "pug");
+    const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }), "pug");
 
     // Set up a listener that should fire when the request is finished
     const listener = (data: ScoutEventRequestSentData, another) => {
-        const pathTag = data.request.getTags().find(t => t.name === Constants.SCOUT_PATH_TAG);
-
         // Remove listener since this should fire once
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
         // Look up the template render span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => {
-                const renderSpan = spans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
-                t.assert(renderSpan, "template render span was present on request");
-                if (!renderSpan) {
-                    t.fail("no render span present on request");
-                    throw new Error("No render span");
-                }
+        const requestSpans = data.request.getChildSpansSync();
 
-                t.equals(
-                    renderSpan.getContextValue(ScoutContextNames.Name),
-                    FILE_PATHS.PUG_HTML5_BOILERPLATE,
-                    "name tag is correct",
-                );
-            })
-            .then(() => TestUtil.shutdownScout(t, scout))
-            .catch(err => TestUtil.shutdownScout(t, scout, err));
+        // The top level controller should be present
+        const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
+        t.assert(controllerSpan, "template controller span was present on request");
+        if (!controllerSpan) {
+            t.fail("no controller span present on request");
+            throw new Error("No controller span");
+        }
+
+        // The inner spans for the controller should contain a template rendering span
+        const innerSpans = controllerSpan.getChildSpansSync();
+        const renderSpan = innerSpans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
+        t.assert(renderSpan, "template render span was present on request");
+        if (!renderSpan) {
+            t.fail("no render span present on request");
+            throw new Error("No render span");
+        }
+
+        t.assert(renderSpan.getContextValue(ScoutContextNames.Name), "template name context is present");
+
+        // Shutdown and close scout
+        TestUtil.shutdownScout(t, scout);
     };
 
     scout.on(ScoutEvent.RequestSent, listener);
 
-    // Send a request to the application (which should trigger setup of scout)
-    request(app)
+    return request(app)
         .get("/")
         .expect("Content-Type", /html/)
         .expect(200)
+        .then(res => {
+            t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
+        })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
