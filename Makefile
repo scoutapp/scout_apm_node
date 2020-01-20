@@ -4,7 +4,8 @@
 				test test-unit test-int test-e2e \
 				test-dashboard-send test-integrations \
 				ensure-docker-images ensure-pg-docker-image test-integration-pg \
-				ensure-mysql-docker-image test-integration-mysql \
+				ensure-mysql-docker-image test-integration-mysql test-integration-mysql2 \
+				test-integration-pug \
 				generate-agent-configs
 
 all: install build
@@ -88,6 +89,12 @@ ensure-mysql-docker-image:
 
 test-integration-mysql:
 	$(YARN) test-integration-mysql
+
+test-integration-mysql2:
+	$(YARN) test-integration-mysql2
+
+test-integration-pug:
+	$(YARN) test-integration-pug
 
 generate-agent-configs:
 	$(DEV_SCRIPTS)/generate-download-configs.js lib/download-configs.ts

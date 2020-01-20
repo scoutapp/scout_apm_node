@@ -317,3 +317,4 @@ test("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS },
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
+// TODO: add a test that uses the pug integration (https://expressjs.com/en/guide/using-template-engines.html)

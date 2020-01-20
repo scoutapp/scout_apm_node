@@ -46,7 +46,7 @@ class MySQL2Integration {
      * Shim for mysql's `createConnection` function
      * since mysql handles everything from a connection instance this is where the shimming needs to happen
      *
-     * @param {Connection} client - mysql's `Connection` class
+     * @param {any} mysql2 - mysql2's main export
      */
     shimMySQL2CreateConnection(mysql2Export) {
         // We need to shim the constructor of the connection class itself

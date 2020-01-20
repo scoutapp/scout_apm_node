@@ -29,7 +29,9 @@
     "test-e2e": "./node_modules/.bin/tape 'dist/test/**/*.e2e.js'",
     "test-dashboard-send": "./node_modules/.bin/tape 'dist/test/dashboard-send.js'",
     "test-integration-pg": "./node_modules/.bin/tape 'dist/test/integrations/pg.e2e.js'",
-    "test-integration-mysql": "./node_modules/.bin/tape 'dist/test/integrations/mysql.e2e.js'"
+    "test-integration-mysql": "./node_modules/.bin/tape 'dist/test/integrations/mysql.e2e.js'",
+    "test-integration-mysql2": "./node_modules/.bin/tape 'dist/test/integrations/mysql2.e2e.js'",
+    "test-integration-pug": "./node_modules/.bin/tape 'dist/test/integrations/pug.e2e.js'"
   },
   "types": "index.d.ts",
   "files": [
@@ -61,6 +63,7 @@
     "@types/hasha": "3.0.0",
     "@types/on-finished": "2.3.1",
     "@types/pg": "^7.14.1",
+    "@types/pug": "^2.0.4",
     "@types/semver": "5.5.0",
     "@types/tape": "4.2.33",
     "@types/tmp": "0.0.34",
