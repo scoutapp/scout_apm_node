@@ -167,7 +167,9 @@ function simpleHTML5BoilerplateApp(middleware, templateEngine) {
     const app = express();
     app.use(middleware);
     // Expect all the views to be in the same fixtures/files path
-    const VIEWS_DIR = path.join(PROJECT_ROOT, "test/fixtures/files");
+    // Unfortunately Travis CI adds a "node_modules" directory to be skipped over
+    // see fixtures/paths.ts
+    const VIEWS_DIR = path.join(PROJECT_ROOT, process.env.CI ? "../test/fixtures/files" : "test/fixtures/files");
     app.set("views", VIEWS_DIR);
     app.set("view engine", templateEngine);
     app.get("/", (req, res) => {
