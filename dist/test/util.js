@@ -18,6 +18,7 @@ const types_1 = require("../lib/types");
 const config_1 = require("../lib/types/config");
 const lib_1 = require("../lib");
 const requests_1 = require("../lib/protocol/v1/requests");
+const app_root_dir_1 = require("app-root-dir");
 const getPort = require("get-port");
 // Wait a little longer for requests that use express
 exports.EXPRESS_TEST_TIMEOUT_MS = 2000;
@@ -167,8 +168,7 @@ function simpleHTML5BoilerplateApp(middleware, templateEngine) {
     const app = express();
     app.use(middleware);
     // Expect all the views to be in the same fixtures/files path
-    // Travis CI does some monkey business with the path and there is an additonial 'node_modules' in the path
-    const VIEWS_DIR = path.join(PROJECT_ROOT, process.env.CI ? "../test/fixtures/files" : "test/fixtures/files");
+    const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
     app.set("views", VIEWS_DIR);
     app.set("view engine", templateEngine);
     app.get("/", (req, res) => {

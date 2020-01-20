@@ -37,6 +37,8 @@ import { Test } from "tape";
 
 import { FILE_PATHS } from "./fixtures";
 
+import { get as getRootDir } from "app-root-dir";
+
 const getPort = require("get-port");
 
 // Wait a little longer for requests that use express
@@ -216,8 +218,7 @@ export function simpleHTML5BoilerplateApp(
     app.use(middleware);
 
     // Expect all the views to be in the same fixtures/files path
-    // Travis CI does some monkey business with the path and there is an additonial 'node_modules' in the path
-    const VIEWS_DIR = path.join(PROJECT_ROOT, process.env.CI ? "../test/fixtures/files" : "test/fixtures/files");
+    const VIEWS_DIR = path.join(getRootDir(), "test/fixtures/files");
     app.set("views", VIEWS_DIR);
     app.set("view engine", templateEngine);
 
