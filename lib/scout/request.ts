@@ -102,8 +102,15 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
     /** @see Taggable */
     public addContext(tags: ScoutTag[]): Promise<this> {
+        return new Promise((resolve) => {
+            resolve(this.addContextSync(tags));
+        });
+    }
+
+    /** @see Taggable */
+    public addContextSync(tags: ScoutTag[]): this {
         tags.forEach(t => this.tags[t.name] = t.value);
-        return Promise.resolve(this);
+        return this;
     }
 
     /** @see Taggable */
@@ -143,17 +150,33 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         return Promise.resolve(this);
     }
 
+    public stopSync(): this {
+        if (this.finished) { return this; }
+
+        // Stop all child spans
+        this.childSpans.forEach(s => s.stopSync());
+
+        // Finish the request
+        this.finished = true;
+
+        return this;
+    }
+
     public isStarted(): boolean {
         return this.started;
     }
 
     public start(): Promise<this> {
-        if (this.started) { return Promise.resolve(this); }
+        return new Promise((resolve) => resolve(this.startSync()));
+    }
+
+    public startSync(): this {
+        if (this.started) { return this; }
 
         this.timestamp = new Date();
         this.started = true;
 
-        return Promise.resolve(this);
+        return this;
     }
 
     /**

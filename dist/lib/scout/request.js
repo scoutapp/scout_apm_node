@@ -61,8 +61,14 @@ class ScoutRequest {
     }
     /** @see Taggable */
     addContext(tags) {
+        return new Promise((resolve) => {
+            resolve(this.addContextSync(tags));
+        });
+    }
+    /** @see Taggable */
+    addContextSync(tags) {
         tags.forEach(t => this.tags[t.name] = t.value);
-        return Promise.resolve(this);
+        return this;
     }
     /** @see Taggable */
     getContextValue(name) {
@@ -94,16 +100,29 @@ class ScoutRequest {
         this.finished = true;
         return Promise.resolve(this);
     }
+    stopSync() {
+        if (this.finished) {
+            return this;
+        }
+        // Stop all child spans
+        this.childSpans.forEach(s => s.stopSync());
+        // Finish the request
+        this.finished = true;
+        return this;
+    }
     isStarted() {
         return this.started;
     }
     start() {
+        return new Promise((resolve) => resolve(this.startSync()));
+    }
+    startSync() {
         if (this.started) {
-            return Promise.resolve(this);
+            return this;
         }
         this.timestamp = new Date();
         this.started = true;
-        return Promise.resolve(this);
+        return this;
     }
     /**
      * Send this request and internal spans to the scoutInstance

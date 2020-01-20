@@ -329,6 +329,34 @@ export class Scout extends EventEmitter {
     }
 
     /**
+     * Instrumentation for synchronous methods
+     */
+    public instrumentSync(operation: string, fn: () => any, requestOverride?: ScoutRequest) {
+        const request = requestOverride || this.getCurrentRequest();
+        // If the request isn't present then just run the FN without instrumentation
+        if (!request) {
+            this.log(
+                "[scout] request missing for synchronous instrumentation (via async context or passed in)",
+                LogLevel.Warn,
+            );
+            return fn();
+        }
+
+        const span = new ScoutSpan({
+            operation,
+            request,
+            scoutInstance: this,
+            logFn: this.logFn,
+        });
+
+        span.start();
+        const result = fn();
+        span.stop();
+
+        return result;
+    }
+
+    /**
      * Reterieve the current request using the async hook/continuation local storage machinery
      *
      * @returns {ScoutRequest} the current active request

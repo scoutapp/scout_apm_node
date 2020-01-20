@@ -20,6 +20,7 @@ exports.ScoutRequest = request_1.default;
 var span_1 = require("./span");
 exports.ScoutSpan = span_1.default;
 const request_2 = require("./request");
+const span_2 = require("./span");
 const DONE_NOTHING = () => undefined;
 const ASYNC_NS = "scout";
 const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
@@ -226,6 +227,27 @@ class Scout extends events_1.EventEmitter {
             // Ensure that the result is a promise
             return Promise.resolve(result);
         });
+    }
+    /**
+     * Instrumentation for synchronous methods
+     */
+    instrumentSync(operation, fn, requestOverride) {
+        const request = requestOverride || this.getCurrentRequest();
+        // If the request isn't present then just run the FN without instrumentation
+        if (!request) {
+            this.log("[scout] request missing for synchronous instrumentation (via async context or passed in)", types_1.LogLevel.Warn);
+            return fn();
+        }
+        const span = new span_2.default({
+            operation,
+            request,
+            scoutInstance: this,
+            logFn: this.logFn,
+        });
+        span.start();
+        const result = fn();
+        span.stop();
+        return result;
     }
     /**
      * Reterieve the current request using the async hook/continuation local storage machinery
