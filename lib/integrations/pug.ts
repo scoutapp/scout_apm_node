@@ -2,7 +2,6 @@ import * as path from "path";
 import * as Hook from "require-in-the-middle";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
-import { render } from "pug";
 import { LogFn, LogLevel, ScoutContextNames } from "../types";
 import * as Constants from "../constants";
 

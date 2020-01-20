@@ -39,4 +39,5 @@ setupRequireIntegrations([
     "pg",
     "mysql",
     "mysql2",
+    "pug",
 ]);

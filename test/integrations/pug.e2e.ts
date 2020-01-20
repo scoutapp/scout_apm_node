@@ -13,10 +13,12 @@ import {
 } from "../../lib";
 
 import { ScoutContextNames } from "../../lib/types";
-import { SQL_QUERIES } from "../fixtures";
 
 // The hook for pug has to be triggered this way in a typescript context
-// since a partial import like { Client } will not trigger a require
+// since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
+setupRequireIntegrations(["pug"]);
+
+// pug needs to be imported this way to trigger the require integration
 const pug = require("pug");
 
 test("the shim works", t => {
