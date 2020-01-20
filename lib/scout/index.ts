@@ -61,6 +61,9 @@ export interface ScoutOptions {
 export type DoneCallback = (done: () => void) => any;
 const DONE_NOTHING = () => undefined;
 
+export type SpanCallback = (span: ScoutSpan) => any;
+export type RequestCallback = (request: ScoutRequest) => any;
+
 const ASYNC_NS = "scout";
 const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
 const ASYNC_NS_SPAN = `${ASYNC_NS}.span`;
@@ -82,6 +85,8 @@ export class Scout extends EventEmitter {
     private canUseAsyncHooks: boolean = false;
 
     private asyncNamespace: any;
+    private syncCurrentRequest: ScoutRequest | null = null;
+    private syncCurrentSpan: ScoutSpan | null = null;
 
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         super();
@@ -244,6 +249,7 @@ export class Scout extends EventEmitter {
      * Start a transaction
      *
      * @param {string} name
+     * @param {Function} callback
      * @returns void
      */
     public transaction(name: string, cb: DoneCallback): Promise<any> {
@@ -255,13 +261,40 @@ export class Scout extends EventEmitter {
         // Setup if necessary then then perform the async request context
         return this.setup()
             .then(() => {
-                result = this.withAsyncRequestContext(cb);
                 ranContext = true;
+                result = this.withAsyncRequestContext(cb);
+                return result;
             })
             .catch(err => {
                 this.log("[scout] Scout setup failed: ${err}", LogLevel.Error);
-                if (!ranContext) { result = this.withAsyncRequestContext(cb); }
+                if (!ranContext) {
+                    return this.withAsyncRequestContext(cb);
+                }
             });
+    }
+
+    /**
+     * Start a synchronous transaction
+     *
+     * @param {string} name
+     */
+    public transactionSync(name: string, fn: RequestCallback): any {
+        this.log(`[scout] Starting transaction [${name}]`, LogLevel.Debug);
+
+        // Create & start the request synchronously
+        const request = this.startRequestSync();
+        this.syncCurrentRequest = request;
+
+        const result = fn(request);
+        request.stopSync();
+
+        // Reset the current request as sync
+        this.syncCurrentRequest = null;
+
+        // Fire and forget the request
+        request.finishAndSend();
+
+        return result;
     }
 
     /**
@@ -329,12 +362,53 @@ export class Scout extends EventEmitter {
     }
 
     /**
+     * Instrumentation for synchronous methods
+     *
+     * @param {string} operation - operation name for the span
+     * @param {SpanCallback} fn - function to execute
+     * @param {ScoutRequest} [requestOverride] - The request on which to start the span to execute
+     * @throws {NoActiveRequest} If there is no request in scoep (via async context or override param)
+     */
+    public instrumentSync(operation: string, fn: SpanCallback, requestOverride?: ScoutRequest): any {
+        let parent = requestOverride || this.syncCurrentSpan || this.syncCurrentRequest;
+        // Check the async sources in case we're in a async context but not a sync one
+        parent = parent || this.getCurrentSpan() || this.getCurrentRequest();
+
+        // If the request isn't present then we throw an error early
+        if (!parent) {
+            this.log(
+                "[scout] parent context missing for synchronous instrumentation (via async context or passed in)",
+                LogLevel.Warn,
+            );
+
+            throw new Errors.NoActiveParentContext();
+        }
+
+        // Start a child span of the parent synchronously
+        const span = parent.startChildSpanSync(operation);
+        this.syncCurrentSpan = span;
+
+        span.startSync();
+        const result = fn(span);
+        span.stopSync();
+
+        // Clear out the current span for synchronous operations
+        this.syncCurrentSpan = null;
+
+        return result;
+    }
+
+    /**
      * Reterieve the current request using the async hook/continuation local storage machinery
      *
      * @returns {ScoutRequest} the current active request
      */
     public getCurrentRequest(): ScoutRequest | null {
-        return this.asyncNamespace.get(ASYNC_NS_REQUEST);
+        try {
+            return this.asyncNamespace.get(ASYNC_NS_REQUEST);
+        } catch {
+            return null;
+        }
     }
 
     /**
@@ -343,7 +417,11 @@ export class Scout extends EventEmitter {
      * @returns {ScoutSpan} the current active span
      */
     public getCurrentSpan(): ScoutSpan | null {
-        return this.asyncNamespace.get(ASYNC_NS_SPAN);
+        try {
+            return this.asyncNamespace.get(ASYNC_NS_SPAN);
+        } catch {
+            return null;
+        }
     }
 
     /**
@@ -491,14 +569,24 @@ export class Scout extends EventEmitter {
     }
 
     /**
-     * Helper function for starting a scout request with the instance
+     * Start a scout request and return a promise which resolves to the started request
      *
      * @param {ScoutRequestOptions} [options]
      * @returns {Promise<ScoutRequest>} a new scout request
      */
     private startRequest(opts?: ScoutRequestOptions): Promise<ScoutRequest> {
+        return new Promise((resolve) => resolve(this.startRequestSync(opts)));
+    }
+
+    /**
+     * Start a scout request synchronously
+     *
+     * @param {ScoutRequestOptions} [options]
+     * @returns {ScoutRequest} a new scout request
+     */
+    private startRequestSync(opts?: ScoutRequestOptions): ScoutRequest {
         const request = new ScoutRequest(Object.assign({}, {scoutInstance: this}, opts || {}));
-        return request.start();
+        return request.startSync();
     }
 
     private getSocketPath() {

@@ -70,15 +70,24 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
     /** @see ChildSpannable */
     public startChildSpan(operation: string): Promise<ScoutSpan> {
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(this.startChildSpanSync(operation));
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
+    /** @see ChildSpannable */
+    public startChildSpanSync(operation: string): ScoutSpan {
         if (this.finished) {
             this.logFn(
                 `[scout/request/${this.id}] Cannot add a child span to a finished request [${this.id}]`,
                 LogLevel.Error,
             );
 
-            return Promise.reject(new Errors.FinishedRequest(
-                "Cannot add a child span to a finished request",
-            ));
+            throw new Errors.FinishedRequest("Cannot add a child span to a finished request");
         }
 
         // Create a new child span
@@ -92,18 +101,30 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         // Add the child span to the list
         this.childSpans.push(span);
 
-        return span.start();
+        return span.startSync();
     }
 
     /** @see ChildSpannable */
     public getChildSpans(): Promise<ScoutSpan[]> {
-        return Promise.resolve(this.childSpans);
+        return new Promise((resolve) => resolve(this.getChildSpansSync()));
+    }
+
+    /** @see ChildSpannable */
+    public getChildSpansSync(): ScoutSpan[] {
+        return this.childSpans.slice();
     }
 
     /** @see Taggable */
     public addContext(tags: ScoutTag[]): Promise<this> {
+        return new Promise((resolve) => {
+            resolve(this.addContextSync(tags));
+        });
+    }
+
+    /** @see Taggable */
+    public addContextSync(tags: ScoutTag[]): this {
         tags.forEach(t => this.tags[t.name] = t.value);
-        return Promise.resolve(this);
+        return this;
     }
 
     /** @see Taggable */
@@ -143,17 +164,33 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         return Promise.resolve(this);
     }
 
+    public stopSync(): this {
+        if (this.finished) { return this; }
+
+        // Stop all child spans
+        this.childSpans.forEach(s => s.stopSync());
+
+        // Finish the request
+        this.finished = true;
+
+        return this;
+    }
+
     public isStarted(): boolean {
         return this.started;
     }
 
     public start(): Promise<this> {
-        if (this.started) { return Promise.resolve(this); }
+        return new Promise((resolve) => resolve(this.startSync()));
+    }
+
+    public startSync(): this {
+        if (this.started) { return this; }
 
         this.timestamp = new Date();
         this.started = true;
 
-        return Promise.resolve(this);
+        return this;
     }
 
     /**

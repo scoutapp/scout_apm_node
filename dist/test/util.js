@@ -18,6 +18,7 @@ const types_1 = require("../lib/types");
 const config_1 = require("../lib/types/config");
 const lib_1 = require("../lib");
 const requests_1 = require("../lib/protocol/v1/requests");
+const app_root_dir_1 = require("app-root-dir");
 const getPort = require("get-port");
 // Wait a little longer for requests that use express
 exports.EXPRESS_TEST_TIMEOUT_MS = 2000;
@@ -27,6 +28,7 @@ exports.PG_TEST_TIMEOUT_MS = 3000;
 exports.MYSQL_TEST_TIMEOUT_MS = 3000;
 exports.DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
+const PROJECT_ROOT = path.join(path.dirname(require.main.filename), "../../");
 // Helper for downloading and creating an agent
 function bootstrapExternalProcessAgent(t, rawVersion, opts) {
     const downloadOpts = {
@@ -161,6 +163,20 @@ function simpleErrorApp(middleware, delayMs = 0) {
     return app;
 }
 exports.simpleErrorApp = simpleErrorApp;
+// An express application which performs a simple template render
+function simpleHTML5BoilerplateApp(middleware, templateEngine) {
+    const app = express();
+    app.use(middleware);
+    // Expect all the views to be in the same fixtures/files path
+    const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
+    app.set("views", VIEWS_DIR);
+    app.set("view engine", templateEngine);
+    app.get("/", (req, res) => {
+        res.render("html5-boilerplate", { title: "dynamic" });
+    });
+    return app;
+}
+exports.simpleHTML5BoilerplateApp = simpleHTML5BoilerplateApp;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;

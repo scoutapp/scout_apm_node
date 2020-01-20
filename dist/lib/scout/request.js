@@ -40,9 +40,20 @@ class ScoutRequest {
     }
     /** @see ChildSpannable */
     startChildSpan(operation) {
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(this.startChildSpanSync(operation));
+            }
+            catch (err) {
+                reject(err);
+            }
+        });
+    }
+    /** @see ChildSpannable */
+    startChildSpanSync(operation) {
         if (this.finished) {
             this.logFn(`[scout/request/${this.id}] Cannot add a child span to a finished request [${this.id}]`, types_1.LogLevel.Error);
-            return Promise.reject(new Errors.FinishedRequest("Cannot add a child span to a finished request"));
+            throw new Errors.FinishedRequest("Cannot add a child span to a finished request");
         }
         // Create a new child span
         const span = new span_1.default({
@@ -53,16 +64,26 @@ class ScoutRequest {
         });
         // Add the child span to the list
         this.childSpans.push(span);
-        return span.start();
+        return span.startSync();
     }
     /** @see ChildSpannable */
     getChildSpans() {
-        return Promise.resolve(this.childSpans);
+        return new Promise((resolve) => resolve(this.getChildSpansSync()));
+    }
+    /** @see ChildSpannable */
+    getChildSpansSync() {
+        return this.childSpans.slice();
     }
     /** @see Taggable */
     addContext(tags) {
+        return new Promise((resolve) => {
+            resolve(this.addContextSync(tags));
+        });
+    }
+    /** @see Taggable */
+    addContextSync(tags) {
         tags.forEach(t => this.tags[t.name] = t.value);
-        return Promise.resolve(this);
+        return this;
     }
     /** @see Taggable */
     getContextValue(name) {
@@ -94,16 +115,29 @@ class ScoutRequest {
         this.finished = true;
         return Promise.resolve(this);
     }
+    stopSync() {
+        if (this.finished) {
+            return this;
+        }
+        // Stop all child spans
+        this.childSpans.forEach(s => s.stopSync());
+        // Finish the request
+        this.finished = true;
+        return this;
+    }
     isStarted() {
         return this.started;
     }
     start() {
+        return new Promise((resolve) => resolve(this.startSync()));
+    }
+    startSync() {
         if (this.started) {
-            return Promise.resolve(this);
+            return this;
         }
         this.timestamp = new Date();
         this.started = true;
-        return Promise.resolve(this);
+        return this;
     }
     /**
      * Send this request and internal spans to the scoutInstance

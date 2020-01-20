@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames } from "../../lib/types";
+import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
 
 import { SQL_QUERIES } from "../fixtures";
 
@@ -53,7 +53,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
         data.request
             .getChildSpans()
             .then(spans => {
-                const dbSpan = spans.find(s => s.operation === Constants.SCOUT_SQL_QUERY);
+                const dbSpan = spans.find(s => s.operation === ScoutSpanOperation.SQLQuery);
                 t.assert(dbSpan, "db span was present on request");
                 if (!dbSpan) {
                     t.fail("no DB span present on request");

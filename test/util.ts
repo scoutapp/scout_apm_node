@@ -35,6 +35,10 @@ import { Scout } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
 
+import { FILE_PATHS } from "./fixtures";
+
+import { get as getRootDir } from "app-root-dir";
+
 const getPort = require("get-port");
 
 // Wait a little longer for requests that use express
@@ -46,6 +50,8 @@ export const MYSQL_TEST_TIMEOUT_MS = 3000;
 export const DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
 
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
+
+const PROJECT_ROOT = path.join(path.dirname(require!.main!.filename), "../../");
 
 // Helper for downloading and creating an agent
 export function bootstrapExternalProcessAgent(
@@ -198,6 +204,26 @@ export function simpleErrorApp(middleware: any, delayMs: number = 0): Applicatio
 
     app.get("/", (req: Request, res: Response) => {
         throw new Error("Expected application error (simpleErrorApp)");
+    });
+
+    return app;
+}
+
+// An express application which performs a simple template render
+export function simpleHTML5BoilerplateApp(
+    middleware: any,
+    templateEngine: "pug",
+): Application {
+    const app = express();
+    app.use(middleware);
+
+    // Expect all the views to be in the same fixtures/files path
+    const VIEWS_DIR = path.join(getRootDir(), "test/fixtures/files");
+    app.set("views", VIEWS_DIR);
+    app.set("view engine", templateEngine);
+
+    app.get("/", (req: Request, res: Response) => {
+        res.render("html5-boilerplate", {title: "dynamic"});
     });
 
     return app;

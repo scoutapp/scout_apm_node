@@ -9,12 +9,20 @@ import {
     AgentEvent,
     AgentRequestType,
     BaseAgentRequest,
+    ScoutContextNames,
+    ScoutSpanOperation,
     ScoutEvent,
     URIReportingLevel,
     buildScoutConfiguration,
 } from "../lib/types";
 import { Scout, ScoutEventRequestSentData } from "../lib/scout";
+import { setupRequireIntegrations } from "../lib";
 import { V1StartSpan } from "../lib/protocol/v1/requests";
+import { FILE_PATHS } from "./fixtures";
+
+// Set up the pug integration
+setupRequireIntegrations(["pug"]);
+const pug = require("pug");
 
 test("Simple operation", t => {
     // Create an application and setup scout middleware
@@ -106,7 +114,11 @@ test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t =>
                 if (msg.operation !== expectedRootSpan) { return; }
 
                 // Ensure that the span is what we expect
-                t.equals(msg.operation, expectedRootSpan, `root span operation is correct [${msg.operation}]`);
+                t.equals(
+                    msg.operation,
+                    expectedRootSpan,
+                    `root span operation is correct [${msg.operation}]`,
+                );
 
                 // Remove agent, pass test
                 scout.removeListener(AgentEvent.RequestSent, listener);
@@ -385,5 +397,61 @@ test("URI filtered down to path", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t
         .send("hello")
         .expect("Content-Type", /json/)
         .expect(200)
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/82
+test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    // Create an application that's set up to use pug templating
+    const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }), "pug");
+
+    // Set up a listener that should fire when the request is finished
+    const listener = (data: ScoutEventRequestSentData, another) => {
+        // Remove listener since this should fire once
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        // Look up the template render span from the request
+        const requestSpans = data.request.getChildSpansSync();
+
+        // The top level controller should be present
+        const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
+        t.assert(controllerSpan, "template controller span was present on request");
+        if (!controllerSpan) {
+            t.fail("no controller span present on request");
+            throw new Error("No controller span");
+        }
+
+        // The inner spans for the controller should contain a template rendering span
+        const innerSpans = controllerSpan.getChildSpansSync();
+        const renderSpan = innerSpans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
+        t.assert(renderSpan, "template render span was present on request");
+        if (!renderSpan) {
+            t.fail("no render span present on request");
+            throw new Error("No render span");
+        }
+
+        t.assert(renderSpan.getContextValue(ScoutContextNames.Name), "template name context is present");
+
+        // Shutdown and close scout
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    return request(app)
+        .get("/")
+        .expect("Content-Type", /html/)
+        .expect(200)
+        .then(res => {
+            t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
+        })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });

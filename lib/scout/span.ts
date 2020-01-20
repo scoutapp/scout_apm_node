@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { get as getStackTrace } from "stacktrace-js";
+import { get as getStackTrace, getSync as getStackTraceSync, StackFrame } from "stacktrace-js";
 
 import {
     LogFn,
@@ -9,6 +9,7 @@ import {
     Startable,
     ScoutTag,
     JSONValue,
+    ScoutStackFrame,
 } from "../types";
 
 import ScoutRequest from "./request";
@@ -32,11 +33,13 @@ export interface ChildSpannable {
      * @abstract
      */
     startChildSpan(operation: string): Promise<ScoutSpan>;
+    startChildSpanSync(operation: string): ScoutSpan;
 
     /**
      * Get all active child spans
      */
     getChildSpans(): Promise<ScoutSpan[]>;
+    getChildSpansSync(): ScoutSpan[];
 }
 
 export interface ScoutSpanOptions {
@@ -93,8 +96,13 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     /** @see Taggable */
     public addContext(tags: ScoutTag[]): Promise<this> {
+        return new Promise((resolve) => resolve(this.addContextSync(tags)));
+    }
+
+    /** @see Taggable */
+    public addContextSync(tags: ScoutTag[]): this {
         tags.forEach(t => this.tags[t.name] = t.value);
-        return Promise.resolve(this);
+        return this;
     }
 
     /** @see Taggable */
@@ -104,15 +112,24 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     /** @see ChildSpannable */
     public startChildSpan(operation: string): Promise<ScoutSpan> {
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(this.startChildSpanSync(operation));
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
+    /** @see ChildSpannable */
+    public startChildSpanSync(operation: string): ScoutSpan {
         if (this.stopped) {
             this.logFn(
                 `[scout/request/${this.request.id}/span/${this.id}] Cannot add span to stopped span [${this.id}]`,
                 LogLevel.Error,
             );
 
-            return Promise.reject(new Errors.FinishedRequest(
-                "Cannot add a child span to a finished span",
-            ));
+            throw new Errors.FinishedRequest("Cannot add a child span to a finished span");
         }
 
         const span = new ScoutSpan({
@@ -125,12 +142,17 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
         this.childSpans.push(span);
 
-        return span.start();
+        return span.startSync();
     }
 
     /** @see ChildSpannable */
     public getChildSpans(): Promise<ScoutSpan[]> {
-        return Promise.resolve(this.childSpans);
+        return new Promise((resolve) => resolve(this.getChildSpansSync()));
+    }
+
+    /** @see ChildSpannable */
+    public getChildSpansSync(): ScoutSpan[] {
+        return this.childSpans.slice();
     }
 
     public finish(): Promise<this> {
@@ -161,23 +183,31 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
         // Add stack trace to the span
         return getStackTrace()
-            .then(frames => {
-                return frames
-                // Filter out scout_apm_node related traces
-                    .filter(f => !f.fileName || !f.fileName.includes("scout_apm_node"))
-                // Simplify the traces
-                    .map(f => ({
-                        line: f.lineNumber,
-                        file: f.fileName,
-                        function: f.functionName || "<anonymous>",
-                    }));
-            })
-            .then(minimalFrames => ({
+            .then(this.processStackFrames)
+            .then(scoutFrames => ({
                 name: ScoutContextNames.Traceback,
-                value: minimalFrames,
+                value: scoutFrames,
             }))
             .then(tracebackTag => this.addContext([tracebackTag]))
             .then(() => this);
+    }
+
+    public stopSync(): this {
+        if (this.stopped) { return this; }
+
+        this.stopped = true;
+
+        // If the span request is still under the threshold then don't save the traceback
+        if (this.scoutInstance && this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {
+            return this;
+        }
+
+        // Process the frames and add the context
+        const scoutFrames = this.processStackFrames(getStackTraceSync());
+        const tracebackTag: ScoutTag = {name: ScoutContextNames.Traceback, value: scoutFrames};
+        this.addContextSync([tracebackTag]);
+
+        return this;
     }
 
     public isStarted(): boolean {
@@ -185,12 +215,16 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     }
 
     public start(): Promise<this> {
-        if (this.started) { return Promise.resolve(this); }
+        return new Promise((resolve) => resolve(this.startSync()));
+    }
+
+    public startSync(): this {
+        if (this.started) { return this; }
 
         this.timestamp = new Date();
         this.started = true;
 
-        return Promise.resolve(this);
+        return this;
     }
 
     /**
@@ -224,6 +258,26 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
                 this.logFn(`[scout/request/${this.request.id}/span/${this.id}}] Failed to send span`);
                 return this;
             });
+    }
+
+    /**
+     * Convert StackTraces as generated by stacktrace-js into Scout's expected format
+     *
+     * @param {StackFrame[]} frames - stack frames from stacktrace-js
+     * @returns {ScoutStackTrace[]} the scout format for stack frames
+     */
+    private processStackFrames(frames: StackFrame[]): ScoutStackFrame[] {
+        if (!frames || !(frames instanceof Array) || frames.length === 0) { return []; }
+
+        return frames
+        // Filter out scout_apm_node related traces
+            .filter(f => !f.fileName || !f.fileName.includes("scout_apm_node"))
+        // Simplify the traces
+            .map(f => ({
+                line: f.lineNumber,
+                file: f.fileName,
+                function: f.functionName || "<anonymous>",
+            }));
     }
 
     private logFn: LogFn = () => undefined;
