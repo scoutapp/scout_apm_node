@@ -244,6 +244,7 @@ export class Scout extends EventEmitter {
      * Start a transaction
      *
      * @param {string} name
+     * @param {Function} callback
      * @returns void
      */
     public transaction(name: string, cb: DoneCallback): Promise<any> {
@@ -255,13 +256,32 @@ export class Scout extends EventEmitter {
         // Setup if necessary then then perform the async request context
         return this.setup()
             .then(() => {
-                result = this.withAsyncRequestContext(cb);
                 ranContext = true;
+                result = this.withAsyncRequestContext(cb);
+                return result;
             })
             .catch(err => {
                 this.log("[scout] Scout setup failed: ${err}", LogLevel.Error);
-                if (!ranContext) { result = this.withAsyncRequestContext(cb); }
+                if (!ranContext) {
+                    return this.withAsyncRequestContext(cb);
+                }
             });
+    }
+
+    /**
+     * Start a synchronous transaction
+     *
+     * @param {string} name
+     */
+    public transactionSync(name: string, fn: () => any): any {
+        this.log(`[scout] Starting transaction [${name}]`, LogLevel.Debug);
+
+        // Create the request
+        const request = this.startRequestSync();
+        const result = fn();
+        request.stopSync();
+
+        return result;
     }
 
     /**
@@ -515,14 +535,24 @@ export class Scout extends EventEmitter {
     }
 
     /**
-     * Helper function for starting a scout request with the instance
+     * Start a scout request and return a promise which resolves to the started request
      *
      * @param {ScoutRequestOptions} [options]
      * @returns {Promise<ScoutRequest>} a new scout request
      */
     private startRequest(opts?: ScoutRequestOptions): Promise<ScoutRequest> {
+        return new Promise((resolve) => resolve(this.startRequestSync(opts)));
+    }
+
+    /**
+     * Start a scout request synchronously
+     *
+     * @param {ScoutRequestOptions} [options]
+     * @returns {ScoutRequest} a new scout request
+     */
+    private startRequestSync(opts?: ScoutRequestOptions): ScoutRequest {
         const request = new ScoutRequest(Object.assign({}, {scoutInstance: this}, opts || {}));
-        return request.start();
+        return request.startSync();
     }
 
     private getSocketPath() {
