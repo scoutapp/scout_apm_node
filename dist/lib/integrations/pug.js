@@ -51,10 +51,17 @@ class PugIntegration {
     shimPugRender(pugExport) {
         const originalFn = pugExport.render;
         const integration = this;
-        const render = () => {
+        const render = (src, options, callback) => {
+            const originalArgs = arguments;
             integration.logFn("[scout/integrations/pug] rendering...", types_1.LogLevel.Debug);
-            const result = originalFn(...arguments);
-            return result;
+            // If no scout instance is available then run the function normally
+            if (!integration.scout) {
+                return originalFn(src, options, callback);
+            }
+            return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, (span) => {
+                span.addContextSync([{ name: types_1.ScoutContextNames.Name, value: "<string>" }]);
+                return originalFn(src, options, callback);
+            });
         };
         pugExport.render = render;
         return pugExport;
@@ -67,11 +74,16 @@ class PugIntegration {
     shimPugRenderFile(pugExport) {
         const originalFn = pugExport.render;
         const integration = this;
-        const renderFile = () => {
-            const file = arguments[0];
-            integration.logFn(`[scout/integrations/pug] rendering file [${file}]...`, types_1.LogLevel.Debug);
-            const result = originalFn(...arguments);
-            return result;
+        const renderFile = (path, options, callback) => {
+            integration.logFn(`[scout/integrations/pug] rendering file [${path}]...`, types_1.LogLevel.Debug);
+            // If no scout instance is available then run the function normally
+            if (!integration.scout) {
+                return originalFn(path, options, callback);
+            }
+            return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, (span) => {
+                span.addContextSync([{ name: types_1.ScoutContextNames.Name, value: path }]);
+                return originalFn(path, options, callback);
+            });
         };
         pugExport.renderFile = renderFile;
         return pugExport;

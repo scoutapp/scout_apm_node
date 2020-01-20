@@ -4,7 +4,6 @@ const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const pg_1 = require("pg");
 const types_1 = require("../types");
-const Constants = require("../constants");
 // Hook into the express and mongodb module
 class PGIntegration {
     constructor() {
@@ -104,7 +103,7 @@ class PGIntegration {
             else {
                 query = new pg_1.Query(...arguments);
             }
-            return integration.scout.instrument(Constants.SCOUT_SQL_QUERY, done => {
+            return integration.scout.instrument(types_1.ScoutSpanOperation.SQLQuery, done => {
                 const span = integration.scout.getCurrentSpan();
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {

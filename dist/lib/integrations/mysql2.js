@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
-const Constants = require("../constants");
 // Hook into the express and mongodb module
 class MySQL2Integration {
     constructor() {
@@ -84,7 +83,7 @@ class MySQL2Integration {
             const builtQuery = exports.createQuery(sql, values, cb, this.config);
             let ranFn = false;
             // Start the instrumentation
-            integration.scout.instrument(Constants.SCOUT_SQL_QUERY, stopSpan => {
+            integration.scout.instrument(types_1.ScoutSpanOperation.SQLQuery, stopSpan => {
                 // Get span, exit early if there was an issue getting the current span
                 const span = integration.scout.getCurrentSpan();
                 if (!span) {

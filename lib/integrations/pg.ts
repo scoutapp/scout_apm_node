@@ -3,7 +3,7 @@ import * as Hook from "require-in-the-middle";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
 import { Client, Query } from "pg";
-import { LogFn, LogLevel, ScoutContextNames } from "../types";
+import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
@@ -122,7 +122,7 @@ export class PGIntegration implements RequireIntegration {
                 query = new Query(...arguments);
             }
 
-            return integration.scout.instrument(Constants.SCOUT_SQL_QUERY, done => {
+            return integration.scout.instrument(ScoutSpanOperation.SQLQuery, done => {
                 const span = integration.scout.getCurrentSpan();
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {

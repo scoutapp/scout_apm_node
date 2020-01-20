@@ -3,7 +3,7 @@ import * as Hook from "require-in-the-middle";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
 import { Connection, ConnectionConfig, QueryFunction } from "mysql";
-import { LogFn, LogLevel, ScoutContextNames } from "../types";
+import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // From @types/mysql
@@ -106,7 +106,7 @@ export class MySQL2Integration implements RequireIntegration {
             let ranFn = false;
 
             // Start the instrumentation
-            integration.scout.instrument(Constants.SCOUT_SQL_QUERY, stopSpan => {
+            integration.scout.instrument(ScoutSpanOperation.SQLQuery, stopSpan => {
                 // Get span, exit early if there was an issue getting the current span
                 const span = integration.scout.getCurrentSpan();
                 if (!span) {

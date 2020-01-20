@@ -117,4 +117,10 @@ var ScoutContextNames;
     ScoutContextNames["Traceback"] = "stack";
     ScoutContextNames["DBStatement"] = "db.statement";
     ScoutContextNames["Error"] = "error";
+    ScoutContextNames["Name"] = "name";
 })(ScoutContextNames = exports.ScoutContextNames || (exports.ScoutContextNames = {}));
+var ScoutSpanOperation;
+(function (ScoutSpanOperation) {
+    ScoutSpanOperation["SQLQuery"] = "SQL/Query";
+    ScoutSpanOperation["TemplateRender"] = "Template/Render";
+})(ScoutSpanOperation = exports.ScoutSpanOperation || (exports.ScoutSpanOperation = {}));

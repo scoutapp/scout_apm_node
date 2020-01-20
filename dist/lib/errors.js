@@ -24,6 +24,7 @@ var ErrorCode;
     ErrorCode[ErrorCode["AgentLaunchDisabled"] = 17] = "AgentLaunchDisabled";
     ErrorCode[ErrorCode["MonitoringDisabled"] = 18] = "MonitoringDisabled";
     ErrorCode[ErrorCode["NoAgentPresent"] = 19] = "NoAgentPresent";
+    ErrorCode[ErrorCode["NoActiveRequest"] = 20] = "NoActiveRequest";
 })(ErrorCode = exports.ErrorCode || (exports.ErrorCode = {}));
 class ScoutError extends Error {
 }
@@ -187,3 +188,11 @@ class NoAgentPresent extends ScoutError {
     }
 }
 exports.NoAgentPresent = NoAgentPresent;
+class NoActiveRequest extends ScoutError {
+    constructor(m) {
+        super();
+        this.code = ErrorCode.NoActiveRequest;
+        this.message = m || "No active request is curently underway";
+    }
+}
+exports.NoActiveRequest = NoActiveRequest;

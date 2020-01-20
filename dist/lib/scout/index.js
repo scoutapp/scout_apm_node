@@ -30,6 +30,8 @@ class Scout extends events_1.EventEmitter {
         this.downloaderOptions = {};
         this.slowRequestThresholdMs = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
         this.canUseAsyncHooks = false;
+        this.syncCurrentRequest = null;
+        this.syncCurrentSpan = null;
         this.config = config || types_1.buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
         if (opts) {
@@ -188,10 +190,15 @@ class Scout extends events_1.EventEmitter {
      */
     transactionSync(name, fn) {
         this.log(`[scout] Starting transaction [${name}]`, types_1.LogLevel.Debug);
-        // Create the request
+        // Create & start the request synchronously
         const request = this.startRequestSync();
-        const result = fn();
+        this.syncCurrentRequest = request;
+        const result = fn(request);
         request.stopSync();
+        // Reset the current request as sync
+        this.syncCurrentRequest = null;
+        // Fire and forget the request
+        request.finishAndSend();
         return result;
     }
     /**
@@ -244,19 +251,27 @@ class Scout extends events_1.EventEmitter {
     }
     /**
      * Instrumentation for synchronous methods
+     *
+     * @param {string} operation - operation name for the span
+     * @param {SpanCallback} fn - function to execute
+     * @param {ScoutRequest} [requestOverride] - The request on which to start the span to execute
+     * @throws {NoActiveRequest} If there is no request in scoep (via async context or override param)
      */
     instrumentSync(operation, fn, requestOverride) {
-        const request = requestOverride || this.getCurrentRequest();
-        // If the request isn't present then just run the FN without instrumentation
+        const request = requestOverride || this.syncCurrentSpan || this.syncCurrentRequest;
+        // If the request isn't present then we throw an error early
         if (!request) {
             this.log("[scout] request missing for synchronous instrumentation (via async context or passed in)", types_1.LogLevel.Warn);
-            return fn();
+            throw new Errors.NoActiveRequest();
         }
         // Start a child span of the request synchronously
         const span = request.startChildSpanSync(operation);
+        this.syncCurrentSpan = span;
         span.startSync();
-        const result = fn();
+        const result = fn(span);
         span.stopSync();
+        // Clear out the current span for synchronous operations
+        this.syncCurrentSpan = null;
         return result;
     }
     /**
@@ -265,7 +280,12 @@ class Scout extends events_1.EventEmitter {
      * @returns {ScoutRequest} the current active request
      */
     getCurrentRequest() {
-        return this.asyncNamespace.get(ASYNC_NS_REQUEST);
+        try {
+            return this.asyncNamespace.get(ASYNC_NS_REQUEST);
+        }
+        catch (_a) {
+            return null;
+        }
     }
     /**
      * Reterieve the current span using the async hook/continuation local storage machinery

@@ -2,7 +2,7 @@ import * as path from "path";
 import * as Hook from "require-in-the-middle";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
-import { LogFn, LogLevel, ScoutContextNames } from "../types";
+import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
@@ -63,11 +63,17 @@ export class PugIntegration implements RequireIntegration {
         const originalFn = pugExport.render;
         const integration = this;
 
-        const render = () => {
+        const render = (src, options, callback) => {
+            const originalArgs = arguments;
             integration.logFn("[scout/integrations/pug] rendering...", LogLevel.Debug);
 
-            const result = originalFn(...arguments);
-            return result;
+            // If no scout instance is available then run the function normally
+            if (!integration.scout) { return originalFn(src, options, callback); }
+
+            return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
+                span.addContextSync([{name: ScoutContextNames.Name, value: "<string>"}]);
+                return originalFn(src, options, callback);
+            });
         };
 
         pugExport.render = render;
@@ -83,12 +89,16 @@ export class PugIntegration implements RequireIntegration {
         const originalFn = pugExport.render;
         const integration = this;
 
-        const renderFile = () => {
-            const file = arguments[0];
-            integration.logFn(`[scout/integrations/pug] rendering file [${file}]...`, LogLevel.Debug);
+        const renderFile = (path, options, callback) => {
+            integration.logFn(`[scout/integrations/pug] rendering file [${path}]...`, LogLevel.Debug);
 
-            const result = originalFn(...arguments);
-            return result;
+            // If no scout instance is available then run the function normally
+            if (!integration.scout) { return originalFn(path, options, callback); }
+
+            return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
+                span.addContextSync([{name: ScoutContextNames.Name, value: path}]);
+                return originalFn(path, options, callback);
+            });
         };
 
         pugExport.renderFile = renderFile;

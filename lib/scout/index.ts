@@ -61,6 +61,9 @@ export interface ScoutOptions {
 export type DoneCallback = (done: () => void) => any;
 const DONE_NOTHING = () => undefined;
 
+export type SpanCallback = (span: ScoutSpan) => any;
+export type RequestCallback = (request: ScoutRequest) => any;
+
 const ASYNC_NS = "scout";
 const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
 const ASYNC_NS_SPAN = `${ASYNC_NS}.span`;
@@ -82,6 +85,8 @@ export class Scout extends EventEmitter {
     private canUseAsyncHooks: boolean = false;
 
     private asyncNamespace: any;
+    private syncCurrentRequest: ScoutRequest | null = null;
+    private syncCurrentSpan: ScoutSpan | null = null;
 
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         super();
@@ -273,13 +278,21 @@ export class Scout extends EventEmitter {
      *
      * @param {string} name
      */
-    public transactionSync(name: string, fn: () => any): any {
+    public transactionSync(name: string, fn: RequestCallback): any {
         this.log(`[scout] Starting transaction [${name}]`, LogLevel.Debug);
 
-        // Create the request
+        // Create & start the request synchronously
         const request = this.startRequestSync();
-        const result = fn();
+        this.syncCurrentRequest = request;
+
+        const result = fn(request);
         request.stopSync();
+
+        // Reset the current request as sync
+        this.syncCurrentRequest = null;
+
+        // Fire and forget the request
+        request.finishAndSend();
 
         return result;
     }
@@ -350,24 +363,35 @@ export class Scout extends EventEmitter {
 
     /**
      * Instrumentation for synchronous methods
+     *
+     * @param {string} operation - operation name for the span
+     * @param {SpanCallback} fn - function to execute
+     * @param {ScoutRequest} [requestOverride] - The request on which to start the span to execute
+     * @throws {NoActiveRequest} If there is no request in scoep (via async context or override param)
      */
-    public instrumentSync(operation: string, fn: () => any, requestOverride?: ScoutRequest) {
-        const request = requestOverride || this.getCurrentRequest();
-        // If the request isn't present then just run the FN without instrumentation
+    public instrumentSync(operation: string, fn: SpanCallback, requestOverride?: ScoutRequest): any {
+        const request = requestOverride || this.syncCurrentSpan || this.syncCurrentRequest;
+
+        // If the request isn't present then we throw an error early
         if (!request) {
             this.log(
                 "[scout] request missing for synchronous instrumentation (via async context or passed in)",
                 LogLevel.Warn,
             );
-            return fn();
+
+            throw new Errors.NoActiveRequest();
         }
 
         // Start a child span of the request synchronously
         const span = request.startChildSpanSync(operation);
+        this.syncCurrentSpan = span;
 
         span.startSync();
-        const result = fn();
+        const result = fn(span);
         span.stopSync();
+
+        // Clear out the current span for synchronous operations
+        this.syncCurrentSpan = null;
 
         return result;
     }
@@ -378,7 +402,11 @@ export class Scout extends EventEmitter {
      * @returns {ScoutRequest} the current active request
      */
     public getCurrentRequest(): ScoutRequest | null {
-        return this.asyncNamespace.get(ASYNC_NS_REQUEST);
+        try {
+            return this.asyncNamespace.get(ASYNC_NS_REQUEST);
+        } catch {
+            return null;
+        }
     }
 
     /**

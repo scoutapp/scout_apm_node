@@ -126,4 +126,10 @@ export enum ScoutContextNames {
     Traceback = "stack",
     DBStatement = "db.statement",
     Error = "error",
+    Name = "name",
+}
+
+export enum ScoutSpanOperation {
+    SQLQuery = "SQL/Query",
+    TemplateRender = "Template/Render",
 }
