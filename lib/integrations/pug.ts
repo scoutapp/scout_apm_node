@@ -86,7 +86,7 @@ export class PugIntegration implements RequireIntegration {
      * @param {any} pugExport - pug's export
      */
     private shimPugRenderFile(pugExport: any): any {
-        const originalFn = pugExport.render;
+        const originalFn = pugExport.renderFile;
         const integration = this;
 
         const renderFile = (path, options, callback) => {

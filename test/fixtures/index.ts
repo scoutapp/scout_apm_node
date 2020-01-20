@@ -1,10 +1,15 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.APP_META = {
+import { ApplicationMetadata } from "../../lib/types";
+
+import * as PATHS from "./paths";
+
+export const FILE_PATHS = PATHS;
+
+export const APP_META: Partial<ApplicationMetadata> = {
     framework: "express",
     language: "nodejs",
 };
-exports.RESPONSES = {
+
+export const RESPONSES = {
     V1: {
         REGISTER: {
             COMPLETE: '{"Register":{"id":null,"result":"Success"}}',
@@ -13,7 +18,8 @@ exports.RESPONSES = {
         },
     },
 };
-exports.SQL_QUERIES = {
+
+export const SQL_QUERIES = {
     SELECT_TIME: "SELECT NOW();",
     CREATE_STRING_KV_TABLE: `
 CREATE TABLE kv(

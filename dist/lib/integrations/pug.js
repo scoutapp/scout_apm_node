@@ -72,7 +72,7 @@ class PugIntegration {
      * @param {any} pugExport - pug's export
      */
     shimPugRenderFile(pugExport) {
-        const originalFn = pugExport.render;
+        const originalFn = pugExport.renderFile;
         const integration = this;
         const renderFile = (path, options, callback) => {
             integration.logFn(`[scout/integrations/pug] rendering file [${path}]...`, types_1.LogLevel.Debug);
