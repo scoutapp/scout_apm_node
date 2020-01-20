@@ -376,6 +376,7 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
 
         // Look up the template render span from the request
         const requestSpans = data.request.getChildSpansSync();
+        t.equals(requestSpans.length, 1, "There's one span on the request (the Controller/)");
 
         // The top level controller should be present
         const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
