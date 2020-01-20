@@ -20,7 +20,6 @@ exports.ScoutRequest = request_1.default;
 var span_1 = require("./span");
 exports.ScoutSpan = span_1.default;
 const request_2 = require("./request");
-const span_2 = require("./span");
 const DONE_NOTHING = () => undefined;
 const ASYNC_NS = "scout";
 const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
@@ -238,15 +237,11 @@ class Scout extends events_1.EventEmitter {
             this.log("[scout] request missing for synchronous instrumentation (via async context or passed in)", types_1.LogLevel.Warn);
             return fn();
         }
-        const span = new span_2.default({
-            operation,
-            request,
-            scoutInstance: this,
-            logFn: this.logFn,
-        });
-        span.start();
+        // Start a child span of the request synchronously
+        const span = request.startChildSpanSync(operation);
+        span.startSync();
         const result = fn();
-        span.stop();
+        span.stopSync();
         return result;
     }
     /**

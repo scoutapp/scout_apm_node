@@ -342,16 +342,12 @@ export class Scout extends EventEmitter {
             return fn();
         }
 
-        const span = new ScoutSpan({
-            operation,
-            request,
-            scoutInstance: this,
-            logFn: this.logFn,
-        });
+        // Start a child span of the request synchronously
+        const span = request.startChildSpanSync(operation);
 
-        span.start();
+        span.startSync();
         const result = fn();
-        span.stop();
+        span.stopSync();
 
         return result;
     }

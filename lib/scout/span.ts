@@ -33,11 +33,13 @@ export interface ChildSpannable {
      * @abstract
      */
     startChildSpan(operation: string): Promise<ScoutSpan>;
+    startChildSpanSync(operation: string): ScoutSpan;
 
     /**
      * Get all active child spans
      */
     getChildSpans(): Promise<ScoutSpan[]>;
+    getChildSpansSync(): ScoutSpan[];
 }
 
 export interface ScoutSpanOptions {
@@ -110,15 +112,24 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     /** @see ChildSpannable */
     public startChildSpan(operation: string): Promise<ScoutSpan> {
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(this.startChildSpanSync(operation));
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
+    /** @see ChildSpannable */
+    public startChildSpanSync(operation: string): ScoutSpan {
         if (this.stopped) {
             this.logFn(
                 `[scout/request/${this.request.id}/span/${this.id}] Cannot add span to stopped span [${this.id}]`,
                 LogLevel.Error,
             );
 
-            return Promise.reject(new Errors.FinishedRequest(
-                "Cannot add a child span to a finished span",
-            ));
+            throw new Errors.FinishedRequest("Cannot add a child span to a finished span");
         }
 
         const span = new ScoutSpan({
@@ -131,12 +142,17 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
         this.childSpans.push(span);
 
-        return span.start();
+        return span.startSync();
     }
 
     /** @see ChildSpannable */
     public getChildSpans(): Promise<ScoutSpan[]> {
-        return Promise.resolve(this.childSpans);
+        return new Promise((resolve) => resolve(this.getChildSpansSync()));
+    }
+
+    /** @see ChildSpannable */
+    public getChildSpansSync(): ScoutSpan[] {
+        return this.childSpans.slice();
     }
 
     public finish(): Promise<this> {

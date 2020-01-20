@@ -40,9 +40,20 @@ class ScoutRequest {
     }
     /** @see ChildSpannable */
     startChildSpan(operation) {
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(this.startChildSpanSync(operation));
+            }
+            catch (err) {
+                reject(err);
+            }
+        });
+    }
+    /** @see ChildSpannable */
+    startChildSpanSync(operation) {
         if (this.finished) {
             this.logFn(`[scout/request/${this.id}] Cannot add a child span to a finished request [${this.id}]`, types_1.LogLevel.Error);
-            return Promise.reject(new Errors.FinishedRequest("Cannot add a child span to a finished request"));
+            throw new Errors.FinishedRequest("Cannot add a child span to a finished request");
         }
         // Create a new child span
         const span = new span_1.default({
@@ -53,11 +64,15 @@ class ScoutRequest {
         });
         // Add the child span to the list
         this.childSpans.push(span);
-        return span.start();
+        return span.startSync();
     }
     /** @see ChildSpannable */
     getChildSpans() {
-        return Promise.resolve(this.childSpans);
+        return new Promise((resolve) => resolve(this.getChildSpansSync()));
+    }
+    /** @see ChildSpannable */
+    getChildSpansSync() {
+        return this.childSpans.slice();
     }
     /** @see Taggable */
     addContext(tags) {
