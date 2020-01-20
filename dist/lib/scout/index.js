@@ -258,14 +258,16 @@ class Scout extends events_1.EventEmitter {
      * @throws {NoActiveRequest} If there is no request in scoep (via async context or override param)
      */
     instrumentSync(operation, fn, requestOverride) {
-        const request = requestOverride || this.syncCurrentSpan || this.syncCurrentRequest;
+        let parent = requestOverride || this.syncCurrentSpan || this.syncCurrentRequest;
+        // Check the async sources in case we're in a async context but not a sync one
+        parent = parent || this.getCurrentSpan() || this.getCurrentRequest();
         // If the request isn't present then we throw an error early
-        if (!request) {
-            this.log("[scout] request missing for synchronous instrumentation (via async context or passed in)", types_1.LogLevel.Warn);
-            throw new Errors.NoActiveRequest();
+        if (!parent) {
+            this.log("[scout] parent context missing for synchronous instrumentation (via async context or passed in)", types_1.LogLevel.Warn);
+            throw new Errors.NoActiveParentContext();
         }
-        // Start a child span of the request synchronously
-        const span = request.startChildSpanSync(operation);
+        // Start a child span of the parent synchronously
+        const span = parent.startChildSpanSync(operation);
         this.syncCurrentSpan = span;
         span.startSync();
         const result = fn(span);
@@ -293,7 +295,12 @@ class Scout extends events_1.EventEmitter {
      * @returns {ScoutSpan} the current active span
      */
     getCurrentSpan() {
-        return this.asyncNamespace.get(ASYNC_NS_SPAN);
+        try {
+            return this.asyncNamespace.get(ASYNC_NS_SPAN);
+        }
+        catch (_a) {
+            return null;
+        }
     }
     /**
      * Attempt to clear an async name space entry

@@ -9,12 +9,20 @@ import {
     AgentEvent,
     AgentRequestType,
     BaseAgentRequest,
+    ScoutContextNames,
+    ScoutSpanOperation,
     ScoutEvent,
     URIReportingLevel,
     buildScoutConfiguration,
 } from "../lib/types";
 import { Scout, ScoutEventRequestSentData } from "../lib/scout";
+import { setupRequireIntegrations } from "../lib";
 import { V1StartSpan } from "../lib/protocol/v1/requests";
+import { FILE_PATHS } from "./fixtures";
+
+// Set up the pug integration
+setupRequireIntegrations(["pug"]);
+const pug = require("pug");
 
 test("Simple operation", t => {
     // Create an application and setup scout middleware
@@ -106,7 +114,11 @@ test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t =>
                 if (msg.operation !== expectedRootSpan) { return; }
 
                 // Ensure that the span is what we expect
-                t.equals(msg.operation, expectedRootSpan, `root span operation is correct [${msg.operation}]`);
+                t.equals(
+                    msg.operation,
+                    expectedRootSpan,
+                    `root span operation is correct [${msg.operation}]`,
+                );
 
                 // Remove agent, pass test
                 scout.removeListener(AgentEvent.RequestSent, listener);
@@ -388,4 +400,50 @@ test("URI filtered down to path", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-// TODO: add a test that uses the pug integration (https://expressjs.com/en/guide/using-template-engines.html)
+// https://github.com/scoutapp/scout_apm_node/issues/82
+test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    // Create an application that's set up to use pug templating
+    const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({scout}), "pug");
+
+    // Set up a listener that should fire when the request is finished
+    const listener = (data: ScoutEventRequestSentData, another) => {
+        const pathTag = data.request.getTags().find(t => t.name === Constants.SCOUT_PATH_TAG);
+
+        // Remove listener since this should fire once
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        // Look up the template render span from the request
+        data.request
+            .getChildSpans()
+            .then(spans => {
+                const renderSpan = spans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
+                t.assert(renderSpan, "template render span was present on request");
+                if (!renderSpan) {
+                    t.fail("no render span present on request");
+                    throw new Error("No render span");
+                }
+
+                t.equals(
+                    renderSpan.getContextValue(ScoutContextNames.Name),
+                    FILE_PATHS.PUG_HTML5_BOILERPLATE,
+                    "name tag is correct",
+                );
+            })
+            .then(() => TestUtil.shutdownScout(t, scout))
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    // Send a request to the application (which should trigger setup of scout)
+    request(app)
+        .get("/")
+        .expect("Content-Type", /html/)
+        .expect(200)
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});

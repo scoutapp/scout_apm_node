@@ -38,7 +38,7 @@ test("pug rendering a string is captured", t => {
     const listener = (data: ScoutEventRequestSentData) => {
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        // Look up the database span from the request
+        // Look up the template render span from the request
         data.request
             .getChildSpans()
             .then(spans => {

@@ -23,7 +23,7 @@ test("pug rendering a string is captured", t => {
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data) => {
         scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
-        // Look up the database span from the request
+        // Look up the template render span from the request
         data.request
             .getChildSpans()
             .then(spans => {

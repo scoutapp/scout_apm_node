@@ -24,7 +24,7 @@ var ErrorCode;
     ErrorCode[ErrorCode["AgentLaunchDisabled"] = 17] = "AgentLaunchDisabled";
     ErrorCode[ErrorCode["MonitoringDisabled"] = 18] = "MonitoringDisabled";
     ErrorCode[ErrorCode["NoAgentPresent"] = 19] = "NoAgentPresent";
-    ErrorCode[ErrorCode["NoActiveRequest"] = 20] = "NoActiveRequest";
+    ErrorCode[ErrorCode["NoActiveParentContext"] = 20] = "NoActiveParentContext";
 })(ErrorCode = exports.ErrorCode || (exports.ErrorCode = {}));
 class ScoutError extends Error {
 }
@@ -188,11 +188,11 @@ class NoAgentPresent extends ScoutError {
     }
 }
 exports.NoAgentPresent = NoAgentPresent;
-class NoActiveRequest extends ScoutError {
+class NoActiveParentContext extends ScoutError {
     constructor(m) {
         super();
-        this.code = ErrorCode.NoActiveRequest;
+        this.code = ErrorCode.NoActiveParentContext;
         this.message = m || "No active request is curently underway";
     }
 }
-exports.NoActiveRequest = NoActiveRequest;
+exports.NoActiveParentContext = NoActiveParentContext;

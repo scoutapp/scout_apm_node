@@ -21,7 +21,7 @@ export enum ErrorCode {
     AgentLaunchDisabled,
     MonitoringDisabled,
     NoAgentPresent,
-    NoActiveRequest,
+    NoActiveParentContext,
 }
 
 class ScoutError extends Error {
@@ -208,8 +208,8 @@ export class NoAgentPresent extends ScoutError {
     }
 }
 
-export class NoActiveRequest extends ScoutError {
-    public readonly code: number = ErrorCode.NoActiveRequest;
+export class NoActiveParentContext extends ScoutError {
+    public readonly code: number = ErrorCode.NoActiveParentContext;
 
     constructor(m?: string) {
         super();
