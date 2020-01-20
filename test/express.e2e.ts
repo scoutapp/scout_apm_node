@@ -4,7 +4,6 @@ import * as Constants from "../lib/constants";
 import * as request from "supertest";
 
 import { Application } from "express";
-import { Server } from "http";
 import { scoutMiddleware, ApplicationWithScout } from "../lib/express";
 import {
     AgentEvent,

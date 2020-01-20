@@ -1,14 +1,25 @@
+/**
+ * The "test"s in this file are made to send to the dashboard.
+ * as such, they all take ~2 minutes to run serially, since they wait for attached core-agent(s) to send data
+ *
+ * These tests should be run either in parallel (via a tool like `bogota`) or by hand
+ * and the ENV variable SCOUT_KEY should be provided
+ */
+
 import * as test from "tape";
+import * as request from "supertest";
 
 import {
-    LogLevel,
     AgentLaunchDisabled,
     ApplicationMetadata,
     ExternalDownloadDisallowed,
+    LogLevel,
     Scout,
+    ScoutEventRequestSentData,
     ScoutRequest,
     ScoutSpan,
     consoleLogFn,
+    setupRequireIntegrations,
 } from "../lib";
 
 import {
@@ -16,10 +27,15 @@ import {
     AgentRequestType,
     BaseAgentRequest,
     ScoutEvent,
+    ScoutSpanOperation,
+    ScoutContextNames,
     buildScoutConfiguration,
 } from "../lib/types";
 
 import { V1FinishRequest } from "../lib/protocol/v1/requests";
+
+import { Application } from "express";
+import { scoutMiddleware, ApplicationWithScout } from "../lib/express";
 
 import { Client } from "pg";
 import { Connection } from "mysql";
@@ -32,8 +48,10 @@ import { SQL_QUERIES } from "./fixtures";
 let PG_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 let MYSQL_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 
-// This "test" is made to send to the dashboard
-// it does not shut down scout in order to give it time to actually send data
+// Set up the pug integration for the pug dashboard sends
+setupRequireIntegrations(["pug"]);
+const pug = require("pug");
+
 // https://github.com/scoutapp/scout_apm_node/issues/71
 test("Scout sends basic controller span to dashboard", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
     const config = buildScoutConfiguration({
@@ -326,3 +344,71 @@ test("transaction with mysql2 query to dashboard", {timeout: TestUtil.DASHBOARD_
 
 // Pseudo test that will stop a containerized mysql instance that was started
 TestUtil.stopContainerizedMySQLTest(test, () => MYSQL_CONTAINER_AND_OPTS);
+
+/////////////////////////////////////////
+// Express integration dashboard sends //
+/////////////////////////////////////////
+
+// https://github.com/scoutapp/scout_apm_node/issues/82
+test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
+    // Build scout config & app meta for test
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+        name: TestConstants.TEST_SCOUT_NAME,
+    });
+    if (!config.key) { throw new Error("No Scout key! Provide one with the SCOUT_KEY ENV variable"); }
+    if (!config.name) { throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable"); }
+
+    const scout = new Scout(config);
+    const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
+
+    // Create an application that's set up to use pug templating
+    const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }), "pug");
+
+    // Set up a listener that should fire when the request is finished
+    const listener = (data: ScoutEventRequestSentData, another) => {
+        // Remove listener since this should fire once
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        // Look up the template render span from the request
+        const requestSpans = data.request.getChildSpansSync();
+
+        // The top level controller should be present
+        const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
+        t.assert(controllerSpan, "template controller span was present on request");
+        if (!controllerSpan) {
+            t.fail("no controller span present on request");
+            throw new Error("No controller span");
+        }
+
+        // The inner spans for the controller should contain a template rendering span
+        const innerSpans = controllerSpan.getChildSpansSync();
+        const renderSpan = innerSpans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
+        t.assert(renderSpan, "template render span was present on request");
+        if (!renderSpan) {
+            t.fail("no render span present on request");
+            throw new Error("No render span");
+        }
+
+        t.assert(renderSpan.getContextValue(ScoutContextNames.Name), "template name context is present");
+
+        // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
+        TestUtil.waitMinutes(2)
+            .then(() => TestUtil.shutdownScout(t, scout));
+    };
+
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    return request(app)
+        .get("/")
+        .expect("Content-Type", /html/)
+        .expect(200)
+        .then(res => {
+            t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
+        })
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
