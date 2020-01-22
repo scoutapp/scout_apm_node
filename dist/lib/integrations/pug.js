@@ -4,13 +4,10 @@ const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
-class PugIntegration {
+class PugIntegration extends integrations_1.RequireIntegration {
     constructor() {
+        super(...arguments);
         this.packageName = "pug";
-        this.logFn = () => undefined;
-    }
-    getPackageName() {
-        return this.packageName;
     }
     ritmHook(exportBag) {
         Hook([this.getPackageName()], (exports, name, basedir) => {
@@ -27,12 +24,6 @@ class PugIntegration {
             // Return the modified exports
             return exports;
         });
-    }
-    setScoutInstance(scout) {
-        this.scout = scout;
-    }
-    setLogFn(logFn) {
-        this.logFn = logFn;
     }
     shimPug(pugExport) {
         // Check if the shim has already been performed

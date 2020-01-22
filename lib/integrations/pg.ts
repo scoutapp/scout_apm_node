@@ -7,14 +7,8 @@ import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
-export class PGIntegration implements RequireIntegration {
-    private readonly packageName: string = "pg";
-    private scout: Scout;
-    private logFn: LogFn = () => undefined;
-
-    public getPackageName() {
-        return this.packageName;
-    }
+export class PGIntegration extends RequireIntegration {
+    protected readonly packageName: string = "pg";
 
     public ritmHook(exportBag: ExportBag): void {
         Hook([this.getPackageName()], (exports, name, basedir) => {
@@ -35,14 +29,6 @@ export class PGIntegration implements RequireIntegration {
             // Return the modified exports
             return exports;
         });
-    }
-
-    public setScoutInstance(scout: Scout) {
-        this.scout = scout;
-    }
-
-    public setLogFn(logFn: LogFn) {
-        this.logFn = logFn;
     }
 
     private shimPG(pgExport: any) {

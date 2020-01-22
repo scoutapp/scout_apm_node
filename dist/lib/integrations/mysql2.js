@@ -4,13 +4,10 @@ const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
-class MySQL2Integration {
+class MySQL2Integration extends integrations_1.RequireIntegration {
     constructor() {
+        super(...arguments);
         this.packageName = "mysql2";
-        this.logFn = () => undefined;
-    }
-    getPackageName() {
-        return this.packageName;
     }
     ritmHook(exportBag) {
         Hook([this.getPackageName()], (exports, name, basedir) => {
@@ -27,12 +24,6 @@ class MySQL2Integration {
             // Return the modified exports
             return exports;
         });
-    }
-    setScoutInstance(scout) {
-        this.scout = scout;
-    }
-    setLogFn(logFn) {
-        this.logFn = logFn;
     }
     shimMySQL2(mysql2Export) {
         // Check if the shim has already been performed

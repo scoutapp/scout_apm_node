@@ -6,14 +6,8 @@ import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
-export class PugIntegration implements RequireIntegration {
-    private readonly packageName: string = "pug";
-    private scout: Scout;
-    private logFn: LogFn = () => undefined;
-
-    public getPackageName() {
-        return this.packageName;
-    }
+export class PugIntegration extends RequireIntegration {
+    protected readonly packageName: string = "pug";
 
     public ritmHook(exportBag: ExportBag): void {
         Hook([this.getPackageName()], (exports, name, basedir) => {
@@ -34,14 +28,6 @@ export class PugIntegration implements RequireIntegration {
             // Return the modified exports
             return exports;
         });
-    }
-
-    public setScoutInstance(scout: Scout) {
-        this.scout = scout;
-    }
-
-    public setLogFn(logFn: LogFn) {
-        this.logFn = logFn;
     }
 
     private shimPug(pugExport: any): any {

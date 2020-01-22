@@ -1,33 +1,55 @@
 import { Scout } from "../scout";
+import { LogFn } from "./util";
+import * as Errors from "../errors";
+
 export const scoutIntegrationSymbol = Symbol("scout");
 
 export interface ExportBag {
     [key: string]: any;
 }
 
-export interface RequireIntegration {
-    /**
-     * Name of the package that the require integration is for
-     */
-    getPackageName: () => string;
+export abstract class RequireIntegration {
+    protected readonly packageName: string;
+    protected scout: Scout;
+    protected logFn: LogFn = () => undefined;
 
     /**
-     * Function that takes an export bag to append modified exports on to (by name)
-     * it normally runs the require-in-the-middle Hook(), to make the necessary shims
+     * Retrieve the name of the require integration
+     *
+     * @returns {string} the name of this integration
      */
-    ritmHook: (exportBag: ExportBag) => void;
+    public getPackageName(): string {
+        return this.packageName;
+    }
+
+    /**
+     * Set the logging function for the require integration
+     *
+     * @param {LogFn} logFn
+     */
+    public setLogFn(logFn: LogFn) {
+        this.logFn = logFn;
+    }
+
+    /**
+     * Perform the require-in-the-middle Hook() that will set up the integration.
+     *
+     * @param {any} exportBag - The bag of exports that have been shimmed by scout already
+     */
+    public abstract ritmHook(exportBag: ExportBag);
 
     /**
      * Set the scout instance for the integration
      *
+     * @param {Scout} scout
      */
-    setScoutInstance: (instance: Scout) => void;
+    public setScoutInstance(scout: Scout) {
+        this.scout = scout;
+    }
 }
 
-class NullIntegration implements RequireIntegration {
-    private readonly packageName: string = "";
-
-    public getPackageName() { return this.packageName; }
+class NullIntegration extends RequireIntegration {
+    protected readonly packageName: string = "";
 
     public ritmHook(exportBag: ExportBag): void {
         throw new Error("NullIntegration");

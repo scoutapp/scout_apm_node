@@ -5,13 +5,10 @@ const integrations_1 = require("../types/integrations");
 const pg_1 = require("pg");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
-class PGIntegration {
+class PGIntegration extends integrations_1.RequireIntegration {
     constructor() {
+        super(...arguments);
         this.packageName = "pg";
-        this.logFn = () => undefined;
-    }
-    getPackageName() {
-        return this.packageName;
     }
     ritmHook(exportBag) {
         Hook([this.getPackageName()], (exports, name, basedir) => {
@@ -28,12 +25,6 @@ class PGIntegration {
             // Return the modified exports
             return exports;
         });
-    }
-    setScoutInstance(scout) {
-        this.scout = scout;
-    }
-    setLogFn(logFn) {
-        this.logFn = logFn;
     }
     shimPG(pgExport) {
         // Check if the shim has already been performed

@@ -10,14 +10,8 @@ import * as Constants from "../constants";
 type CreateConnectionFn = (connectionUri: string | ConnectionConfig) => Connection;
 
 // Hook into the express and mongodb module
-export class MySQLIntegration implements RequireIntegration {
-    private readonly packageName: string = "mysql";
-    private scout: Scout;
-    private logFn: LogFn = () => undefined;
-
-    public getPackageName() {
-        return this.packageName;
-    }
+export class MySQLIntegration extends RequireIntegration {
+    protected readonly packageName: string = "mysql";
 
     public ritmHook(exportBag: ExportBag): void {
         Hook([this.getPackageName()], (exports, name, basedir) => {
@@ -38,14 +32,6 @@ export class MySQLIntegration implements RequireIntegration {
             // Return the modified exports
             return exports;
         });
-    }
-
-    public setScoutInstance(scout: Scout) {
-        this.scout = scout;
-    }
-
-    public setLogFn(logFn: LogFn) {
-        this.logFn = logFn;
     }
 
     private shimMySQL(mysqlExport: any): any {
