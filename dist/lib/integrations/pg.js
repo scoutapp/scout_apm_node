@@ -45,12 +45,12 @@ class PGIntegration extends integrations_1.RequireIntegration {
         const original = pg_1.Client.prototype.connect;
         const integration = this;
         const fn = function (userCallback) {
-            integration.logFn("[scout/integrations/pg] Connecting to Postgres db...", types_1.LogLevel.Debug);
+            integration.logFn("[scout/integrations/pg] Connecting to Postgres db...", types_1.LogLevel.Trace);
             // If a callback was specified we need to do callback version
             if (userCallback) {
                 return original.bind(this)(err => {
                     if (err) {
-                        integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Error);
+                        integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Trace);
                         userCallback(err);
                         return;
                     }
@@ -60,10 +60,10 @@ class PGIntegration extends integrations_1.RequireIntegration {
             // Promise version
             return original.bind(this)()
                 .then(() => {
-                integration.logFn("[scout/integrations/pg] Successfully connected to Postgres db", types_1.LogLevel.Debug);
+                integration.logFn("[scout/integrations/pg] Successfully connected to Postgres db", types_1.LogLevel.Trace);
             })
                 .catch(err => {
-                integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Error);
+                integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Trace);
                 // Re-throw error
                 throw err;
             });
@@ -80,7 +80,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
         const integration = this;
         // By the time this function runs we *should* have a scout instance set.
         const fn = function (config, values, userCallback) {
-            integration.logFn("[scout/integrations/pg] Querying Postgres db...", types_1.LogLevel.Debug);
+            integration.logFn("[scout/integrations/pg] Querying Postgres db...", types_1.LogLevel.Trace);
             // If no scout instsance or the query is undefined go straight to pg
             if (!integration.scout || !config) {
                 return original.bind(this)(config, values, userCallback);
@@ -98,7 +98,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
                 const span = integration.scout.getCurrentSpan();
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {
-                    integration.logFn("[scout/integrations/pg] Unable to get current span", types_1.LogLevel.Warn);
+                    integration.logFn("[scout/integrations/pg] Unable to get current span", types_1.LogLevel.Debug);
                     return original.bind(this)(config, values, userCallback);
                 }
                 return span
@@ -107,11 +107,11 @@ class PGIntegration extends integrations_1.RequireIntegration {
                     // Run pg's query function
                     .then(() => original.bind(this)(config, values, userCallback))
                     .then(res => {
-                    integration.logFn("[scout/integrations/pg] Successfully queried Postgres db", types_1.LogLevel.Debug);
+                    integration.logFn("[scout/integrations/pg] Successfully queried Postgres db", types_1.LogLevel.Trace);
                     return res;
                 })
                     .catch(err => {
-                    integration.logFn("[scout/integrations/pg] Query failed", types_1.LogLevel.Error);
+                    integration.logFn("[scout/integrations/pg] Query failed", types_1.LogLevel.Trace);
                     // Mark the span as errored
                     if (span) {
                         span.addContext([{ name: "error", value: "true" }]);

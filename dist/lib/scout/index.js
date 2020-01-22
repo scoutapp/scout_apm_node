@@ -211,10 +211,11 @@ class Scout extends events_1.EventEmitter {
     instrument(operation, cb) {
         this.log(`[scout] Instrumenting operation [${operation}]`, types_1.LogLevel.Debug);
         const parent = this.getCurrentSpan() || this.getCurrentRequest();
+        const request = this.getCurrentRequest();
         // If no request is currently underway
-        if (!parent) {
+        if (!parent || !request) {
             this.log("[scout] Failed to start instrumentation, no current transaction/parent instrumentation", types_1.LogLevel.Error);
-            return Promise.resolve(cb(DONE_NOTHING));
+            return Promise.resolve(cb(DONE_NOTHING, {}));
         }
         let result;
         let ranCb = false;
@@ -233,7 +234,7 @@ class Scout extends events_1.EventEmitter {
             .then(s => span = s)
             .then(() => {
             this.asyncNamespace.set(ASYNC_NS_SPAN, span);
-            result = cb(doneFn);
+            result = cb(doneFn, { span, request, parent });
             ranCb = true;
             // Ensure that the result is a promise
             return Promise.resolve(result);
@@ -242,7 +243,7 @@ class Scout extends events_1.EventEmitter {
             .catch(err => {
             // It's possible that an error happened *before* the span could be set
             if (!ranCb) {
-                result = span ? cb(doneFn) : cb(() => undefined);
+                result = span ? cb(doneFn, { span, request, parent }) : cb(() => undefined, { span, request, parent });
             }
             this.log("[scout] failed to send start span", types_1.LogLevel.Error);
             // Ensure that the result is a promise
@@ -382,11 +383,11 @@ class Scout extends events_1.EventEmitter {
         // If we can use async hooks then node-request-context is usable
         return new Promise((resolve) => {
             let result;
-            let req;
+            let request;
             let ranCb = false;
             const doneFn = () => {
-                this.log(`[scout] Finishing and sending request with ID [${req.id}]`, types_1.LogLevel.Debug);
-                return req
+                this.log(`[scout] Finishing and sending request with ID [${request.id}]`, types_1.LogLevel.Debug);
+                return request
                     .finishAndSend()
                     .then(() => this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST));
             };
@@ -395,12 +396,12 @@ class Scout extends events_1.EventEmitter {
                 this.log(`[scout] Starting request in async namespace...`, types_1.LogLevel.Debug);
                 // Star the request
                 this.startRequest()
-                    .then(r => req = r)
+                    .then(r => request = r)
                     // Update async namespace, run function
                     .then(() => {
-                    this.log(`[scout] Request started w/ ID [${req.id}]`, types_1.LogLevel.Debug);
-                    this.asyncNamespace.set(ASYNC_NS_REQUEST, req);
-                    result = cb(doneFn);
+                    this.log(`[scout] Request started w/ ID [${request.id}]`, types_1.LogLevel.Debug);
+                    this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
+                    result = cb(doneFn, { request });
                     ranCb = true;
                     // Ensure that the result is a promise
                     resolve(result);
@@ -409,10 +410,10 @@ class Scout extends events_1.EventEmitter {
                     .catch(err => {
                     // In the case that an error occurs before the request gets made we can't run doneFn
                     if (!ranCb) {
-                        result = req ? cb(doneFn) : cb(() => undefined);
+                        result = request ? cb(doneFn, { request }) : cb(() => undefined, { request });
                     }
                     resolve(result);
-                    this.log(`[scout] failed to send start request request: ${err}`, types_1.LogLevel.Error);
+                    this.log(`[scout] failed to send start request: ${err}`, types_1.LogLevel.Error);
                 });
             });
         });
