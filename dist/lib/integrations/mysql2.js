@@ -44,7 +44,7 @@ class MySQL2Integration extends integrations_1.RequireIntegration {
         const integration = this;
         const modifiedCtor = function (uriOrCfg) {
             const conn = new originalCtor(uriOrCfg);
-            integration.logFn("[scout/integrations/mysql2] Creating connection to Mysql db...", types_1.LogLevel.Debug);
+            integration.logFn("[scout/integrations/mysql2] Creating connection to Mysql db...", types_1.LogLevel.Trace);
             // Add the scout integration symbol so we know the connection itself has been
             // created by our shimmed createConnection
             conn[integrations_1.scoutIntegrationSymbol] = integration;
@@ -86,7 +86,7 @@ class MySQL2Integration extends integrations_1.RequireIntegration {
                 const wrappedCb = (err, results) => {
                     // If an error occurred mark the span as errored and then stop it
                     if (err) {
-                        integration.logFn("[scout/integrations/mysql2] Query failed", types_1.LogLevel.Debug);
+                        integration.logFn("[scout/integrations/mysql2] Query failed", types_1.LogLevel.Trace);
                         if (!span) {
                             cb(err, results);
                             return;
@@ -97,7 +97,7 @@ class MySQL2Integration extends integrations_1.RequireIntegration {
                             .finally(() => cb(err, results));
                         return;
                     }
-                    integration.logFn("[scout/integrations/mysql2] Successfully queried MySQL db", types_1.LogLevel.Debug);
+                    integration.logFn("[scout/integrations/mysql2] Successfully queried MySQL db", types_1.LogLevel.Trace);
                     // If no errors ocurred stop the span and run the user's callback
                     stopSpan();
                     ranFn = true;
@@ -113,7 +113,7 @@ class MySQL2Integration extends integrations_1.RequireIntegration {
                 })
                     // If an error occurred adding the scout context
                     .catch(err => {
-                    integration.logFn("[scout/integrations/mysql2] Internal failure", types_1.LogLevel.Error);
+                    integration.logFn("[scout/integrations/mysql2] Internal failure", types_1.LogLevel.Trace);
                     // If the original function has not been run yet we need to run it at least
                     if (!ranFn) {
                         // Run the function with the original requests

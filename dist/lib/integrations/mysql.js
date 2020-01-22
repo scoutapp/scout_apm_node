@@ -43,7 +43,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
         const integration = this;
         const createConnection = function (uriOrCfg) {
             const connection = original.bind(this)(uriOrCfg);
-            integration.logFn("[scout/integrations/mysql] Creating connection to Mysql db...", types_1.LogLevel.Debug);
+            integration.logFn("[scout/integrations/mysql] Creating connection to Mysql db...", types_1.LogLevel.Trace);
             // Add the scout integration symbol so we know the connection itself has been
             // created by our shimmed createConnection
             connection[integrations_1.scoutIntegrationSymbol] = this;
@@ -91,7 +91,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
                 const wrappedCb = (err, results) => {
                     // If an error occurred mark the span as errored and then stop it
                     if (err) {
-                        integration.logFn("[scout/integrations/mysql] Query failed", types_1.LogLevel.Debug);
+                        integration.logFn("[scout/integrations/mysql] Query failed", types_1.LogLevel.Trace);
                         if (!span) {
                             cb(err, results);
                             return;
@@ -120,7 +120,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
                 })
                     // If an error occurred adding the scout context
                     .catch(err => {
-                    integration.logFn("[scout/integrations/mysql] Internal failure", types_1.LogLevel.Error);
+                    integration.logFn("[scout/integrations/mysql] Internal failure", types_1.LogLevel.Trace);
                     // If the original function has not been run yet we need to run it at least
                     if (!ranFn) {
                         // Run the function with the original requests

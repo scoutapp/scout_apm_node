@@ -51,13 +51,13 @@ export class PGIntegration extends RequireIntegration {
         const integration = this;
 
         const fn: any = function(this: typeof Client, userCallback?: (err?: Error) => void) {
-            integration.logFn("[scout/integrations/pg] Connecting to Postgres db...", LogLevel.Debug);
+            integration.logFn("[scout/integrations/pg] Connecting to Postgres db...", LogLevel.Trace);
 
             // If a callback was specified we need to do callback version
             if (userCallback) {
                 return original.bind(this)(err => {
                     if (err) {
-                        integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", LogLevel.Error);
+                        integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", LogLevel.Trace);
                         userCallback(err);
                         return;
                     }
@@ -69,10 +69,10 @@ export class PGIntegration extends RequireIntegration {
             // Promise version
             return original.bind(this)()
                 .then(() => {
-                    integration.logFn("[scout/integrations/pg] Successfully connected to Postgres db", LogLevel.Debug);
+                    integration.logFn("[scout/integrations/pg] Successfully connected to Postgres db", LogLevel.Trace);
                 })
                 .catch(err => {
-                    integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", LogLevel.Error);
+                    integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", LogLevel.Trace);
                     // Re-throw error
                     throw err;
                  });
@@ -92,7 +92,7 @@ export class PGIntegration extends RequireIntegration {
 
         // By the time this function runs we *should* have a scout instance set.
         const fn: any = function(this: typeof Client, config, values, userCallback) {
-            integration.logFn("[scout/integrations/pg] Querying Postgres db...", LogLevel.Debug);
+            integration.logFn("[scout/integrations/pg] Querying Postgres db...", LogLevel.Trace);
 
             // If no scout instsance or the query is undefined go straight to pg
             if (!integration.scout || !config) {
@@ -112,7 +112,7 @@ export class PGIntegration extends RequireIntegration {
                 const span = integration.scout.getCurrentSpan();
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {
-                    integration.logFn("[scout/integrations/pg] Unable to get current span", LogLevel.Warn);
+                    integration.logFn("[scout/integrations/pg] Unable to get current span", LogLevel.Debug);
                     return original.bind(this)(config, values, userCallback);
                 }
 
@@ -122,11 +122,11 @@ export class PGIntegration extends RequireIntegration {
                 // Run pg's query function
                     .then(() => original.bind(this)(config, values, userCallback))
                     .then(res => {
-                        integration.logFn("[scout/integrations/pg] Successfully queried Postgres db", LogLevel.Debug);
+                        integration.logFn("[scout/integrations/pg] Successfully queried Postgres db", LogLevel.Trace);
                         return res;
                     })
                     .catch(err => {
-                        integration.logFn("[scout/integrations/pg] Query failed", LogLevel.Error);
+                        integration.logFn("[scout/integrations/pg] Query failed", LogLevel.Trace);
 
                         // Mark the span as errored
                         if (span) { span.addContext([{name: "error", value: "true"}]); }
