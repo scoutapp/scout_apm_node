@@ -1,9 +1,7 @@
-import * as path from "path";
 import * as Hook from "require-in-the-middle";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
-import { Scout } from "../scout";
-import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
-import * as Constants from "../constants";
+import { LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import * as Mustache from "mustache";
 
 /**
  * Integration for the mustache package
@@ -38,8 +36,7 @@ export class MustacheIntegration extends RequireIntegration {
         // Check if the shim has already been performed
         if (scoutIntegrationSymbol in mustacheExport) { return; }
 
-        this.shimMustacheRender(mustacheExport);
-        this.shimMustacheRenderFile(mustacheExport);
+        this.shimMustacheClass(mustacheExport);
 
         return mustacheExport;
     }
@@ -49,52 +46,26 @@ export class MustacheIntegration extends RequireIntegration {
      *
      * @param {any} mustacheExport - mustache's export
      */
-    private shimMustacheRender(mustacheExport: any): any {
+    private shimMustacheClass(mustacheExport: any): any {
         const originalFn = mustacheExport.render;
         const integration = this;
 
-        const render = (src, options, callback) => {
+        const render = function(this: typeof Mustache) {
             const originalArgs = arguments;
-            integration.logFn("[scout/integrations/mustache] rendering...", LogLevel.Debug);
+            integration.logFn("[scout/integrations/mustache] rendering...", LogLevel.Trace);
 
             // If no scout instance is available then run the function normally
-            if (!integration.scout) { return originalFn(src, options, callback); }
+            if (!integration.scout) { return originalFn.apply(this, originalArgs); }
 
             return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
                 span.addContextSync([{name: ScoutContextNames.Name, value: "<string>"}]);
-                return originalFn(src, options, callback);
+                return originalFn.apply(this, originalArgs);
             });
         };
 
         mustacheExport.render = render;
         return mustacheExport;
     }
-
-    /**
-     * Shim for mustache's `renderFile` function
-     *
-     * @param {any} mustacheExport - mustache's export
-     */
-    private shimMustacheRenderFile(mustacheExport: any): any {
-        const originalFn = mustacheExport.renderFile;
-        const integration = this;
-
-        const renderFile = (path, options, callback) => {
-            integration.logFn(`[scout/integrations/mustache] rendering file [${path}]...`, LogLevel.Debug);
-
-            // If no scout instance is available then run the function normally
-            if (!integration.scout) { return originalFn(path, options, callback); }
-
-            return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{name: ScoutContextNames.Name, value: path}]);
-                return originalFn(path, options, callback);
-            });
-        };
-
-        mustacheExport.renderFile = renderFile;
-        return mustacheExport;
-    }
-
 }
 
 export default new MustacheIntegration();

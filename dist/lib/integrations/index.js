@@ -4,6 +4,7 @@ const pg_1 = require("./pg");
 const mysql_1 = require("./mysql");
 const mysql2_1 = require("./mysql2");
 const pug_1 = require("./pug");
+const mustache_1 = require("./mustache");
 const integrations_1 = require("../types/integrations");
 function getIntegrationForPackage(pkg) {
     switch (pkg) {
@@ -11,6 +12,7 @@ function getIntegrationForPackage(pkg) {
         case mysql_1.default.getPackageName(): return mysql_1.default;
         case mysql2_1.default.getPackageName(): return mysql2_1.default;
         case pug_1.default.getPackageName(): return pug_1.default;
+        case mustache_1.default.getPackageName(): return mustache_1.default;
         default: return integrations_1.doNothingRequireIntegration;
     }
 }

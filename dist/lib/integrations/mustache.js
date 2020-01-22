@@ -34,8 +34,7 @@ class MustacheIntegration extends integrations_1.RequireIntegration {
         if (integrations_1.scoutIntegrationSymbol in mustacheExport) {
             return;
         }
-        this.shimMustacheRender(mustacheExport);
-        this.shimMustacheRenderFile(mustacheExport);
+        this.shimMustacheClass(mustacheExport);
         return mustacheExport;
     }
     /**
@@ -43,44 +42,22 @@ class MustacheIntegration extends integrations_1.RequireIntegration {
      *
      * @param {any} mustacheExport - mustache's export
      */
-    shimMustacheRender(mustacheExport) {
+    shimMustacheClass(mustacheExport) {
         const originalFn = mustacheExport.render;
         const integration = this;
-        const render = (src, options, callback) => {
+        const render = function () {
             const originalArgs = arguments;
-            integration.logFn("[scout/integrations/mustache] rendering...", types_1.LogLevel.Debug);
+            integration.logFn("[scout/integrations/mustache] rendering...", types_1.LogLevel.Trace);
             // If no scout instance is available then run the function normally
             if (!integration.scout) {
-                return originalFn(src, options, callback);
+                return originalFn.apply(this, originalArgs);
             }
             return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, (span) => {
                 span.addContextSync([{ name: types_1.ScoutContextNames.Name, value: "<string>" }]);
-                return originalFn(src, options, callback);
+                return originalFn.apply(this, originalArgs);
             });
         };
         mustacheExport.render = render;
-        return mustacheExport;
-    }
-    /**
-     * Shim for mustache's `renderFile` function
-     *
-     * @param {any} mustacheExport - mustache's export
-     */
-    shimMustacheRenderFile(mustacheExport) {
-        const originalFn = mustacheExport.renderFile;
-        const integration = this;
-        const renderFile = (path, options, callback) => {
-            integration.logFn(`[scout/integrations/mustache] rendering file [${path}]...`, types_1.LogLevel.Debug);
-            // If no scout instance is available then run the function normally
-            if (!integration.scout) {
-                return originalFn(path, options, callback);
-            }
-            return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{ name: types_1.ScoutContextNames.Name, value: path }]);
-                return originalFn(path, options, callback);
-            });
-        };
-        mustacheExport.renderFile = renderFile;
         return mustacheExport;
     }
 }

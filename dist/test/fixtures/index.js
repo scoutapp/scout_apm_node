@@ -25,3 +25,15 @@ CREATE TABLE kv(
 );`,
     INSERT_STRING_KV_TABLE: "INSERT INTO kv (key, value) VALUES ($1, $2)",
 };
+exports.MUSTACHE_TEMPLATES = {
+    HELLO_WORLD: {
+        template: "Hello world",
+        defaultData: {},
+        defaultResult: "Hello world",
+    },
+    HELLO_WORLD_INTERPOLATED: {
+        template: "Hello {{name}}",
+        defaultData: { name: "world" },
+        defaultResult: "Hello world",
+    },
+};

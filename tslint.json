@@ -14,6 +14,7 @@
       "no-namespace": false,
       "no-var-requires": false,
       "member-ordering": false,
+      "only-arrow-functions": false,
       "object-literal-sort-keys": false
     },
     "rulesDirectory": []
