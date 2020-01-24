@@ -119,6 +119,7 @@ var ScoutContextNames;
     ScoutContextNames["Error"] = "error";
     ScoutContextNames["Name"] = "name";
     ScoutContextNames["URL"] = "url";
+    ScoutContextNames["Timeout"] = "timeout";
 })(ScoutContextNames = exports.ScoutContextNames || (exports.ScoutContextNames = {}));
 var ScoutSpanOperation;
 (function (ScoutSpanOperation) {

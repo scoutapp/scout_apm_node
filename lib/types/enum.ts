@@ -128,6 +128,7 @@ export enum ScoutContextNames {
     Error = "error",
     Name = "name",
     URL = "url",
+    Timeout = "timeout",
 }
 
 export enum ScoutSpanOperation {

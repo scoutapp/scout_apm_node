@@ -2,7 +2,7 @@ import * as path from "path";
 import * as Hook from "require-in-the-middle";
 import { Socket } from "net";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
-import { Scout } from "../scout";
+import { Scout, DoneCallback, ScoutSpan } from "../scout";
 import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
@@ -46,13 +46,17 @@ export class NetIntegration extends RequireIntegration {
      * @param {any} netExport - net's export
      */
     private shimNetConnect(netExport: any): any {
-        const originalFn = netExport.connect;
+        const originalFn = netExport.createConnection;
         const integration = this;
 
-        const connect = () => {
+        const createConnection = function() {
             const originalArgs = arguments;
             const originalArgsArr = Array.from(originalArgs);
             integration.logFn("[scout/integrations/net] connecting...", LogLevel.Debug);
+
+            // If no scout instance is available then run the function normally
+            console.log("integration.scout?", integration.scout);
+            if (!integration.scout) { return originalFn.apply(null, originalArgs); }
 
             // Set up the modified callback
             const cbIdx = originalArgsArr.findIndex(a => typeof a === "function");
@@ -63,6 +67,20 @@ export class NetIntegration extends RequireIntegration {
 
             // TODO: Fish a method out of the options/request
             // If it's a unix connection then quit early
+            const url = "url";
+            const method = "get";
+            const opName = `HTTP/${method.toUpperCase()}`;
+
+            let stopSpan: () => void;
+            let span: ScoutSpan;
+            integration.scout.instrument(opName, (stop, spanAndRequest) => {
+                span.addContext([{name: ScoutContextNames.URL, value: url}]);
+                // Start an instrumentation, but don't finish it
+                stopSpan = stop;
+                if (!spanAndRequest.span) { return; }
+                span = spanAndRequest.span;
+            });
+            console.log("STARTED INSTRUMENT");
 
             // Build a modified callback to use
             const modifiedCb = () => {
@@ -87,30 +105,35 @@ export class NetIntegration extends RequireIntegration {
             // Create the client
             client = originalFn.apply(null, originalArgsArr);
 
+            // If the request times out at any point add the context to the span
             client.once("timeout", () => {
-                // Add timeout tag
+                span.addContext([{name: ScoutContextNames.Timeout, value: "true"}]);
+            });
+
+            client.once("end", () => {
+                console.log("END?!");
             });
 
             // NOTE: this is when both the other side has sent a FIN and our side has sent a FIN
             client.once("close", (hadError) => {
+                let markError = () => Promise.resolve(span);
+
                 // Add error tag, if hadError is true
-                // Close the span
+                if (hadError) {
+                    markError = () => span.addContext([{name: ScoutContextNames.Error, value: "true"}]);
+                }
+
+                console.log("CLOSING!");
+
+                // Close the span, marking the error if necessary
+                markError()
+                    .then(() => stopSpan());
             });
 
             return client;
-
-            // // Set up
-
-            // // If no scout instance is available then run the function normally
-            // if (!integration.scout) { return originalFn(src, options, callback); }
-
-            // return integration.scout.instrument(ScoutSpanOperation.TemplateConnect, (spanDone, {span}) => {
-            //     span.addContextSync([{name: ScoutContextNames.Name, value: "<string>"}]);
-            //     return originalFn(src, options, callback);
-            // });
         };
 
-        netExport.connect = connect;
+        netExport.createConnection = createConnection;
         return netExport;
     }
 

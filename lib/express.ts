@@ -3,6 +3,7 @@ import {
     LogFn,
     LogLevel,
     ScoutConfiguration,
+    ScoutContextNames,
     ScoutTag,
     buildScoutConfiguration,
     consoleLogFn,
@@ -139,7 +140,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                                 setTimeout(() => {
                                     // Add context to indicate request as timed out
                                     scoutReq
-                                        .addContext([{name: "timeout", value: "true"}])
+                                        .addContext([{name: ScoutContextNames.Timeout, value: "true"}])
                                         .then(() => scoutReq.finishAndSend())
                                         .then(() => finishTransaction())
                                         .catch(() => {

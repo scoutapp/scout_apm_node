@@ -1,17 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const lib_1 = require("../../lib");
-const test = require("tape");
-const request = require("supertest");
-const TestUtil = require("../util");
-const integrations_1 = require("../../lib/types/integrations");
-const express_1 = require("../../lib/express");
-const types_1 = require("../../lib/types");
 // The hook for net has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
 lib_1.setupRequireIntegrations(["net"]);
 // net needs to be imported this way to trigger the require integration
 const net = require("net");
+const test = require("tape");
+const TestUtil = require("../util");
+const integrations_1 = require("../../lib/types/integrations");
+const express_1 = require("../../lib/express");
+const types_1 = require("../../lib/types");
 test("the shim works", t => {
     t.assert(integrations_1.scoutIntegrationSymbol in net, "net export has the integration symbol");
     t.end();
@@ -50,13 +49,14 @@ test("net connections are captured", t => {
         .setup()
         // Start a scout transaction & request a string
         .then(() => scout.transaction("Controller/external-request-test", (finishRequest) => {
-        // Send a request to the application
-        return request(app)
-            .get("/")
-            .expect("Content-Type", /json/)
-            .expect(200)
-            .then(res => t.assert(res, "request sent"))
-            .then(() => finishRequest());
+        return finishRequest();
+        // // Send a request to the application
+        // return request(app)
+        //     .get("/")
+        //     .expect("Content-Type", /json/)
+        //     .expect(200)
+        //     .then(res => t.assert(res, "request sent"))
+        //     .then(() => finishRequest());
     }))
         // If an error occurs, shutdown scout
         .catch(err => TestUtil.shutdownScout(t, scout, err));
