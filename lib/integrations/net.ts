@@ -49,7 +49,7 @@ export class NetIntegration extends RequireIntegration {
         const originalFn = netExport.connect;
         const integration = this;
 
-        const connect = function() {
+        const connect = () => {
             const originalArgs = arguments;
             const originalArgsArr = Array.from(originalArgs);
             integration.logFn("[scout/integrations/net] connecting...", LogLevel.Debug);

@@ -1,11 +1,3 @@
-import * as test from "tape";
-import * as request from "supertest";
-import { Application } from "express";
-
-import * as TestUtil from "../util";
-import * as Constants from "../../lib/constants";
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
-import { scoutMiddleware, ApplicationWithScout } from "../../lib/express";
 import {
     Scout,
     ScoutEvent,
@@ -14,6 +6,15 @@ import {
     buildScoutConfiguration,
     setupRequireIntegrations,
 } from "../../lib";
+
+import * as test from "tape";
+import * as request from "supertest";
+import { Application } from "express";
+
+import * as TestUtil from "../util";
+import * as Constants from "../../lib/constants";
+import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { scoutMiddleware, ApplicationWithScout } from "../../lib/express";
 
 import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
 

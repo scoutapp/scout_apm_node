@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const lib_1 = require("../../lib");
 const test = require("tape");
 const request = require("supertest");
 const TestUtil = require("../util");
 const integrations_1 = require("../../lib/types/integrations");
 const express_1 = require("../../lib/express");
-const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
 // The hook for net has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code

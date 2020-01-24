@@ -41,7 +41,7 @@ class NetIntegration extends integrations_1.RequireIntegration {
     shimNetConnect(netExport) {
         const originalFn = netExport.connect;
         const integration = this;
-        const connect = function () {
+        const connect = () => {
             const originalArgs = arguments;
             const originalArgsArr = Array.from(originalArgs);
             integration.logFn("[scout/integrations/net] connecting...", types_1.LogLevel.Debug);
