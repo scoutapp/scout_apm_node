@@ -127,9 +127,16 @@ export enum ScoutContextNames {
     DBStatement = "db.statement",
     Error = "error",
     Name = "name",
+    URL = "url",
+    Timeout = "timeout",
 }
 
 export enum ScoutSpanOperation {
     SQLQuery = "SQL/Query",
     TemplateRender = "Template/Render",
+    HTTPGet = "HTTP/GET",
+    HTTPPost = "HTTP/POST",
+    HTTPDelete = "HTTP/DELETE",
+    HTTPPut = "HTTP/PUT",
+    HTTPPatch = "HTTP/PATCH",
 }

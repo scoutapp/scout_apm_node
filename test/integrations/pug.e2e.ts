@@ -65,7 +65,7 @@ test("pug rendering a string is captured", t => {
     scout
         .setup()
     // Start a scout transaction & render a string
-        .then(() => scout.transactionSync("Controller/render-string-test", () => {
+        .then(() => scout.transactionSync("Controller/pug-render-string-test", () => {
             const rendered = pug.render("h1 test");
             t.equals(rendered, "<h1>test</h1>");
         }))
@@ -110,7 +110,7 @@ test("pug rendering a file is captured", t => {
     scout
         .setup()
     // Start a scout transaction & render a string
-        .then(() => scout.transactionSync("Controller/render-string-test", () => {
+        .then(() => scout.transactionSync("Controller/pug-render-file-test", () => {
             const rendered = pug.renderFile(FILE_PATHS.PUG_HTML5_BOILERPLATE);
             t.assert(rendered, "file rendering completed");
         }))

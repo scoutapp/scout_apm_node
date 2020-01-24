@@ -100,11 +100,7 @@ class Scout extends events_1.EventEmitter {
             // Send the application metadata
             .then(() => this.sendAppMetadataEvent())
             // Set up integration(s)
-            .then(() => {
-            Object.keys(index_1.EXPORT_BAG)
-                .map(packageName => integrations_1.getIntegrationForPackage(packageName))
-                .forEach(integration => integration.setScoutInstance(this));
-        })
+            .then(() => this.setupIntegrations())
             .then(() => this);
     }
     shutdown() {
@@ -302,6 +298,12 @@ class Scout extends events_1.EventEmitter {
         catch (_a) {
             return null;
         }
+    }
+    // Setup integrations
+    setupIntegrations() {
+        Object.keys(index_1.EXPORT_BAG)
+            .map(packageName => integrations_1.getIntegrationForPackage(packageName))
+            .forEach(integration => integration.setScoutInstance(this));
     }
     /**
      * Attempt to clear an async name space entry

@@ -65,7 +65,7 @@ test("ejs rendering a string is captured", t => {
     scout
         .setup()
     // Start a scout transaction & render a string
-        .then(() => scout.transactionSync("Controller/render-string-test", () => {
+        .then(() => scout.transactionSync("Controller/ejs-render-string-test", () => {
             const rendered = ejs.render("<h1><%= 'test' %></h1>");
             t.equals(rendered, "<h1>test</h1>");
 
@@ -114,7 +114,7 @@ test("ejs rendering a file is captured", t => {
     scout
         .setup()
     // Start a scout transaction & render a string
-        .then(() => scout.transaction("Controller/render-string-test", (finishTransaction, {request}) => {
+        .then(() => scout.transaction("Controller/ejs-render-file-test", (finishTransaction, {request}) => {
             ejs.renderFile(FILE_PATHS.EJS_HTML5_BOILERPLATE, {title: "dynamic"})
                 .then(rendered => {
                     t.assert(rendered, "file rendering completed");

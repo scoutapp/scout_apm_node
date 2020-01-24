@@ -118,9 +118,16 @@ var ScoutContextNames;
     ScoutContextNames["DBStatement"] = "db.statement";
     ScoutContextNames["Error"] = "error";
     ScoutContextNames["Name"] = "name";
+    ScoutContextNames["URL"] = "url";
+    ScoutContextNames["Timeout"] = "timeout";
 })(ScoutContextNames = exports.ScoutContextNames || (exports.ScoutContextNames = {}));
 var ScoutSpanOperation;
 (function (ScoutSpanOperation) {
     ScoutSpanOperation["SQLQuery"] = "SQL/Query";
     ScoutSpanOperation["TemplateRender"] = "Template/Render";
+    ScoutSpanOperation["HTTPGet"] = "HTTP/GET";
+    ScoutSpanOperation["HTTPPost"] = "HTTP/POST";
+    ScoutSpanOperation["HTTPDelete"] = "HTTP/DELETE";
+    ScoutSpanOperation["HTTPPut"] = "HTTP/PUT";
+    ScoutSpanOperation["HTTPPatch"] = "HTTP/PATCH";
 })(ScoutSpanOperation = exports.ScoutSpanOperation || (exports.ScoutSpanOperation = {}));

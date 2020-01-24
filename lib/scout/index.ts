@@ -181,11 +181,7 @@ export class Scout extends EventEmitter {
         // Send the application metadata
             .then(() => this.sendAppMetadataEvent())
         // Set up integration(s)
-            .then(() => {
-                Object.keys(EXPORT_BAG)
-                    .map(packageName => getIntegrationForPackage(packageName))
-                    .forEach(integration => integration.setScoutInstance(this));
-            })
+            .then(() => this.setupIntegrations())
             .then(() => this);
     }
 
@@ -427,6 +423,13 @@ export class Scout extends EventEmitter {
         } catch {
             return null;
         }
+    }
+
+    // Setup integrations
+    public setupIntegrations() {
+        Object.keys(EXPORT_BAG)
+            .map(packageName => getIntegrationForPackage(packageName))
+            .forEach(integration => integration.setScoutInstance(this));
     }
 
     /**
