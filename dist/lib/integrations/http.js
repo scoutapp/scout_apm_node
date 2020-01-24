@@ -79,11 +79,11 @@ class HttpIntegration extends integrations_1.RequireIntegration {
                     ":",
                     urlOrObject.port,
                     urlOrObject.path,
-                ].join('') || "Unknown";
+                ].join("") || "Unknown";
             }
             // Start a scout instrumentation and pull out the stopSpan
             const opName = `HTTP/${method.toUpperCase()}`;
-            const request = originalFn.apply(this, originalArgsArr);
+            // Start an asynchronous instrumentation and pull particulars from it
             let stopSpan;
             let reqSpan;
             integration.scout.instrument(opName, (stop, { span }) => {
@@ -94,6 +94,8 @@ class HttpIntegration extends integrations_1.RequireIntegration {
                 reqSpan = span;
                 reqSpan.addContext([{ name: types_1.ScoutContextNames.URL, value: url }]);
             });
+            // Start the actual request
+            const request = originalFn.apply(this, originalArgsArr);
             // If the request times out at any point add the context to the span
             request.once("timeout", () => {
                 reqSpan.addContext([{ name: types_1.ScoutContextNames.Timeout, value: "true" }]);

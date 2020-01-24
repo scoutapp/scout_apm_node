@@ -1,3 +1,7 @@
+import * as test from "tape";
+import * as request from "supertest";
+import { Application } from "express";
+
 import {
     Scout,
     ScoutEvent,
@@ -7,17 +11,6 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-// The hook for http has to be triggered this way in a typescript context
-// since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
-setupRequireIntegrations(["http"], );
-
-// http needs to be imported this way to trigger the require integration
-const http = require("http");
-
-import * as test from "tape";
-import * as request from "supertest";
-import { Application } from "express";
-
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 import { scoutIntegrationSymbol } from "../../lib/types/integrations";
@@ -26,6 +19,13 @@ import { scoutMiddleware, ApplicationWithScout } from "../../lib/express";
 import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
 
 import { FILE_PATHS } from "../fixtures";
+
+// The hook for http has to be triggered this way in a typescript context
+// since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
+setupRequireIntegrations(["http"]);
+
+// http needs to be imported this way to trigger the require integration
+const http = require("http");
 
 test("the shim works", t => {
     t.assert(scoutIntegrationSymbol in http, "http export has the integration symbol");
@@ -65,7 +65,7 @@ test("http connections are captured", t => {
                 }
 
                 // Since we don't know what port superagent will assign the request we just check if it's there
-                const urlTag = requestSpan.getContextValue(ScoutContextNames.URL)
+                const urlTag = requestSpan.getContextValue(ScoutContextNames.URL);
                 t.assert(urlTag, `url tag is present [${urlTag}]`);
             })
             .then(() => TestUtil.shutdownScout(t, scout))

@@ -88,16 +88,15 @@ export class HttpIntegration extends RequireIntegration {
                     ":",
                     urlOrObject.port,
                     urlOrObject.path,
-                ].join('') || "Unknown";
+                ].join("") || "Unknown";
             }
 
             // Start a scout instrumentation and pull out the stopSpan
             const opName = `HTTP/${method.toUpperCase()}`;
 
-            const request: ClientRequest = originalFn.apply(this, originalArgsArr);
+            // Start an asynchronous instrumentation and pull particulars from it
             let stopSpan: () => void;
             let reqSpan: ScoutSpan;
-
             integration.scout.instrument(opName, (stop, {span}) => {
                 stopSpan = stop;
 
@@ -105,7 +104,10 @@ export class HttpIntegration extends RequireIntegration {
 
                 reqSpan = span;
                 reqSpan.addContext([{name: ScoutContextNames.URL, value: url}]);
-            })
+            });
+
+            // Start the actual request
+            const request: ClientRequest = originalFn.apply(this, originalArgsArr);
 
             // If the request times out at any point add the context to the span
             request.once("timeout", () => {

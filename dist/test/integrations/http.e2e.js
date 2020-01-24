@@ -1,17 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const test = require("tape");
+const request = require("supertest");
 const lib_1 = require("../../lib");
+const TestUtil = require("../util");
+const integrations_1 = require("../../lib/types/integrations");
+const express_1 = require("../../lib/express");
+const types_1 = require("../../lib/types");
 // The hook for http has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
 lib_1.setupRequireIntegrations(["http"]);
 // http needs to be imported this way to trigger the require integration
 const http = require("http");
-const test = require("tape");
-const request = require("supertest");
-const TestUtil = require("../util");
-const integrations_1 = require("../../lib/types/integrations");
-const express_1 = require("../../lib/express");
-const types_1 = require("../../lib/types");
 test("the shim works", t => {
     t.assert(integrations_1.scoutIntegrationSymbol in http, "http export has the integration symbol");
     t.end();
