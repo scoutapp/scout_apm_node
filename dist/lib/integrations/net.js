@@ -42,13 +42,13 @@ class NetIntegration extends integrations_1.RequireIntegration {
         const originalFn = netExport.createConnection;
         const integration = this;
         const createConnection = function () {
+            const originalThis = this;
             const originalArgs = arguments;
             const originalArgsArr = Array.from(originalArgs);
             integration.logFn("[scout/integrations/net] connecting...", types_1.LogLevel.Debug);
             // If no scout instance is available then run the function normally
-            console.log("integration.scout?", integration.scout);
             if (!integration.scout) {
-                return originalFn.apply(null, originalArgs);
+                return originalFn.apply(originalThis, originalArgs);
             }
             // Set up the modified callback
             const cbIdx = originalArgsArr.findIndex(a => typeof a === "function");
@@ -91,7 +91,7 @@ class NetIntegration extends integrations_1.RequireIntegration {
                 originalArgsArr.push(modifiedCb);
             }
             // Create the client
-            client = originalFn.apply(null, originalArgsArr);
+            client = originalFn.apply(originalThis, originalArgsArr);
             // If the request times out at any point add the context to the span
             client.once("timeout", () => {
                 span.addContext([{ name: types_1.ScoutContextNames.Timeout, value: "true" }]);
