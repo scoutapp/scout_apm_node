@@ -1,7 +1,7 @@
 {
-  "name": "scout-apm-client",
+  "name": "scout-apm",
   "version": "0.1.0",
-  "description": "Scout APM Node Client",
+  "description": "Scout APM Node Agent",
   "main": "dist/lib/index.js",
   "repository": "git@github.com:scoutapp/scout_apm_node.git",
   "author": "vados-scout <vados+scout@vadosware.io>",
@@ -31,7 +31,9 @@
     "test-integration-pg": "./node_modules/.bin/tape 'dist/test/integrations/pg.e2e.js'",
     "test-integration-mysql": "./node_modules/.bin/tape 'dist/test/integrations/mysql.e2e.js'",
     "test-integration-mysql2": "./node_modules/.bin/tape 'dist/test/integrations/mysql2.e2e.js'",
-    "test-integration-pug": "./node_modules/.bin/tape 'dist/test/integrations/pug.e2e.js'"
+    "test-integration-pug": "./node_modules/.bin/tape 'dist/test/integrations/pug.e2e.js'",
+    "test-integration-mustache": "./node_modules/.bin/tape 'dist/test/integrations/mustache.e2e.js'",
+    "test-integration-ejs": "./node_modules/.bin/tape 'dist/test/integrations/ejs.e2e.js'"
   },
   "types": "index.d.ts",
   "files": [
