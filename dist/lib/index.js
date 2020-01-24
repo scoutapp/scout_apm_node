@@ -36,8 +36,14 @@ function setupRequireIntegrations(packages) {
 exports.setupRequireIntegrations = setupRequireIntegrations;
 // For pure NodeJS contexts this will be run automatically
 setupRequireIntegrations([
+    // Databases
     "pg",
     "mysql",
     "mysql2",
+    // Templating
     "pug",
+    "mustache",
+    "ejs",
+    // NodeJS internals
+    "net",
 ]);
