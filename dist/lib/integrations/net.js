@@ -4,7 +4,7 @@ const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
-class NodeJSNetIntegration extends integrations_1.RequireIntegration {
+class NetIntegration extends integrations_1.RequireIntegration {
     constructor() {
         super(...arguments);
         this.packageName = "net";
@@ -16,7 +16,7 @@ class NodeJSNetIntegration extends integrations_1.RequireIntegration {
                 return exports;
             }
             // Make changes to the net package to enable integration
-            exports = this.shimNodeJSNet(exports);
+            exports = this.shimNet(exports);
             // Save the exported package in the exportBag for Scout to use later
             exportBag[this.getPackageName()] = exports;
             // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
@@ -25,12 +25,12 @@ class NodeJSNetIntegration extends integrations_1.RequireIntegration {
             return exports;
         });
     }
-    shimNodeJSNet(netExport) {
+    shimNet(netExport) {
         // Check if the shim has already been performed
         if (integrations_1.scoutIntegrationSymbol in netExport) {
             return;
         }
-        this.shimNodeJSNetConnect(netExport);
+        this.shimNetConnect(netExport);
         return netExport;
     }
     /**
@@ -38,7 +38,7 @@ class NodeJSNetIntegration extends integrations_1.RequireIntegration {
      *
      * @param {any} netExport - net's export
      */
-    shimNodeJSNetConnect(netExport) {
+    shimNetConnect(netExport) {
         const originalFn = netExport.connect;
         const integration = this;
         const connect = function () {
@@ -50,6 +50,8 @@ class NodeJSNetIntegration extends integrations_1.RequireIntegration {
             // If a callback wasn't provided use a function that does nothing
             const originalCb = cbIdx >= 0 ? originalArgsArr[cbIdx] : () => undefined;
             let client;
+            // TODO: Fish a method out of the options/request
+            // If it's a unix connection then quit early
             // Build a modified callback to use
             const modifiedCb = () => {
                 // if somehow the client is not set by this point exit early
@@ -70,19 +72,12 @@ class NodeJSNetIntegration extends integrations_1.RequireIntegration {
             }
             // Create the client
             client = originalFn.apply(null, originalArgsArr);
-            // Hook up handlers
-            client.once("end", () => {
-                // Close the span
-            });
             client.once("timeout", () => {
                 // Add timeout tag
             });
-            client.once("error", () => {
-                // Add error tag
-                // Close the span
-            });
-            client.once("close", () => {
-                // Add error tag
+            // NOTE: this is when both the other side has sent a FIN and our side has sent a FIN
+            client.once("close", (hadError) => {
+                // Add error tag, if hadError is true
                 // Close the span
             });
             return client;
@@ -98,5 +93,5 @@ class NodeJSNetIntegration extends integrations_1.RequireIntegration {
         return netExport;
     }
 }
-exports.NodeJSNetIntegration = NodeJSNetIntegration;
-exports.default = new NodeJSNetIntegration();
+exports.NetIntegration = NetIntegration;
+exports.default = new NetIntegration();

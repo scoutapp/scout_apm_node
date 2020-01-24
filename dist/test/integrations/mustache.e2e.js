@@ -43,7 +43,7 @@ test("mustache rendering a string is captured", t => {
     scout
         .setup()
         // Start a scout transaction & render a string
-        .then(() => scout.transactionSync("Controller/render-string-test", () => {
+        .then(() => scout.transactionSync("Controller/mustache-render-string-test", () => {
         const renderedSimple = Mustache.render(simple.template, {});
         t.equals(renderedSimple, "Hello world", "simple template is rendered properly");
         const renderedInterpolated = Mustache.render(interpolated.template, { name: "test" });

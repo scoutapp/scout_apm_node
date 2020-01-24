@@ -7,7 +7,7 @@ import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
-export class NodeJSNetIntegration extends RequireIntegration {
+export class NetIntegration extends RequireIntegration {
     protected readonly packageName: string = "net";
 
     public ritmHook(exportBag: ExportBag): void {
@@ -18,7 +18,7 @@ export class NodeJSNetIntegration extends RequireIntegration {
             }
 
             // Make changes to the net package to enable integration
-            exports = this.shimNodeJSNet(exports);
+            exports = this.shimNet(exports);
 
             // Save the exported package in the exportBag for Scout to use later
             exportBag[this.getPackageName()] = exports;
@@ -31,11 +31,11 @@ export class NodeJSNetIntegration extends RequireIntegration {
         });
     }
 
-    private shimNodeJSNet(netExport: any): any {
+    private shimNet(netExport: any): any {
         // Check if the shim has already been performed
         if (scoutIntegrationSymbol in netExport) { return; }
 
-        this.shimNodeJSNetConnect(netExport);
+        this.shimNetConnect(netExport);
 
         return netExport;
     }
@@ -45,7 +45,7 @@ export class NodeJSNetIntegration extends RequireIntegration {
      *
      * @param {any} netExport - net's export
      */
-    private shimNodeJSNetConnect(netExport: any): any {
+    private shimNetConnect(netExport: any): any {
         const originalFn = netExport.connect;
         const integration = this;
 
@@ -60,6 +60,9 @@ export class NodeJSNetIntegration extends RequireIntegration {
             const originalCb = cbIdx >= 0 ? originalArgsArr[cbIdx] : () => undefined;
 
             let client: Socket;
+
+            // TODO: Fish a method out of the options/request
+            // If it's a unix connection then quit early
 
             // Build a modified callback to use
             const modifiedCb = () => {
@@ -84,22 +87,13 @@ export class NodeJSNetIntegration extends RequireIntegration {
             // Create the client
             client = originalFn.apply(null, originalArgsArr);
 
-            // Hook up handlers
-            client.once("end", () => {
-                // Close the span
-            });
-
             client.once("timeout", () => {
                 // Add timeout tag
             });
 
-            client.once("error", () => {
-                // Add error tag
-                // Close the span
-            });
-
-            client.once("close", () => {
-                // Add error tag
+            // NOTE: this is when both the other side has sent a FIN and our side has sent a FIN
+            client.once("close", (hadError) => {
+                // Add error tag, if hadError is true
                 // Close the span
             });
 
@@ -122,4 +116,4 @@ export class NodeJSNetIntegration extends RequireIntegration {
 
 }
 
-export default new NodeJSNetIntegration();
+export default new NetIntegration();
