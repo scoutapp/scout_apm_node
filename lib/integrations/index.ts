@@ -4,7 +4,7 @@ import mysql2Integration from "./mysql2";
 import pugIntegration from "./pug";
 import mustacheIntegration from "./mustache";
 import ejsIntegration from "./ejs";
-import netIntegration from "./net";
+import httpIntegration from "./http";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
 
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
@@ -15,7 +15,7 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case pugIntegration.getPackageName(): return pugIntegration;
         case mustacheIntegration.getPackageName(): return mustacheIntegration;
         case ejsIntegration.getPackageName(): return ejsIntegration;
-        case netIntegration.getPackageName(): return netIntegration;
+        case httpIntegration.getPackageName(): return httpIntegration;
         default: return doNothingRequireIntegration;
     }
 }

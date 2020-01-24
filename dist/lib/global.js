@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const scout_1 = require("./scout");
+const types_1 = require("./types");
 // Global scout instance
 let SCOUT_INSTANCE;
 function setGlobalScoutInstance(scout) {
@@ -12,3 +14,8 @@ function getGlobalScoutInstance() {
     return SCOUT_INSTANCE;
 }
 exports.getGlobalScoutInstance = getGlobalScoutInstance;
+function getOrCreateGlobalScoutInstance(config) {
+    setGlobalScoutInstance(new scout_1.Scout(config || types_1.buildScoutConfiguration()));
+    return getGlobalScoutInstance().setup();
+}
+exports.getOrCreateGlobalScoutInstance = getOrCreateGlobalScoutInstance;

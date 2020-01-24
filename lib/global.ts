@@ -1,4 +1,6 @@
 import { Scout } from "./scout";
+import { ScoutConfiguration } from "./types";
+import { buildScoutConfiguration } from "./types";
 
 // Global scout instance
 let SCOUT_INSTANCE: Scout;
@@ -11,4 +13,9 @@ export function setGlobalScoutInstance(scout: Scout) {
 
 export function getGlobalScoutInstance() {
     return SCOUT_INSTANCE;
+}
+
+export function getOrCreateGlobalScoutInstance(config?: Partial<ScoutConfiguration>): Promise<Scout> {
+    setGlobalScoutInstance(new Scout(config || buildScoutConfiguration()));
+    return getGlobalScoutInstance().setup();
 }

@@ -64,5 +64,5 @@ setupRequireIntegrations([
     "ejs",
 
     // NodeJS internals
-    "net",
+    "http",
 ]);

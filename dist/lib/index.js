@@ -53,5 +53,5 @@ setupRequireIntegrations([
     "mustache",
     "ejs",
     // NodeJS internals
-    "net",
+    "http",
 ]);

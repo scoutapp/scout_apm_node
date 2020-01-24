@@ -7,12 +7,12 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-// The hook for net has to be triggered this way in a typescript context
+// The hook for http has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
-setupRequireIntegrations(["net"], );
+setupRequireIntegrations(["http"], );
 
-// net needs to be imported this way to trigger the require integration
-const net = require("net");
+// http needs to be imported this way to trigger the require integration
+const http = require("http");
 
 import * as test from "tape";
 import * as request from "supertest";
@@ -28,11 +28,11 @@ import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
 import { FILE_PATHS } from "../fixtures";
 
 test("the shim works", t => {
-    t.assert(scoutIntegrationSymbol in net, "net export has the integration symbol");
+    t.assert(scoutIntegrationSymbol in http, "http export has the integration symbol");
     t.end();
 });
 
-test("net connections are captured", t => {
+test("http connections are captured", t => {
     const config = buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -44,8 +44,13 @@ test("net connections are captured", t => {
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }));
 
+    let expectedReqId: string;
+
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data: ScoutEventRequestSentData) => {
+        if (data.request.id !== expectedReqId)  { return; }
+
+        // Once we know we're looking at the right request, we can remove the listener
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
         // Look up the external request span from the request
@@ -59,11 +64,9 @@ test("net connections are captured", t => {
                     throw new Error("No external request span");
                 }
 
-                t.equals(
-                    requestSpan.getContextValue(ScoutContextNames.URL),
-                    "localhost:<some port>/path",
-                    "url tag is correct",
-                );
+                // Since we don't know what port superagent will assign the request we just check if it's there
+                const urlTag = requestSpan.getContextValue(ScoutContextNames.URL)
+                t.assert(urlTag, `url tag is present [${urlTag}]`);
             })
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => TestUtil.shutdownScout(t, scout, err));
@@ -75,7 +78,12 @@ test("net connections are captured", t => {
     scout
         .setup()
     // Start a scout transaction & request a string
-        .then(() => scout.transaction("Controller/external-request-test", (finishRequest) => {
+        .then(() => scout.transaction("Controller/external-request-test", (finishRequest, info) => {
+            // Record the expected request ID so we can look for it in the listener
+            if (!info || !info.request) { throw new Error("Request not present on transaction start"); }
+
+            expectedReqId = info.request.id;
+
             // Send a request to the application
             return request(app)
                 .get("/")
