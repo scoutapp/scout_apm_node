@@ -9,7 +9,7 @@ To use Scout with your ExpressJS application, enable the middleware:
 ```javascript
 const express = require("express");
 const app = express();
-const scout = require("scout-apm-client").expressMiddleware;
+const scout = require("@scout_apm/scout-apm").expressMiddleware;
 
 // Enable the app-wide scout middleware
 app.use(scout());

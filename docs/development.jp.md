@@ -1,10 +1,10 @@
 # 開発 #
 
-`scout-apm-client`開発についてのドキュメント。
+`@scout_apm/scout-apm`開発についてのドキュメント。
 
 ## タイプスクリプト ##
 
-`scout-apm-client`のコードベースは[タイプスクリプト](https://www.typescriptlang.org/)で書いてます。コードベースのタイプスクリプトのサンプル使ってちょっとだけ手引きが下記に書いてます:
+`@scout_apm/scout-apm`のコードベースは[タイプスクリプト](https://www.typescriptlang.org/)で書いてます。コードベースのタイプスクリプトのサンプル使ってちょっとだけ手引きが下記に書いてます:
 
 ```typescript
 // ストリングのenum

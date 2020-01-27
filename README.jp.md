@@ -1,6 +1,6 @@
 # Scout APM NodeJS クライアント #
 
-[Scout](https://www.scoutapp.com)はNodeJSのアプリのパーフォーマンすを監視するツールです。インストールするとメトリック、リクエスト速度、トランスアクションのデータを`scout-apm-client`で収集して、文責出来ます。
+[Scout](https://www.scoutapp.com)はNodeJSのアプリのパーフォーマンすを監視するツールです。インストールするとメトリック、リクエスト速度、トランスアクションのデータを`@scout_apm/scout-apm`で収集して、文責出来ます。
 
 ## 必須
 
@@ -16,20 +16,20 @@ __Scoutのアカウントが必要です。[Scoutサインアップ](https://apm
 
 ## インストール
 
-`npm`で`scout-apm-client`をインストール出来ます:
+`npm`で`@scout_apm/scout-apm`をインストール出来ます:
 
 ```shell
-$ npm install scout-apm-client
+$ npm install @scout_apm/scout-apm
 ```
 
-## `scout-apm-client` と [`express`](https://expressjs.com/)
+## `@scout_apm/scout-apm` と [`express`](https://expressjs.com/)
 
 Scoutは`express`のアプリケーションミドルウェアでと簡単にリクエストをトレース出来ます:
 
 ```javascript
 const express = require("express");
 const app = express();
-const scout = require("scout-apm-client").expressMiddleware;
+const scout = require("@scout_apm/scout-apm").expressMiddleware;
 
 // ミドルウェアをインストール
 app.use(scout());
@@ -42,12 +42,12 @@ app.get('/', function (req, res) {
 
 設定についての情報は`docs/configuration.md`に書いてます。
 
-## 他のフレームワークやライブラリーと`scout-apm-client` ##
+## 他のフレームワークやライブラリーと`@scout_apm/scout-apm` ##
 
 他のフレームワークやライブラリーをトレースするために`Promise`のAPIが使えます:
 
 ```javascript
-const Scout = require("scout-apm-client").Scout;
+const Scout = require("@scout_apm/scout-apm").Scout;
 const scout = new Scout();
 
 // Scoutオブジェクトのセットアップ
@@ -70,7 +70,7 @@ scout.setup()
 
 ## 開発
 
-`scout-apm-client`を開発したい方は,下記に書いてるコマンドを実行してください:
+`@scout_apm/scout-apm`を開発したい方は,下記に書いてるコマンドを実行してください:
 
 ```shell
 $ make dev-setup
@@ -92,7 +92,7 @@ $ make build-watch # 継続的にtsc実行
 
 ## 寄付 / 開発応援
 
-`scout-apm-client`の開発に参加手引き:
+`@scout_apm/scout-apm`の開発に参加手引き:
 
 0. リポジトリーをクローン(`git clone`)
 1. `make dev-setup` でローカル環境セットアップ
@@ -107,7 +107,7 @@ $ make build-watch # 継続的にtsc実行
 
 ## サポート
 
-`scout-apm-client`に問題が発生したら:
+`@scout_apm/scout-apm`に問題が発生したら:
 
 - [issueを作成してください](https://github.com/scoutapp/scout_apm_node/issues/new)
 - メールでScoutを連絡してください: [support@scoutapp.com](mailto://support@scoutapp.com)

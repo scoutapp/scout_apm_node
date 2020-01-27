@@ -1,6 +1,6 @@
 # テスト #
 
-`scout-apm-client`に含めているテストを全部実行したい場合:
+`@scout_apm/scout-apm`に含めているテストを全部実行したい場合:
 
 ```shell
 $ make test

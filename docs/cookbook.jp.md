@@ -9,7 +9,7 @@
 ```typescript
 const express = require("express");
 const app = express();
-const scout = require("scout-apm-client").expressMiddleware;
+const scout = require("@scout_apm/scout-apm").expressMiddleware;
 
 // ... セットアップコード ...
 
@@ -52,7 +52,7 @@ app.use("/your-endpoint", (req, res) => {
 ```
 const express = require("express");
 const app = express();
-const scout = require("scout-apm-client").expressMiddleware;
+const scout = require("@scout_apm/scout-apm").expressMiddleware;
 
 const pug = require("pug");
 

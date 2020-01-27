@@ -9,7 +9,7 @@ Expensive database operations can be traced in the context of a request (or even
 ```typescript
 const express = require("express");
 const app = express();
-const scout = require("scout-apm-client").expressMiddleware;
+const scout = require("@scout_apm/scout-apm").expressMiddleware;
 
 // ... your other set up code code ...
 
@@ -53,7 +53,7 @@ When using a popular framework like [`pug`](https://github.com/pugjs/pug) and se
 ```
 const express = require("express");
 const app = express();
-const scout = require("scout-apm-client").expressMiddleware;
+const scout = require("@scout_apm/scout-apm").expressMiddleware;
 
 const pug = require("pug");
 
