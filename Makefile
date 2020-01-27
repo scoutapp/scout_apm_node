@@ -128,6 +128,6 @@ TARGET_DIR ?= target
 print-package-filename:
 	@echo "$(PACKAGE_FILENAME)"
 
-package: build
+package: clean build
 	$(YARN) pack
 	mv $(PACKAGE_FILENAME) target/

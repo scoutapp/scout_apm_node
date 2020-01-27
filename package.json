@@ -70,7 +70,6 @@
     "@types/hasha": "3.0.0",
     "@types/mustache": "^4.0.0",
     "@types/on-finished": "2.3.1",
-    "@types/pg": "^7.14.1",
     "@types/pug": "^2.0.4",
     "@types/semver": "5.5.0",
     "@types/tape": "4.2.33",

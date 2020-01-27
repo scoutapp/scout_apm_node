@@ -51,7 +51,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
                             return;
                         }
                         userCallback();
-                    }
+                    },
                 ]);
             }
             // Promise version
