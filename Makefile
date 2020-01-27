@@ -122,9 +122,11 @@ generate-agent-configs:
 #############
 
 PACKAGE_FILENAME ?= $(PACKAGE_NAME)-$(VERSION).tar.gz
+TARGET_DIR ?= target
 
 print-package-filename:
 	@echo "$(PACKAGE_FILENAME)"
 
 package: build
-	tar -cv -f "$(PACKAGE_FILENAME)" dist/index dist/lib
+	@mkdir -p $(TARGET_DIR)
+	tar -cv -f "$(TARGET_DIR)/$(PACKAGE_FILENAME)" dist/index.js dist/lib
