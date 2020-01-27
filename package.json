@@ -1,5 +1,5 @@
 {
-  "name": "scout-apm",
+  "name": "@scout_apm/scout-apm",
   "version": "0.1.0",
   "description": "Scout APM Node Agent",
   "main": "dist/lib/index.js",
@@ -40,7 +40,6 @@
     "index.d.ts",
     "dist/lib/**/*"
   ],
-  "private": true,
   "devDependencies": {
     "@types/express": "^4.16.1",
     "@types/mysql": "^2.15.8",

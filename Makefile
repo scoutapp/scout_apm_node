@@ -21,7 +21,7 @@ DOCKER ?= docker
 GIT_HOOKS_DIR = .dev/git/hooks
 DIST_DIR = dist
 
-PACKAGE_NAME ?= $(shell grep name package.json | cut -d ' ' -f 4 | tr -d ,\")
+PACKAGE_NAME ?= scout-apm
 VERSION ?= $(shell grep version package.json | cut -d ' ' -f 4 | tr -d ,\")
 
 check-tool-entr:
@@ -124,6 +124,7 @@ generate-agent-configs:
 
 PACKAGE_FILENAME ?= $(PACKAGE_NAME)-v$(VERSION).tgz
 TARGET_DIR ?= target
+PACKAGE_PATH ?= $(TARGET_DIR)/$(PACKAGE_FILENAME)
 
 print-package-filename:
 	@echo "$(PACKAGE_FILENAME)"
@@ -134,3 +135,6 @@ print-package-filename:
 package: clean build
 	$(YARN) pack
 	mv $(PACKAGE_FILENAME) target/
+
+publish: clean build
+	$(YARN) publish $(PACKAGE_PATH)
