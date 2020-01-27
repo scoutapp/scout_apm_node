@@ -6,13 +6,13 @@ export declare class PGIntegration extends RequireIntegration {
     /**
      * Shim for pg's `connect` function
      *
-     * @param {Client} client - pg's `Client` class
+     * @param {any} pgExport - pg's exports
      */
     private shimPGConnect;
     /**
      * Shim for pg's `query` function
      *
-     * @param {Client} client - pg's `Client` class
+     * @param {any} pgExport - pg's exports
      */
     private shimPGQuery;
 }

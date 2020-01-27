@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
-const pg_1 = require("pg");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
 class PGIntegration extends integrations_1.RequireIntegration {
@@ -27,38 +26,36 @@ class PGIntegration extends integrations_1.RequireIntegration {
         });
     }
     shimPG(pgExport) {
-        // Check if the shim has already been performed
-        const client = pgExport.Client;
-        if (client[integrations_1.scoutIntegrationSymbol]) {
-            return;
-        }
         // Shim client
-        this.shimPGConnect(client);
-        this.shimPGQuery(client);
+        this.shimPGConnect(pgExport);
+        this.shimPGQuery(pgExport);
     }
     /**
      * Shim for pg's `connect` function
      *
-     * @param {Client} client - pg's `Client` class
+     * @param {any} pgExport - pg's exports
      */
-    shimPGConnect(client) {
-        const original = pg_1.Client.prototype.connect;
+    shimPGConnect(pgExport) {
+        const Client = pgExport.Client;
+        const originalConnectFn = Client.prototype.connect;
         const integration = this;
         const fn = function (userCallback) {
             integration.logFn("[scout/integrations/pg] Connecting to Postgres db...", types_1.LogLevel.Trace);
             // If a callback was specified we need to do callback version
             if (userCallback) {
-                return original.bind(this)(err => {
-                    if (err) {
-                        integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Trace);
-                        userCallback(err);
-                        return;
+                return originalConnectFn.apply(this, [
+                    err => {
+                        if (err) {
+                            integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Trace);
+                            userCallback(err);
+                            return;
+                        }
+                        userCallback();
                     }
-                    userCallback();
-                });
+                ]);
             }
             // Promise version
-            return original.bind(this)()
+            return originalConnectFn.apply(this, [])
                 .then(() => {
                 integration.logFn("[scout/integrations/pg] Successfully connected to Postgres db", types_1.LogLevel.Trace);
             })
@@ -68,22 +65,24 @@ class PGIntegration extends integrations_1.RequireIntegration {
                 throw err;
             });
         };
-        pg_1.Client.prototype.connect = fn;
+        Client.prototype.connect = fn;
     }
     /**
      * Shim for pg's `query` function
      *
-     * @param {Client} client - pg's `Client` class
+     * @param {any} pgExport - pg's exports
      */
-    shimPGQuery(client) {
-        const original = pg_1.Client.prototype.query;
+    shimPGQuery(pgExport) {
+        const Client = pgExport.Client;
+        const Query = pgExport.Query;
+        const originalQueryFn = Client.prototype.query;
         const integration = this;
         // By the time this function runs we *should* have a scout instance set.
         const fn = function (config, values, userCallback) {
             integration.logFn("[scout/integrations/pg] Querying Postgres db...", types_1.LogLevel.Trace);
             // If no scout instsance or the query is undefined go straight to pg
             if (!integration.scout || !config) {
-                return original.bind(this)(config, values, userCallback);
+                return originalQueryFn.apply(this, [config, values, userCallback]);
             }
             // Detect what kind of query is being used
             // https://github.com/brianc/node-postgres/blob/master/packages/pg/lib/client.js
@@ -92,20 +91,20 @@ class PGIntegration extends integrations_1.RequireIntegration {
                 query = config;
             }
             else {
-                query = new pg_1.Query(...arguments);
+                query = new Query(...arguments);
             }
             return integration.scout.instrument(types_1.ScoutSpanOperation.SQLQuery, done => {
                 const span = integration.scout.getCurrentSpan();
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {
                     integration.logFn("[scout/integrations/pg] Unable to get current span", types_1.LogLevel.Debug);
-                    return original.bind(this)(config, values, userCallback);
+                    return originalQueryFn.apply(this, [config, values, userCallback]);
                 }
                 return span
                     // Update span context with the DB statement
                     .addContext([{ name: types_1.ScoutContextNames.DBStatement, value: query.text }])
                     // Run pg's query function
-                    .then(() => original.bind(this)(config, values, userCallback))
+                    .then(() => originalQueryFn.apply(this, [config, values, userCallback]))
                     .then(res => {
                     integration.logFn("[scout/integrations/pg] Successfully queried Postgres db", types_1.LogLevel.Trace);
                     return res;
@@ -122,7 +121,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
                     .finally(() => done());
             });
         };
-        pg_1.Client.prototype.query = fn;
+        Client.prototype.query = fn;
     }
 }
 exports.PGIntegration = PGIntegration;
