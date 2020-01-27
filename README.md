@@ -16,20 +16,20 @@ __A Scout account is required. [Signup for Scout](https://apm.scoutapp.com/users
 
 ## Installing the Scout client
 
-Install `scout-apm-client`:
+Install `@scout_apm/scout-apm`:
 
 ```shell
-$ npm install scout-apm-client
+$ npm install @scout_apm/scout-apm
 ```
 
-## Using `scout-apm-client` with [`express`](https://expressjs.com/)
+## Using `@scout_apm/scout-apm` with [`express`](https://expressjs.com/)
 
 Scout supports use with `express`-based applications by using app-wide middleware:
 
 ```javascript
 const process = require("process");
 const express = require("express");
-const scout = require("scout-apm-client");
+const scout = require("@scout_apm/scout-apm");
 
 // Initialize the express application
 const app = express();
@@ -62,16 +62,16 @@ app.listen(3000);
 
 In addition to specifying `app` and `name` in the `config` object when building the middleware, you may also specify it via ENV by setting `SCOUT_NAME` and `SCOUT_APP` as environment variables for the process.
 
-If your `core-agent` instance is running externally and you do not need `scout-apm-client` to start it, you can set the `coreAgentLaunch` setting to `false` or specify the ENV variable `SCOUT_CORE_AGENT_LAUNCH` with value `false`.
+If your `core-agent` instance is running externally and you do not need `@scout_apm/scout-apm` to start it, you can set the `coreAgentLaunch` setting to `false` or specify the ENV variable `SCOUT_CORE_AGENT_LAUNCH` with value `false`.
 
 For more information on configuration, see `docs/configuration.md`
 
-## Using `scout-apm-client` with other frameworks ##
+## Using `@scout_apm/scout-apm` with other frameworks ##
 
 Scout supports use with any other frameworks through it's `Promise` based API:
 
 ```javascript
-const Scout = require("scout-apm-client").Scout;
+const Scout = require("@scout_apm/scout-apm").Scout;
 
 // Generate configuration for scout with some overrides
 const scoutConfiguration = buildScoutConfiguration({
@@ -102,13 +102,13 @@ For more information on the architecture of the client see `docs/architecture.md
 
 ## Development
 
-To get started developing `scout-apm-client`, run:
+To get started developing `@scout_apm/scout-apm`, run:
 
 ```shell
 $ make dev-setup
 ```
 
-This will set up the necessary environment (including git hooks) to get started hacking on `scout-apm-client`.
+This will set up the necessary environment (including git hooks) to get started hacking on `@scout_apm/scout-apm`.
 
 This repository comes with a few development aids pre-installed, via `make` targets:
 

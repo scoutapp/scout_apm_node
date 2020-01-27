@@ -1,6 +1,6 @@
 # Testing #
 
-`scout-apm-client` comes with a full suite of tests, to run all of them run:
+`@scout_apm/scout-apm` comes with a full suite of tests, to run all of them run:
 
 ```shell
 $ make test

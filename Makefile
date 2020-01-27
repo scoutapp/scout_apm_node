@@ -5,8 +5,9 @@
 				test-dashboard-send test-integrations \
 				ensure-docker-images ensure-pg-docker-image test-integration-pg \
 				ensure-mysql-docker-image test-integration-mysql test-integration-mysql2 \
-				test-integration-pug \
-				generate-agent-configs
+				test-integration-pug test-integration-mustache test-integration-ejs \
+				generate-agent-configs \
+				package print-package-filename
 
 all: install build
 
@@ -18,6 +19,10 @@ TAPE ?= ./node_modules/.bin/tape
 DOCKER ?= docker
 
 GIT_HOOKS_DIR = .dev/git/hooks
+DIST_DIR = dist
+
+PACKAGE_NAME ?= scout-apm
+VERSION ?= $(shell grep version package.json | cut -d ' ' -f 4 | tr -d ,\")
 
 check-tool-entr:
 	@which entr > /dev/null || (echo -e "\n[ERROR] please install entr (http://entrproject.org/)" && exit 1)
@@ -38,7 +43,11 @@ git-hook-install:
 
 dist:
 	@echo -e "=> creating dist directory..."
-	mkdir -p dist
+	mkdir -p $(DIST_DIR)
+
+###############
+# Development #
+###############
 
 dev-setup: dist install git-hook-install
 
@@ -56,6 +65,10 @@ build-watch: dist
 
 clean:
 	rm -rf dist/*
+
+#########
+# Tests #
+#########
 
 test: test-unit test-int test-e2e test-integrations
 
@@ -96,5 +109,32 @@ test-integration-mysql2:
 test-integration-pug:
 	$(YARN) test-integration-pug
 
+test-integration-mustache:
+	$(YARN) test-integration-mustache
+
+test-integration-ejs:
+	$(YARN) test-integration-ejs
+
 generate-agent-configs:
 	$(DEV_SCRIPTS)/generate-download-configs.js lib/download-configs.ts
+
+#############
+# Packaging #
+#############
+
+PACKAGE_FILENAME ?= $(PACKAGE_NAME)-v$(VERSION).tgz
+TARGET_DIR ?= target
+PACKAGE_PATH ?= $(TARGET_DIR)/$(PACKAGE_FILENAME)
+
+print-package-filename:
+	@echo "$(PACKAGE_FILENAME)"
+
+# NOTE: if you try to test this package locally (ex. using `yarn add path/to/scout-apm-<version>.tgz`),
+# you will have to `yarn cache clean` between every update.
+# as one command: `yarn cache clean && yarn remove scout-apm && yarn add path/to/scout-apm-v0.1.0.tgz`
+package: clean build
+	$(YARN) pack
+	mv $(PACKAGE_FILENAME) target/
+
+publish: clean build
+	$(YARN) publish $(PACKAGE_PATH)

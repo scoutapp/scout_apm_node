@@ -1,10 +1,10 @@
 # Development #
 
-Documentation to help development on `scout-apm-client`.
+Documentation to help development on `@scout_apm/scout-apm`.
 
 ## Typescript ##
 
-The `scout-apm-client` codebase uses [Typescript](https://www.typescriptlang.org/), for the added safety and rigor. Typescript is fairly easy to read, but here's a quick introduction with some code from this codebase:
+The `@scout_apm/scout-apm` codebase uses [Typescript](https://www.typescriptlang.org/), for the added safety and rigor. Typescript is fairly easy to read, but here's a quick introduction with some code from this codebase:
 
 ```typescript
 // An string-based enumeration

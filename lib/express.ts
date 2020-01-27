@@ -141,7 +141,6 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                                     // Add context to indicate request as timed out
                                     scoutReq
                                         .addContext([{name: ScoutContextNames.Timeout, value: "true"}])
-                                        .then(() => scoutReq.finishAndSend())
                                         .then(() => finishTransaction())
                                         .catch(() => {
                                             if (opts && opts.logFn) {
@@ -156,10 +155,8 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
                             // Set up handler to act on end of request
                             onFinished(res, (err, res) => {
-                                // Finish & send request
-                                scoutReq
-                                    .finishAndSend()
-                                    .then(() => finishTransaction());
+                                // Finish transaction (which will trigger a send)
+                                finishTransaction();
                             });
 
                             // Start a span for the request

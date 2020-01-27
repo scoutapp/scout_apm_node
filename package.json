@@ -1,7 +1,7 @@
 {
-  "name": "scout-apm-client",
+  "name": "@scout_apm/scout-apm",
   "version": "0.1.0",
-  "description": "Scout APM Node Client",
+  "description": "Scout APM Node Agent",
   "main": "dist/lib/index.js",
   "repository": "git@github.com:scoutapp/scout_apm_node.git",
   "author": "vados-scout <vados+scout@vadosware.io>",
@@ -31,14 +31,15 @@
     "test-integration-pg": "./node_modules/.bin/tape 'dist/test/integrations/pg.e2e.js'",
     "test-integration-mysql": "./node_modules/.bin/tape 'dist/test/integrations/mysql.e2e.js'",
     "test-integration-mysql2": "./node_modules/.bin/tape 'dist/test/integrations/mysql2.e2e.js'",
-    "test-integration-pug": "./node_modules/.bin/tape 'dist/test/integrations/pug.e2e.js'"
+    "test-integration-pug": "./node_modules/.bin/tape 'dist/test/integrations/pug.e2e.js'",
+    "test-integration-mustache": "./node_modules/.bin/tape 'dist/test/integrations/mustache.e2e.js'",
+    "test-integration-ejs": "./node_modules/.bin/tape 'dist/test/integrations/ejs.e2e.js'"
   },
   "types": "index.d.ts",
   "files": [
     "index.d.ts",
-    "dist/**/*"
+    "dist/lib/**/*"
   ],
-  "private": true,
   "devDependencies": {
     "@types/express": "^4.16.1",
     "@types/mysql": "^2.15.8",
@@ -68,7 +69,6 @@
     "@types/hasha": "3.0.0",
     "@types/mustache": "^4.0.0",
     "@types/on-finished": "2.3.1",
-    "@types/pg": "^7.14.1",
     "@types/pug": "^2.0.4",
     "@types/semver": "5.5.0",
     "@types/tape": "4.2.33",

@@ -9,7 +9,7 @@ ExpressJSのアプリとScoutのミドルウェア実装:
 ```javascript
 const express = require("express");
 const app = express();
-const scout = require("scout-apm-client").expressMiddleware;
+const scout = require("@scout_apm/scout-apm").expressMiddleware;
 
 // ミドルウェアインストール
 app.use(scout());

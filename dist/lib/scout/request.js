@@ -145,13 +145,19 @@ class ScoutRequest {
      * @returns this request
      */
     send(scoutInstance) {
+        if (this.sending) {
+            return this.sending;
+        }
+        if (this.sent) {
+            return Promise.resolve(this);
+        }
         const inst = scoutInstance || this.scoutInstance;
         // Ensure a scout instance was available
         if (!inst) {
             this.logFn(`[scout/request/${this.id}] No scout instance available, send failed`);
             return Promise.resolve(this);
         }
-        return index_1.sendStartRequest(inst, this)
+        this.sending = index_1.sendStartRequest(inst, this)
             // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
             // Send tags
@@ -165,6 +171,7 @@ class ScoutRequest {
             this.logFn(`[scout/request/${this.id}]Failed to send request`);
             return this;
         });
+        return this.sending;
     }
 }
 exports.default = ScoutRequest;
