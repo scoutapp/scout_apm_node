@@ -16,6 +16,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     private started;
     private finished;
     private sent;
+    private sending;
     private childSpans;
     private tags;
     constructor(opts?: ScoutRequestOptions);

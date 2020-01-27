@@ -33,6 +33,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private readonly scoutInstance?;
     private started;
     private stopped;
+    private sending;
     private sent;
     private childSpans;
     private tags;

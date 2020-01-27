@@ -64,7 +64,9 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     private started: boolean = false;
     private stopped: boolean = false;
+    private sending: Promise<this>;
     private sent: boolean = false;
+
     private childSpans: ScoutSpan[] = [];
     private tags: { [key: string]: JSONValue | JSONValue[] } = {};
 
@@ -233,6 +235,9 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
      * @returns this span
      */
     public send(scoutInstance?: Scout): Promise<this> {
+        if (this.sending) { return this.sending; }
+        if (this.sent) { return Promise.resolve(this); }
+
         const inst = scoutInstance || this.scoutInstance;
 
         // Ensure a scout instance was available
@@ -242,7 +247,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         }
 
         // Start Span
-        return sendStartSpan(inst, this)
+        this.sending = sendStartSpan(inst, this)
         // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
         // Send tags
@@ -258,6 +263,8 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
                 this.logFn(`[scout/request/${this.request.id}/span/${this.id}}] Failed to send span`);
                 return this;
             });
+
+        return this.sending;
     }
 
     /**
