@@ -122,12 +122,12 @@ generate-agent-configs:
 # Packaging #
 #############
 
-PACKAGE_FILENAME ?= $(PACKAGE_NAME)-$(VERSION).tar.gz
+PACKAGE_FILENAME ?= $(PACKAGE_NAME)-v$(VERSION).tgz
 TARGET_DIR ?= target
 
 print-package-filename:
 	@echo "$(PACKAGE_FILENAME)"
 
 package: build
-	@mkdir -p $(TARGET_DIR)
-	tar -C $(DIST_DIR) -cv -f "$(TARGET_DIR)/$(PACKAGE_FILENAME)" index.js lib
+	$(YARN) pack
+	mv $(PACKAGE_FILENAME) target/
