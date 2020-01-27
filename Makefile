@@ -19,6 +19,7 @@ TAPE ?= ./node_modules/.bin/tape
 DOCKER ?= docker
 
 GIT_HOOKS_DIR = .dev/git/hooks
+DIST_DIR = dist
 
 PACKAGE_NAME ?= $(shell grep name package.json | cut -d ' ' -f 4 | tr -d ,\")
 VERSION ?= $(shell grep version package.json | cut -d ' ' -f 4 | tr -d ,\")
@@ -42,7 +43,7 @@ git-hook-install:
 
 dist:
 	@echo -e "=> creating dist directory..."
-	mkdir -p dist
+	mkdir -p $(DIST_DIR)
 
 ###############
 # Development #
@@ -129,4 +130,4 @@ print-package-filename:
 
 package: build
 	@mkdir -p $(TARGET_DIR)
-	tar -cv -f "$(TARGET_DIR)/$(PACKAGE_FILENAME)" dist/index.js dist/lib
+	tar -C $(DIST_DIR) -cv -f "$(TARGET_DIR)/$(PACKAGE_FILENAME)" index.js lib
