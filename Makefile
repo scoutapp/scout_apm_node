@@ -130,6 +130,7 @@ print-package-filename:
 
 # NOTE: if you try to test this package locally (ex. using `yarn add path/to/scout-apm-<version>.tgz`),
 # you will have to `yarn cache clean` between every update.
+# as one command: `yarn cache clean && yarn remove scout-apm && yarn add path/to/scout-apm-v0.1.0.tgz`
 package: clean build
 	$(YARN) pack
 	mv $(PACKAGE_FILENAME) target/
