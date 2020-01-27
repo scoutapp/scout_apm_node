@@ -128,6 +128,8 @@ TARGET_DIR ?= target
 print-package-filename:
 	@echo "$(PACKAGE_FILENAME)"
 
+# NOTE: if you try to test this package locally (ex. using `yarn add path/to/scout-apm-<version>.tgz`),
+# you will have to `yarn cache clean` between every update.
 package: clean build
 	$(YARN) pack
 	mv $(PACKAGE_FILENAME) target/
