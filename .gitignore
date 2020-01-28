@@ -16,3 +16,6 @@ target
 # direnv
 .envrc
 /.dir-locals.el
+
+# NPM
+/.npmrc
