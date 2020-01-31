@@ -1,4 +1,6 @@
 import { hostname } from "os";
+import * as os from "os";
+import * as path from "path";
 import * as test from "tape";
 import { Test } from "tape";
 import { version as processVersion } from "process";
@@ -8,7 +10,12 @@ import {
     buildScoutConfiguration,
     ApplicationMetadata,
     LogLevel,
+    CoreAgentVersion,
+    generateTriple,
 } from "../lib/types";
+
+import { Scout } from "../lib";
+
 import { testConfigurationOverlay } from "./util";
 
 test("ScoutConfiguration builds with minimal passed ENV", t => {
@@ -122,6 +129,28 @@ test("application metadata is correctly generated", (t: Test) => {
         `[scmSubdirectory] matches [${appMetadata.scmSubdirectory}]`,
     );
     t.equals(appMetadata.gitSHA, env.SCOUT_REVISION_SHA, `[gitSHA] matches [${appMetadata.gitSHA}]`);
+
+    t.end();
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/124
+test("core agent dir matches python", (t: Test) => {
+    const config = buildScoutConfiguration({coreAgentVersion: "v1.2.7"});
+    const scout = new Scout(config);
+
+    const expectedCoreAgentDir = path.join(
+        os.tmpdir(),
+        "scout_apm_core",
+        `scout_apm_core-v1.2.7-${generateTriple()}`,
+    );
+
+    const expectedSocketPath = path.join(
+        expectedCoreAgentDir,
+        "core-agent.sock",
+    );
+
+    t.equals(config.coreAgentDir, expectedCoreAgentDir, "core agent directory matches the expected value");
+    t.equals(scout.getSocketPath(), `unix://${expectedSocketPath}`, "socket path matches expected value");
 
     t.end();
 });
