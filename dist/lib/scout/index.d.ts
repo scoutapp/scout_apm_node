@@ -107,6 +107,7 @@ export declare class Scout extends EventEmitter {
      */
     getCurrentSpan(): ScoutSpan | null;
     setupIntegrations(): void;
+    getSocketPath(): string;
     /**
      * Attempt to clear an async name space entry
      *
@@ -140,7 +141,6 @@ export declare class Scout extends EventEmitter {
      * @returns {ScoutRequest} a new scout request
      */
     private startRequestSync;
-    private getSocketPath;
     private buildAppMetadataEvent;
     private sendAppMetadataEvent;
     private sendRegistrationRequest;

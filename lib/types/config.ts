@@ -1,5 +1,7 @@
 import { hostname, arch as getSystemArch, platform as getSystemPlatform } from "os";
 import { version as processVersion } from "process";
+import * as os from "os";
+import * as path from "path";
 
 import {
     Architecture,
@@ -280,6 +282,7 @@ class DerivedConfigSource implements ConfigSource {
     public getName() { return ConfigSourceName.Derived; }
 
     public getConfigValue(prop: string, p: ScoutConfigurationProxy): any {
+        let coreAgentTriple;
         // Beware, the access to non-derived values here are somewhat recursive in behavior --
         // ex. when `coreAgentDir` is fetched to build `socketPath`, the proxy is utilized the top level down,
         // working through the sources again
@@ -288,19 +291,24 @@ class DerivedConfigSource implements ConfigSource {
                 const coreAgentDir = p.get({}, "coreAgentDir");
                 const coreAgentFullName = p.get({}, "coreAgentFullName");
                 return `${coreAgentDir}/${coreAgentFullName}/${Constants.DEFAULT_SOCKET_FILE_NAME}`;
-                break;
             case "coreAgentFullName":
-                const coreAgentTriple = p.get({}, "coreAgentTriple");
+                coreAgentTriple = p.get({}, "coreAgentTriple");
                 if (!isValidTriple(coreAgentTriple) && this.logFn) {
                     this.logFn(`Invalid value for core_agent_triple: [${coreAgentTriple}]`, LogLevel.Warn);
                 }
 
                 const coreAgentVersion = p.get({}, "coreAgentVersion");
                 return `${Constants.DEFAULT_CORE_AGENT_NAME}-${coreAgentVersion}-${coreAgentTriple}`;
-                break;
             case "coreAgentTriple":
                 return generateTriple();
-                break;
+            case "coreAgentDir":
+                coreAgentTriple = p.get({}, "coreAgentTriple");
+                const version = p.get({}, "coreAgentVersion");
+                return path.join(
+                    os.tmpdir(),
+                    "scout_apm_core",
+                    `scout_apm_core-${version}-${coreAgentTriple}`,
+                );
             default:
                 return undefined;
         }
@@ -341,7 +349,7 @@ export function detectPlatformTriple(): PlatformTriple {
 }
 
 // Generate the architecture/platform triple
-function generateTriple() {
+export function generateTriple() {
     return `${detectArch()}-${detectPlatform()}`;
 }
 

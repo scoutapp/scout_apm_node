@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const os_1 = require("os");
 const process_1 = require("process");
+const os = require("os");
+const path = require("path");
 const enum_1 = require("./enum");
 const util_1 = require("./util");
 const enum_2 = require("./enum");
@@ -185,6 +187,7 @@ class DerivedConfigSource {
     }
     getName() { return enum_1.ConfigSourceName.Derived; }
     getConfigValue(prop, p) {
+        let coreAgentTriple;
         // Beware, the access to non-derived values here are somewhat recursive in behavior --
         // ex. when `coreAgentDir` is fetched to build `socketPath`, the proxy is utilized the top level down,
         // working through the sources again
@@ -193,18 +196,19 @@ class DerivedConfigSource {
                 const coreAgentDir = p.get({}, "coreAgentDir");
                 const coreAgentFullName = p.get({}, "coreAgentFullName");
                 return `${coreAgentDir}/${coreAgentFullName}/${Constants.DEFAULT_SOCKET_FILE_NAME}`;
-                break;
             case "coreAgentFullName":
-                const coreAgentTriple = p.get({}, "coreAgentTriple");
+                coreAgentTriple = p.get({}, "coreAgentTriple");
                 if (!isValidTriple(coreAgentTriple) && this.logFn) {
                     this.logFn(`Invalid value for core_agent_triple: [${coreAgentTriple}]`, enum_1.LogLevel.Warn);
                 }
                 const coreAgentVersion = p.get({}, "coreAgentVersion");
                 return `${Constants.DEFAULT_CORE_AGENT_NAME}-${coreAgentVersion}-${coreAgentTriple}`;
-                break;
             case "coreAgentTriple":
                 return generateTriple();
-                break;
+            case "coreAgentDir":
+                coreAgentTriple = p.get({}, "coreAgentTriple");
+                const version = p.get({}, "coreAgentVersion");
+                return path.join(os.tmpdir(), "scout_apm_core", `scout_apm_core-${version}-${coreAgentTriple}`);
             default:
                 return undefined;
         }
@@ -243,6 +247,7 @@ exports.detectPlatformTriple = detectPlatformTriple;
 function generateTriple() {
     return `${detectArch()}-${detectPlatform()}`;
 }
+exports.generateTriple = generateTriple;
 // Check if a triple is valid
 function isValidTriple(triple) {
     if (!triple) {

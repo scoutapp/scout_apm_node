@@ -44,7 +44,7 @@ const VERSIONS = [
 ];
 
 // Directory in which to store the downloaded tarballs
-const LOCAL_DOWNLOAD_DIR = "/tmp/scout-downloads";
+const LOCAL_DOWNLOAD_DIR = "/tmp/scout_apm_core";
 
 // Base URL to be used for downloads
 const DOWNLOAD_BASE_URL = "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release";

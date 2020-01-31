@@ -43,9 +43,13 @@ class Scout extends events_1.EventEmitter {
             }
         }
         this.applicationMetadata = new types_1.ApplicationMetadata(this.config, opts && opts.appMeta ? opts.appMeta : {});
+        let version = this.config.coreAgentVersion || Constants.DEFAULT_CORE_AGENT_VERSION;
+        if (version[0] === "v") {
+            version = version.slice(1);
+        }
         // Build expected bin & socket path based on current version
-        const version = (this.config.coreAgentVersion || Constants.DEFAULT_CORE_AGENT_VERSION).slice(1);
-        this.binPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, version, Constants.CORE_AGENT_BIN_FILE_NAME);
+        const triple = types_1.generateTriple();
+        this.binPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, `scout_apm_core-v${version}-${triple}`, Constants.CORE_AGENT_BIN_FILE_NAME);
         this.socketPath = path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
         // Check node version for before/after
         this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
@@ -305,6 +309,9 @@ class Scout extends events_1.EventEmitter {
             .map(packageName => integrations_1.getIntegrationForPackage(packageName))
             .forEach(integration => integration.setScoutInstance(this));
     }
+    getSocketPath() {
+        return `unix://${this.socketPath}`;
+    }
     /**
      * Attempt to clear an async name space entry
      *
@@ -438,9 +445,6 @@ class Scout extends events_1.EventEmitter {
     startRequestSync(opts) {
         const request = new request_2.default(Object.assign({}, { scoutInstance: this }, opts || {}));
         return request.startSync();
-    }
-    getSocketPath() {
-        return `unix://${this.socketPath}`;
     }
     buildAppMetadataEvent() {
         return new Requests.V1ApplicationEvent(`Pid: ${process.pid}`, "scout.metadata", this.applicationMetadata.serialize(), { timestamp: new Date() });
