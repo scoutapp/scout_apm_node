@@ -30,6 +30,7 @@ import {
     buildScoutConfiguration,
     scrubRequestPath,
     scrubRequestPathParams,
+    generateTriple,
 } from "../types";
 import { EXPORT_BAG } from "../index";
 import { getIntegrationForPackage } from "../integrations";
@@ -108,13 +109,17 @@ export class Scout extends EventEmitter {
             opts && opts.appMeta ? opts.appMeta : {},
         );
 
+        let version = this.config.coreAgentVersion || Constants.DEFAULT_CORE_AGENT_VERSION;
+        if (version[0] === "v") { version = version.slice(1); }
+
         // Build expected bin & socket path based on current version
-        const version = (this.config.coreAgentVersion || Constants.DEFAULT_CORE_AGENT_VERSION).slice(1);
+        const triple = generateTriple();
         this.binPath = path.join(
             Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
-            version,
+            `scout_apm_core-v${version}-${triple}`,
             Constants.CORE_AGENT_BIN_FILE_NAME,
         );
+
         this.socketPath = path.join(
             path.dirname(this.binPath),
             Constants.DEFAULT_SOCKET_FILE_NAME,
@@ -432,6 +437,10 @@ export class Scout extends EventEmitter {
             .forEach(integration => integration.setScoutInstance(this));
     }
 
+    public getSocketPath() {
+        return `unix://${this.socketPath}`;
+    }
+
     /**
      * Attempt to clear an async name space entry
      *
@@ -595,10 +604,6 @@ export class Scout extends EventEmitter {
     private startRequestSync(opts?: ScoutRequestOptions): ScoutRequest {
         const request = new ScoutRequest(Object.assign({}, {scoutInstance: this}, opts || {}));
         return request.startSync();
-    }
-
-    private getSocketPath() {
-        return `unix://${this.socketPath}`;
     }
 
     private buildAppMetadataEvent(): Requests.V1ApplicationEvent {

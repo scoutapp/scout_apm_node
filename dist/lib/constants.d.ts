@@ -4,7 +4,7 @@ export declare const TMP_DIR_PREFIX = "core-agent-dl-";
 export declare const CORE_AGENT_BIN_FILE_NAME = "core-agent";
 export declare const CORE_AGENT_MANIFEST_FILE_NAME = "manifest.json";
 export declare const DEFAULT_BIN_STARTUP_WAIT_MS = 1000;
-export declare const DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR = "/tmp/core-agent/downloads";
+export declare const DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR = "/tmp/scout_apm_core";
 export declare const DEFAULT_REQUEST_PREFIX = "req-";
 export declare const DEFAULT_SPAN_PREFIX = "span-";
 export declare const DEFAULT_CONNECTION_POOL_OPTS: {
