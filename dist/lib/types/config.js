@@ -113,7 +113,6 @@ exports.DEFAULT_SCOUT_CONFIGURATION = {
     name: "",
     appServer: "",
     applicationRoot: "",
-    coreAgentDir: "",
     coreAgentDownload: true,
     coreAgentLaunch: true,
     coreAgentLogLevel: enum_1.LogLevel.Info,

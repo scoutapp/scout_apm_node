@@ -168,7 +168,6 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     appServer: "",
     applicationRoot: "",
 
-    coreAgentDir: "",
     coreAgentDownload: true,
     coreAgentLaunch: true,
     coreAgentLogLevel: LogLevel.Info,
