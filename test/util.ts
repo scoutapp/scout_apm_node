@@ -229,6 +229,26 @@ export function simpleHTML5BoilerplateApp(
     return app;
 }
 
+// An express application which performs an instrumentation in GET /
+export function simpleInstrumentApp(middleware: any): Application {
+    const app = express();
+    app.use(middleware);
+
+    app.get("/", (req: any, res: Response) => {
+        if (!req.scout || !req.scout.instance) {
+            res.status(500).send({error: "scout missing on the request"});
+            return;
+        }
+
+        req.scout.instance.instrument("internal-op", stopSpan => {
+            res.send({status: "success"});
+            stopSpan();
+        });
+    });
+
+    return app;
+}
+
 // Test that a given variable is effectively overlaid in the configuration
 export function testConfigurationOverlay(
     t: Test,

@@ -83,6 +83,7 @@ function scoutMiddleware(opts) {
                 next();
                 return;
             }
+            req.scout = { instance: scout };
             const name = `Controller/${reqMethod} ${path}`;
             // Create a trace
             scout.transaction(name, (finishTransaction) => {
@@ -103,7 +104,7 @@ function scoutMiddleware(opts) {
                     // Perform the rest of the request tracing
                     .then(() => {
                     // Save the scout request onto the request object
-                    req.scout = Object.assign(req.scout || {}, { request: req });
+                    req.scout.request = scoutReq;
                     // Set up the request timeout
                     if (requestTimeoutMs > 0) {
                         setTimeout(() => {
@@ -127,7 +128,7 @@ function scoutMiddleware(opts) {
                     scout.instrument(name, () => {
                         const rootSpan = scout.getCurrentSpan();
                         // Add the span to the request object
-                        Object.assign(req.scout, { rootSpan });
+                        req.scout.rootSpan = rootSpan;
                         next();
                     });
                 });

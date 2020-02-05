@@ -177,6 +177,23 @@ function simpleHTML5BoilerplateApp(middleware, templateEngine) {
     return app;
 }
 exports.simpleHTML5BoilerplateApp = simpleHTML5BoilerplateApp;
+// An express application which performs an instrumentation in GET /
+function simpleInstrumentApp(middleware) {
+    const app = express();
+    app.use(middleware);
+    app.get("/", (req, res) => {
+        if (!req.scout || !req.scout.instance) {
+            res.status(500).send({ error: "scout missing on the request" });
+            return;
+        }
+        req.scout.instance.instrument("internal-op", stopSpan => {
+            res.send({ status: "success" });
+            stopSpan();
+        });
+    });
+    return app;
+}
+exports.simpleInstrumentApp = simpleInstrumentApp;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;

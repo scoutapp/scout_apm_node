@@ -1,5 +1,5 @@
 import { LogFn, ScoutConfiguration } from "./types";
-import { Scout } from "./scout";
+import { Scout, ScoutRequest, ScoutSpan } from "./scout";
 export interface ApplicationWithScout {
     scout?: Scout;
 }
@@ -10,6 +10,12 @@ export interface ExpressMiddlewareOptions {
     logFn?: LogFn;
     scout?: Scout;
 }
+export interface ExpressScoutInfo {
+    instance?: Scout;
+    request?: ScoutRequest;
+    rootSpan?: ScoutSpan;
+}
+export declare type ExpressRequestWithScout = Request & ExpressScoutInfo;
 /**
  * Middleware for using scout, this should be
  * attached to the application object using app.use(...)

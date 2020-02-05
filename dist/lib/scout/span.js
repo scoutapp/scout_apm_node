@@ -33,6 +33,9 @@ class ScoutSpan {
             if (opts.started) {
                 this.started = opts.started;
             }
+            if (opts.parent) {
+                this.parent = opts.parent;
+            }
         }
     }
     // Get the start of this span
