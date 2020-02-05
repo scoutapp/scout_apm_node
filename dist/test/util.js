@@ -167,6 +167,9 @@ exports.simpleErrorApp = simpleErrorApp;
 function simpleHTML5BoilerplateApp(middleware, templateEngine) {
     const app = express();
     app.use(middleware);
+    if (templateEngine === "mustache") {
+        app.engine("mustache", require("mustache-express")());
+    }
     // Expect all the views to be in the same fixtures/files path
     const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
     app.set("views", VIEWS_DIR);

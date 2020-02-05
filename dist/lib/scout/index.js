@@ -234,8 +234,8 @@ class Scout extends events_1.EventEmitter {
             .then(s => span = s)
             .then(() => {
             this.asyncNamespace.set(ASYNC_NS_SPAN, span);
-            result = cb(doneFn, { span, request, parent });
             ranCb = true;
+            result = cb(doneFn, { span, request, parent });
             // Ensure that the result is a promise
             return Promise.resolve(result);
         })
@@ -410,8 +410,8 @@ class Scout extends events_1.EventEmitter {
                     .then(() => {
                     this.log(`[scout] Request started w/ ID [${request.id}]`, types_1.LogLevel.Debug);
                     this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
-                    result = cb(doneFn, { request });
                     ranCb = true;
+                    result = cb(doneFn, { request });
                     // Ensure that the result is a promise
                     resolve(result);
                 })

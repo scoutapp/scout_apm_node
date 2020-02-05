@@ -102,6 +102,7 @@ export class EJSIntegration extends RequireIntegration {
         };
 
         ejsExport.renderFile = renderFile;
+        ejsExport.__express = renderFile;
         return ejsExport;
     }
 

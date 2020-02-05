@@ -212,10 +212,14 @@ export function simpleErrorApp(middleware: any, delayMs: number = 0): Applicatio
 // An express application which performs a simple template render
 export function simpleHTML5BoilerplateApp(
     middleware: any,
-    templateEngine: "pug",
+    templateEngine: "pug" | "ejs" | "mustache",
 ): Application {
     const app = express();
     app.use(middleware);
+
+    if (templateEngine === "mustache") {
+        app.engine("mustache", require("mustache-express")());
+    }
 
     // Expect all the views to be in the same fixtures/files path
     const VIEWS_DIR = path.join(getRootDir(), "test/fixtures/files");

@@ -90,6 +90,7 @@ class EJSIntegration extends integrations_1.RequireIntegration {
             });
         };
         ejsExport.renderFile = renderFile;
+        ejsExport.__express = renderFile;
         return ejsExport;
     }
 }

@@ -77,6 +77,7 @@ class PugIntegration extends integrations_1.RequireIntegration {
             });
         };
         pugExport.renderFile = renderFile;
+        pugExport.__express = pugExport.renderFile;
         return pugExport;
     }
 }
