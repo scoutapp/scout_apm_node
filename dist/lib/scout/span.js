@@ -44,7 +44,7 @@ class ScoutSpan {
     }
     // Get the amount of time this span has been running in milliseconds
     getDurationMs() {
-        return new Date().getMilliseconds() - this.getTimestamp().getMilliseconds();
+        return new Date().getTime() - this.getTimestamp().getTime();
     }
     /** @see Taggable */
     addContext(tags) {

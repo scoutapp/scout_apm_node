@@ -495,7 +495,7 @@ export function startContainer(
         // Wait for a given function to evaluate to true
         if (opts.waitFor && opts.waitFor.fn) {
             // Check every second for function to evaluate to true
-            const startTime = new Date().getMilliseconds();
+            const startTime = new Date().getTime();
             const interval = setInterval(() => {
                 // Ensure opts are still properly formed
                 if (!opts || !opts.waitFor || !opts.waitFor.fn || !opts.waitFor.fn.timeoutMs) {
@@ -505,7 +505,7 @@ export function startContainer(
                 }
 
                 // If we've waited too long then clear interval and exit
-                const elapsedMs = new Date().getMilliseconds() - startTime;
+                const elapsedMs = new Date().getTime() - startTime;
                 if (elapsedMs >= opts.waitFor.fn.timeoutMs) {
                     clearInterval(interval);
                     reject(new Error("function never resolved to true before timeout"));

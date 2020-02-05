@@ -95,7 +95,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     // Get the amount of time this span has been running in milliseconds
     public getDurationMs(): number {
-        return new Date().getMilliseconds() - this.getTimestamp().getMilliseconds();
+        return new Date().getTime() - this.getTimestamp().getTime();
     }
 
     /** @see Taggable */
