@@ -62,9 +62,9 @@ test("spans should have traces attached", t => {
         .then(() => scout.transaction("Controller/test-span-trace", finishRequest => {
             return scout.instrument("test-span-trace", stopSpan => {
                 return TestUtil.waitMs(Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS)
-                    .then(() => t.pass("span ran after slow request threshold"));
-            })
-                .then(res => finishRequest());
+                    .then(() => t.pass("span ran after slow request threshold"))
+                    .then(() => finishRequest());
+            });
         }))
     // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));

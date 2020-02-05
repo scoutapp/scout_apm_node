@@ -180,8 +180,10 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         // Stop all child spans
         this.childSpans.forEach(s => s.stop());
 
+        if (!this.scoutInstance) { return Promise.resolve(this); }
+
         // If the span request is still under the threshold then don't save the traceback
-        if (this.scoutInstance && this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {
+        if (this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {
             return Promise.resolve(this);
         }
 
