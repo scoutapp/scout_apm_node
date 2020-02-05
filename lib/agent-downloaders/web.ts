@@ -89,7 +89,7 @@ export class WebAgentDownloader implements AgentDownloader {
      */
     private downloadFromCustomPath(v: CoreAgentVersion, opts: AgentDownloadOptions): Promise<string> {
         const url = `${opts.downloadUrl}/${opts.coreAgentFullName}.tgz`;
-        const downloadDir: string = `${opts.coreAgentDir}/${opts.coreAgentFullName}`;
+        const downloadDir: string = `${opts.coreAgentDir}`;
         const expectedBinPath: string = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
 
         // Ensure we're not attempting to do a download if they're disallowed

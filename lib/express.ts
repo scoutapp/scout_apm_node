@@ -9,7 +9,7 @@ import {
     consoleLogFn,
 } from "./types";
 import * as Constants from "./constants";
-import { Scout, ScoutRequest, ScoutOptions } from "./scout";
+import { Scout, ScoutRequest, ScoutSpan, ScoutOptions } from "./scout";
 
 export interface ApplicationWithScout {
     scout?: Scout;
@@ -23,6 +23,15 @@ export interface ExpressMiddlewareOptions {
     logFn?: LogFn;
     scout?: Scout;
 }
+
+// The information that is
+export interface ExpressScoutInfo {
+    instance?: Scout;
+    request?: ScoutRequest;
+    rootSpan?: ScoutSpan;
+}
+
+export type ExpressRequestWithScout = Request & ExpressScoutInfo;
 
 /**
  * Middleware for using scout, this should be
@@ -111,6 +120,8 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                     return;
                 }
 
+                req.scout = {instance: scout} as ExpressRequestWithScout;
+
                 const name = `Controller/${reqMethod} ${path}`;
                 // Create a trace
                 scout.transaction(name, (finishTransaction) => {
@@ -133,7 +144,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                     // Perform the rest of the request tracing
                         .then(() => {
                             // Save the scout request onto the request object
-                            req.scout = Object.assign(req.scout || {}, {request: req});
+                            req.scout.request = scoutReq;
 
                             // Set up the request timeout
                             if (requestTimeoutMs > 0) {
@@ -163,7 +174,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                             scout.instrument(name, () => {
                                 const rootSpan = scout.getCurrentSpan();
                                 // Add the span to the request object
-                                Object.assign(req.scout, {rootSpan});
+                                req.scout.rootSpan = rootSpan;
                                 next();
                             });
 

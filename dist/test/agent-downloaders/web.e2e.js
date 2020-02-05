@@ -89,13 +89,15 @@ test("download works with a custom root URL + agent full name", t => {
 test("download fails with invalid custom URL", t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
+    const coreAgentDir = "/tmp/scout_apm_core";
     const opts = {
         coreAgentFullName: "invalid.tgz",
         downloadUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
-        coreAgentDir: "/tmp/scout_apm_core",
+        coreAgentDir,
     };
-    downloader
-        .download(version, opts)
+    // We need to delete the binary to make sure the download is attempted
+    fs.emptyDir(coreAgentDir)
+        .then(() => downloader.download(version, opts))
         .then(() => t.end(new Error("expected download() call to fail")))
         .catch(err => {
         if (err && err.name === "HTTPError" && err.statusCode === 404) {

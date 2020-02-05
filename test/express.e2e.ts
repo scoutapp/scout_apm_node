@@ -21,8 +21,7 @@ import { V1StartSpan } from "../lib/protocol/v1/requests";
 import { FILE_PATHS } from "./fixtures";
 
 // Set up the pug integration
-setupRequireIntegrations(["pug"]);
-const pug = require("pug");
+setupRequireIntegrations(["pug", "ejs", "mustache"]);
 
 test("Simple operation", t => {
     // Create an application and setup scout middleware
@@ -365,7 +364,7 @@ test("URI filtered down to path", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t
     }));
 
     // Set up a listener that should *not* fire
-    const listener = (data: ScoutEventRequestSentData, another) => {
+    const listener = (data: ScoutEventRequestSentData) => {
         const pathTag = data.request.getTags().find(t => t.name === Constants.SCOUT_PATH_TAG);
 
         // Remove listener since this should fire once
@@ -414,7 +413,7 @@ test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
     }), "pug");
 
     // Set up a listener that should fire when the request is finished
-    const listener = (data: ScoutEventRequestSentData, another) => {
+    const listener = (data: ScoutEventRequestSentData) => {
         // Remove listener since this should fire once
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
@@ -453,5 +452,174 @@ test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
         .then(res => {
             t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
         })
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/82
+test("ejs integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    // Create an application that's set up to use ejs templating
+    const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }), "ejs");
+
+    // Set up a listener that should fire when the request is finished
+    const listener = (data: ScoutEventRequestSentData) => {
+        // Remove listener since this should fire once
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        // Look up the template render span from the request
+        const requestSpans = data.request.getChildSpansSync();
+
+        // The top level controller should be present
+        const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
+        t.assert(controllerSpan, "template controller span was present on request");
+        if (!controllerSpan) {
+            t.fail("no controller span present on request");
+            throw new Error("No controller span");
+        }
+
+        // The inner spans for the controller should contain a template rendering span
+        const innerSpans = controllerSpan.getChildSpansSync();
+        const renderSpan = innerSpans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
+        t.assert(renderSpan, "template render span was present on request");
+        if (!renderSpan) {
+            t.fail("no render span present on request");
+            throw new Error("No render span");
+        }
+
+        t.assert(renderSpan.getContextValue(ScoutContextNames.Name), "template name context is present");
+
+        // Shutdown and close scout
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    return request(app)
+        .get("/")
+        .expect("Content-Type", /html/)
+        .expect(200)
+        .then(res => {
+            t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
+        })
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/82
+test("mustache integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    // Create an application that's set up to use mustache templating
+    const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }), "mustache");
+
+    // Set up a listener that should fire when the request is finished
+    const listener = (data: ScoutEventRequestSentData) => {
+        // Remove listener since this should fire once
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        // Look up the template render span from the request
+        const requestSpans = data.request.getChildSpansSync();
+
+        // The top level controller should be present
+        const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
+        t.assert(controllerSpan, "template controller span was present on request");
+        if (!controllerSpan) {
+            t.fail("no controller span present on request");
+            throw new Error("No controller span");
+        }
+
+        // The inner spans for the controller should contain a template rendering span
+        const innerSpans = controllerSpan.getChildSpansSync();
+        const renderSpan = innerSpans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
+        t.assert(renderSpan, "template render span was present on request");
+        if (!renderSpan) {
+            t.fail("no render span present on request");
+            throw new Error("No render span");
+        }
+
+        t.assert(renderSpan.getContextValue(ScoutContextNames.Name), "template name context is present");
+
+        // Shutdown and close scout
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    return request(app)
+        .get("/")
+        .expect("Content-Type", /html/)
+        .expect(200)
+        .then(res => {
+            t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
+        })
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/129
+test("Nested spans on the top level controller have parent ID specified", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    // Create an application that's set up to do a simple instrumentation
+    const app: Application & ApplicationWithScout = TestUtil.simpleInstrumentApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
+
+    // Set up a listener that should fire when the request is finished
+    const listener = (data: ScoutEventRequestSentData) => {
+        // Remove listener since this should fire once
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        // Look up the template render span from the request
+        const requestSpans = data.request.getChildSpansSync();
+
+        // The top level controller should be present
+        const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
+        if (!controllerSpan) {
+            t.fail("no controller span present on request");
+            throw new Error("No controller span");
+        }
+
+        // The inner spans for the controller should contain a template rendering span
+        const innerSpans = controllerSpan.getChildSpansSync();
+        const internalOpSpan = innerSpans.find(s => s.operation === "internal-op");
+        if (!internalOpSpan) {
+            t.fail("no internal op present on request");
+            throw new Error("No render span");
+        }
+
+        if (!internalOpSpan.parent) {
+            t.fail("no parent on internal op");
+            throw new Error("No parent on internal op span");
+        }
+
+        // the internalOpSpan should have the correct parent
+        t.equals(internalOpSpan.parent.id, controllerSpan.id, "the internal op span's parent is the controller span");
+
+        // Shutdown and close scout
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    return request(app)
+        .get("/")
+        .expect("Content-Type", /json/)
+        .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });

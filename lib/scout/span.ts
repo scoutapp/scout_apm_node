@@ -83,6 +83,8 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             // It's possible that the scout span has already been started
             // ex. when startSpan is used by a Scout instance
             if (opts.started) { this.started = opts.started; }
+
+            if (opts.parent)  { this.parent = opts.parent; }
         }
     }
 
@@ -93,7 +95,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     // Get the amount of time this span has been running in milliseconds
     public getDurationMs(): number {
-        return new Date().getMilliseconds() - this.getTimestamp().getMilliseconds();
+        return new Date().getTime() - this.getTimestamp().getTime();
     }
 
     /** @see Taggable */
@@ -178,8 +180,10 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         // Stop all child spans
         this.childSpans.forEach(s => s.stop());
 
+        if (!this.scoutInstance) { return Promise.resolve(this); }
+
         // If the span request is still under the threshold then don't save the traceback
-        if (this.scoutInstance && this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {
+        if (this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {
             return Promise.resolve(this);
         }
 

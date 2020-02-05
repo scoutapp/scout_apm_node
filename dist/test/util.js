@@ -167,6 +167,9 @@ exports.simpleErrorApp = simpleErrorApp;
 function simpleHTML5BoilerplateApp(middleware, templateEngine) {
     const app = express();
     app.use(middleware);
+    if (templateEngine === "mustache") {
+        app.engine("mustache", require("mustache-express")());
+    }
     // Expect all the views to be in the same fixtures/files path
     const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
     app.set("views", VIEWS_DIR);
@@ -177,6 +180,23 @@ function simpleHTML5BoilerplateApp(middleware, templateEngine) {
     return app;
 }
 exports.simpleHTML5BoilerplateApp = simpleHTML5BoilerplateApp;
+// An express application which performs an instrumentation in GET /
+function simpleInstrumentApp(middleware) {
+    const app = express();
+    app.use(middleware);
+    app.get("/", (req, res) => {
+        if (!req.scout || !req.scout.instance) {
+            res.status(500).send({ error: "scout missing on the request" });
+            return;
+        }
+        req.scout.instance.instrument("internal-op", stopSpan => {
+            res.send({ status: "success" });
+            stopSpan();
+        });
+    });
+    return app;
+}
+exports.simpleInstrumentApp = simpleInstrumentApp;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;
@@ -369,7 +389,7 @@ function startContainer(t, optOverrides) {
         // Wait for a given function to evaluate to true
         if (opts.waitFor && opts.waitFor.fn) {
             // Check every second for function to evaluate to true
-            const startTime = new Date().getMilliseconds();
+            const startTime = new Date().getTime();
             const interval = setInterval(() => {
                 // Ensure opts are still properly formed
                 if (!opts || !opts.waitFor || !opts.waitFor.fn || !opts.waitFor.fn.timeoutMs) {
@@ -378,7 +398,7 @@ function startContainer(t, optOverrides) {
                     return;
                 }
                 // If we've waited too long then clear interval and exit
-                const elapsedMs = new Date().getMilliseconds() - startTime;
+                const elapsedMs = new Date().getTime() - startTime;
                 if (elapsedMs >= opts.waitFor.fn.timeoutMs) {
                     clearInterval(interval);
                     reject(new Error("function never resolved to true before timeout"));

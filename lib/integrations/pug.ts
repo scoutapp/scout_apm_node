@@ -88,6 +88,7 @@ export class PugIntegration extends RequireIntegration {
         };
 
         pugExport.renderFile = renderFile;
+        pugExport.__express = pugExport.renderFile;
         return pugExport;
     }
 
