@@ -68,7 +68,7 @@ class WebAgentDownloader {
      * @returns {string} Path to the downloaded binary
      */
     downloadFromCustomPath(v, opts) {
-        const url = `${opts.downloadUrl}/${opts.coreAgentFullName}`;
+        const url = `${opts.downloadUrl}/${opts.coreAgentFullName}.tgz`;
         const downloadDir = `${opts.coreAgentDir}`;
         const expectedBinPath = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
         // Ensure we're not attempting to do a download if they're disallowed

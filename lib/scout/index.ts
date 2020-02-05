@@ -501,7 +501,7 @@ export class Scout extends EventEmitter {
                 this.binPath = bp;
                 this.socketPath = path.join(
                     path.dirname(this.binPath),
-                    "core-agent.sock",
+                    Constants.DEFAULT_SOCKET_FILE_NAME,
                 );
                 this.log(`[scout] using socket path [${this.socketPath}]`, LogLevel.Debug);
             })

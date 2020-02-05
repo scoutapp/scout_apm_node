@@ -88,7 +88,7 @@ export class WebAgentDownloader implements AgentDownloader {
      * @returns {string} Path to the downloaded binary
      */
     private downloadFromCustomPath(v: CoreAgentVersion, opts: AgentDownloadOptions): Promise<string> {
-        const url = `${opts.downloadUrl}/${opts.coreAgentFullName}`;
+        const url = `${opts.downloadUrl}/${opts.coreAgentFullName}.tgz`;
         const downloadDir: string = `${opts.coreAgentDir}`;
         const expectedBinPath: string = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
 

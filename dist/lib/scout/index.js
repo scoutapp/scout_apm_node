@@ -355,7 +355,7 @@ class Scout extends events_1.EventEmitter {
             .download(this.coreAgentVersion, this.downloaderOptions)
             .then(bp => {
             this.binPath = bp;
-            this.socketPath = path.join(path.dirname(this.binPath), "core-agent.sock");
+            this.socketPath = path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
             this.log(`[scout] using socket path [${this.socketPath}]`, types_1.LogLevel.Debug);
         })
             // Build options for the agent and create the agent
