@@ -4,6 +4,9 @@
  *
  * These tests should be run either in parallel (via a tool like `bogota`) or by hand
  * and the ENV variable SCOUT_KEY should be provided
+ *
+ * NOTE - the tests in here do *NOT* properly shut down the scout instances they use right away,
+ * cleanup happens at the end after waiting a certain amount of time to ensure the traces are sent.
  */
 
 import * as test from "tape";
@@ -47,6 +50,7 @@ import { SQL_QUERIES } from "./fixtures";
 
 let PG_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 let MYSQL_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
+const SCOUT_INSTANCES: Scout[] = [];
 
 // Set up the pug integration for the pug dashboard sends
 setupRequireIntegrations(["pug"]);
@@ -71,6 +75,7 @@ test("Scout sends basic controller span to dashboard", {timeout: TestUtil.DASHBO
     }
 
     const scout = new Scout(config, {appMeta});
+    SCOUT_INSTANCES.push(scout);
 
     // Set up a listener to wait for scout to report the transaction
     const listener = (message: BaseAgentRequest) => {
@@ -79,10 +84,7 @@ test("Scout sends basic controller span to dashboard", {timeout: TestUtil.DASHBO
         t.pass("Witnessed V1FinishRequest being sent");
 
         scout.removeListener(ScoutEvent.RequestSent, listener);
-
-        // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
-        TestUtil.waitMinutes(2)
-            .then(() => TestUtil.shutdownScout(t, scout));
+        t.end();
     };
 
     // Set up listener on the agent to listen for the stop request to be sent
@@ -97,8 +99,7 @@ test("Scout sends basic controller span to dashboard", {timeout: TestUtil.DASHBO
                 .then(() => transactionDone())
                 .catch(err => t.fail("some error occurred"));
         });
-    })
-        .catch(err => TestUtil.shutdownScout(t, scout, err));
+    });
 });
 
 //////////////////////////////
@@ -140,10 +141,7 @@ test("transaction with with postgres DB query to dashboard", {timeout: TestUtil.
 
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
-        TestUtil.waitMinutes(2)
-            .then(() => client.end())
-            .then(() => TestUtil.shutdownScout(t, scout));
+        client.end(() => t.end());
     };
 
     // Set up listener on the agent to listen for the stop request to be sent
@@ -173,14 +171,12 @@ test("transaction with with postgres DB query to dashboard", {timeout: TestUtil.
                 .catch(err => {
                     t.fail("some error occurred");
 
-                    (client ? client.end() : Promise.resolve())
-                        .then(() => TestUtil.shutdownScout(t, scout, err));
+                    if (client) { client.end(); }
                 });
         });
     })
         .catch(err => {
-            (client ? client.end() : Promise.resolve())
-                .then(() => TestUtil.shutdownScout(t, scout, err));
+            if (client) { client.end(); }
         });
 });
 
@@ -221,11 +217,7 @@ test("transaction with mysql query to dashboard", {timeout: TestUtil.DASHBOARD_S
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
         // Fire off disconnect
-        conn.end(() => {
-            // Wait ~2 minutes for scout to clear requests
-            TestUtil.waitMinutes(2)
-                .then(() => TestUtil.shutdownScout(t, scout));
-        });
+        conn.end(() => t.end());
     };
 
     // Set up listener on the agent to listen for the stop request to be sent
@@ -260,12 +252,8 @@ test("transaction with mysql query to dashboard", {timeout: TestUtil.DASHBOARD_S
     // If an error occurs shutdown scout and end connection
         .catch(err => {
             if (conn) {
-                conn.end(() => {
-                    TestUtil.shutdownScout(t, scout, err);
-                });
+                conn.end();
             }
-
-            TestUtil.shutdownScout(t, scout, err);
         });
 });
 
@@ -294,11 +282,7 @@ test("transaction with mysql2 query to dashboard", {timeout: TestUtil.DASHBOARD_
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
         // Fire off disconnect
-        conn.end(() => {
-            // Wait ~2 minutes for scout to clear requests
-            TestUtil.waitMinutes(2)
-                .then(() => TestUtil.shutdownScout(t, scout));
-        });
+        conn.end(() => t.end());
     };
 
     // Set up listener on the agent to listen for the stop request to be sent
@@ -333,12 +317,8 @@ test("transaction with mysql2 query to dashboard", {timeout: TestUtil.DASHBOARD_
     // If an error occurs shutdown scout and end connection
         .catch(err => {
             if (conn) {
-                conn.end(() => {
-                    TestUtil.shutdownScout(t, scout, err);
-                });
+                conn.end();
             }
-
-            TestUtil.shutdownScout(t, scout, err);
         });
 });
 
@@ -397,9 +377,7 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
 
         t.assert(renderSpan.getContextValue(ScoutContextNames.Name), "template name context is present");
 
-        // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
-        TestUtil.waitMinutes(2)
-            .then(() => TestUtil.shutdownScout(t, scout));
+        t.end();
     };
 
     scout.on(ScoutEvent.RequestSent, listener);
@@ -410,6 +388,15 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
         .expect(200)
         .then(res => {
             t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
-        })
-        .catch(err => TestUtil.shutdownScout(t, scout, err));
+        });
+});
+
+// Shutdown all the scout instances after waiting what we expect should be enough time to send the tests
+test("wait and shutdown all scout instances", t => {
+    // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
+        TestUtil.waitMinutes(2)
+        .then(() => t.comment(`shutting down [${SCOUT_INSTANCES.length}] scout instances...`))
+        .then(() =>  Promise.all(SCOUT_INSTANCES.map(s => TestUtil.shutdownScout(t, s))))
+        .then(() => t.pass("all scout instances were shut down"))
+        .catch(t.end);
 });
