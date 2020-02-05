@@ -4,6 +4,7 @@ const test = require("tape");
 const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
 const TestUtil = require("../util");
+const Constants = require("../../lib/constants");
 // https://github.com/scoutapp/scout_apm_node/issues/76
 test("spans should have traces attached", t => {
     const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
@@ -33,8 +34,8 @@ test("spans should have traces attached", t => {
         // Create the first & second request
         .then(() => scout.transaction("Controller/test-span-trace", finishRequest => {
         return scout.instrument("test-span-trace", stopSpan => {
-            return TestUtil.waitMs(100)
-                .then(() => t.pass("span ran after 50ms delay"));
+            return TestUtil.waitMs(Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS)
+                .then(() => t.pass("span ran after slow request threshold"));
         })
             .then(res => finishRequest());
     }))

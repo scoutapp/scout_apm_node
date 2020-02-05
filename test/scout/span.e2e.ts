@@ -22,6 +22,7 @@ import { V1ApplicationEvent } from "../../lib/protocol/v1/requests";
 import { pathExists, remove } from "fs-extra";
 
 import * as TestUtil from "../util";
+import * as Constants from "../../lib/constants";
 
 // https://github.com/scoutapp/scout_apm_node/issues/76
 test("spans should have traces attached", t => {
@@ -60,8 +61,8 @@ test("spans should have traces attached", t => {
     // Create the first & second request
         .then(() => scout.transaction("Controller/test-span-trace", finishRequest => {
             return scout.instrument("test-span-trace", stopSpan => {
-                return TestUtil.waitMs(100)
-                    .then(() => t.pass("span ran after 50ms delay"));
+                return TestUtil.waitMs(Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS)
+                    .then(() => t.pass("span ran after slow request threshold"));
             })
                 .then(res => finishRequest());
         }))
