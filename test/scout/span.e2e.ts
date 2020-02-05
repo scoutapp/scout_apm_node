@@ -45,7 +45,7 @@ test("spans should have traces attached", t => {
             .then(spans => {
                 t.equals(spans.length, 1, "one span was present");
                 const stack = spans[0].getContextValue(ScoutContextNames.Traceback);
-                t.assert(stack, "traceback context is present on span");
+                t.assert(stack !== null && typeof stack !== "undefined", "traceback context is present on span");
                 const scoutTrace = (stack as JSONValue[]).find((s: any) => s.file.includes("scout_apm_node"));
                 t.equals(scoutTrace, undefined, "no scout APM traces");
             })
