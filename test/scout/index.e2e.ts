@@ -21,7 +21,7 @@ import {
     AgentRequestType,
     AgentEvent,
     ApplicationEventType,
-    ScoutContextNames,
+    ScoutContextName,
     JSONValue,
 } from "../../lib/types";
 import { V1ApplicationEvent } from "../../lib/protocol/v1/requests";

@@ -16,7 +16,7 @@ import * as Constants from "../../lib/constants";
 import { scoutIntegrationSymbol } from "../../lib/types/integrations";
 import { scoutMiddleware, ApplicationWithScout } from "../../lib/express";
 
-import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
+import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { FILE_PATHS } from "../fixtures";
 
@@ -65,7 +65,7 @@ test("http connections are captured", t => {
                 }
 
                 // Since we don't know what port superagent will assign the request we just check if it's there
-                const urlTag = requestSpan.getContextValue(ScoutContextNames.URL);
+                const urlTag = requestSpan.getContextValue(ScoutContextName.URL);
                 t.assert(urlTag, `url tag is present [${urlTag}]`);
             })
             .then(() => TestUtil.shutdownScout(t, scout))

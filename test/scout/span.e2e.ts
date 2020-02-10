@@ -14,7 +14,7 @@ import {
     AgentRequestType,
     AgentEvent,
     ApplicationEventType,
-    ScoutContextNames,
+    ScoutContextName,
     JSONValue,
 } from "../../lib/types";
 import { V1ApplicationEvent } from "../../lib/protocol/v1/requests";
@@ -44,7 +44,7 @@ test("spans should have traces attached", t => {
             .getChildSpans()
             .then(spans => {
                 t.equals(spans.length, 1, "one span was present");
-                const stack = spans[0].getContextValue(ScoutContextNames.Traceback);
+                const stack = spans[0].getContextValue(ScoutContextName.Traceback);
                 t.assert(stack !== null && typeof stack !== "undefined", "traceback context is present on span");
                 const scoutTrace = (stack as JSONValue[]).find((s: any) => s.file.includes("scout_apm_node"));
                 t.equals(scoutTrace, undefined, "no scout APM traces");
@@ -87,7 +87,7 @@ test("spans within the threshold should not have traces attached", t => {
             .getChildSpans()
             .then(spans => {
                 t.equals(spans.length, 1, "one span was present");
-                const stack = spans[0].getContextValue(ScoutContextNames.Traceback);
+                const stack = spans[0].getContextValue(ScoutContextName.Traceback);
                 t.notOk(stack, "traceback context is not present on span");
             })
             .then(() => TestUtil.shutdownScout(t, scout))

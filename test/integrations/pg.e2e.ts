@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
+import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { SQL_QUERIES } from "../fixtures";
 
@@ -61,7 +61,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
                 }
 
                 t.equals(
-                    dbSpan.getContextValue(ScoutContextNames.DBStatement),
+                    dbSpan.getContextValue(ScoutContextName.DBStatement),
                     SQL_QUERIES.SELECT_TIME,
                     "db.statement tag is correct",
                 );
@@ -117,7 +117,7 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_
 
                 // Ensure span for CREATE TABLE is present
                 const createTableSpan = dbSpans.find(s => {
-                    return s.getContextValue(ScoutContextNames.DBStatement) === SQL_QUERIES.CREATE_STRING_KV_TABLE;
+                    return s.getContextValue(ScoutContextName.DBStatement) === SQL_QUERIES.CREATE_STRING_KV_TABLE;
                 });
                 if (!createTableSpan) {
                     t.fail("span for CREATE TABLE not found");
@@ -126,7 +126,7 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_
 
                 // Ensure span for INSERT is present
                 const insertSpan = dbSpans.find(s => {
-                    return s.getContextValue(ScoutContextNames.DBStatement) === SQL_QUERIES.INSERT_STRING_KV_TABLE;
+                    return s.getContextValue(ScoutContextName.DBStatement) === SQL_QUERIES.INSERT_STRING_KV_TABLE;
                 });
                 if (!insertSpan) {
                     t.fail("span for INSERT not found");

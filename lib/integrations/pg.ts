@@ -1,7 +1,7 @@
 import * as path from "path";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
-import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // We can't import pg and use the Client class, and can't import *only* the types.
@@ -107,7 +107,7 @@ export class PGIntegration extends RequireIntegration {
 
                 return span
                 // Update span context with the DB statement
-                    .addContext([{name: ScoutContextNames.DBStatement, value: (query as any).text}])
+                    .addContext([{name: ScoutContextName.DBStatement, value: (query as any).text}])
                 // Run pg's query function
                     .then(() => originalQueryFn.apply(this, [config, values, userCallback]))
                     .then(res => {

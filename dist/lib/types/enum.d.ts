@@ -91,7 +91,7 @@ export declare enum ScoutEvent {
     IgnoredPathDetected = "scout-event-ignored-path-detected",
     RequestSent = "scout-event-request-sent"
 }
-export declare enum ScoutContextNames {
+export declare enum ScoutContextName {
     Traceback = "stack",
     DBStatement = "db.statement",
     Error = "error",

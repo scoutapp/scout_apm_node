@@ -311,7 +311,7 @@ test("Express pug integration dashboard send", { timeout: TestUtil.DASHBOARD_SEN
             t.fail("no render span present on request");
             throw new Error("No render span");
         }
-        t.assert(renderSpan.getContextValue(types_1.ScoutContextNames.Name), "template name context is present");
+        t.assert(renderSpan.getContextValue(types_1.ScoutContextName.Name), "template name context is present");
         t.end();
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);

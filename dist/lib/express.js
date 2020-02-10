@@ -110,7 +110,7 @@ function scoutMiddleware(opts) {
                         setTimeout(() => {
                             // Add context to indicate request as timed out
                             scoutReq
-                                .addContext([{ name: types_1.ScoutContextNames.Timeout, value: "true" }])
+                                .addContext([{ name: types_1.ScoutContextName.Timeout, value: "true" }])
                                 .then(() => finishTransaction())
                                 .catch(() => {
                                 if (opts && opts.logFn) {

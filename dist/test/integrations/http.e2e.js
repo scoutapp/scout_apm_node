@@ -45,7 +45,7 @@ test("http connections are captured", t => {
                 throw new Error("No external request span");
             }
             // Since we don't know what port superagent will assign the request we just check if it's there
-            const urlTag = requestSpan.getContextValue(types_1.ScoutContextNames.URL);
+            const urlTag = requestSpan.getContextValue(types_1.ScoutContextName.URL);
             t.assert(urlTag, `url tag is present [${urlTag}]`);
         })
             .then(() => TestUtil.shutdownScout(t, scout))

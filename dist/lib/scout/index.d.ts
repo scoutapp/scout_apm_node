@@ -145,6 +145,7 @@ export declare class Scout extends EventEmitter {
     private sendAppMetadataEvent;
     private sendRegistrationRequest;
     private setupAgent;
+    private onUncaughtExceptionListener;
 }
 /**
  * Send the StartRequest message to the agent

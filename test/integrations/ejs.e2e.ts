@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
+import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { FILE_PATHS } from "../fixtures";
 
@@ -50,7 +50,7 @@ test("ejs rendering a string is captured", t => {
                 }
 
                 t.equals(
-                    renderSpan.getContextValue(ScoutContextNames.Name),
+                    renderSpan.getContextValue(ScoutContextName.Name),
                     "<string>",
                     "name tag is correct",
                 );
@@ -99,7 +99,7 @@ test("ejs rendering a file is captured", t => {
                 }
 
                 t.equals(
-                    renderSpan.getContextValue(ScoutContextNames.Name),
+                    renderSpan.getContextValue(ScoutContextName.Name),
                     FILE_PATHS.EJS_HTML5_BOILERPLATE,
                     "name tag is correct",
                 );

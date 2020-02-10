@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
+import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { FILE_PATHS, MUSTACHE_TEMPLATES } from "../fixtures";
 import * as Mustache from "mustache";
@@ -51,7 +51,7 @@ test("mustache rendering a string is captured", t => {
 
                 t.equals(renderSpans.length, 2, "two template spans were present");
                 t.assert(
-                    renderSpans.every(s => s.getContextValue(ScoutContextNames.Name) === "<string>"),
+                    renderSpans.every(s => s.getContextValue(ScoutContextName.Name) === "<string>"),
                     "render spans had <string> as name context",
                 );
             })

@@ -89,7 +89,7 @@ class MySQL2Integration extends integrations_1.RequireIntegration {
                 };
                 span
                     // Add query to the context
-                    .addContext([{ name: types_1.ScoutContextNames.DBStatement, value: builtQuery.sql }])
+                    .addContext([{ name: types_1.ScoutContextName.DBStatement, value: builtQuery.sql }])
                     // Do the query
                     .then(() => {
                     ranFn = true;

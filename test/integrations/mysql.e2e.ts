@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames } from "../../lib/types";
+import { ScoutContextName } from "../../lib/types";
 import { SQL_QUERIES } from "../fixtures";
 
 // The hook for MYSQL has to be triggered this way in a typescript context
@@ -61,7 +61,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.MYSQL_TEST_
                 }
 
                 t.equals(
-                    dbSpan.getContextValue(ScoutContextNames.DBStatement),
+                    dbSpan.getContextValue(ScoutContextName.DBStatement),
                     SQL_QUERIES.SELECT_TIME,
                     "db.statement tag is correct",
                 );

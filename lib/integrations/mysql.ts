@@ -2,7 +2,7 @@ import * as path from "path";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
 import { Connection, ConnectionConfig, QueryFunction } from "mysql";
-import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // From @types/mysql
@@ -116,7 +116,7 @@ export class MySQLIntegration extends RequireIntegration {
 
                 span
                 // Add query to the context
-                    .addContext([{name: ScoutContextNames.DBStatement, value: builtQuery.sql}])
+                    .addContext([{name: ScoutContextName.DBStatement, value: builtQuery.sql}])
                 // Do the query
                     .then(() => {
                         ranFn = true;

@@ -33,7 +33,7 @@ test("ejs rendering a string is captured", t => {
                 t.fail("no render span present on request");
                 throw new Error("No render span");
             }
-            t.equals(renderSpan.getContextValue(types_1.ScoutContextNames.Name), "<string>", "name tag is correct");
+            t.equals(renderSpan.getContextValue(types_1.ScoutContextName.Name), "<string>", "name tag is correct");
         })
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => TestUtil.shutdownScout(t, scout, err));
@@ -71,7 +71,7 @@ test("ejs rendering a file is captured", t => {
                 t.fail("no render span present on request");
                 throw new Error("No render span");
             }
-            t.equals(renderSpan.getContextValue(types_1.ScoutContextNames.Name), fixtures_1.FILE_PATHS.EJS_HTML5_BOILERPLATE, "name tag is correct");
+            t.equals(renderSpan.getContextValue(types_1.ScoutContextName.Name), fixtures_1.FILE_PATHS.EJS_HTML5_BOILERPLATE, "name tag is correct");
         })
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => TestUtil.shutdownScout(t, scout, err));

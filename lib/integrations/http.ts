@@ -2,7 +2,7 @@ import * as path from "path";
 import { ClientRequest, RequestOptions } from "http";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout, DoneCallback, ScoutSpan, ScoutRequest } from "../scout";
-import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
@@ -81,7 +81,7 @@ export class HttpIntegration extends RequireIntegration {
                 if (!span) { return; }
 
                 reqSpan = span;
-                reqSpan.addContext([{name: ScoutContextNames.URL, value: url}]);
+                reqSpan.addContext([{name: ScoutContextName.URL, value: url}]);
             });
 
             // Start the actual request
@@ -89,7 +89,7 @@ export class HttpIntegration extends RequireIntegration {
 
             // If the request times out at any point add the context to the span
             request.once("timeout", () => {
-                reqSpan.addContext([{name: ScoutContextNames.Timeout, value: "true"}]);
+                reqSpan.addContext([{name: ScoutContextName.Timeout, value: "true"}]);
             });
 
             // After the request has started we'll finish the instrumentation
@@ -99,7 +99,7 @@ export class HttpIntegration extends RequireIntegration {
             });
 
             request.once("error", () => {
-                reqSpan.addContext([{name: ScoutContextNames.Error, value: "true"}]);
+                reqSpan.addContext([{name: ScoutContextName.Error, value: "true"}]);
             });
 
             request.once("close", () => {

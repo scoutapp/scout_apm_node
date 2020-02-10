@@ -86,7 +86,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
                 }
                 return span
                     // Update span context with the DB statement
-                    .addContext([{ name: types_1.ScoutContextNames.DBStatement, value: query.text }])
+                    .addContext([{ name: types_1.ScoutContextName.DBStatement, value: query.text }])
                     // Run pg's query function
                     .then(() => originalQueryFn.apply(this, [config, values, userCallback]))
                     .then(res => {

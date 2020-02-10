@@ -31,7 +31,7 @@ import {
     BaseAgentRequest,
     ScoutEvent,
     ScoutSpanOperation,
-    ScoutContextNames,
+    ScoutContextName,
     buildScoutConfiguration,
 } from "../lib/types";
 
@@ -375,7 +375,7 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
             throw new Error("No render span");
         }
 
-        t.assert(renderSpan.getContextValue(ScoutContextNames.Name), "template name context is present");
+        t.assert(renderSpan.getContextValue(ScoutContextName.Name), "template name context is present");
 
         t.end();
     };

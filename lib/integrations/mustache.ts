@@ -1,5 +1,5 @@
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
-import { LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import { LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Mustache from "mustache";
 
 /**
@@ -36,7 +36,7 @@ export class MustacheIntegration extends RequireIntegration {
             if (!integration.scout) { return originalFn.apply(this, originalArgs); }
 
             return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{name: ScoutContextNames.Name, value: "<string>"}]);
+                span.addContextSync([{name: ScoutContextName.Name, value: "<string>"}]);
                 return originalFn.apply(this, originalArgs);
             });
         };

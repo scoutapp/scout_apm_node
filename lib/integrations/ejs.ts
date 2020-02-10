@@ -1,7 +1,7 @@
 import * as path from "path";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
-import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
@@ -35,7 +35,7 @@ export class EJSIntegration extends RequireIntegration {
             if (!integration.scout) { return originalFn.apply(null, originalArgs); }
 
             return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{name: ScoutContextNames.Name, value: "<string>"}]);
+                span.addContextSync([{name: ScoutContextName.Name, value: "<string>"}]);
                 return originalFn.apply(null, originalArgs);
             });
         };
@@ -68,7 +68,7 @@ export class EJSIntegration extends RequireIntegration {
                     return originalFn.apply(null, originalArgs);
                 }
 
-                span.addContextSync([{name: ScoutContextNames.Name, value: path}]);
+                span.addContextSync([{name: ScoutContextName.Name, value: path}]);
 
                 return originalFn
                     .apply(null, originalArgs)

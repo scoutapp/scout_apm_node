@@ -33,7 +33,7 @@ test("mustache rendering a string is captured", t => {
             const renderSpans = spans.filter(s => s.operation === types_1.ScoutSpanOperation.TemplateRender);
             t.assert(renderSpans, "template render span was present on request");
             t.equals(renderSpans.length, 2, "two template spans were present");
-            t.assert(renderSpans.every(s => s.getContextValue(types_1.ScoutContextNames.Name) === "<string>"), "render spans had <string> as name context");
+            t.assert(renderSpans.every(s => s.getContextValue(types_1.ScoutContextName.Name) === "<string>"), "render spans had <string> as name context");
         })
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => TestUtil.shutdownScout(t, scout, err));
