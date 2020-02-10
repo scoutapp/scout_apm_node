@@ -21,6 +21,15 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
         return expressExport;
     }
     /**
+     * Shim an existing express object
+     *
+     * @param {Function} fn - express function (default export)
+     * @returns {Function} the modified (shimmed) express function
+     */
+    shimExpressFn(fn) {
+        return this.shim(fn);
+    }
+    /**
      * Shim express application creation
      *
      * @param {any} expressExport

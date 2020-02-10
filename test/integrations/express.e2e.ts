@@ -1,6 +1,6 @@
 import * as test from "tape";
 import * as request from "supertest";
-import { Application } from "express";
+import { Express, Application } from "express";
 
 import {
     Scout,
@@ -19,9 +19,10 @@ setupRequireIntegrations(["express"]);
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 import { getIntegrationSymbol } from "../../lib/types/integrations";
+import ExpressIntegration from "../../lib/integrations/express";
 import { scoutMiddleware, ApplicationWithScout } from "../../lib/express";
 
-import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
+import { ScoutContextName, ScoutSpanOperation, ExpressFn } from "../../lib/types";
 
 import { FILE_PATHS } from "../fixtures";
 
@@ -38,10 +39,13 @@ test("errors in controller functions trigger context updates", t => {
     });
     const scout = new Scout(config);
 
-    const app: Application & ApplicationWithScout = TestUtil.appWithGETSynchronousError(scoutMiddleware({
-        scout,
-        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
-    }));
+    const app: Application & ApplicationWithScout = TestUtil.appWithGETSynchronousError(
+        scoutMiddleware({
+            scout,
+            requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        }),
+        (fn: ExpressFn) => ExpressIntegration.shimExpressFn(fn),
+    );
 
     // Set up a listener for the scout request that will be after the controller error is thrown
     // Express should catch the error (https://expressjs.com/en/guide/error-handling.html)

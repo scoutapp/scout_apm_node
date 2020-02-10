@@ -1,7 +1,15 @@
 import { RequireIntegration } from "../types/integrations";
+import { ExpressFn } from "../types";
 export declare class ExpressIntegration extends RequireIntegration {
     protected readonly packageName: string;
     protected shim(expressExport: any): any;
+    /**
+     * Shim an existing express object
+     *
+     * @param {Function} fn - express function (default export)
+     * @returns {Function} the modified (shimmed) express function
+     */
+    shimExpressFn(fn: ExpressFn): ExpressFn;
     /**
      * Shim express application creation
      *

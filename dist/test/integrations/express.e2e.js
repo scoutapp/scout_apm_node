@@ -9,7 +9,8 @@ const lib_1 = require("../../lib");
 lib_1.setupRequireIntegrations(["express"]);
 const TestUtil = require("../util");
 const integrations_1 = require("../../lib/types/integrations");
-const express_1 = require("../../lib/express");
+const express_1 = require("../../lib/integrations/express");
+const express_2 = require("../../lib/express");
 const types_1 = require("../../lib/types");
 test("the shim works", t => {
     t.assert(integrations_1.getIntegrationSymbol() in require("express"), "express export has the integration symbol");
@@ -22,10 +23,10 @@ test("errors in controller functions trigger context updates", t => {
         monitor: true,
     });
     const scout = new lib_1.Scout(config);
-    const app = TestUtil.appWithGETSynchronousError(express_1.scoutMiddleware({
+    const app = TestUtil.appWithGETSynchronousError(express_2.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
-    }));
+    }), (fn) => express_1.default.shimExpressFn(fn));
     // Set up a listener for the scout request that will be after the controller error is thrown
     // Express should catch the error (https://expressjs.com/en/guide/error-handling.html)
     // and terminate the request automatically

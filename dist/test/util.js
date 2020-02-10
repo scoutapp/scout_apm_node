@@ -197,11 +197,11 @@ function simpleInstrumentApp(middleware) {
     return app;
 }
 exports.simpleInstrumentApp = simpleInstrumentApp;
-function appWithGETSynchronousError(middleware) {
-    const app = express();
+function appWithGETSynchronousError(middleware, expressFnTransform) {
+    const app = expressFnTransform(express)();
     app.use(middleware);
     app.get("/", (req, res) => {
-        throw new Error("Intentional controller error (ignore this)");
+        throw new Error("Expected application error (appWithGETSynchronousError)");
     });
     return app;
 }

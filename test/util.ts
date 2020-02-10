@@ -2,7 +2,7 @@ import * as path from "path";
 import * as tmp from "tmp-promise";
 import * as express from "express";
 import * as net from "net";
-import { Application, Request, Response } from "express";
+import { Express, Application, Request, Response } from "express";
 import { generate as generateRandomString } from "randomstring";
 import { timeout, TimeoutError } from "promise-timeout";
 import { ChildProcess, spawn, SpawnOptions } from "child_process";
@@ -28,6 +28,7 @@ import {
     ScoutConfiguration,
     buildScoutConfiguration,
     convertCamelCaseToEnvVar,
+    ExpressFn,
 } from "../lib/types";
 import { ScoutOptions } from "../lib/scout";
 import { DEFAULT_SCOUT_CONFIGURATION } from "../lib/types/config";
@@ -253,12 +254,15 @@ export function simpleInstrumentApp(middleware: any): Application {
     return app;
 }
 
-export function appWithGETSynchronousError(middleware: any): Application {
-    const app = express();
+export function appWithGETSynchronousError(
+    middleware: any,
+    expressFnTransform: (expressFn: ExpressFn) => ExpressFn,
+): Application {
+    const app = expressFnTransform(express)();
     app.use(middleware);
 
     app.get("/", (req: any, res: Response) => {
-        throw new Error("Intentional controller error (ignore this)");
+        throw new Error("Expected application error (appWithGETSynchronousError)");
     });
 
     return app;

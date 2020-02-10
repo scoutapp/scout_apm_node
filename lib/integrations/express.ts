@@ -1,8 +1,9 @@
 import * as path from "path";
+import { Express, Application } from "express";
+
 import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout } from "../scout";
-import { Express, Application } from "express";
-import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation, ExpressFn } from "../types";
 import * as Constants from "../constants";
 
 const SUPPORTED_HTTP_METHODS = [
@@ -22,6 +23,16 @@ export class ExpressIntegration extends RequireIntegration {
         expressExport = this.shimApplicationCreate(expressExport);
 
         return expressExport;
+    }
+
+    /**
+     * Shim an existing express object
+     *
+     * @param {Function} fn - express function (default export)
+     * @returns {Function} the modified (shimmed) express function
+     */
+    public shimExpressFn(fn: ExpressFn): ExpressFn {
+        return this.shim(fn);
     }
 
     /**
