@@ -1,5 +1,5 @@
 import * as path from "path";
-import { ExportBag, RequireIntegration } from "../types/integrations";
+import { ExportBag, RequireIntegration, getIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
 import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
@@ -17,6 +17,9 @@ export class PGIntegration extends RequireIntegration {
         // Shim client
         this.shimPGConnect(pgExport);
         this.shimPGQuery(pgExport);
+
+        // Add the integration symbol to the client class itself
+        pgExport.Client[getIntegrationSymbol()] = this;
 
         return pgExport;
     }

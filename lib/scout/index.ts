@@ -654,9 +654,11 @@ export class Scout extends EventEmitter {
     }
 
     private onUncaughtExceptionListener(err: Error) {
+        // Get the current request if available
         const currentRequest = this.getCurrentRequest();
         if (!currentRequest) { return; }
 
+        // Mark the curernt request as errored
         currentRequest.addContext([{ name: ScoutContextName.Error, value: "true" }]);
     }
 

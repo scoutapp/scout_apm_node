@@ -12,6 +12,8 @@ class PGIntegration extends integrations_1.RequireIntegration {
         // Shim client
         this.shimPGConnect(pgExport);
         this.shimPGQuery(pgExport);
+        // Add the integration symbol to the client class itself
+        pgExport.Client[integrations_1.getIntegrationSymbol()] = this;
         return pgExport;
     }
     /**

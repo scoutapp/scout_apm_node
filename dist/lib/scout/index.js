@@ -477,10 +477,12 @@ class Scout extends events_1.EventEmitter {
         return Promise.resolve(this.agent);
     }
     onUncaughtExceptionListener(err) {
+        // Get the current request if available
         const currentRequest = this.getCurrentRequest();
         if (!currentRequest) {
             return;
         }
+        // Mark the curernt request as errored
         currentRequest.addContext([{ name: types_1.ScoutContextName.Error, value: "true" }]);
     }
 }

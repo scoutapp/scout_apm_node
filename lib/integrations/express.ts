@@ -32,9 +32,29 @@ export class ExpressIntegration extends RequireIntegration {
      * @returns {any} the modified express export
      */
     private shimHTTPMethod(method: string, expressExport: any): any {
+        method = method.toLowerCase();
+
+        const originalFn = expressExport[method];
+
+        // Replace the method
+        expressExport[method] = function(this: any) {
+            try {
+                return originalFn(...arguments);
+            } catch (err) {
+                // Get the current request if available
+                const currentRequest = this.getCurrentRequest();
+                if (currentRequest) {
+                    // Mark the curernt request as errored
+                    currentRequest.addContextSync([{ name: ScoutContextName.Error, value: "true" }]);
+                }
+
+                // Rethrow the original error
+                throw err;
+            }
+        };
+
         return expressExport;
     }
-
 }
 
 export default new ExpressIntegration();
