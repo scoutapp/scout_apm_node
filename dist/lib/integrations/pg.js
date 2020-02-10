@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
@@ -9,23 +8,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
         super(...arguments);
         this.packageName = "pg";
     }
-    ritmHook(exportBag) {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || integrations_1.scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-            // Make changes to the pg package to enable integration
-            this.shimPG(exports);
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-            // Add the scoutIntegrationSymbol to show that the shim has run
-            exports.Client[integrations_1.scoutIntegrationSymbol] = this;
-            // Return the modified exports
-            return exports;
-        });
-    }
-    shimPG(pgExport) {
+    shim(pgExport) {
         // Shim client
         this.shimPGConnect(pgExport);
         this.shimPGQuery(pgExport);

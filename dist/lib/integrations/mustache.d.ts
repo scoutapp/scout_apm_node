@@ -1,4 +1,4 @@
-import { ExportBag, RequireIntegration } from "../types/integrations";
+import { RequireIntegration } from "../types/integrations";
 /**
  * Integration for the mustache package
  * https://www.npmjs.com/package/mustache
@@ -6,8 +6,7 @@ import { ExportBag, RequireIntegration } from "../types/integrations";
  */
 export declare class MustacheIntegration extends RequireIntegration {
     protected readonly packageName: string;
-    ritmHook(exportBag: ExportBag): void;
-    private shimMustache;
+    protected shim(mustacheExport: any): any;
     /**
      * Shim for mustache's `render` function
      *

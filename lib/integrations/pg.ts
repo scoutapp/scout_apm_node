@@ -1,5 +1,4 @@
 import * as path from "path";
-import * as Hook from "require-in-the-middle";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
 import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
@@ -14,28 +13,7 @@ type Query = any;
 export class PGIntegration extends RequireIntegration {
     protected readonly packageName: string = "pg";
 
-    public ritmHook(exportBag: ExportBag): void {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-
-            // Make changes to the pg package to enable integration
-            this.shimPG(exports);
-
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-
-            // Add the scoutIntegrationSymbol to show that the shim has run
-            exports.Client[scoutIntegrationSymbol] = this;
-
-            // Return the modified exports
-            return exports;
-        });
-    }
-
-    private shimPG(pgExport: any) {
+    protected shim(pgExport: any) {
         // Shim client
         this.shimPGConnect(pgExport);
         this.shimPGQuery(pgExport);

@@ -1,5 +1,4 @@
 import * as path from "path";
-import * as Hook from "require-in-the-middle";
 import { ClientRequest, RequestOptions } from "http";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout, DoneCallback, ScoutSpan, ScoutRequest } from "../scout";
@@ -10,28 +9,7 @@ import * as Constants from "../constants";
 export class HttpIntegration extends RequireIntegration {
     protected readonly packageName: string = "http";
 
-    public ritmHook(exportBag: ExportBag): void {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-
-            // Make changes to the http package to enable integration
-            exports = this.shimHttp(exports);
-
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[scoutIntegrationSymbol] = this;
-
-            // Return the modified exports
-            return exports;
-        });
-    }
-
-    private shimHttp(httpExport: any): any {
+    protected shim(httpExport: any): any {
         // Check if the shim has already been performed
         if (scoutIntegrationSymbol in httpExport) { return; }
 

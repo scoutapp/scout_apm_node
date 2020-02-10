@@ -1,5 +1,4 @@
 import * as path from "path";
-import * as Hook from "require-in-the-middle";
 import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
 import { Connection, ConnectionConfig, QueryFunction } from "mysql";
@@ -13,28 +12,7 @@ type CreateConnectionFn = (connectionUri: string | ConnectionConfig) => Connecti
 export class MySQL2Integration extends RequireIntegration {
     protected readonly packageName: string = "mysql2";
 
-    public ritmHook(exportBag: ExportBag): void {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-
-            // Make changes to the mysql2 package to enable integration
-            exports = this.shimMySQL2(exports);
-
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[scoutIntegrationSymbol] = this;
-
-            // Return the modified exports
-            return exports;
-        });
-    }
-
-    private shimMySQL2(mysql2Export: any): any {
+    protected shim(mysql2Export: any): any {
         // Check if the shim has already been performed
         if (scoutIntegrationSymbol in mysql2Export) { return; }
 

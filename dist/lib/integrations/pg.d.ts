@@ -1,8 +1,7 @@
-import { ExportBag, RequireIntegration } from "../types/integrations";
+import { RequireIntegration } from "../types/integrations";
 export declare class PGIntegration extends RequireIntegration {
     protected readonly packageName: string;
-    ritmHook(exportBag: ExportBag): void;
-    private shimPG;
+    protected shim(pgExport: any): void;
     /**
      * Shim for pg's `connect` function
      *

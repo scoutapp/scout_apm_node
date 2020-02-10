@@ -1,8 +1,7 @@
-import { ExportBag, RequireIntegration } from "../types/integrations";
+import { RequireIntegration } from "../types/integrations";
 export declare class PugIntegration extends RequireIntegration {
     protected readonly packageName: string;
-    ritmHook(exportBag: ExportBag): void;
-    private shimPug;
+    protected shim(pugExport: any): any;
     /**
      * Shim for pug's `render` function
      *

@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
@@ -9,23 +8,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
         super(...arguments);
         this.packageName = "mysql";
     }
-    ritmHook(exportBag) {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || integrations_1.scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-            // Make changes to the mysql package to enable integration
-            exports = this.shimMySQL(exports);
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[integrations_1.scoutIntegrationSymbol] = this;
-            // Return the modified exports
-            return exports;
-        });
-    }
-    shimMySQL(mysqlExport) {
+    shim(mysqlExport) {
         // Check if the shim has already been performed
         if (integrations_1.scoutIntegrationSymbol in mysqlExport) {
             return;

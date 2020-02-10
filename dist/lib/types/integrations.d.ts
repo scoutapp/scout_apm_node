@@ -15,17 +15,24 @@ export declare abstract class RequireIntegration {
      */
     getPackageName(): string;
     /**
+     * Perform the require-in-the-middle Hook() that will set up the integration.
+     *
+     * @param {ExportBag} exportBag - The bag of exports that have been shimmed by scout already
+     */
+    ritmHook(exportBag: ExportBag): void;
+    /**
+     * Shim the exports of the given require()'d library
+     *
+     * @param {any} moduleExport - the export of the library
+     * @returns {any} the shimmed export
+     */
+    protected abstract shim(moduleExport: any): any;
+    /**
      * Set the logging function for the require integration
      *
      * @param {LogFn} logFn
      */
     setLogFn(logFn: LogFn): void;
-    /**
-     * Perform the require-in-the-middle Hook() that will set up the integration.
-     *
-     * @param {any} exportBag - The bag of exports that have been shimmed by scout already
-     */
-    abstract ritmHook(exportBag: ExportBag): any;
     /**
      * Set the scout instance for the integration
      *
@@ -35,7 +42,7 @@ export declare abstract class RequireIntegration {
 }
 declare class NullIntegration extends RequireIntegration {
     protected readonly packageName: string;
-    ritmHook(exportBag: ExportBag): void;
+    protected shim(someExport: any): void;
     setScoutInstance(): void;
 }
 export declare const doNothingRequireIntegration: NullIntegration;
