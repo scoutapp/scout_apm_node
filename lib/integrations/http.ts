@@ -1,6 +1,6 @@
 import * as path from "path";
 import { ClientRequest, RequestOptions } from "http";
-import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
+import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout, DoneCallback, ScoutSpan, ScoutRequest } from "../scout";
 import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
@@ -10,9 +10,6 @@ export class HttpIntegration extends RequireIntegration {
     protected readonly packageName: string = "http";
 
     protected shim(httpExport: any): any {
-        // Check if the shim has already been performed
-        if (scoutIntegrationSymbol in httpExport) { return; }
-
         this.shimHttpRequest(httpExport);
 
         return httpExport;

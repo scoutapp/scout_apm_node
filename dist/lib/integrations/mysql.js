@@ -9,10 +9,6 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
         this.packageName = "mysql";
     }
     shim(mysqlExport) {
-        // Check if the shim has already been performed
-        if (integrations_1.scoutIntegrationSymbol in mysqlExport) {
-            return;
-        }
         this.shimMySQLCreateConnection(mysqlExport);
         return mysqlExport;
     }
@@ -30,7 +26,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
             integration.logFn("[scout/integrations/mysql] Creating connection to Mysql db...", types_1.LogLevel.Trace);
             // Add the scout integration symbol so we know the connection itself has been
             // created by our shimmed createConnection
-            connection[integrations_1.scoutIntegrationSymbol] = this;
+            connection[integrations_1.getIntegrationSymbol()] = this;
             // Shim the connection instance itself
             return integration.shimMySQLConnectionQuery(mysqlExport, connection);
         };

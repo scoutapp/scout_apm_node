@@ -1,5 +1,5 @@
 import * as path from "path";
-import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
+import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout } from "../scout";
 import { Express } from "express";
 import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
@@ -18,9 +18,6 @@ export class ExpressIntegration extends RequireIntegration {
     protected readonly packageName: string = "express";
 
     protected shim(expressExport: any): any {
-        // Check if the shim has already been performed
-        if (scoutIntegrationSymbol in expressExport) { return; }
-
         // Shim all the HTTP methods
         SUPPORTED_HTTP_METHODS.forEach(m => this.shimHTTPMethod(m, expressExport));
 

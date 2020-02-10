@@ -14,7 +14,7 @@ let PG_CONTAINER_AND_OPTS = null;
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // it may break if import order is changed (require hook would not have taken place)
 test("the shim works", t => {
-    t.assert(pg_1.Client[integrations_1.scoutIntegrationSymbol], "client has the integration symbol");
+    t.assert(pg_1.Client[integrations_1.getIntegrationSymbol()], "client has the integration symbol");
     t.end();
 });
 // Pseudo test that will start a containerized postgres instance

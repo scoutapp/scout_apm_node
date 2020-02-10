@@ -7,6 +7,7 @@ const pug_1 = require("./pug");
 const mustache_1 = require("./mustache");
 const ejs_1 = require("./ejs");
 const http_1 = require("./http");
+const express_1 = require("./express");
 const integrations_1 = require("../types/integrations");
 function getIntegrationForPackage(pkg) {
     switch (pkg) {
@@ -17,6 +18,7 @@ function getIntegrationForPackage(pkg) {
         case mustache_1.default.getPackageName(): return mustache_1.default;
         case ejs_1.default.getPackageName(): return ejs_1.default;
         case http_1.default.getPackageName(): return http_1.default;
+        case express_1.default.getPackageName(): return express_1.default;
         default: return integrations_1.doNothingRequireIntegration;
     }
 }

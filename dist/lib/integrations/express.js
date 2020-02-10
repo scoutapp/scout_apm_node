@@ -15,10 +15,6 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
         this.packageName = "express";
     }
     shim(expressExport) {
-        // Check if the shim has already been performed
-        if (integrations_1.scoutIntegrationSymbol in expressExport) {
-            return;
-        }
         // Shim all the HTTP methods
         SUPPORTED_HTTP_METHODS.forEach(m => this.shimHTTPMethod(m, expressExport));
         return expressExport;

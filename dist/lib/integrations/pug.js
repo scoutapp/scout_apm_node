@@ -9,10 +9,6 @@ class PugIntegration extends integrations_1.RequireIntegration {
         this.packageName = "pug";
     }
     shim(pugExport) {
-        // Check if the shim has already been performed
-        if (integrations_1.scoutIntegrationSymbol in pugExport) {
-            return;
-        }
         this.shimPugRender(pugExport);
         this.shimPugRenderFile(pugExport);
         return pugExport;

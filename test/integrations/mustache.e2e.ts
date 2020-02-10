@@ -2,7 +2,7 @@ import * as test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
     Scout,
     ScoutEvent,
@@ -25,7 +25,7 @@ setupRequireIntegrations(["mustache"]);
 const mustache = require("mustache");
 
 test("the shim works", t => {
-    t.assert(scoutIntegrationSymbol in mustache, "mustache export has the integration symbol");
+    t.assert(getIntegrationSymbol() in mustache, "mustache export has the integration symbol");
     t.end();
 });
 

@@ -13,7 +13,7 @@ lib_1.setupRequireIntegrations(["http"]);
 // http needs to be imported this way to trigger the require integration
 const http = require("http");
 test("the shim works", t => {
-    t.assert(integrations_1.scoutIntegrationSymbol in http, "http export has the integration symbol");
+    t.assert(integrations_1.getIntegrationSymbol() in http, "http export has the integration symbol");
     t.end();
 });
 test("http connections are captured", t => {

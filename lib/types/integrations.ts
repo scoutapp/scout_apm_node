@@ -4,7 +4,13 @@ import { Scout } from "../scout";
 import { LogFn } from "./util";
 import * as Errors from "../errors";
 
-export const scoutIntegrationSymbol = Symbol("scout");
+let SYMBOL: symbol;
+
+export function getIntegrationSymbol(): symbol {
+    if (SYMBOL) { return SYMBOL; }
+    SYMBOL = Symbol("scout");
+    return SYMBOL;
+}
 
 export interface ExportBag {
     [key: string]: any;
@@ -32,9 +38,14 @@ export abstract class RequireIntegration {
     public ritmHook(exportBag: ExportBag): void {
         Hook([this.getPackageName()], (exports, name, basedir) => {
             // If the shim has already been run, then finish
-            if (!exports || scoutIntegrationSymbol in exports) {
+            if (!exports || getIntegrationSymbol() in exports) {
                 return exports;
             }
+
+            const sym = getIntegrationSymbol();
+
+            // Check if the shim has already been performed
+            if (sym in exports) { return exports; }
 
             // Make changes to the mysql2 package to enable integration
             exports = this.shim(exports);
@@ -43,8 +54,8 @@ export abstract class RequireIntegration {
             // Save the exported package in the exportBag for Scout to use later
             exportBag[this.getPackageName()] = exports;
 
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[scoutIntegrationSymbol] = this;
+            // Add the getIntegrationSymbol() to the mysql export itself to show the shim was run
+            exports[sym] = this;
 
             // Return the modified exports
             return exports;

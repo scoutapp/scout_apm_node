@@ -1,5 +1,5 @@
 import * as path from "path";
-import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
+import { ExportBag, RequireIntegration, getIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
 import { Connection, ConnectionConfig, QueryFunction } from "mysql";
 import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
@@ -13,11 +13,7 @@ export class MySQLIntegration extends RequireIntegration {
     protected readonly packageName: string = "mysql";
 
     protected shim(mysqlExport: any): any {
-        // Check if the shim has already been performed
-        if (scoutIntegrationSymbol in mysqlExport) { return; }
-
         this.shimMySQLCreateConnection(mysqlExport);
-
         return mysqlExport;
     }
 
@@ -37,7 +33,7 @@ export class MySQLIntegration extends RequireIntegration {
 
             // Add the scout integration symbol so we know the connection itself has been
             // created by our shimmed createConnection
-            connection[scoutIntegrationSymbol] = this;
+            connection[getIntegrationSymbol()] = this;
 
             // Shim the connection instance itself
             return integration.shimMySQLConnectionQuery(mysqlExport, connection);

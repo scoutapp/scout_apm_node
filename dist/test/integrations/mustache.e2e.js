@@ -13,7 +13,7 @@ lib_1.setupRequireIntegrations(["mustache"]);
 // mustache needs to be imported this way to trigger the require integration
 const mustache = require("mustache");
 test("the shim works", t => {
-    t.assert(integrations_1.scoutIntegrationSymbol in mustache, "mustache export has the integration symbol");
+    t.assert(integrations_1.getIntegrationSymbol() in mustache, "mustache export has the integration symbol");
     t.end();
 });
 test("mustache rendering a string is captured", t => {

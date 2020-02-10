@@ -13,10 +13,6 @@ class MustacheIntegration extends integrations_1.RequireIntegration {
         this.packageName = "mustache";
     }
     shim(mustacheExport) {
-        // Check if the shim has already been performed
-        if (integrations_1.scoutIntegrationSymbol in mustacheExport) {
-            return;
-        }
         this.shimMustacheClass(mustacheExport);
         return mustacheExport;
     }

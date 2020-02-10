@@ -16,7 +16,7 @@ TestUtil.startContainerizedMySQLTest(test, cao => { MYSQL2_CONTAINER_AND_OPTS = 
 test("the shim works", t => {
     TestUtil.makeConnectedMySQL2Connection(() => MYSQL2_CONTAINER_AND_OPTS)
         .then(conn => {
-        t.assert(integrations_1.scoutIntegrationSymbol in conn, "created connection has the integration symbol");
+        t.assert(integrations_1.getIntegrationSymbol() in conn, "created connection has the integration symbol");
     })
         .then(() => t.end())
         .catch(err => t.end(err));

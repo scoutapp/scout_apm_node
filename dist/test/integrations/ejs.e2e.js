@@ -12,7 +12,7 @@ lib_1.setupRequireIntegrations(["ejs"]);
 // ejs needs to be imported this way to trigger the require integration
 const ejs = require("ejs");
 test("the shim works", t => {
-    t.assert(integrations_1.scoutIntegrationSymbol in ejs, "ejs export has the integration symbol");
+    t.assert(integrations_1.getIntegrationSymbol() in ejs, "ejs export has the integration symbol");
     t.end();
 });
 test("ejs rendering a string is captured", t => {

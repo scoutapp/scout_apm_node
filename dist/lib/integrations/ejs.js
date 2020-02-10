@@ -10,10 +10,6 @@ class EJSIntegration extends integrations_1.RequireIntegration {
         this.packageName = "ejs";
     }
     shim(ejsExport) {
-        // Check if the shim has already been performed
-        if (integrations_1.scoutIntegrationSymbol in ejsExport) {
-            return;
-        }
         this.shimEJSRender(ejsExport);
         this.shimEJSRenderFile(ejsExport);
         return ejsExport;

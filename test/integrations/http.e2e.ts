@@ -13,7 +13,7 @@ import {
 
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { getIntegrationSymbol } from "../../lib/types/integrations";
 import { scoutMiddleware, ApplicationWithScout } from "../../lib/express";
 
 import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
@@ -28,7 +28,7 @@ setupRequireIntegrations(["http"]);
 const http = require("http");
 
 test("the shim works", t => {
-    t.assert(scoutIntegrationSymbol in http, "http export has the integration symbol");
+    t.assert(getIntegrationSymbol() in http, "http export has the integration symbol");
     t.end();
 });
 

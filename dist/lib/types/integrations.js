@@ -1,7 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const Hook = require("require-in-the-middle");
-exports.scoutIntegrationSymbol = Symbol("scout");
+let SYMBOL;
+function getIntegrationSymbol() {
+    if (SYMBOL) {
+        return SYMBOL;
+    }
+    SYMBOL = Symbol("scout");
+    return SYMBOL;
+}
+exports.getIntegrationSymbol = getIntegrationSymbol;
 class RequireIntegration {
     constructor() {
         this.logFn = () => undefined;
@@ -22,7 +30,12 @@ class RequireIntegration {
     ritmHook(exportBag) {
         Hook([this.getPackageName()], (exports, name, basedir) => {
             // If the shim has already been run, then finish
-            if (!exports || exports.scoutIntegrationSymbol in exports) {
+            if (!exports || getIntegrationSymbol() in exports) {
+                return exports;
+            }
+            const sym = getIntegrationSymbol();
+            // Check if the shim has already been performed
+            if (sym in exports) {
                 return exports;
             }
             // Make changes to the mysql2 package to enable integration
@@ -32,8 +45,8 @@ class RequireIntegration {
             }
             // Save the exported package in the exportBag for Scout to use later
             exportBag[this.getPackageName()] = exports;
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[exports.scoutIntegrationSymbol] = this;
+            // Add the getIntegrationSymbol() to the mysql export itself to show the shim was run
+            exports[sym] = this;
             // Return the modified exports
             return exports;
         });

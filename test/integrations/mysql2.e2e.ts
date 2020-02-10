@@ -2,7 +2,7 @@ import * as test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
     Scout,
     ScoutEvent,
@@ -38,7 +38,7 @@ TestUtil.startContainerizedMySQLTest(
 test("the shim works", t => {
     TestUtil.makeConnectedMySQL2Connection(() => MYSQL2_CONTAINER_AND_OPTS)
         .then(conn => {
-            t.assert(scoutIntegrationSymbol in conn, "created connection has the integration symbol");
+            t.assert(getIntegrationSymbol() in conn, "created connection has the integration symbol");
         })
         .then(() => t.end())
         .catch(err => t.end(err));

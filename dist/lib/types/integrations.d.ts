@@ -1,6 +1,6 @@
 import { Scout } from "../scout";
 import { LogFn } from "./util";
-export declare const scoutIntegrationSymbol: unique symbol;
+export declare function getIntegrationSymbol(): symbol;
 export interface ExportBag {
     [key: string]: any;
 }

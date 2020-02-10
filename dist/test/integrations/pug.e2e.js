@@ -12,7 +12,7 @@ lib_1.setupRequireIntegrations(["pug"]);
 // pug needs to be imported this way to trigger the require integration
 const pug = require("pug");
 test("the shim works", t => {
-    t.assert(integrations_1.scoutIntegrationSymbol in pug, "pug export has the integration symbol");
+    t.assert(integrations_1.getIntegrationSymbol() in pug, "pug export has the integration symbol");
     t.end();
 });
 test("pug rendering a string is captured", t => {

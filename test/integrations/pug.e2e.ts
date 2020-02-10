@@ -2,7 +2,7 @@ import * as test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
     Scout,
     ScoutEvent,
@@ -24,7 +24,7 @@ setupRequireIntegrations(["pug"]);
 const pug = require("pug");
 
 test("the shim works", t => {
-    t.assert(scoutIntegrationSymbol in pug, "pug export has the integration symbol");
+    t.assert(getIntegrationSymbol() in pug, "pug export has the integration symbol");
     t.end();
 });
 

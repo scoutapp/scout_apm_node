@@ -1,4 +1,4 @@
-import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
+import { ExportBag, RequireIntegration } from "../types/integrations";
 import { LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Mustache from "mustache";
 
@@ -11,9 +11,6 @@ export class MustacheIntegration extends RequireIntegration {
     protected readonly packageName: string = "mustache";
 
     protected shim(mustacheExport: any): any {
-        // Check if the shim has already been performed
-        if (scoutIntegrationSymbol in mustacheExport) { return; }
-
         this.shimMustacheClass(mustacheExport);
 
         return mustacheExport;

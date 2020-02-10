@@ -1,5 +1,5 @@
 import * as path from "path";
-import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
+import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout } from "../scout";
 import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
@@ -9,9 +9,6 @@ export class PugIntegration extends RequireIntegration {
     protected readonly packageName: string = "pug";
 
     protected shim(pugExport: any): any {
-        // Check if the shim has already been performed
-        if (scoutIntegrationSymbol in pugExport) { return; }
-
         this.shimPugRender(pugExport);
         this.shimPugRenderFile(pugExport);
 

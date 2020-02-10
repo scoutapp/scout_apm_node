@@ -9,10 +9,6 @@ class HttpIntegration extends integrations_1.RequireIntegration {
         this.packageName = "http";
     }
     shim(httpExport) {
-        // Check if the shim has already been performed
-        if (integrations_1.scoutIntegrationSymbol in httpExport) {
-            return;
-        }
         this.shimHttpRequest(httpExport);
         return httpExport;
     }
