@@ -15,6 +15,7 @@ import {
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
 setupRequireIntegrations(["express"]);
 
+
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 import { getIntegrationSymbol } from "../../lib/types/integrations";
@@ -24,10 +25,10 @@ import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { FILE_PATHS } from "../fixtures";
 
-// test("the shim works", t => {
-//     t.assert(getIntegrationSymbol() in express, "express export has the integration symbol");
-//     t.end();
-// });
+test("the shim works", t => {
+    t.assert(getIntegrationSymbol() in require("express"), "express export has the integration symbol");
+    t.end();
+});
 
 // https://github.com/scoutapp/scout_apm_node/issues/127
 test("errors in controller functions trigger context updates", t => {
@@ -37,15 +38,14 @@ test("errors in controller functions trigger context updates", t => {
     });
     const scout = new Scout(config);
 
-    const app: Application & ApplicationWithScout = TestUtil.expressAppWithGETControllerError(scoutMiddleware({
+    const app: Application & ApplicationWithScout = TestUtil.appWithGETSynchronousError(scoutMiddleware({
         scout,
-        requestTimeoutMs: 1000, // disable request timeout to stop test from hanging
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }));
 
-    // Set up a listener for the scout request that will be after timeout
-    // we expect the scout middleware to timeout the request before express actually does
-    // but before either of these timeouts happens, the unhandled exception in the handler
-    // should trigger context updates
+    // Set up a listener for the scout request that will be after the controller error is thrown
+    // Express should catch the error (https://expressjs.com/en/guide/error-handling.html)
+    // and terminate the request automatically
     const listener = (data: ScoutEventRequestSentData) => {
         // Once we know we're looking at the right request, we can remove the listener
         scout.removeListener(ScoutEvent.RequestSent, listener);
@@ -53,10 +53,6 @@ test("errors in controller functions trigger context updates", t => {
         // Find the context object that indicates an error occurred
         const errorCtx = data.request.getContextValue(ScoutContextName.Error);
         t.assert(errorCtx, "request had error context");
-
-        // Find the context object that indicates an timeout occurred
-        const timeoutCtx = data.request.getContextValue(ScoutContextName.Timeout);
-        t.assert(timeoutCtx, "request had timeout context");
 
         TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));

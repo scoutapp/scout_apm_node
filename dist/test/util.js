@@ -197,15 +197,15 @@ function simpleInstrumentApp(middleware) {
     return app;
 }
 exports.simpleInstrumentApp = simpleInstrumentApp;
-function expressAppWithGETControllerError(middleware) {
+function appWithGETSynchronousError(middleware) {
     const app = express();
     app.use(middleware);
     app.get("/", (req, res) => {
-        throw new Error("Controller error");
+        throw new Error("Intentional controller error (ignore this)");
     });
     return app;
 }
-exports.expressAppWithGETControllerError = expressAppWithGETControllerError;
+exports.appWithGETSynchronousError = appWithGETSynchronousError;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;

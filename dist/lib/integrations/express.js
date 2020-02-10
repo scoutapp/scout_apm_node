@@ -35,18 +35,6 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
             SUPPORTED_HTTP_METHODS.forEach(m => {
                 app = integration.shimHTTPMethod(m, app);
             });
-            // Add error handling middleware
-            app.use((err, req, res, next) => {
-                console.log("CAUGHT ERROR?");
-                // Get the current request if available
-                const currentRequest = integration.scout.getCurrentRequest();
-                console.log("current request?", currentRequest);
-                if (currentRequest) {
-                    // Mark the curernt request as errored
-                    currentRequest.addContextSync([{ name: types_1.ScoutContextName.Error, value: "true" }]);
-                }
-                return next(err);
-            });
             return app;
         };
         return expressExport;
@@ -65,28 +53,35 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
         // Replace the method
         app[method] = function () {
             const originalArgs = arguments;
+            const originalArgsArr = Array.from(originalArgs);
             // If no scout instance is available then run the function normally
             if (!integration.scout) {
-                return originalFn.apply(this, originalArgs);
+                return originalFn.apply(this, originalArgsArr);
             }
-            try {
-                console.log("BEFORE");
-                const result = originalFn.apply(this, originalArgs);
-                console.log("AFTER");
-                return result;
+            // Find the argument that is the handler
+            const handlerIdx = originalArgsArr.findIndex(a => typeof a === "function");
+            // If there's no handler we're in an unknown state
+            if (handlerIdx < 0) {
+                return originalFn.apply(this, originalArgsArr);
             }
-            catch (err) {
-                console.log("CAUGHT ERROR?");
-                // Get the current request if available
-                const currentRequest = integration.scout.getCurrentRequest();
-                console.log("current request?", currentRequest);
-                if (currentRequest) {
-                    // Mark the curernt request as errored
-                    currentRequest.addContextSync([{ name: types_1.ScoutContextName.Error, value: "true" }]);
+            const handler = originalArgsArr[handlerIdx];
+            // Shim the handler
+            originalArgs[handlerIdx] = function () {
+                try {
+                    return handler.apply(this, arguments);
                 }
-                // Rethrow the original error
-                throw err;
-            }
+                catch (err) {
+                    // Get the current request if available
+                    const currentRequest = integration.scout.getCurrentRequest();
+                    if (currentRequest) {
+                        // Mark the curernt request as errored
+                        currentRequest.addContextSync([{ name: types_1.ScoutContextName.Error, value: "true" }]);
+                    }
+                    // Rethrow the original error
+                    throw err;
+                }
+            };
+            return originalFn.apply(this, originalArgs);
         };
         return app;
     }

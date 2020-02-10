@@ -253,12 +253,12 @@ export function simpleInstrumentApp(middleware: any): Application {
     return app;
 }
 
-export function expressAppWithGETControllerError(middleware: any): Application {
+export function appWithGETSynchronousError(middleware: any): Application {
     const app = express();
     app.use(middleware);
 
     app.get("/", (req: any, res: Response) => {
-        throw new Error("Controller error");
+        throw new Error("Intentional controller error (ignore this)");
     });
 
     return app;
