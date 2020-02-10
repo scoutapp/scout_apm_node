@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
@@ -9,28 +8,8 @@ class HttpIntegration extends integrations_1.RequireIntegration {
         super(...arguments);
         this.packageName = "http";
     }
-    ritmHook(exportBag) {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || integrations_1.scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-            // Make changes to the http package to enable integration
-            exports = this.shimHttp(exports);
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[integrations_1.scoutIntegrationSymbol] = this;
-            // Return the modified exports
-            return exports;
-        });
-    }
-    shimHttp(httpExport) {
-        // Check if the shim has already been performed
-        if (integrations_1.scoutIntegrationSymbol in httpExport) {
-            return;
-        }
-        this.shimHttpRequest(httpExport);
+    shim(httpExport) {
+        httpExport = this.shimHttpRequest(httpExport);
         return httpExport;
     }
     /**
@@ -92,13 +71,13 @@ class HttpIntegration extends integrations_1.RequireIntegration {
                     return;
                 }
                 reqSpan = span;
-                reqSpan.addContext([{ name: types_1.ScoutContextNames.URL, value: url }]);
+                reqSpan.addContext([{ name: types_1.ScoutContextName.URL, value: url }]);
             });
             // Start the actual request
             const request = originalFn.apply(this, originalArgsArr);
             // If the request times out at any point add the context to the span
             request.once("timeout", () => {
-                reqSpan.addContext([{ name: types_1.ScoutContextNames.Timeout, value: "true" }]);
+                reqSpan.addContext([{ name: types_1.ScoutContextName.Timeout, value: "true" }]);
             });
             // After the request has started we'll finish the instrumentation
             // this is in contrast to stopping only on close
@@ -106,7 +85,7 @@ class HttpIntegration extends integrations_1.RequireIntegration {
                 stopSpan();
             });
             request.once("error", () => {
-                reqSpan.addContext([{ name: types_1.ScoutContextNames.Error, value: "true" }]);
+                reqSpan.addContext([{ name: types_1.ScoutContextName.Error, value: "true" }]);
             });
             request.once("close", () => {
                 stopSpan();

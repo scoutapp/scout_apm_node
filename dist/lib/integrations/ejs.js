@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
-const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
@@ -10,29 +9,9 @@ class EJSIntegration extends integrations_1.RequireIntegration {
         super(...arguments);
         this.packageName = "ejs";
     }
-    ritmHook(exportBag) {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || integrations_1.scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-            // Make changes to the ejs package to enable integration
-            exports = this.shimEJS(exports);
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[integrations_1.scoutIntegrationSymbol] = this;
-            // Return the modified exports
-            return exports;
-        });
-    }
-    shimEJS(ejsExport) {
-        // Check if the shim has already been performed
-        if (integrations_1.scoutIntegrationSymbol in ejsExport) {
-            return;
-        }
-        this.shimEJSRender(ejsExport);
-        this.shimEJSRenderFile(ejsExport);
+    shim(ejsExport) {
+        ejsExport = this.shimEJSRender(ejsExport);
+        ejsExport = this.shimEJSRenderFile(ejsExport);
         return ejsExport;
     }
     /**
@@ -51,7 +30,7 @@ class EJSIntegration extends integrations_1.RequireIntegration {
                 return originalFn.apply(null, originalArgs);
             }
             return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{ name: types_1.ScoutContextNames.Name, value: "<string>" }]);
+                span.addContextSync([{ name: types_1.ScoutContextName.Name, value: "<string>" }]);
                 return originalFn.apply(null, originalArgs);
             });
         };
@@ -80,7 +59,7 @@ class EJSIntegration extends integrations_1.RequireIntegration {
                     integration.logFn(`[scout/integrations/ejs] no span for instrument...`, types_1.LogLevel.Trace);
                     return originalFn.apply(null, originalArgs);
                 }
-                span.addContextSync([{ name: types_1.ScoutContextNames.Name, value: path }]);
+                span.addContextSync([{ name: types_1.ScoutContextName.Name, value: path }]);
                 return originalFn
                     .apply(null, originalArgs)
                     .then(result => {

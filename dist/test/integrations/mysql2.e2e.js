@@ -16,7 +16,7 @@ TestUtil.startContainerizedMySQLTest(test, cao => { MYSQL2_CONTAINER_AND_OPTS = 
 test("the shim works", t => {
     TestUtil.makeConnectedMySQL2Connection(() => MYSQL2_CONTAINER_AND_OPTS)
         .then(conn => {
-        t.assert(integrations_1.scoutIntegrationSymbol in conn, "created connection has the integration symbol");
+        t.assert(integrations_1.getIntegrationSymbol() in conn, "created connection has the integration symbol");
     })
         .then(() => t.end())
         .catch(err => t.end(err));
@@ -41,7 +41,7 @@ test("SELECT query during a request is recorded", t => {
                 t.fail("no DB span present on request");
                 throw new Error("No DB Span");
             }
-            t.equals(dbSpan.getContextValue(types_1.ScoutContextNames.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
+            t.equals(dbSpan.getContextValue(types_1.ScoutContextName.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
         })
             .then(() => conn.end())
             .then(() => TestUtil.shutdownScout(t, scout))

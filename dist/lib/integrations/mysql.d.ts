@@ -1,8 +1,7 @@
-import { ExportBag, RequireIntegration } from "../types/integrations";
+import { RequireIntegration } from "../types/integrations";
 export declare class MySQLIntegration extends RequireIntegration {
     protected readonly packageName: string;
-    ritmHook(exportBag: ExportBag): void;
-    private shimMySQL;
+    protected shim(mysqlExport: any): any;
     /**
      * Shim for mysql's `createConnection` function
      * since mysql handles everything from a connection instance this is where the shimming needs to happen

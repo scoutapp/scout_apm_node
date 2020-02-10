@@ -9,7 +9,7 @@ import {
     AgentEvent,
     AgentRequestType,
     BaseAgentRequest,
-    ScoutContextNames,
+    ScoutContextName,
     ScoutSpanOperation,
     ScoutEvent,
     URIReportingLevel,
@@ -437,7 +437,7 @@ test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
             throw new Error("No render span");
         }
 
-        t.assert(renderSpan.getContextValue(ScoutContextNames.Name), "template name context is present");
+        t.assert(renderSpan.getContextValue(ScoutContextName.Name), "template name context is present");
 
         // Shutdown and close scout
         TestUtil.shutdownScout(t, scout);
@@ -493,7 +493,7 @@ test("ejs integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
             throw new Error("No render span");
         }
 
-        t.assert(renderSpan.getContextValue(ScoutContextNames.Name), "template name context is present");
+        t.assert(renderSpan.getContextValue(ScoutContextName.Name), "template name context is present");
 
         // Shutdown and close scout
         TestUtil.shutdownScout(t, scout);
@@ -549,7 +549,7 @@ test("mustache integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, 
             throw new Error("No render span");
         }
 
-        t.assert(renderSpan.getContextValue(ScoutContextNames.Name), "template name context is present");
+        t.assert(renderSpan.getContextValue(ScoutContextName.Name), "template name context is present");
 
         // Shutdown and close scout
         TestUtil.shutdownScout(t, scout);

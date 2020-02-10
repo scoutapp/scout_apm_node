@@ -1,41 +1,16 @@
 import * as path from "path";
-import * as Hook from "require-in-the-middle";
 import { ClientRequest, RequestOptions } from "http";
-import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
+import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout, DoneCallback, ScoutSpan, ScoutRequest } from "../scout";
-import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
 export class HttpIntegration extends RequireIntegration {
     protected readonly packageName: string = "http";
 
-    public ritmHook(exportBag: ExportBag): void {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-
-            // Make changes to the http package to enable integration
-            exports = this.shimHttp(exports);
-
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[scoutIntegrationSymbol] = this;
-
-            // Return the modified exports
-            return exports;
-        });
-    }
-
-    private shimHttp(httpExport: any): any {
-        // Check if the shim has already been performed
-        if (scoutIntegrationSymbol in httpExport) { return; }
-
-        this.shimHttpRequest(httpExport);
+    protected shim(httpExport: any): any {
+        httpExport = this.shimHttpRequest(httpExport);
 
         return httpExport;
     }
@@ -103,7 +78,7 @@ export class HttpIntegration extends RequireIntegration {
                 if (!span) { return; }
 
                 reqSpan = span;
-                reqSpan.addContext([{name: ScoutContextNames.URL, value: url}]);
+                reqSpan.addContext([{name: ScoutContextName.URL, value: url}]);
             });
 
             // Start the actual request
@@ -111,7 +86,7 @@ export class HttpIntegration extends RequireIntegration {
 
             // If the request times out at any point add the context to the span
             request.once("timeout", () => {
-                reqSpan.addContext([{name: ScoutContextNames.Timeout, value: "true"}]);
+                reqSpan.addContext([{name: ScoutContextName.Timeout, value: "true"}]);
             });
 
             // After the request has started we'll finish the instrumentation
@@ -121,7 +96,7 @@ export class HttpIntegration extends RequireIntegration {
             });
 
             request.once("error", () => {
-                reqSpan.addContext([{name: ScoutContextNames.Error, value: "true"}]);
+                reqSpan.addContext([{name: ScoutContextName.Error, value: "true"}]);
             });
 
             request.once("close", () => {

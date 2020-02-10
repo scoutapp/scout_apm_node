@@ -14,7 +14,7 @@ let PG_CONTAINER_AND_OPTS = null;
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // it may break if import order is changed (require hook would not have taken place)
 test("the shim works", t => {
-    t.assert(pg_1.Client[integrations_1.scoutIntegrationSymbol], "client has the integration symbol");
+    t.assert(pg_1.Client[integrations_1.getIntegrationSymbol()], "client has the integration symbol");
     t.end();
 });
 // Pseudo test that will start a containerized postgres instance
@@ -41,7 +41,7 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
                 t.fail("no DB span present on request");
                 throw new Error("No DB Span");
             }
-            t.equals(dbSpan.getContextValue(types_1.ScoutContextNames.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
+            t.equals(dbSpan.getContextValue(types_1.ScoutContextName.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
         })
             .then(() => client.end())
             .then(() => TestUtil.shutdownScout(t, scout))
@@ -88,7 +88,7 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
             t.equal(dbSpans.length, 2, "two db spans were present");
             // Ensure span for CREATE TABLE is present
             const createTableSpan = dbSpans.find(s => {
-                return s.getContextValue(types_1.ScoutContextNames.DBStatement) === fixtures_1.SQL_QUERIES.CREATE_STRING_KV_TABLE;
+                return s.getContextValue(types_1.ScoutContextName.DBStatement) === fixtures_1.SQL_QUERIES.CREATE_STRING_KV_TABLE;
             });
             if (!createTableSpan) {
                 t.fail("span for CREATE TABLE not found");
@@ -96,7 +96,7 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
             }
             // Ensure span for INSERT is present
             const insertSpan = dbSpans.find(s => {
-                return s.getContextValue(types_1.ScoutContextNames.DBStatement) === fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE;
+                return s.getContextValue(types_1.ScoutContextName.DBStatement) === fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE;
             });
             if (!insertSpan) {
                 t.fail("span for INSERT not found");

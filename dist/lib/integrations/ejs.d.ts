@@ -1,8 +1,7 @@
-import { ExportBag, RequireIntegration } from "../types/integrations";
+import { RequireIntegration } from "../types/integrations";
 export declare class EJSIntegration extends RequireIntegration {
     protected readonly packageName: string;
-    ritmHook(exportBag: ExportBag): void;
-    private shimEJS;
+    protected shim(ejsExport: any): any;
     /**
      * Shim for ejs's `render` function
      *

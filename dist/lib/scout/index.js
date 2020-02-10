@@ -105,6 +105,8 @@ class Scout extends events_1.EventEmitter {
             .then(() => this.sendAppMetadataEvent())
             // Set up integration(s)
             .then(() => this.setupIntegrations())
+            // Set up process uncaught exception handler
+            .then(() => process.on("uncaughtException", ((err) => this.onUncaughtExceptionListener(err))))
             .then(() => this);
     }
     shutdown() {
@@ -473,6 +475,15 @@ class Scout extends events_1.EventEmitter {
             this.agent.on(evt, msg => this.emit(evt, msg));
         });
         return Promise.resolve(this.agent);
+    }
+    onUncaughtExceptionListener(err) {
+        // Get the current request if available
+        const currentRequest = this.getCurrentRequest();
+        if (!currentRequest) {
+            return;
+        }
+        // Mark the curernt request as errored
+        currentRequest.addContext([{ name: types_1.ScoutContextName.Error, value: "true" }]);
     }
 }
 exports.Scout = Scout;

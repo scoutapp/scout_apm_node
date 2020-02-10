@@ -23,14 +23,15 @@ import {
     LogLevel,
     ProcessOptions,
     ScoutConfiguration,
+    ScoutContextName,
     ScoutEvent,
     URIReportingLevel,
     buildDownloadOptions,
     buildProcessOptions,
     buildScoutConfiguration,
+    generateTriple,
     scrubRequestPath,
     scrubRequestPathParams,
-    generateTriple,
 } from "../types";
 import { EXPORT_BAG } from "../index";
 import { getIntegrationForPackage } from "../integrations";
@@ -187,6 +188,8 @@ export class Scout extends EventEmitter {
             .then(() => this.sendAppMetadataEvent())
         // Set up integration(s)
             .then(() => this.setupIntegrations())
+        // Set up process uncaught exception handler
+            .then(() => process.on("uncaughtException", ((err) => this.onUncaughtExceptionListener(err))))
             .then(() => this);
     }
 
@@ -648,6 +651,15 @@ export class Scout extends EventEmitter {
         });
 
         return Promise.resolve(this.agent);
+    }
+
+    private onUncaughtExceptionListener(err: Error) {
+        // Get the current request if available
+        const currentRequest = this.getCurrentRequest();
+        if (!currentRequest) { return; }
+
+        // Mark the curernt request as errored
+        currentRequest.addContext([{ name: ScoutContextName.Error, value: "true" }]);
     }
 
 }

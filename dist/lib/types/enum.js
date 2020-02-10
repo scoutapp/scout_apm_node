@@ -112,15 +112,15 @@ var ScoutEvent;
     ScoutEvent["IgnoredPathDetected"] = "scout-event-ignored-path-detected";
     ScoutEvent["RequestSent"] = "scout-event-request-sent";
 })(ScoutEvent = exports.ScoutEvent || (exports.ScoutEvent = {}));
-var ScoutContextNames;
-(function (ScoutContextNames) {
-    ScoutContextNames["Traceback"] = "stack";
-    ScoutContextNames["DBStatement"] = "db.statement";
-    ScoutContextNames["Error"] = "error";
-    ScoutContextNames["Name"] = "name";
-    ScoutContextNames["URL"] = "url";
-    ScoutContextNames["Timeout"] = "timeout";
-})(ScoutContextNames = exports.ScoutContextNames || (exports.ScoutContextNames = {}));
+var ScoutContextName;
+(function (ScoutContextName) {
+    ScoutContextName["Traceback"] = "stack";
+    ScoutContextName["DBStatement"] = "db.statement";
+    ScoutContextName["Error"] = "error";
+    ScoutContextName["Name"] = "name";
+    ScoutContextName["URL"] = "url";
+    ScoutContextName["Timeout"] = "timeout";
+})(ScoutContextName = exports.ScoutContextName || (exports.ScoutContextName = {}));
 var ScoutSpanOperation;
 (function (ScoutSpanOperation) {
     ScoutSpanOperation["SQLQuery"] = "SQL/Query";

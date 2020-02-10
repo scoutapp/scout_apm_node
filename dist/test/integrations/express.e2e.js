@@ -1,0 +1,56 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const test = require("tape");
+const request = require("supertest");
+const lib_1 = require("../../lib");
+// The hook for http has to be triggered this way in a typescript context
+// since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
+// *NOTE* this must be here since express is used from TestUtil
+lib_1.setupRequireIntegrations(["express"]);
+const TestUtil = require("../util");
+const integrations_1 = require("../../lib/types/integrations");
+const express_1 = require("../../lib/integrations/express");
+const express_2 = require("../../lib/express");
+const types_1 = require("../../lib/types");
+test("the shim works", t => {
+    t.assert(integrations_1.getIntegrationSymbol() in require("express"), "express export has the integration symbol");
+    t.end();
+});
+// https://github.com/scoutapp/scout_apm_node/issues/127
+test("errors in controller functions trigger context updates", t => {
+    const config = lib_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    const scout = new lib_1.Scout(config);
+    const app = TestUtil.appWithGETSynchronousError(express_2.scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0,
+    }), (fn) => express_1.default.shimExpressFn(fn));
+    // Set up a listener for the scout request that will be after the controller error is thrown
+    // Express should catch the error (https://expressjs.com/en/guide/error-handling.html)
+    // and terminate the request automatically
+    const listener = (data) => {
+        // Once we know we're looking at the right request, we can remove the listener
+        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        // Find the context object that indicates an error occurred
+        const errorCtx = data.request.getContextValue(types_1.ScoutContextName.Error);
+        t.assert(errorCtx, "request had error context");
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+    // Activate the listener
+    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout
+        .setup()
+        // Send a request to trigger the controller-function error
+        .then(() => {
+        return request(app)
+            .get("/")
+            .expect("Content-Type", /html/)
+            .expect(500)
+            .then(res => t.assert(res, "request sent"));
+    })
+        // If an error occurs, shutdown scout
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});

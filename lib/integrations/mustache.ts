@@ -1,6 +1,5 @@
-import * as Hook from "require-in-the-middle";
-import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
-import { LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import { ExportBag, RequireIntegration } from "../types/integrations";
+import { LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Mustache from "mustache";
 
 /**
@@ -11,32 +10,8 @@ import * as Mustache from "mustache";
 export class MustacheIntegration extends RequireIntegration {
     protected readonly packageName: string = "mustache";
 
-    public ritmHook(exportBag: ExportBag): void {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-
-            // Make changes to the mustache package to enable integration
-            exports = this.shimMustache(exports);
-
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[scoutIntegrationSymbol] = this;
-
-            // Return the modified exports
-            return exports;
-        });
-    }
-
-    private shimMustache(mustacheExport: any): any {
-        // Check if the shim has already been performed
-        if (scoutIntegrationSymbol in mustacheExport) { return; }
-
-        this.shimMustacheClass(mustacheExport);
+    protected shim(mustacheExport: any): any {
+        mustacheExport = this.shimMustacheClass(mustacheExport);
 
         return mustacheExport;
     }
@@ -58,7 +33,7 @@ export class MustacheIntegration extends RequireIntegration {
             if (!integration.scout) { return originalFn.apply(this, originalArgs); }
 
             return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{name: ScoutContextNames.Name, value: "<string>"}]);
+                span.addContextSync([{name: ScoutContextName.Name, value: "<string>"}]);
                 return originalFn.apply(this, originalArgs);
             });
         };

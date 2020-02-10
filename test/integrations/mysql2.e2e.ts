@@ -2,7 +2,7 @@ import * as test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
     Scout,
     ScoutEvent,
@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames } from "../../lib/types";
+import { ScoutContextName } from "../../lib/types";
 import { SQL_QUERIES } from "../fixtures";
 
 // The hook for MYSQL2 has to be triggered this way in a typescript context
@@ -38,7 +38,7 @@ TestUtil.startContainerizedMySQLTest(
 test("the shim works", t => {
     TestUtil.makeConnectedMySQL2Connection(() => MYSQL2_CONTAINER_AND_OPTS)
         .then(conn => {
-            t.assert(scoutIntegrationSymbol in conn, "created connection has the integration symbol");
+            t.assert(getIntegrationSymbol() in conn, "created connection has the integration symbol");
         })
         .then(() => t.end())
         .catch(err => t.end(err));
@@ -69,7 +69,7 @@ test("SELECT query during a request is recorded", t => {
                 }
 
                 t.equals(
-                    dbSpan.getContextValue(ScoutContextNames.DBStatement),
+                    dbSpan.getContextValue(ScoutContextName.DBStatement),
                     SQL_QUERIES.SELECT_TIME,
                     "db.statement tag is correct",
                 );

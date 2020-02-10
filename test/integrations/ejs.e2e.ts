@@ -2,7 +2,7 @@ import * as test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
     Scout,
     ScoutEvent,
@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
+import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { FILE_PATHS } from "../fixtures";
 
@@ -24,7 +24,7 @@ setupRequireIntegrations(["ejs"]);
 const ejs = require("ejs");
 
 test("the shim works", t => {
-    t.assert(scoutIntegrationSymbol in ejs, "ejs export has the integration symbol");
+    t.assert(getIntegrationSymbol() in ejs, "ejs export has the integration symbol");
     t.end();
 });
 
@@ -50,7 +50,7 @@ test("ejs rendering a string is captured", t => {
                 }
 
                 t.equals(
-                    renderSpan.getContextValue(ScoutContextNames.Name),
+                    renderSpan.getContextValue(ScoutContextName.Name),
                     "<string>",
                     "name tag is correct",
                 );
@@ -99,7 +99,7 @@ test("ejs rendering a file is captured", t => {
                 }
 
                 t.equals(
-                    renderSpan.getContextValue(ScoutContextNames.Name),
+                    renderSpan.getContextValue(ScoutContextName.Name),
                     FILE_PATHS.EJS_HTML5_BOILERPLATE,
                     "name tag is correct",
                 );

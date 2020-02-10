@@ -1,8 +1,7 @@
 import * as path from "path";
-import * as Hook from "require-in-the-middle";
-import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
+import { ExportBag, RequireIntegration, getIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
-import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // We can't import pg and use the Client class, and can't import *only* the types.
@@ -14,31 +13,15 @@ type Query = any;
 export class PGIntegration extends RequireIntegration {
     protected readonly packageName: string = "pg";
 
-    public ritmHook(exportBag: ExportBag): void {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-
-            // Make changes to the pg package to enable integration
-            this.shimPG(exports);
-
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-
-            // Add the scoutIntegrationSymbol to show that the shim has run
-            exports.Client[scoutIntegrationSymbol] = this;
-
-            // Return the modified exports
-            return exports;
-        });
-    }
-
-    private shimPG(pgExport: any) {
+    protected shim(pgExport: any) {
         // Shim client
-        this.shimPGConnect(pgExport);
-        this.shimPGQuery(pgExport);
+        pgExport = this.shimPGConnect(pgExport);
+        pgExport = this.shimPGQuery(pgExport);
+
+        // Add the integration symbol to the client class itself
+        pgExport.Client[getIntegrationSymbol()] = this;
+
+        return pgExport;
     }
 
     /**
@@ -46,7 +29,7 @@ export class PGIntegration extends RequireIntegration {
      *
      * @param {any} pgExport - pg's exports
      */
-    private shimPGConnect(pgExport: any) {
+    private shimPGConnect(pgExport: any): any {
         const Client: Client = pgExport.Client;
 
         const originalConnectFn = Client.prototype.connect;
@@ -85,6 +68,8 @@ export class PGIntegration extends RequireIntegration {
         };
 
         Client.prototype.connect = fn;
+
+        return pgExport;
     }
 
     /**
@@ -92,7 +77,7 @@ export class PGIntegration extends RequireIntegration {
      *
      * @param {any} pgExport - pg's exports
      */
-    private shimPGQuery(pgExport: any) {
+    private shimPGQuery(pgExport: any): any {
         const Client: Client = pgExport.Client;
         const Query: Query = pgExport.Query;
 
@@ -127,7 +112,7 @@ export class PGIntegration extends RequireIntegration {
 
                 return span
                 // Update span context with the DB statement
-                    .addContext([{name: ScoutContextNames.DBStatement, value: (query as any).text}])
+                    .addContext([{name: ScoutContextName.DBStatement, value: (query as any).text}])
                 // Run pg's query function
                     .then(() => originalQueryFn.apply(this, [config, values, userCallback]))
                     .then(res => {
@@ -148,6 +133,8 @@ export class PGIntegration extends RequireIntegration {
         };
 
         Client.prototype.query = fn;
+
+        return pgExport;
     }
 }
 

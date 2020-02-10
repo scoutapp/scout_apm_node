@@ -2,7 +2,7 @@ import * as test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
     Scout,
     ScoutEvent,
@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
+import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { FILE_PATHS } from "../fixtures";
 
@@ -24,7 +24,7 @@ setupRequireIntegrations(["pug"]);
 const pug = require("pug");
 
 test("the shim works", t => {
-    t.assert(scoutIntegrationSymbol in pug, "pug export has the integration symbol");
+    t.assert(getIntegrationSymbol() in pug, "pug export has the integration symbol");
     t.end();
 });
 
@@ -50,7 +50,7 @@ test("pug rendering a string is captured", t => {
                 }
 
                 t.equals(
-                    renderSpan.getContextValue(ScoutContextNames.Name),
+                    renderSpan.getContextValue(ScoutContextName.Name),
                     "<string>",
                     "name tag is correct",
                 );
@@ -95,7 +95,7 @@ test("pug rendering a file is captured", t => {
                 }
 
                 t.equals(
-                    renderSpan.getContextValue(ScoutContextNames.Name),
+                    renderSpan.getContextValue(ScoutContextName.Name),
                     FILE_PATHS.PUG_HTML5_BOILERPLATE,
                     "name tag is correct",
                 );

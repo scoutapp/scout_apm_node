@@ -5,7 +5,7 @@ import { ChildProcess } from "child_process";
 import { Client } from "pg";
 import { Connection } from "mysql";
 import ExternalProcessAgent from "../lib/agents/external-process";
-import { APIVersion, Agent, CoreAgentVersion, ProcessOptions, ScoutConfiguration } from "../lib/types";
+import { APIVersion, Agent, CoreAgentVersion, ProcessOptions, ScoutConfiguration, ExpressFn } from "../lib/types";
 import { ScoutOptions } from "../lib/scout";
 import { Scout } from "../lib";
 import { Test } from "tape";
@@ -27,6 +27,7 @@ export declare function simpleDynamicSegmentExpressApp(middleware: any, delayMs?
 export declare function simpleErrorApp(middleware: any, delayMs?: number): Application;
 export declare function simpleHTML5BoilerplateApp(middleware: any, templateEngine: "pug" | "ejs" | "mustache"): Application;
 export declare function simpleInstrumentApp(middleware: any): Application;
+export declare function appWithGETSynchronousError(middleware: any, expressFnTransform: (expressFn: ExpressFn) => ExpressFn): Application;
 export declare function testConfigurationOverlay(t: Test, opts: {
     appKey: string;
     envValue: string;

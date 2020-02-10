@@ -2,7 +2,7 @@ import * as test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
     Scout,
     ScoutEvent,
@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
+import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { FILE_PATHS, MUSTACHE_TEMPLATES } from "../fixtures";
 import * as Mustache from "mustache";
@@ -25,7 +25,7 @@ setupRequireIntegrations(["mustache"]);
 const mustache = require("mustache");
 
 test("the shim works", t => {
-    t.assert(scoutIntegrationSymbol in mustache, "mustache export has the integration symbol");
+    t.assert(getIntegrationSymbol() in mustache, "mustache export has the integration symbol");
     t.end();
 });
 
@@ -51,7 +51,7 @@ test("mustache rendering a string is captured", t => {
 
                 t.equals(renderSpans.length, 2, "two template spans were present");
                 t.assert(
-                    renderSpans.every(s => s.getContextValue(ScoutContextNames.Name) === "<string>"),
+                    renderSpans.every(s => s.getContextValue(ScoutContextName.Name) === "<string>"),
                     "render spans had <string> as name context",
                 );
             })

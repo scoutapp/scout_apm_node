@@ -122,7 +122,7 @@ class ScoutSpan {
         return stacktrace_js_1.get()
             .then(this.processStackFrames)
             .then(scoutFrames => ({
-            name: enum_1.ScoutContextNames.Traceback,
+            name: enum_1.ScoutContextName.Traceback,
             value: scoutFrames,
         }))
             .then(tracebackTag => this.addContext([tracebackTag]))
@@ -139,7 +139,7 @@ class ScoutSpan {
         }
         // Process the frames and add the context
         const scoutFrames = this.processStackFrames(stacktrace_js_1.getSync());
-        const tracebackTag = { name: enum_1.ScoutContextNames.Traceback, value: scoutFrames };
+        const tracebackTag = { name: enum_1.ScoutContextName.Traceback, value: scoutFrames };
         this.addContextSync([tracebackTag]);
         return this;
     }

@@ -21,7 +21,7 @@ import {
     sendTagSpan,
 } from "./index";
 
-import { ScoutContextNames } from "../types/enum";
+import { ScoutContextName } from "../types/enum";
 
 import * as Constants from "../constants";
 import * as Errors from "../errors";
@@ -191,7 +191,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         return getStackTrace()
             .then(this.processStackFrames)
             .then(scoutFrames => ({
-                name: ScoutContextNames.Traceback,
+                name: ScoutContextName.Traceback,
                 value: scoutFrames,
             }))
             .then(tracebackTag => this.addContext([tracebackTag]))
@@ -210,7 +210,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
         // Process the frames and add the context
         const scoutFrames = this.processStackFrames(getStackTraceSync());
-        const tracebackTag: ScoutTag = {name: ScoutContextNames.Traceback, value: scoutFrames};
+        const tracebackTag: ScoutTag = {name: ScoutContextName.Traceback, value: scoutFrames};
         this.addContextSync([tracebackTag]);
 
         return this;

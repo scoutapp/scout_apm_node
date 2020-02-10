@@ -197,6 +197,15 @@ function simpleInstrumentApp(middleware) {
     return app;
 }
 exports.simpleInstrumentApp = simpleInstrumentApp;
+function appWithGETSynchronousError(middleware, expressFnTransform) {
+    const app = expressFnTransform(express)();
+    app.use(middleware);
+    app.get("/", (req, res) => {
+        throw new Error("Expected application error (appWithGETSynchronousError)");
+    });
+    return app;
+}
+exports.appWithGETSynchronousError = appWithGETSynchronousError;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;

@@ -2,7 +2,7 @@ import * as test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
     Scout,
     ScoutEvent,
@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames, ScoutSpanOperation } from "../../lib/types";
+import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { SQL_QUERIES } from "../fixtures";
 
@@ -27,7 +27,7 @@ let PG_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // it may break if import order is changed (require hook would not have taken place)
 test("the shim works", t => {
-    t.assert(Client[scoutIntegrationSymbol], "client has the integration symbol");
+    t.assert(Client[getIntegrationSymbol()], "client has the integration symbol");
     t.end();
 });
 
@@ -61,7 +61,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
                 }
 
                 t.equals(
-                    dbSpan.getContextValue(ScoutContextNames.DBStatement),
+                    dbSpan.getContextValue(ScoutContextName.DBStatement),
                     SQL_QUERIES.SELECT_TIME,
                     "db.statement tag is correct",
                 );
@@ -117,7 +117,7 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_
 
                 // Ensure span for CREATE TABLE is present
                 const createTableSpan = dbSpans.find(s => {
-                    return s.getContextValue(ScoutContextNames.DBStatement) === SQL_QUERIES.CREATE_STRING_KV_TABLE;
+                    return s.getContextValue(ScoutContextName.DBStatement) === SQL_QUERIES.CREATE_STRING_KV_TABLE;
                 });
                 if (!createTableSpan) {
                     t.fail("span for CREATE TABLE not found");
@@ -126,7 +126,7 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_
 
                 // Ensure span for INSERT is present
                 const insertSpan = dbSpans.find(s => {
-                    return s.getContextValue(ScoutContextNames.DBStatement) === SQL_QUERIES.INSERT_STRING_KV_TABLE;
+                    return s.getContextValue(ScoutContextName.DBStatement) === SQL_QUERIES.INSERT_STRING_KV_TABLE;
                 });
                 if (!insertSpan) {
                     t.fail("span for INSERT not found");

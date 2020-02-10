@@ -15,7 +15,7 @@ let MYSQL_CONTAINER_AND_OPTS = null;
 // it may break if import order is changed (require hook would not have taken place)
 test("the shim works", t => {
     const connection = mysql_1.createConnection({ host: "localhost", user: "mysql", password: "mysql" });
-    t.assert(integrations_1.scoutIntegrationSymbol in connection, "created connection has the integration symbol");
+    t.assert(integrations_1.getIntegrationSymbol() in connection, "created connection has the integration symbol");
     t.end();
 });
 // Pseudo test that will start a containerized mysql instance
@@ -42,7 +42,7 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.MYSQL_TEST
                 t.fail("no DB span present on request");
                 throw new Error("No DB Span");
             }
-            t.equals(dbSpan.getContextValue(types_1.ScoutContextNames.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
+            t.equals(dbSpan.getContextValue(types_1.ScoutContextName.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
         })
             .then(() => conn.end())
             .then(() => TestUtil.shutdownScout(t, scout))

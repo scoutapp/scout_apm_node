@@ -2,7 +2,7 @@ import * as test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
-import { scoutIntegrationSymbol } from "../../lib/types/integrations";
+import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
     Scout,
     ScoutEvent,
@@ -12,7 +12,7 @@ import {
     setupRequireIntegrations,
 } from "../../lib";
 
-import { ScoutContextNames } from "../../lib/types";
+import { ScoutContextName } from "../../lib/types";
 import { SQL_QUERIES } from "../fixtures";
 
 // The hook for MYSQL has to be triggered this way in a typescript context
@@ -27,7 +27,7 @@ let MYSQL_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 // it may break if import order is changed (require hook would not have taken place)
 test("the shim works", t => {
     const connection = createMySQLConnection({host: "localhost", user: "mysql", password: "mysql"});
-    t.assert(scoutIntegrationSymbol in connection, "created connection has the integration symbol");
+    t.assert(getIntegrationSymbol() in connection, "created connection has the integration symbol");
     t.end();
 });
 
@@ -61,7 +61,7 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.MYSQL_TEST_
                 }
 
                 t.equals(
-                    dbSpan.getContextValue(ScoutContextNames.DBStatement),
+                    dbSpan.getContextValue(ScoutContextName.DBStatement),
                     SQL_QUERIES.SELECT_TIME,
                     "db.statement tag is correct",
                 );

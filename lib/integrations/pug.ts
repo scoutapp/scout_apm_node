@@ -1,41 +1,16 @@
 import * as path from "path";
-import * as Hook from "require-in-the-middle";
-import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
+import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout } from "../scout";
-import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
 export class PugIntegration extends RequireIntegration {
     protected readonly packageName: string = "pug";
 
-    public ritmHook(exportBag: ExportBag): void {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-
-            // Make changes to the pug package to enable integration
-            exports = this.shimPug(exports);
-
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[scoutIntegrationSymbol] = this;
-
-            // Return the modified exports
-            return exports;
-        });
-    }
-
-    private shimPug(pugExport: any): any {
-        // Check if the shim has already been performed
-        if (scoutIntegrationSymbol in pugExport) { return; }
-
-        this.shimPugRender(pugExport);
-        this.shimPugRenderFile(pugExport);
+    protected shim(pugExport: any): any {
+        pugExport = this.shimPugRender(pugExport);
+        pugExport = this.shimPugRenderFile(pugExport);
 
         return pugExport;
     }
@@ -57,7 +32,7 @@ export class PugIntegration extends RequireIntegration {
             if (!integration.scout) { return originalFn(src, options, callback); }
 
             return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{name: ScoutContextNames.Name, value: "<string>"}]);
+                span.addContextSync([{name: ScoutContextName.Name, value: "<string>"}]);
                 return originalFn(src, options, callback);
             });
         };
@@ -82,7 +57,7 @@ export class PugIntegration extends RequireIntegration {
             if (!integration.scout) { return originalFn(path, options, callback); }
 
             return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{name: ScoutContextNames.Name, value: path}]);
+                span.addContextSync([{name: ScoutContextName.Name, value: path}]);
                 return originalFn(path, options, callback);
             });
         };

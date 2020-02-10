@@ -122,7 +122,7 @@ export enum ScoutEvent {
     RequestSent = "scout-event-request-sent",
 }
 
-export enum ScoutContextNames {
+export enum ScoutContextName {
     Traceback = "stack",
     DBStatement = "db.statement",
     Error = "error",

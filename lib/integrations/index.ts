@@ -5,6 +5,7 @@ import pugIntegration from "./pug";
 import mustacheIntegration from "./mustache";
 import ejsIntegration from "./ejs";
 import httpIntegration from "./http";
+import expressIntegration from "./express";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
 
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
@@ -16,6 +17,7 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case mustacheIntegration.getPackageName(): return mustacheIntegration;
         case ejsIntegration.getPackageName(): return ejsIntegration;
         case httpIntegration.getPackageName(): return httpIntegration;
+        case expressIntegration.getPackageName(): return expressIntegration;
         default: return doNothingRequireIntegration;
     }
 }

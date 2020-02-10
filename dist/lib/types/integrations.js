@@ -1,6 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.scoutIntegrationSymbol = Symbol("scout");
+const Hook = require("require-in-the-middle");
+let SYMBOL;
+function getIntegrationSymbol() {
+    if (SYMBOL) {
+        return SYMBOL;
+    }
+    SYMBOL = Symbol("scout");
+    return SYMBOL;
+}
+exports.getIntegrationSymbol = getIntegrationSymbol;
 class RequireIntegration {
     constructor() {
         this.logFn = () => undefined;
@@ -12,6 +21,35 @@ class RequireIntegration {
      */
     getPackageName() {
         return this.packageName;
+    }
+    /**
+     * Perform the require-in-the-middle Hook() that will set up the integration.
+     *
+     * @param {ExportBag} exportBag - The bag of exports that have been shimmed by scout already
+     */
+    ritmHook(exportBag) {
+        Hook([this.getPackageName()], (exports, name, basedir) => {
+            // If the shim has already been run, then finish
+            if (!exports || getIntegrationSymbol() in exports) {
+                return exports;
+            }
+            const sym = getIntegrationSymbol();
+            // Check if the shim has already been performed
+            if (sym in exports) {
+                return exports;
+            }
+            // Make changes to the mysql2 package to enable integration
+            exports = this.shim(exports);
+            if (!exports) {
+                throw new Error("Failed to shim export");
+            }
+            // Save the exported package in the exportBag for Scout to use later
+            exportBag[this.getPackageName()] = exports;
+            // Add the getIntegrationSymbol() to the mysql export itself to show the shim was run
+            exports[sym] = this;
+            // Return the modified exports
+            return exports;
+        });
     }
     /**
      * Set the logging function for the require integration
@@ -36,7 +74,7 @@ class NullIntegration extends RequireIntegration {
         super(...arguments);
         this.packageName = "";
     }
-    ritmHook(exportBag) {
+    shim(someExport) {
         throw new Error("NullIntegration");
     }
     setScoutInstance() {

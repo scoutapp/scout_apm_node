@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Hook = require("require-in-the-middle");
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
@@ -9,28 +8,9 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
         super(...arguments);
         this.packageName = "mysql";
     }
-    ritmHook(exportBag) {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || integrations_1.scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-            // Make changes to the mysql package to enable integration
-            exports = this.shimMySQL(exports);
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[integrations_1.scoutIntegrationSymbol] = this;
-            // Return the modified exports
-            return exports;
-        });
-    }
-    shimMySQL(mysqlExport) {
-        // Check if the shim has already been performed
-        if (integrations_1.scoutIntegrationSymbol in mysqlExport) {
-            return;
-        }
-        return this.shimMySQLCreateConnection(mysqlExport);
+    shim(mysqlExport) {
+        mysqlExport = this.shimMySQLCreateConnection(mysqlExport);
+        return mysqlExport;
     }
     /**
      * Shim for mysql's `createConnection` function
@@ -46,7 +26,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
             integration.logFn("[scout/integrations/mysql] Creating connection to Mysql db...", types_1.LogLevel.Trace);
             // Add the scout integration symbol so we know the connection itself has been
             // created by our shimmed createConnection
-            connection[integrations_1.scoutIntegrationSymbol] = this;
+            connection[integrations_1.getIntegrationSymbol()] = this;
             // Shim the connection instance itself
             return integration.shimMySQLConnectionQuery(mysqlExport, connection);
         };
@@ -112,7 +92,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
                 arguments[cbIdx] = wrappedCb;
                 span
                     // Add query to the context
-                    .addContext([{ name: types_1.ScoutContextNames.DBStatement, value: builtQuery.sql }])
+                    .addContext([{ name: types_1.ScoutContextName.DBStatement, value: builtQuery.sql }])
                     // Do the query
                     .then(() => {
                     ranFn = true;

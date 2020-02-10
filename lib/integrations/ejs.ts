@@ -1,41 +1,16 @@
 import * as path from "path";
-import * as Hook from "require-in-the-middle";
-import { ExportBag, RequireIntegration, scoutIntegrationSymbol } from "../types/integrations";
+import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout } from "../scout";
-import { LogFn, LogLevel, ScoutContextNames, ScoutSpanOperation } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
 export class EJSIntegration extends RequireIntegration {
     protected readonly packageName: string = "ejs";
 
-    public ritmHook(exportBag: ExportBag): void {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
-            // If the shim has already been run, then finish
-            if (!exports || scoutIntegrationSymbol in exports) {
-                return exports;
-            }
-
-            // Make changes to the ejs package to enable integration
-            exports = this.shimEJS(exports);
-
-            // Save the exported package in the exportBag for Scout to use later
-            exportBag[this.getPackageName()] = exports;
-
-            // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run
-            exports[scoutIntegrationSymbol] = this;
-
-            // Return the modified exports
-            return exports;
-        });
-    }
-
-    private shimEJS(ejsExport: any): any {
-        // Check if the shim has already been performed
-        if (scoutIntegrationSymbol in ejsExport) { return; }
-
-        this.shimEJSRender(ejsExport);
-        this.shimEJSRenderFile(ejsExport);
+    protected shim(ejsExport: any): any {
+        ejsExport = this.shimEJSRender(ejsExport);
+        ejsExport = this.shimEJSRenderFile(ejsExport);
 
         return ejsExport;
     }
@@ -57,7 +32,7 @@ export class EJSIntegration extends RequireIntegration {
             if (!integration.scout) { return originalFn.apply(null, originalArgs); }
 
             return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{name: ScoutContextNames.Name, value: "<string>"}]);
+                span.addContextSync([{name: ScoutContextName.Name, value: "<string>"}]);
                 return originalFn.apply(null, originalArgs);
             });
         };
@@ -90,7 +65,7 @@ export class EJSIntegration extends RequireIntegration {
                     return originalFn.apply(null, originalArgs);
                 }
 
-                span.addContextSync([{name: ScoutContextNames.Name, value: path}]);
+                span.addContextSync([{name: ScoutContextName.Name, value: path}]);
 
                 return originalFn
                     .apply(null, originalArgs)
