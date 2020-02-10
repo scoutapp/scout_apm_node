@@ -44,7 +44,7 @@ export class ExpressIntegration extends RequireIntegration {
             });
 
             return app;
-        }
+        };
 
         return expressExport;
     }

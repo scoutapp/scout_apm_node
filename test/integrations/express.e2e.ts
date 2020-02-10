@@ -13,8 +13,8 @@ import {
 
 // The hook for http has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
+// *NOTE* this must be here since express is used from TestUtil
 setupRequireIntegrations(["express"]);
-
 
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";

@@ -5,6 +5,7 @@ const request = require("supertest");
 const lib_1 = require("../../lib");
 // The hook for http has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
+// *NOTE* this must be here since express is used from TestUtil
 lib_1.setupRequireIntegrations(["express"]);
 const TestUtil = require("../util");
 const integrations_1 = require("../../lib/types/integrations");
