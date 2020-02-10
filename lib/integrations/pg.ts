@@ -17,6 +17,8 @@ export class PGIntegration extends RequireIntegration {
         // Shim client
         this.shimPGConnect(pgExport);
         this.shimPGQuery(pgExport);
+
+        return pgExport;
     }
 
     /**

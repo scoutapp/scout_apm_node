@@ -27,6 +27,9 @@ class RequireIntegration {
             }
             // Make changes to the mysql2 package to enable integration
             exports = this.shim(exports);
+            if (!exports) {
+                throw new Error("Failed to shim export");
+            }
             // Save the exported package in the exportBag for Scout to use later
             exportBag[this.getPackageName()] = exports;
             // Add the scoutIntegrationSymbol to the mysql export itself to show the shim was run

@@ -13,7 +13,8 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
         if (integrations_1.scoutIntegrationSymbol in mysqlExport) {
             return;
         }
-        return this.shimMySQLCreateConnection(mysqlExport);
+        this.shimMySQLCreateConnection(mysqlExport);
+        return mysqlExport;
     }
     /**
      * Shim for mysql's `createConnection` function

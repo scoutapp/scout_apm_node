@@ -16,7 +16,9 @@ export class MySQL2Integration extends RequireIntegration {
         // Check if the shim has already been performed
         if (scoutIntegrationSymbol in mysql2Export) { return; }
 
-        return this.shimMySQL2CreateConnection(mysql2Export);
+        this.shimMySQL2CreateConnection(mysql2Export);
+
+        return mysql2Export;
     }
 
     /**

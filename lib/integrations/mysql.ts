@@ -16,7 +16,9 @@ export class MySQLIntegration extends RequireIntegration {
         // Check if the shim has already been performed
         if (scoutIntegrationSymbol in mysqlExport) { return; }
 
-        return this.shimMySQLCreateConnection(mysqlExport);
+        this.shimMySQLCreateConnection(mysqlExport);
+
+        return mysqlExport;
     }
 
     /**

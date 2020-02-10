@@ -38,6 +38,7 @@ export abstract class RequireIntegration {
 
             // Make changes to the mysql2 package to enable integration
             exports = this.shim(exports);
+            if (!exports) { throw new Error("Failed to shim export"); }
 
             // Save the exported package in the exportBag for Scout to use later
             exportBag[this.getPackageName()] = exports;
@@ -80,7 +81,7 @@ export abstract class RequireIntegration {
 class NullIntegration extends RequireIntegration {
     protected readonly packageName: string = "";
 
-    protected shim(someExport: any): void {
+    protected shim(someExport: any): any {
         throw new Error("NullIntegration");
     }
 

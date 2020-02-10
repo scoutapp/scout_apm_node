@@ -42,7 +42,7 @@ export declare abstract class RequireIntegration {
 }
 declare class NullIntegration extends RequireIntegration {
     protected readonly packageName: string;
-    protected shim(someExport: any): void;
+    protected shim(someExport: any): any;
     setScoutInstance(): void;
 }
 export declare const doNothingRequireIntegration: NullIntegration;

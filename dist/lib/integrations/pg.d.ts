@@ -1,7 +1,7 @@
 import { RequireIntegration } from "../types/integrations";
 export declare class PGIntegration extends RequireIntegration {
     protected readonly packageName: string;
-    protected shim(pgExport: any): void;
+    protected shim(pgExport: any): any;
     /**
      * Shim for pg's `connect` function
      *
