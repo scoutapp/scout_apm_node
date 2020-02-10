@@ -9,8 +9,8 @@ export class PugIntegration extends RequireIntegration {
     protected readonly packageName: string = "pug";
 
     protected shim(pugExport: any): any {
-        this.shimPugRender(pugExport);
-        this.shimPugRenderFile(pugExport);
+        pugExport = this.shimPugRender(pugExport);
+        pugExport = this.shimPugRenderFile(pugExport);
 
         return pugExport;
     }

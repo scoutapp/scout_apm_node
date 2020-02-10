@@ -9,7 +9,7 @@ class HttpIntegration extends integrations_1.RequireIntegration {
         this.packageName = "http";
     }
     shim(httpExport) {
-        this.shimHttpRequest(httpExport);
+        httpExport = this.shimHttpRequest(httpExport);
         return httpExport;
     }
     /**

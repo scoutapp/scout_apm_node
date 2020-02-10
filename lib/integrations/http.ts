@@ -10,7 +10,7 @@ export class HttpIntegration extends RequireIntegration {
     protected readonly packageName: string = "http";
 
     protected shim(httpExport: any): any {
-        this.shimHttpRequest(httpExport);
+        httpExport = this.shimHttpRequest(httpExport);
 
         return httpExport;
     }

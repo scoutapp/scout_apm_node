@@ -11,7 +11,7 @@ export class MustacheIntegration extends RequireIntegration {
     protected readonly packageName: string = "mustache";
 
     protected shim(mustacheExport: any): any {
-        this.shimMustacheClass(mustacheExport);
+        mustacheExport = this.shimMustacheClass(mustacheExport);
 
         return mustacheExport;
     }

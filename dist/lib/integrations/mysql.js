@@ -9,7 +9,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
         this.packageName = "mysql";
     }
     shim(mysqlExport) {
-        this.shimMySQLCreateConnection(mysqlExport);
+        mysqlExport = this.shimMySQLCreateConnection(mysqlExport);
         return mysqlExport;
     }
     /**

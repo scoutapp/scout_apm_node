@@ -13,7 +13,8 @@ export class MySQLIntegration extends RequireIntegration {
     protected readonly packageName: string = "mysql";
 
     protected shim(mysqlExport: any): any {
-        this.shimMySQLCreateConnection(mysqlExport);
+        mysqlExport = this.shimMySQLCreateConnection(mysqlExport);
+
         return mysqlExport;
     }
 

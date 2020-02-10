@@ -15,8 +15,8 @@ export class PGIntegration extends RequireIntegration {
 
     protected shim(pgExport: any) {
         // Shim client
-        this.shimPGConnect(pgExport);
-        this.shimPGQuery(pgExport);
+        pgExport = this.shimPGConnect(pgExport);
+        pgExport = this.shimPGQuery(pgExport);
 
         // Add the integration symbol to the client class itself
         pgExport.Client[getIntegrationSymbol()] = this;
@@ -29,7 +29,7 @@ export class PGIntegration extends RequireIntegration {
      *
      * @param {any} pgExport - pg's exports
      */
-    private shimPGConnect(pgExport: any) {
+    private shimPGConnect(pgExport: any): any {
         const Client: Client = pgExport.Client;
 
         const originalConnectFn = Client.prototype.connect;
@@ -68,6 +68,8 @@ export class PGIntegration extends RequireIntegration {
         };
 
         Client.prototype.connect = fn;
+
+        return pgExport;
     }
 
     /**
@@ -75,7 +77,7 @@ export class PGIntegration extends RequireIntegration {
      *
      * @param {any} pgExport - pg's exports
      */
-    private shimPGQuery(pgExport: any) {
+    private shimPGQuery(pgExport: any): any {
         const Client: Client = pgExport.Client;
         const Query: Query = pgExport.Query;
 
@@ -131,6 +133,8 @@ export class PGIntegration extends RequireIntegration {
         };
 
         Client.prototype.query = fn;
+
+        return pgExport;
     }
 }
 

@@ -9,8 +9,8 @@ class PugIntegration extends integrations_1.RequireIntegration {
         this.packageName = "pug";
     }
     shim(pugExport) {
-        this.shimPugRender(pugExport);
-        this.shimPugRenderFile(pugExport);
+        pugExport = this.shimPugRender(pugExport);
+        pugExport = this.shimPugRenderFile(pugExport);
         return pugExport;
     }
     /**

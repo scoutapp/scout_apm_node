@@ -9,8 +9,8 @@ export class EJSIntegration extends RequireIntegration {
     protected readonly packageName: string = "ejs";
 
     protected shim(ejsExport: any): any {
-        this.shimEJSRender(ejsExport);
-        this.shimEJSRenderFile(ejsExport);
+        ejsExport = this.shimEJSRender(ejsExport);
+        ejsExport = this.shimEJSRenderFile(ejsExport);
 
         return ejsExport;
     }

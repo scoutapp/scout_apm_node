@@ -27,6 +27,7 @@ export declare function simpleDynamicSegmentExpressApp(middleware: any, delayMs?
 export declare function simpleErrorApp(middleware: any, delayMs?: number): Application;
 export declare function simpleHTML5BoilerplateApp(middleware: any, templateEngine: "pug" | "ejs" | "mustache"): Application;
 export declare function simpleInstrumentApp(middleware: any): Application;
+export declare function expressAppWithGETControllerError(middleware: any): Application;
 export declare function testConfigurationOverlay(t: Test, opts: {
     appKey: string;
     envValue: string;

@@ -253,6 +253,17 @@ export function simpleInstrumentApp(middleware: any): Application {
     return app;
 }
 
+export function expressAppWithGETControllerError(middleware: any): Application {
+    const app = express();
+    app.use(middleware);
+
+    app.get("/", (req: any, res: Response) => {
+        throw new Error("Controller error");
+    });
+
+    return app;
+}
+
 // Test that a given variable is effectively overlaid in the configuration
 export function testConfigurationOverlay(
     t: Test,

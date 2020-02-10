@@ -10,8 +10,8 @@ class PGIntegration extends integrations_1.RequireIntegration {
     }
     shim(pgExport) {
         // Shim client
-        this.shimPGConnect(pgExport);
-        this.shimPGQuery(pgExport);
+        pgExport = this.shimPGConnect(pgExport);
+        pgExport = this.shimPGQuery(pgExport);
         // Add the integration symbol to the client class itself
         pgExport.Client[integrations_1.getIntegrationSymbol()] = this;
         return pgExport;
@@ -52,6 +52,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
             });
         };
         Client.prototype.connect = fn;
+        return pgExport;
     }
     /**
      * Shim for pg's `query` function
@@ -108,6 +109,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
             });
         };
         Client.prototype.query = fn;
+        return pgExport;
     }
 }
 exports.PGIntegration = PGIntegration;

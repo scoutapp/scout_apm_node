@@ -13,7 +13,7 @@ class MustacheIntegration extends integrations_1.RequireIntegration {
         this.packageName = "mustache";
     }
     shim(mustacheExport) {
-        this.shimMustacheClass(mustacheExport);
+        mustacheExport = this.shimMustacheClass(mustacheExport);
         return mustacheExport;
     }
     /**

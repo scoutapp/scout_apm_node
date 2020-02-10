@@ -16,28 +16,70 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
         this.packageName = "express";
     }
     shim(expressExport) {
-        // Shim all the HTTP methods
-        SUPPORTED_HTTP_METHODS.forEach(m => this.shimHTTPMethod(m, expressExport));
+        // Shim application creation
+        expressExport = this.shimApplicationCreate(expressExport);
+        return expressExport;
+    }
+    /**
+     * Shim express application creation
+     *
+     * @param {any} expressExport
+     * @return {any} the modified express export
+     */
+    shimApplicationCreate(expressExport) {
+        const integration = this;
+        const originalFn = expressExport;
+        expressExport = function () {
+            let app = originalFn.apply(this, arguments);
+            // Shim all the HTTP methods
+            SUPPORTED_HTTP_METHODS.forEach(m => {
+                app = integration.shimHTTPMethod(m, app);
+            });
+            // Add error handling middleware
+            app.use((err, req, res, next) => {
+                console.log("CAUGHT ERROR?");
+                // Get the current request if available
+                const currentRequest = integration.scout.getCurrentRequest();
+                console.log("current request?", currentRequest);
+                if (currentRequest) {
+                    // Mark the curernt request as errored
+                    currentRequest.addContextSync([{ name: types_1.ScoutContextName.Error, value: "true" }]);
+                }
+                return next(err);
+            });
+            return app;
+        };
         return expressExport;
     }
     /**
      * Shim an individual HTTP method for express
      *
      * @param {string} method - the HTTP method (ex. "GET")
-     * @param {any} expressExport - the express export
+     * @param {Application} app - the express app
      * @returns {any} the modified express export
      */
-    shimHTTPMethod(method, expressExport) {
+    shimHTTPMethod(method, app) {
+        const integration = this;
         method = method.toLowerCase();
-        const originalFn = expressExport[method];
+        const originalFn = app[method];
         // Replace the method
-        expressExport[method] = function () {
+        app[method] = function () {
+            const originalArgs = arguments;
+            // If no scout instance is available then run the function normally
+            if (!integration.scout) {
+                return originalFn.apply(this, originalArgs);
+            }
             try {
-                return originalFn(...arguments);
+                console.log("BEFORE");
+                const result = originalFn.apply(this, originalArgs);
+                console.log("AFTER");
+                return result;
             }
             catch (err) {
+                console.log("CAUGHT ERROR?");
                 // Get the current request if available
-                const currentRequest = this.getCurrentRequest();
+                const currentRequest = integration.scout.getCurrentRequest();
+                console.log("current request?", currentRequest);
                 if (currentRequest) {
                     // Mark the curernt request as errored
                     currentRequest.addContextSync([{ name: types_1.ScoutContextName.Error, value: "true" }]);
@@ -46,7 +88,7 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
                 throw err;
             }
         };
-        return expressExport;
+        return app;
     }
 }
 exports.ExpressIntegration = ExpressIntegration;

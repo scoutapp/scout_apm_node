@@ -197,6 +197,15 @@ function simpleInstrumentApp(middleware) {
     return app;
 }
 exports.simpleInstrumentApp = simpleInstrumentApp;
+function expressAppWithGETControllerError(middleware) {
+    const app = express();
+    app.use(middleware);
+    app.get("/", (req, res) => {
+        throw new Error("Controller error");
+    });
+    return app;
+}
+exports.expressAppWithGETControllerError = expressAppWithGETControllerError;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;
