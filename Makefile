@@ -7,7 +7,7 @@
 				ensure-mysql-docker-image test-integration-mysql test-integration-mysql2 \
 				test-integration-pug test-integration-mustache test-integration-ejs \
 				generate-agent-configs \
-				package print-package-filename
+				target-dir package print-package-filename publish
 
 all: install build
 
@@ -123,9 +123,13 @@ generate-agent-configs:
 # Packaging #
 #############
 
-PACKAGE_FILENAME ?= $(PACKAGE_NAME)-v$(VERSION).tgz
+FULL_PACKAGE_NAME ?= scout_apm-$(PACKAGE_NAME)
+PACKAGE_FILENAME ?= $(FULL_PACKAGE_NAME)-v$(VERSION).tgz
 TARGET_DIR ?= target
 PACKAGE_PATH ?= $(TARGET_DIR)/$(PACKAGE_FILENAME)
+
+target-dir:
+	mkdir -p $(TARGET_DIR)
 
 print-package-filename:
 	@echo "$(PACKAGE_FILENAME)"
@@ -133,9 +137,9 @@ print-package-filename:
 # NOTE: if you try to test this package locally (ex. using `yarn add path/to/scout-apm-<version>.tgz`),
 # you will have to `yarn cache clean` between every update.
 # as one command: `yarn cache clean && yarn remove scout-apm && yarn add path/to/scout-apm-v0.1.0.tgz`
-package: clean build
+package: clean build target-dir
 	$(YARN) pack
-	mv $(PACKAGE_FILENAME) target/
+	mv $(PACKAGE_FILENAME) $(TARGET_DIR)/
 
 publish: clean build
 	$(YARN) publish $(PACKAGE_PATH)
