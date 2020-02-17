@@ -89,7 +89,7 @@ test("Test scout app launch dashboard send", {timeout: TestUtil.DASHBOARD_SEND_T
     const listener = (data: ScoutEventRequestSentData, another) => {
         // Remove listener since this should fire once
         scout.removeListener(ScoutEvent.RequestSent, listener);
-        t.ok("request was sent to scout instance");
+        t.pass("request was sent to scout instance");
         t.end();
     };
 
@@ -101,7 +101,7 @@ test("Test scout app launch dashboard send", {timeout: TestUtil.DASHBOARD_SEND_T
         .get("/")
         .expect("Content-Type", /json/)
         .expect(200)
-        .then(res => t.ok("request was sent to simple express app"));
+        .then(res => t.pass("request was sent to simple express app"));
 });
 
 // https://github.com/scoutapp/scout_apm_node/issues/71
@@ -179,6 +179,7 @@ test("transaction with with postgres DB query to dashboard", {timeout: TestUtil.
     }
 
     const scout = new Scout(config, {appMeta});
+    SCOUT_INSTANCES.push(scout);
     let client: Client;
 
     // Set up a listener to wait for scout to report the transaction
@@ -254,6 +255,7 @@ test("transaction with mysql query to dashboard", {timeout: TestUtil.DASHBOARD_S
 
     // Build scout instance, get ready to hold an active mysql connection
     const scout = new Scout(config, {appMeta});
+    SCOUT_INSTANCES.push(scout);
     let conn: Connection;
 
     // Set up a listener to wait for scout to report the transaction
@@ -319,6 +321,7 @@ test("transaction with mysql2 query to dashboard", {timeout: TestUtil.DASHBOARD_
 
     // Build scout instance, get ready to hold an active mysql connection
     const scout = new Scout(config, {appMeta});
+    SCOUT_INSTANCES.push(scout);
     let conn: Connection;
 
     // Set up a listener to wait for scout to report the transaction
@@ -389,6 +392,7 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
     if (!config.name) { throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable"); }
 
     const scout = new Scout(config);
+    SCOUT_INSTANCES.push(scout);
     const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
 
     // Create an application that's set up to use pug templating
@@ -440,11 +444,14 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
 });
 
 // Shutdown all the scout instances after waiting what we expect should be enough time to send the tests
-test("wait and shutdown all scout instances", t => {
-    // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
-        TestUtil.waitMinutes(2)
+test("wait for all scout instances to send", t => {
+    // Wait ~3 minutes for request to be sent to scout in the cloud then shutdown
+        TestUtil.waitMinutes(3)
         .then(() => t.comment(`shutting down [${SCOUT_INSTANCES.length}] scout instances...`))
-        .then(() =>  Promise.all(SCOUT_INSTANCES.map(s => TestUtil.shutdownScout(t, s))))
-        .then(() => t.pass("all scout instances were shut down"))
+        .then(() =>  Promise.all(SCOUT_INSTANCES.map(s => s.shutdown())))
+        .then(() => {
+            t.pass("all scout instances were shut down");
+            t.end();
+        })
         .catch(t.end);
 });
