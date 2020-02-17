@@ -49,13 +49,60 @@ import * as TestConstants from "./constants";
 
 import { SQL_QUERIES } from "./fixtures";
 
-// let PG_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
-// let MYSQL_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
+let PG_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
+let MYSQL_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 const SCOUT_INSTANCES: Scout[] = [];
 
 // Set up the pug integration for the pug dashboard sends
 setupRequireIntegrations(["pug"]);
 const pug = require("pug");
+
+// https://github.com/scoutapp/scout_apm_node/issues/82
+test("Test scout app launch dashboard send", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
+    // Build scout config & app meta for test
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+        name: TestConstants.TEST_SCOUT_NAME,
+    });
+    if (!config.key) { throw new Error("No Scout key! Provide one with the SCOUT_KEY ENV variable"); }
+    if (!config.name) { throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable"); }
+
+    const sha = generateRandomString(64);
+    config.revisionSHA = sha;
+    t.comment(`set revision sha to ${sha}`);
+
+    // Generate generic app metadata
+    const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
+
+    // Create scout instance, save it in the list of instances to be removed at test-suite end
+    const scout = new Scout(config, {appMeta});
+    SCOUT_INSTANCES.push(scout);
+
+    // Create a simple application and setup scout middleware
+    const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
+
+    // Set up a listener that should fire when the request is finished
+    const listener = (data: ScoutEventRequestSentData, another) => {
+        // Remove listener since this should fire once
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+        t.ok("request was sent to scout instance");
+        t.end();
+    };
+
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    // Simply performing a request to he application should cause the creation & setup of the scout instance
+    // app metadata should be automatically sent (along with the randomized SHA which should indicate a change)
+    return request(app)
+        .get("/")
+        .expect("Content-Type", /json/)
+        .expect(200)
+        .then(res => t.ok("request was sent to simple express app"));
+});
 
 // https://github.com/scoutapp/scout_apm_node/issues/71
 test("Scout sends basic controller span to dashboard", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
@@ -390,53 +437,6 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
         .then(res => {
             t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
         });
-});
-
-// https://github.com/scoutapp/scout_apm_node/issues/82
-test("Test scout app launch dashboard send", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
-    // Build scout config & app meta for test
-    const config = buildScoutConfiguration({
-        allowShutdown: true,
-        monitor: true,
-        name: TestConstants.TEST_SCOUT_NAME,
-    });
-    if (!config.key) { throw new Error("No Scout key! Provide one with the SCOUT_KEY ENV variable"); }
-    if (!config.name) { throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable"); }
-
-    const sha = generateRandomString(64);
-    config.revisionSHA = sha;
-    t.comment(`set revision sha to ${sha}`);
-
-    // Generate generic app metadata
-    const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
-
-    // Create scout instance, save it in the list of instances to be removed at test-suite end
-    const scout = new Scout(config, {appMeta});
-    SCOUT_INSTANCES.push(scout);
-
-    // Create a simple application and setup scout middleware
-    const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(scoutMiddleware({
-        scout,
-        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
-    }));
-
-    // Set up a listener that should fire when the request is finished
-    const listener = (data: ScoutEventRequestSentData, another) => {
-        // Remove listener since this should fire once
-        scout.removeListener(ScoutEvent.RequestSent, listener);
-        t.ok("request was sent to scout instance");
-        t.end();
-    };
-
-    scout.on(ScoutEvent.RequestSent, listener);
-
-    // Simply performing a request to he application should cause the creation & setup of the scout instance
-    // app metadata should be automatically sent (along with the randomized SHA which should indicate a change)
-    return request(app)
-        .get("/")
-        .expect("Content-Type", /json/)
-        .expect(200)
-        .then(res => t.ok("request was sent to simple express app"));
 });
 
 // Shutdown all the scout instances after waiting what we expect should be enough time to send the tests
