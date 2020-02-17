@@ -46,8 +46,8 @@ const getPort = require("get-port");
 export const EXPRESS_TEST_TIMEOUT_MS = 2000;
 // The timeouts for PG & MSQL assume an instance is *already running*
 // for control over the amount of start time alotted see `startTimeoutMs`
-export const PG_TEST_TIMEOUT_MS = 3000;
-export const MYSQL_TEST_TIMEOUT_MS = 3000;
+export const PG_TEST_TIMEOUT_MS = 5000;
+export const MYSQL_TEST_TIMEOUT_MS = 5000;
 export const DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
 
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
@@ -451,6 +451,7 @@ export function startContainer(
         {detached: true, stdio: "pipe"} as SpawnOptions,
     );
     opts.setExecutedStartCommand(`${opts.dockerBinPath} ${args.join(" ")}`);
+    console.log(`executed command: ${opts.dockerBinPath} ${args.join(" ")}`)
 
     let resolved = false;
     let stdoutListener;
@@ -489,6 +490,7 @@ export function startContainer(
 
         // Wait for specific output on stdout
         if (opts.waitFor && opts.waitFor.stdout) {
+            console.log("waiting for stdout");
             stdoutListener = makeListener("stdout", containerProcess.stdout, opts.waitFor.stdout, resolve, reject);
             if (containerProcess.stdout) { containerProcess.stdout.on("data", stdoutListener); }
             return;
