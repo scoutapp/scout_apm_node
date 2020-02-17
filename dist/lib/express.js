@@ -100,7 +100,7 @@ function scoutMiddleware(opts) {
                     value: scout.filterRequestPath(reqPath),
                 };
                 // Add the path context
-                scoutReq.addContext([pathTag])
+                scoutReq.addContext(pathTag)
                     // Perform the rest of the request tracing
                     .then(() => {
                     // Save the scout request onto the request object
@@ -110,7 +110,7 @@ function scoutMiddleware(opts) {
                         setTimeout(() => {
                             // Add context to indicate request as timed out
                             scoutReq
-                                .addContext([{ name: types_1.ScoutContextName.Timeout, value: "true" }])
+                                .addContext({ name: types_1.ScoutContextName.Timeout, value: "true" })
                                 .then(() => finishTransaction())
                                 .catch(() => {
                                 if (opts && opts.logFn) {

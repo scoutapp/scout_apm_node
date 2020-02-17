@@ -176,9 +176,15 @@ export interface ScoutTag {
 }
 
 export interface Taggable {
-    addContext(tags: ScoutTag[]): Promise<this>;
-    addContextSync(tags: ScoutTag[]): this;
+    // Add a single context
+    addContext(tag: ScoutTag): Promise<this>;
+    addContextSync(tag: ScoutTag): this;
 
+    // Add multiple pieces of context
+    addContexts(tags: ScoutTag[]): Promise<this>;
+    addContextsSync(tags: ScoutTag[]): this;
+
+    // Retrieve the value of context value by name
     getContextValue(name: string): JSONValue | JSONValue[] | undefined;
 }
 

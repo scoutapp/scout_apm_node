@@ -280,7 +280,31 @@ class Scout extends events_1.EventEmitter {
         return result;
     }
     /**
-     * Reterieve the current request using the async hook/continuation local storage machinery
+     * Add context to the current transaction/instrument
+     *
+     * @param {ScoutTag} tag
+     * @returns {Promise<void>} a promsie that resolves to the result of the callback
+     */
+    addContext(tag, parentOverride) {
+        let parent = this.getCurrentSpan() || this.getCurrentRequest();
+        // If we're not in an async context then attempt to use the sync parent span or request
+        if (!parent) {
+            parent = this.syncCurrentSpan || this.syncCurrentRequest;
+        }
+        // If a parent override was provided, use it
+        if (parentOverride) {
+            parent = parentOverride;
+        }
+        // If no request is currently underway
+        if (!parent) {
+            this.log("[scout] Failed to add context, no current parent instrumentation", types_1.LogLevel.Error);
+            return Promise.resolve();
+        }
+        this.log(`[scout] Adding context (${tag}) to parent ${parent.id}`, types_1.LogLevel.Debug);
+        return parent.addContext(tag);
+    }
+    /**
+     * Retrieve the current request using the async hook/continuation local storage machinery
      *
      * @returns {ScoutRequest} the current active request
      */
@@ -293,7 +317,7 @@ class Scout extends events_1.EventEmitter {
         }
     }
     /**
-     * Reterieve the current span using the async hook/continuation local storage machinery
+     * Retrieve the current span using the async hook/continuation local storage machinery
      *
      * @returns {ScoutSpan} the current active span
      */
@@ -483,7 +507,7 @@ class Scout extends events_1.EventEmitter {
             return;
         }
         // Mark the curernt request as errored
-        currentRequest.addContext([{ name: types_1.ScoutContextName.Error, value: "true" }]);
+        currentRequest.addContext({ name: types_1.ScoutContextName.Error, value: "true" });
     }
 }
 exports.Scout = Scout;

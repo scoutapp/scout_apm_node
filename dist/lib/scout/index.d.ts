@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { EventEmitter } from "events";
-import { AgentDownloadOptions, ApplicationMetadata, BaseAgentRequest, BaseAgentResponse, CoreAgentVersion, JSONValue, LogFn, LogLevel, ScoutConfiguration } from "../types";
+import { AgentDownloadOptions, ApplicationMetadata, BaseAgentRequest, BaseAgentResponse, CoreAgentVersion, JSONValue, LogFn, LogLevel, ScoutConfiguration, ScoutTag } from "../types";
 import ExternalProcessAgent from "../agents/external-process";
 export { default as ScoutRequest } from "./request";
 export { default as ScoutSpan } from "./span";
@@ -95,13 +95,20 @@ export declare class Scout extends EventEmitter {
      */
     instrumentSync(operation: string, fn: SpanCallback, requestOverride?: ScoutRequest): any;
     /**
-     * Reterieve the current request using the async hook/continuation local storage machinery
+     * Add context to the current transaction/instrument
+     *
+     * @param {ScoutTag} tag
+     * @returns {Promise<void>} a promsie that resolves to the result of the callback
+     */
+    addContext(tag: ScoutTag, parentOverride?: ScoutRequest | ScoutSpan): Promise<ScoutRequest | ScoutSpan | void>;
+    /**
+     * Retrieve the current request using the async hook/continuation local storage machinery
      *
      * @returns {ScoutRequest} the current active request
      */
     getCurrentRequest(): ScoutRequest | null;
     /**
-     * Reterieve the current span using the async hook/continuation local storage machinery
+     * Retrieve the current span using the async hook/continuation local storage machinery
      *
      * @returns {ScoutSpan} the current active span
      */

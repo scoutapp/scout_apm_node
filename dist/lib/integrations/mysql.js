@@ -77,7 +77,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
                             return;
                         }
                         span
-                            .addContext([{ name: "error", value: "true" }])
+                            .addContext({ name: "error", value: "true" })
                             .then(() => stopSpan())
                             .finally(() => cb(err, results));
                         return;
@@ -92,7 +92,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
                 arguments[cbIdx] = wrappedCb;
                 span
                     // Add query to the context
-                    .addContext([{ name: types_1.ScoutContextName.DBStatement, value: builtQuery.sql }])
+                    .addContext({ name: types_1.ScoutContextName.DBStatement, value: builtQuery.sql })
                     // Do the query
                     .then(() => {
                     ranFn = true;

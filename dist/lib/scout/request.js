@@ -75,14 +75,21 @@ class ScoutRequest {
         return this.childSpans.slice();
     }
     /** @see Taggable */
-    addContext(tags) {
-        return new Promise((resolve) => {
-            resolve(this.addContextSync(tags));
-        });
+    addContext(tag) {
+        return new Promise((resolve) => resolve(this.addContextSync(tag)));
     }
     /** @see Taggable */
-    addContextSync(tags) {
-        tags.forEach(t => this.tags[t.name] = t.value);
+    addContextSync(tag) {
+        this.tags[tag.name] = tag.value;
+        return this;
+    }
+    /** @see Taggable */
+    addContexts(tags) {
+        return new Promise((resolve) => resolve(this.addContextsSync(tags)));
+    }
+    /** @see Taggable */
+    addContextsSync(tags) {
+        tags.forEach(t => this.addContextSync(t));
         return this;
     }
     /** @see Taggable */

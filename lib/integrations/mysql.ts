@@ -94,7 +94,7 @@ export class MySQLIntegration extends RequireIntegration {
                         }
 
                         span!
-                            .addContext([{name: "error", value: "true"}])
+                            .addContext({name: "error", value: "true"})
                             .then(() => stopSpan())
                             .finally(() => cb(err, results));
 
@@ -113,7 +113,7 @@ export class MySQLIntegration extends RequireIntegration {
 
                 span
                 // Add query to the context
-                    .addContext([{name: ScoutContextName.DBStatement, value: builtQuery.sql}])
+                    .addContext({name: ScoutContextName.DBStatement, value: builtQuery.sql})
                 // Do the query
                     .then(() => {
                         ranFn = true;

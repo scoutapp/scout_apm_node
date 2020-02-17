@@ -116,15 +116,24 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     }
 
     /** @see Taggable */
-    public addContext(tags: ScoutTag[]): Promise<this> {
-        return new Promise((resolve) => {
-            resolve(this.addContextSync(tags));
-        });
+    public addContext(tag: ScoutTag): Promise<this> {
+        return new Promise((resolve) => resolve(this.addContextSync(tag)));
     }
 
     /** @see Taggable */
-    public addContextSync(tags: ScoutTag[]): this {
-        tags.forEach(t => this.tags[t.name] = t.value);
+    public addContextSync(tag: ScoutTag): this {
+        this.tags[tag.name] = tag.value;
+        return this;
+    }
+
+    /** @see Taggable */
+    public addContexts(tags: ScoutTag[]): Promise<this> {
+        return new Promise((resolve) => resolve(this.addContextsSync(tags)));
+    }
+
+    /** @see Taggable */
+    public addContextsSync(tags: ScoutTag[]): this {
+        tags.forEach(t => this.addContextSync(t));
         return this;
     }
 

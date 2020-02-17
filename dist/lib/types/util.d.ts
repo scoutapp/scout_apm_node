@@ -60,8 +60,10 @@ export interface ScoutTag {
     value: JSONValue | JSONValue[];
 }
 export interface Taggable {
-    addContext(tags: ScoutTag[]): Promise<this>;
-    addContextSync(tags: ScoutTag[]): this;
+    addContext(tag: ScoutTag): Promise<this>;
+    addContextSync(tag: ScoutTag): this;
+    addContexts(tags: ScoutTag[]): Promise<this>;
+    addContextsSync(tags: ScoutTag[]): this;
     getContextValue(name: string): JSONValue | JSONValue[] | undefined;
 }
 export interface ScoutStackFrame {

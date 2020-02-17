@@ -47,12 +47,21 @@ class ScoutSpan {
         return new Date().getTime() - this.getTimestamp().getTime();
     }
     /** @see Taggable */
-    addContext(tags) {
-        return new Promise((resolve) => resolve(this.addContextSync(tags)));
+    addContext(tag) {
+        return new Promise((resolve) => resolve(this.addContextSync(tag)));
     }
     /** @see Taggable */
-    addContextSync(tags) {
-        tags.forEach(t => this.tags[t.name] = t.value);
+    addContextSync(tag) {
+        this.tags[tag.name] = tag.value;
+        return this;
+    }
+    /** @see Taggable */
+    addContexts(tags) {
+        return new Promise((resolve) => resolve(this.addContextsSync(tags)));
+    }
+    /** @see Taggable */
+    addContextsSync(tags) {
+        tags.forEach(t => this.addContextSync(t));
         return this;
     }
     /** @see Taggable */
@@ -125,7 +134,7 @@ class ScoutSpan {
             name: enum_1.ScoutContextName.Traceback,
             value: scoutFrames,
         }))
-            .then(tracebackTag => this.addContext([tracebackTag]))
+            .then(tracebackTag => this.addContext(tracebackTag))
             .then(() => this);
     }
     stopSync() {
@@ -140,7 +149,7 @@ class ScoutSpan {
         // Process the frames and add the context
         const scoutFrames = this.processStackFrames(stacktrace_js_1.getSync());
         const tracebackTag = { name: enum_1.ScoutContextName.Traceback, value: scoutFrames };
-        this.addContextSync([tracebackTag]);
+        this.addContextSync(tracebackTag);
         return this;
     }
     isStarted() {

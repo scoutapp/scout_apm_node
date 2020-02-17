@@ -26,6 +26,7 @@ import {
     ScoutConfiguration,
     ScoutContextName,
     ScoutEvent,
+    ScoutTag,
     URIReportingLevel,
     buildDownloadOptions,
     buildProcessOptions,
@@ -409,7 +410,36 @@ export class Scout extends EventEmitter {
     }
 
     /**
-     * Reterieve the current request using the async hook/continuation local storage machinery
+     * Add context to the current transaction/instrument
+     *
+     * @param {ScoutTag} tag
+     * @returns {Promise<void>} a promsie that resolves to the result of the callback
+     */
+    public addContext(
+        tag: ScoutTag,
+        parentOverride?: ScoutRequest | ScoutSpan,
+    ): Promise<ScoutRequest | ScoutSpan | void> {
+        let parent = this.getCurrentSpan() || this.getCurrentRequest();
+
+        // If we're not in an async context then attempt to use the sync parent span or request
+        if (!parent) { parent = this.syncCurrentSpan || this.syncCurrentRequest; }
+
+        // If a parent override was provided, use it
+        if (parentOverride) { parent = parentOverride; }
+
+        // If no request is currently underway
+        if (!parent) {
+            this.log("[scout] Failed to add context, no current parent instrumentation", LogLevel.Error);
+            return Promise.resolve();
+        }
+
+        this.log(`[scout] Adding context (${tag}) to parent ${parent.id}`, LogLevel.Debug);
+
+        return parent.addContext(tag);
+    }
+
+    /**
+     * Retrieve the current request using the async hook/continuation local storage machinery
      *
      * @returns {ScoutRequest} the current active request
      */
@@ -422,7 +452,7 @@ export class Scout extends EventEmitter {
     }
 
     /**
-     * Reterieve the current span using the async hook/continuation local storage machinery
+     * Retrieve the current span using the async hook/continuation local storage machinery
      *
      * @returns {ScoutSpan} the current active span
      */
@@ -660,7 +690,7 @@ export class Scout extends EventEmitter {
         if (!currentRequest) { return; }
 
         // Mark the curernt request as errored
-        currentRequest.addContext([{ name: ScoutContextName.Error, value: "true" }]);
+        currentRequest.addContext({ name: ScoutContextName.Error, value: "true"});
     }
 
 }
