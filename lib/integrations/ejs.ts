@@ -32,7 +32,7 @@ export class EJSIntegration extends RequireIntegration {
             if (!integration.scout) { return originalFn.apply(null, originalArgs); }
 
             return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{name: ScoutContextName.Name, value: "<string>"}]);
+                span.addContextSync({name: ScoutContextName.Name, value: "<string>"});
                 return originalFn.apply(null, originalArgs);
             });
         };
@@ -65,7 +65,7 @@ export class EJSIntegration extends RequireIntegration {
                     return originalFn.apply(null, originalArgs);
                 }
 
-                span.addContextSync([{name: ScoutContextName.Name, value: path}]);
+                span.addContextSync({name: ScoutContextName.Name, value: path});
 
                 return originalFn
                     .apply(null, originalArgs)

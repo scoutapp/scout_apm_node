@@ -99,13 +99,24 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     }
 
     /** @see Taggable */
-    public addContext(tags: ScoutTag[]): Promise<this> {
-        return new Promise((resolve) => resolve(this.addContextSync(tags)));
+    public addContext(tag: ScoutTag): Promise<this> {
+        return new Promise((resolve) => resolve(this.addContextSync(tag)));
     }
 
     /** @see Taggable */
-    public addContextSync(tags: ScoutTag[]): this {
-        tags.forEach(t => this.tags[t.name] = t.value);
+    public addContextSync(tag: ScoutTag): this {
+        this.tags[tag.name] = tag.value;
+        return this;
+    }
+
+    /** @see Taggable */
+    public addContexts(tags: ScoutTag[]): Promise<this> {
+        return new Promise((resolve) => resolve(this.addContextsSync(tags)));
+    }
+
+    /** @see Taggable */
+    public addContextsSync(tags: ScoutTag[]): this {
+        tags.forEach(t => this.addContextSync(t));
         return this;
     }
 
@@ -194,7 +205,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
                 name: ScoutContextName.Traceback,
                 value: scoutFrames,
             }))
-            .then(tracebackTag => this.addContext([tracebackTag]))
+            .then(tracebackTag => this.addContext(tracebackTag))
             .then(() => this);
     }
 
@@ -211,7 +222,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         // Process the frames and add the context
         const scoutFrames = this.processStackFrames(getStackTraceSync());
         const tracebackTag: ScoutTag = {name: ScoutContextName.Traceback, value: scoutFrames};
-        this.addContextSync([tracebackTag]);
+        this.addContextSync(tracebackTag);
 
         return this;
     }

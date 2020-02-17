@@ -30,7 +30,7 @@ class EJSIntegration extends integrations_1.RequireIntegration {
                 return originalFn.apply(null, originalArgs);
             }
             return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync([{ name: types_1.ScoutContextName.Name, value: "<string>" }]);
+                span.addContextSync({ name: types_1.ScoutContextName.Name, value: "<string>" });
                 return originalFn.apply(null, originalArgs);
             });
         };
@@ -59,7 +59,7 @@ class EJSIntegration extends integrations_1.RequireIntegration {
                     integration.logFn(`[scout/integrations/ejs] no span for instrument...`, types_1.LogLevel.Trace);
                     return originalFn.apply(null, originalArgs);
                 }
-                span.addContextSync([{ name: types_1.ScoutContextName.Name, value: path }]);
+                span.addContextSync({ name: types_1.ScoutContextName.Name, value: path });
                 return originalFn
                     .apply(null, originalArgs)
                     .then(result => {

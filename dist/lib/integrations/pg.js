@@ -89,7 +89,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
                 }
                 return span
                     // Update span context with the DB statement
-                    .addContext([{ name: types_1.ScoutContextName.DBStatement, value: query.text }])
+                    .addContext({ name: types_1.ScoutContextName.DBStatement, value: query.text })
                     // Run pg's query function
                     .then(() => originalQueryFn.apply(this, [config, values, userCallback]))
                     .then(res => {
@@ -100,7 +100,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
                     integration.logFn("[scout/integrations/pg] Query failed", types_1.LogLevel.Trace);
                     // Mark the span as errored
                     if (span) {
-                        span.addContext([{ name: "error", value: "true" }]);
+                        span.addContext({ name: "error", value: "true" });
                     }
                     // Rethrow the error
                     throw err;
