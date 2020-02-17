@@ -622,7 +622,7 @@ export class Scout extends EventEmitter {
 
     // Helper for sending app metadata
     private sendAppMetadataEvent(): Promise<void> {
-        return sendThroughAgent(this, this.buildAppMetadataEvent(), {async: true})
+        return sendThroughAgent(this, this.buildAppMetadataEvent())
             .then(() => undefined)
             .catch(err => {
                 this.log("[scout] failed to send start request request", LogLevel.Error);
