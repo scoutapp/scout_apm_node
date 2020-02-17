@@ -355,6 +355,7 @@ function startContainer(t, optOverrides) {
         }
         return (line) => {
             line = line.toString();
+            console.log("line: ", line);
             if (!line.includes(expected)) {
                 return;
             }

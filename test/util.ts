@@ -469,6 +469,7 @@ export function startContainer(
 
         return (line: string | Buffer) => {
             line = line.toString();
+            console.log("line: ", line);
             if (!line.includes(expected)) { return; }
 
             if (type === "stdout" && stdoutListener) { emitter.removeListener("data", stdoutListener); }
