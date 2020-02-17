@@ -24,8 +24,8 @@ const getPort = require("get-port");
 exports.EXPRESS_TEST_TIMEOUT_MS = 2000;
 // The timeouts for PG & MSQL assume an instance is *already running*
 // for control over the amount of start time alotted see `startTimeoutMs`
-exports.PG_TEST_TIMEOUT_MS = 3000;
-exports.MYSQL_TEST_TIMEOUT_MS = 3000;
+exports.PG_TEST_TIMEOUT_MS = 5000;
+exports.MYSQL_TEST_TIMEOUT_MS = 5000;
 exports.DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
 const PROJECT_ROOT = path.join(path.dirname(require.main.filename), "../../");
@@ -472,11 +472,14 @@ function killContainer(t, opts) {
 }
 exports.killContainer = killContainer;
 const POSTGRES_IMAGE_NAME = "postgres";
-const POSTGRES_IMAGE_TAG = "alpine";
+const POSTGRES_IMAGE_TAG = "12.2-alpine";
+const POSTGRES_CONTAINER_DEFAULT_ENV = {
+    POSTGRES_PASSWORD: "postgres",
+};
 // Utility function to start a postgres instance
 function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
     tagName = tagName || POSTGRES_IMAGE_TAG;
-    const envBinding = containerEnv || {};
+    const envBinding = Object.assign({}, POSTGRES_CONTAINER_DEFAULT_ENV, containerEnv);
     test("Starting postgres instance", (t) => {
         let port;
         let containerAndOpts;

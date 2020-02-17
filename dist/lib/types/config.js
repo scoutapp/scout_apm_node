@@ -33,6 +33,9 @@ class ApplicationMetadata {
         this.gitSHA = config.revisionSHA || "";
         // Handle overrides
         if (opts) {
+            if (opts.version) {
+                this.version = opts.version;
+            }
             if (opts.language) {
                 this.language = opts.language;
             }
@@ -101,6 +104,9 @@ class ApplicationMetadata {
             database_engine: this.databaseEngine,
             database_adapter: this.databaseAdapter,
             application_name: this.applicationName,
+            scm_subdirectory: this.scmSubdirectory,
+            application_root: this.applicationRoot,
+            version: this.languageVersion,
             libraries: this.libraries,
             paas: this.paas,
             git_sha: this.gitSHA,

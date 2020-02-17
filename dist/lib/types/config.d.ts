@@ -4,6 +4,7 @@ import { LogFn } from "./util";
 import { ProcessOptions } from "./agent";
 import { PlatformTriple } from "./enum";
 export declare class ApplicationMetadata {
+    readonly version: string;
     readonly language: string;
     readonly languageVersion: string;
     readonly serverTime: string;

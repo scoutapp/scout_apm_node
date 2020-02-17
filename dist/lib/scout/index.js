@@ -449,11 +449,11 @@ class Scout extends events_1.EventEmitter {
         return request.startSync();
     }
     buildAppMetadataEvent() {
-        return new Requests.V1ApplicationEvent(`Pid: ${process.pid}`, "scout.metadata", this.applicationMetadata.serialize(), { timestamp: new Date() });
+        return new Requests.V1ApplicationEvent(`Pid: ${process.pid}`, types_1.ApplicationEventType.ScoutMetadata, this.applicationMetadata.serialize(), { timestamp: new Date() });
     }
     // Helper for sending app metadata
     sendAppMetadataEvent() {
-        return sendThroughAgent(this, this.buildAppMetadataEvent(), { async: true })
+        return sendThroughAgent(this, this.buildAppMetadataEvent())
             .then(() => undefined)
             .catch(err => {
             this.log("[scout] failed to send start request request", types_1.LogLevel.Error);

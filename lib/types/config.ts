@@ -28,6 +28,7 @@ interface MapLike {
 }
 
 export class ApplicationMetadata {
+    public readonly version: string;
     public readonly language: string;
     public readonly languageVersion: string;
     public readonly serverTime: string;
@@ -70,6 +71,7 @@ export class ApplicationMetadata {
 
         // Handle overrides
         if (opts) {
+            if (opts.version) { this.version = opts.version; }
             if (opts.language) { this.language = opts.language; }
             if (opts.languageVersion) { this.languageVersion = opts.languageVersion; }
             if (opts.serverTime) { this.serverTime = opts.serverTime || new Date().toISOString(); }
@@ -107,6 +109,9 @@ export class ApplicationMetadata {
             database_engine: this.databaseEngine,
             database_adapter: this.databaseAdapter,
             application_name: this.applicationName,
+            scm_subdirectory: this.scmSubdirectory,
+            application_root: this.applicationRoot,
+            version: this.languageVersion,
             libraries: this.libraries,
             paas: this.paas,
             git_sha: this.gitSHA,

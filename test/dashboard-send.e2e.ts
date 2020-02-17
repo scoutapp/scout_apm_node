@@ -11,6 +11,7 @@
 
 import * as test from "tape";
 import * as request from "supertest";
+import { generate as generateRandomString } from "randomstring";
 
 import {
     AgentLaunchDisabled,
@@ -55,6 +56,53 @@ const SCOUT_INSTANCES: Scout[] = [];
 // Set up the pug integration for the pug dashboard sends
 setupRequireIntegrations(["pug"]);
 const pug = require("pug");
+
+// https://github.com/scoutapp/scout_apm_node/issues/82
+test("Test scout app launch dashboard send", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
+    // Build scout config & app meta for test
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+        name: TestConstants.TEST_SCOUT_NAME,
+    });
+    if (!config.key) { throw new Error("No Scout key! Provide one with the SCOUT_KEY ENV variable"); }
+    if (!config.name) { throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable"); }
+
+    const sha = generateRandomString(64);
+    config.revisionSHA = sha;
+    t.comment(`set revision sha to ${sha}`);
+
+    // Generate generic app metadata
+    const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
+
+    // Create scout instance, save it in the list of instances to be removed at test-suite end
+    const scout = new Scout(config, {appMeta});
+    SCOUT_INSTANCES.push(scout);
+
+    // Create a simple application and setup scout middleware
+    const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
+
+    // Set up a listener that should fire when the request is finished
+    const listener = (data: ScoutEventRequestSentData, another) => {
+        // Remove listener since this should fire once
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+        t.pass("request was sent to scout instance");
+        t.end();
+    };
+
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    // Simply performing a request to he application should cause the creation & setup of the scout instance
+    // app metadata should be automatically sent (along with the randomized SHA which should indicate a change)
+    return request(app)
+        .get("/")
+        .expect("Content-Type", /json/)
+        .expect(200)
+        .then(res => t.pass("request was sent to simple express app"));
+});
 
 // https://github.com/scoutapp/scout_apm_node/issues/71
 test("Scout sends basic controller span to dashboard", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
@@ -131,6 +179,7 @@ test("transaction with with postgres DB query to dashboard", {timeout: TestUtil.
     }
 
     const scout = new Scout(config, {appMeta});
+    SCOUT_INSTANCES.push(scout);
     let client: Client;
 
     // Set up a listener to wait for scout to report the transaction
@@ -206,6 +255,7 @@ test("transaction with mysql query to dashboard", {timeout: TestUtil.DASHBOARD_S
 
     // Build scout instance, get ready to hold an active mysql connection
     const scout = new Scout(config, {appMeta});
+    SCOUT_INSTANCES.push(scout);
     let conn: Connection;
 
     // Set up a listener to wait for scout to report the transaction
@@ -271,6 +321,7 @@ test("transaction with mysql2 query to dashboard", {timeout: TestUtil.DASHBOARD_
 
     // Build scout instance, get ready to hold an active mysql connection
     const scout = new Scout(config, {appMeta});
+    SCOUT_INSTANCES.push(scout);
     let conn: Connection;
 
     // Set up a listener to wait for scout to report the transaction
@@ -341,6 +392,7 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
     if (!config.name) { throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable"); }
 
     const scout = new Scout(config);
+    SCOUT_INSTANCES.push(scout);
     const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
 
     // Create an application that's set up to use pug templating
@@ -392,11 +444,14 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
 });
 
 // Shutdown all the scout instances after waiting what we expect should be enough time to send the tests
-test("wait and shutdown all scout instances", t => {
-    // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
-        TestUtil.waitMinutes(2)
+test("wait for all scout instances to send", t => {
+    // Wait ~3 minutes for request to be sent to scout in the cloud then shutdown
+        TestUtil.waitMinutes(3)
         .then(() => t.comment(`shutting down [${SCOUT_INSTANCES.length}] scout instances...`))
-        .then(() =>  Promise.all(SCOUT_INSTANCES.map(s => TestUtil.shutdownScout(t, s))))
-        .then(() => t.pass("all scout instances were shut down"))
+        .then(() =>  Promise.all(SCOUT_INSTANCES.map(s => s.shutdown())))
+        .then(() => {
+            t.pass("all scout instances were shut down");
+            t.end();
+        })
         .catch(t.end);
 });

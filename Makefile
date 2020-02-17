@@ -90,7 +90,7 @@ test-integrations: test-integration-pg test-integration-mysql test-integration-m
 
 ensure-docker-images: ensure-mysql-docker-image ensure-pg-docker-image
 
-PG_DOCKER_IMAGE ?= postgres:alpine
+PG_DOCKER_IMAGE ?= postgres:12.2-alpine
 ensure-pg-docker-image:
 	$(DOCKER) pull $(PG_DOCKER_IMAGE)
 
