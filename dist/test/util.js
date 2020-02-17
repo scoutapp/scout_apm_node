@@ -475,7 +475,7 @@ function killContainer(t, opts) {
 }
 exports.killContainer = killContainer;
 const POSTGRES_IMAGE_NAME = "postgres";
-const POSTGRES_IMAGE_TAG = "alpine";
+const POSTGRES_IMAGE_TAG = "12.2-alpine";
 // Utility function to start a postgres instance
 function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
     tagName = tagName || POSTGRES_IMAGE_TAG;

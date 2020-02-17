@@ -600,7 +600,7 @@ export function killContainer(t: Test, opts: TestContainerStartOpts): Promise<nu
 }
 
 const POSTGRES_IMAGE_NAME = "postgres";
-const POSTGRES_IMAGE_TAG = "alpine";
+const POSTGRES_IMAGE_TAG = "12.2-alpine";
 
 // Utility function to start a postgres instance
 export function startContainerizedPostgresTest(
