@@ -107,6 +107,8 @@ export class ApplicationMetadata {
             database_engine: this.databaseEngine,
             database_adapter: this.databaseAdapter,
             application_name: this.applicationName,
+            scm_subdirectory: this.scmSubdirectory,
+            application_root: this.applicationRoot,
             libraries: this.libraries,
             paas: this.paas,
             git_sha: this.gitSHA,

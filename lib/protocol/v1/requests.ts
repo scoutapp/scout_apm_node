@@ -235,5 +235,6 @@ export class V1ApplicationEvent extends BaseAgentRequest {
                 timestamp: this.timestamp,
             },
         };
+        console.log("APPLICATION EVENT:\n", this.json);
     }
 }

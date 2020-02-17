@@ -14,6 +14,7 @@ import {
     AgentDownloadOptions,
     AgentDownloader,
     AgentEvent,
+    ApplicationEventType,
     ApplicationMetadata,
     BaseAgentRequest,
     BaseAgentResponse,
@@ -613,7 +614,7 @@ export class Scout extends EventEmitter {
     private buildAppMetadataEvent(): Requests.V1ApplicationEvent {
         return new Requests.V1ApplicationEvent(
             `Pid: ${process.pid}`,
-            "scout.metadata",
+            ApplicationEventType.ScoutMetadata,
             this.applicationMetadata.serialize(),
             {timestamp: new Date()},
         );
