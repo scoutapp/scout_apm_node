@@ -346,7 +346,6 @@ function startContainer(t, optOverrides) {
     t.comment(`spawning container [${opts.imageName}:${opts.tagName}] with name [${opts.containerName}]...`);
     const containerProcess = child_process_1.spawn(opts.dockerBinPath, args, { detached: true, stdio: "pipe" });
     opts.setExecutedStartCommand(`${opts.dockerBinPath} ${args.join(" ")}`);
-    console.log(`executed command: ${opts.dockerBinPath} ${args.join(" ")}`);
     let resolved = false;
     let stdoutListener;
     let stderrListener;
@@ -356,7 +355,6 @@ function startContainer(t, optOverrides) {
         }
         return (line) => {
             line = line.toString();
-            console.log("line: ", line);
             if (!line.includes(expected)) {
                 return;
             }
@@ -377,7 +375,6 @@ function startContainer(t, optOverrides) {
         // If there's a waitFor specified then we're going to have to listen before we return
         // Wait for specific output on stdout
         if (opts.waitFor && opts.waitFor.stdout) {
-            console.log("waiting for stdout");
             stdoutListener = makeListener("stdout", containerProcess.stdout, opts.waitFor.stdout, resolve, reject);
             if (containerProcess.stdout) {
                 containerProcess.stdout.on("data", stdoutListener);
@@ -476,10 +473,13 @@ function killContainer(t, opts) {
 exports.killContainer = killContainer;
 const POSTGRES_IMAGE_NAME = "postgres";
 const POSTGRES_IMAGE_TAG = "12.2-alpine";
+const POSTGRES_CONTAINER_DEFAULT_ENV = {
+    POSTGRES_PASSWORD: "postgres",
+};
 // Utility function to start a postgres instance
 function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
     tagName = tagName || POSTGRES_IMAGE_TAG;
-    const envBinding = containerEnv || {};
+    const envBinding = Object.assign({}, POSTGRES_CONTAINER_DEFAULT_ENV, containerEnv);
     test("Starting postgres instance", (t) => {
         let port;
         let containerAndOpts;
