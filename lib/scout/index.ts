@@ -133,6 +133,12 @@ export class Scout extends EventEmitter {
 
         // Create async namespace if it does not exist
         this.createAsyncNamespace();
+
+        // If the logFn that is provided has a 'logger' attempt to set the log level to the passed in logger's level
+        // NOTE: this only really supports winston at present
+        if (this.logFn && this.logFn.logger && this.logFn.logger.level) {
+            this.config.logLevel = this.logFn.logger.level;
+        }
     }
 
     public getSocketFilePath(): string {

@@ -3,7 +3,11 @@ import { snakeCase } from "snake-case";
 import * as winston from "winston";
 import * as Constants from "../constants";
 
-export type LogFn = (message: string, level?: LogLevel) => void;
+export type LogFn = {
+    (message: string, level?: LogLevel): void;
+
+    logger?: any;
+}
 
 export type JSONValue = object | string | number;
 
@@ -46,7 +50,7 @@ export function consoleLogFn(message: string, level?: LogLevel) {
  * @param {LogLevel} level
  */
 export function buildWinstonLogFn(logger: winston.Logger): LogFn {
-    return (message: string, level?: LogLevel) => {
+    const fn = (message: string, level?: LogLevel) => {
         level = level || LogLevel.Info;
 
         switch (level) {
@@ -66,6 +70,10 @@ export function buildWinstonLogFn(logger: winston.Logger): LogFn {
                 logger.log({level, message});
         }
     };
+
+    fn.logger = logger;
+
+    return fn;
 }
 
 // Correctly framed headers and the remainder (if any)
