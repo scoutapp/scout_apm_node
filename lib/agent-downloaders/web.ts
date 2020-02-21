@@ -61,6 +61,7 @@ export class WebAgentDownloader implements AgentDownloader {
 
     /** @see AgentDownloader */
     public download(v: CoreAgentVersion, opts?: AgentDownloadOptions): Promise<string> {
+
         // Normally we'd look up the version from the hard-coded known configs
         let doDownload = () => this.downloadFromConfig(v, opts);
 
@@ -128,8 +129,9 @@ export class WebAgentDownloader implements AgentDownloader {
      * @returns {Promise<string>} A promise that resolves to a valid cached binary (if found)
      */
     private getCachedBinaryPath(baseDir: string, v: CoreAgentVersion, adc?: AgentDownloadConfig): Promise<string> {
-        const defaultSubdirName = `scout_apm_core-v${v.raw}-${PLATFORM}`;
-        const versionedPath = path.join(baseDir, Constants.CORE_AGENT_BIN_FILE_NAME);
+        const subdir = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+        const versionedPath = path.join(baseDir, subdir, Constants.CORE_AGENT_BIN_FILE_NAME);
+
         return fs.pathExists(versionedPath)
             .then((versionedPathExists: boolean) => {
                 if (!versionedPathExists) {
@@ -172,11 +174,12 @@ export class WebAgentDownloader implements AgentDownloader {
             })
         // Create a temporary directory & download the agent
             .then(() => {
-                const defaultSubdirName = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+                const subdir = `scout_apm_core-v${v.raw}-${PLATFORM}`;
 
+                // Build the expected download directory path
                 downloadDir = path.join (
-                    Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
-                    opts && opts.coreAgentFullName ? opts.coreAgentFullName : defaultSubdirName,
+                    opts && opts.cacheDir ? opts.cacheDir : Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+                    opts && opts.coreAgentFullName ? opts.coreAgentFullName : subdir,
                 );
 
                 // Build the expected path for the binary
@@ -184,6 +187,7 @@ export class WebAgentDownloader implements AgentDownloader {
                     downloadDir,
                     Constants.CORE_AGENT_BIN_FILE_NAME,
                 );
+
                 const options = {extract: adc.zipped};
 
                 // Ensure we're not attempting to do a download if they're disallowed

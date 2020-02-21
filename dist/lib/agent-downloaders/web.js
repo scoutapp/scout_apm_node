@@ -104,8 +104,8 @@ class WebAgentDownloader {
      * @returns {Promise<string>} A promise that resolves to a valid cached binary (if found)
      */
     getCachedBinaryPath(baseDir, v, adc) {
-        const defaultSubdirName = `scout_apm_core-v${v.raw}-${PLATFORM}`;
-        const versionedPath = path.join(baseDir, Constants.CORE_AGENT_BIN_FILE_NAME);
+        const subdir = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+        const versionedPath = path.join(baseDir, subdir, Constants.CORE_AGENT_BIN_FILE_NAME);
         return fs.pathExists(versionedPath)
             .then((versionedPathExists) => {
             if (!versionedPathExists) {
@@ -143,8 +143,9 @@ class WebAgentDownloader {
         })
             // Create a temporary directory & download the agent
             .then(() => {
-            const defaultSubdirName = `scout_apm_core-v${v.raw}-${PLATFORM}`;
-            downloadDir = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, opts && opts.coreAgentFullName ? opts.coreAgentFullName : defaultSubdirName);
+            const subdir = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+            // Build the expected download directory path
+            downloadDir = path.join(opts && opts.cacheDir ? opts.cacheDir : Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, opts && opts.coreAgentFullName ? opts.coreAgentFullName : subdir);
             // Build the expected path for the binary
             expectedBinPath = path.join(downloadDir, Constants.CORE_AGENT_BIN_FILE_NAME);
             const options = { extract: adc.zipped };
