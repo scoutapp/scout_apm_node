@@ -28,6 +28,7 @@ export declare function simpleErrorApp(middleware: any, delayMs?: number): Appli
 export declare function simpleHTML5BoilerplateApp(middleware: any, templateEngine: "pug" | "ejs" | "mustache"): Application;
 export declare function simpleInstrumentApp(middleware: any): Application;
 export declare function appWithGETSynchronousError(middleware: any, expressFnTransform: (expressFn: ExpressFn) => ExpressFn): Application;
+export declare function queryAndRenderRandomNumbers(middleware: any, templateEngine: "pug" | "ejs" | "mustache", dbClient: Client): Application;
 export declare function testConfigurationOverlay(t: Test, opts: {
     appKey: string;
     envValue: string;

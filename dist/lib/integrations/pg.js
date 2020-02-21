@@ -85,27 +85,33 @@ class PGIntegration extends integrations_1.RequireIntegration {
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {
                     integration.logFn("[scout/integrations/pg] Unable to get current span", types_1.LogLevel.Debug);
-                    return originalQueryFn.apply(this, [config, values, userCallback]);
+                    return originalQueryFn.apply(this, [config, values, userCallback]).then(() => done());
                 }
                 return span
                     // Update span context with the DB statement
                     .addContext({ name: types_1.ScoutContextName.DBStatement, value: query.text })
                     // Run pg's query function
                     .then(() => originalQueryFn.apply(this, [config, values, userCallback]))
+                    // Finish the instrumentation
+                    .then(res => {
+                    done();
+                    return res;
+                })
                     .then(res => {
                     integration.logFn("[scout/integrations/pg] Successfully queried Postgres db", types_1.LogLevel.Trace);
                     return res;
                 })
                     .catch(err => {
-                    integration.logFn("[scout/integrations/pg] Query failed", types_1.LogLevel.Trace);
+                    // Finish the instrumentation
+                    done();
                     // Mark the span as errored
                     if (span) {
                         span.addContext({ name: "error", value: "true" });
                     }
+                    integration.logFn("[scout/integrations/pg] Query failed", types_1.LogLevel.Trace);
                     // Rethrow the error
                     throw err;
-                })
-                    .finally(() => done());
+                });
             });
         };
         Client.prototype.query = fn;

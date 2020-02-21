@@ -358,7 +358,9 @@ export class Scout extends EventEmitter {
 
         const doneFn = () => {
             // Sometimes the async namespace is actually gone *before* doneFn gets called
+            console.log(`CLEARING SPAN NS ENTRY [${parent.id}] (op: ${operation})`);
             this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
+
             this.log(`[scout] Stopping span with ID [${span.id}]`, LogLevel.Debug);
             return span.stop();
         };
@@ -369,6 +371,7 @@ export class Scout extends EventEmitter {
         // Set up the async namespace, run the function
             .then(s => span = s)
             .then(() => {
+                console.log(`START ASYNC NS SPAN ${span.id} (op: ${span.operation})`);
                 this.asyncNamespace.set(ASYNC_NS_SPAN, span);
                 ranCb = true;
                 result = cb(doneFn, {span, request, parent});
@@ -378,6 +381,7 @@ export class Scout extends EventEmitter {
             })
         // Return the result
             .catch(err => {
+                
                 // It's possible that an error happened *before* the span could be set
                 if (!ranCb) {
                     result = span ? cb(doneFn, {span, request, parent}) : cb(() => undefined, {span, request, parent});
@@ -402,7 +406,6 @@ export class Scout extends EventEmitter {
         // Check the async sources in case we're in a async context but not a sync one
         parent = parent || this.getCurrentSpan() || this.getCurrentRequest();
 
-        // If the request isn't present then we throw an error early
         if (!parent) {
             this.log(
                 "[scout] parent context missing for synchronous instrumentation (via async context or passed in)",
@@ -611,9 +614,11 @@ export class Scout extends EventEmitter {
 
             const doneFn = () => {
                 this.log(`[scout] Finishing and sending request with ID [${request.id}]`, LogLevel.Debug);
+                this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
+                console.log("STOP ASYNC NS REQ", request.id);
+
                 return request
-                    .finishAndSend()
-                    .then(() => this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST));
+                    .finishAndSend();
             };
 
             // Run in the async namespace
@@ -626,6 +631,7 @@ export class Scout extends EventEmitter {
                 // Update async namespace, run function
                     .then(() => {
                         this.log(`[scout] Request started w/ ID [${request.id}]`, LogLevel.Debug);
+                        console.log("START ASYNC NS REQ", request.id);
                         this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
 
                         ranCb = true;

@@ -107,7 +107,7 @@ export class PGIntegration extends RequireIntegration {
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {
                     integration.logFn("[scout/integrations/pg] Unable to get current span", LogLevel.Debug);
-                    return originalQueryFn.apply(this, [config, values, userCallback]);
+                    return originalQueryFn.apply(this, [config, values, userCallback]).then(() => done());
                 }
 
                 return span
@@ -115,20 +115,27 @@ export class PGIntegration extends RequireIntegration {
                     .addContext({name: ScoutContextName.DBStatement, value: (query as any).text})
                 // Run pg's query function
                     .then(() => originalQueryFn.apply(this, [config, values, userCallback]))
+                // Finish the instrumentation
+                    .then(res => {
+                        done();
+                        return res;
+                    })
                     .then(res => {
                         integration.logFn("[scout/integrations/pg] Successfully queried Postgres db", LogLevel.Trace);
                         return res;
                     })
                     .catch(err => {
-                        integration.logFn("[scout/integrations/pg] Query failed", LogLevel.Trace);
+                        // Finish the instrumentation
+                        done();
 
                         // Mark the span as errored
                         if (span) { span.addContext({name: "error", value: "true"}); }
 
+                        integration.logFn("[scout/integrations/pg] Query failed", LogLevel.Trace);
+
                         // Rethrow the error
                         throw err;
-                    })
-                    .finally(() => done());
+                    });
             });
         };
 

@@ -206,6 +206,31 @@ function appWithGETSynchronousError(middleware, expressFnTransform) {
     return app;
 }
 exports.appWithGETSynchronousError = appWithGETSynchronousError;
+// An express application which performs a bunch of trivial SQL queries and renders a template that uses the reuslts
+function queryAndRenderRandomNumbers(middleware, templateEngine, dbClient) {
+    const app = express();
+    app.use(middleware);
+    if (templateEngine === "mustache") {
+        app.engine("mustache", require("mustache-express")());
+    }
+    // Expect all the views to be in the same fixtures/files path
+    const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
+    app.set("views", VIEWS_DIR);
+    app.set("view engine", templateEngine);
+    app.get("/", (req, res) => {
+        console.log("BEFORE PROMISE", req.scout.instance.getCurrentSpan());
+        // Generate random numbers
+        Promise.all([...Array(50)].map(() => dbClient.query('SELECT RANDOM() * 10 as num'))).then(results => {
+            const numbers = results.map(r => r.rows[0].num);
+            const numberListItems = numbers.map(n => `<li>${n}</li>`).join("\n");
+            ;
+            console.log("IN PROMISE", req.scout.instance.getCurrentSpan());
+            res.render("random-numbers", { numbers, numberListItems });
+        });
+    });
+    return app;
+}
+exports.queryAndRenderRandomNumbers = queryAndRenderRandomNumbers;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;

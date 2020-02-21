@@ -268,6 +268,40 @@ export function appWithGETSynchronousError(
     return app;
 }
 
+// An express application which performs a bunch of trivial SQL queries and renders a template that uses the reuslts
+export function queryAndRenderRandomNumbers(
+    middleware: any,
+    templateEngine: "pug" | "ejs" | "mustache",
+    dbClient: Client,
+): Application {
+    const app = express();
+    app.use(middleware);
+
+    if (templateEngine === "mustache") {
+        app.engine("mustache", require("mustache-express")());
+    }
+
+    // Expect all the views to be in the same fixtures/files path
+    const VIEWS_DIR = path.join(getRootDir(), "test/fixtures/files");
+    app.set("views", VIEWS_DIR);
+    app.set("view engine", templateEngine);
+
+    app.get("/", (req: Request, res: Response) => {
+        console.log("BEFORE PROMISE", req.scout.instance.getCurrentSpan());
+        // Generate random numbers
+        Promise.all(
+            [...Array(50)].map(() => dbClient.query('SELECT RANDOM() * 10 as num'))
+        ).then(results => {
+            const numbers = results.map(r => r.rows[0].num);
+            const numberListItems = numbers.map(n => `<li>${n}</li>`).join("\n");;
+            console.log("IN PROMISE", req.scout.instance.getCurrentSpan());
+            res.render("random-numbers", {numbers, numberListItems});
+        });
+    });
+
+    return app;
+}
+
 // Test that a given variable is effectively overlaid in the configuration
 export function testConfigurationOverlay(
     t: Test,

@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
-const TestUtil = require("../util");
+const request = require("supertest");
 const lib_1 = require("../lib");
-const types_1 = require("../lib/types");
-const fixtures_1 = require("./fixtures");
-// The hook for PG has to be triggered this way in a typescript context
-// since a partial import like { Client } will not trigger a require
+// This needs to be set up *before* TestUtil runs so pg used there will be instrumented
 lib_1.setupRequireIntegrations(["pg", "ejs"]);
+const TestUtil = require("./util");
+const express_1 = require("../lib/express");
+const types_1 = require("../lib/types");
 const ejs = require("ejs");
 let PG_CONTAINER_AND_OPTS = null;
 // Pseudo test that will start a containerized postgres instance
@@ -22,31 +22,45 @@ test("Many select statments and a render are in the right order", { timeout: Tes
     }));
     // Setup a PG Client that we'll use later
     let client;
-    ///////////////////
-    // Postgres code //
-    ///////////////////
-    // Set up a listener for the scout request that will contain the DB record
+    // Set up a listener for the scout request that will be sent for the endpoint being hit
     const listener = (data) => {
         scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
         // Look up the database span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => {
-            const dbSpan = spans.find(s => s.operation === types_1.ScoutSpanOperation.SQLQuery);
-            t.assert(dbSpan, "db span was present on request");
-            if (!dbSpan) {
-                t.fail("no DB span present on request");
-                throw new Error("No DB Span");
-            }
-            t.equals(dbSpan.getContextValue(types_1.ScoutContextName.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
-        })
-            .then(() => client.end())
+        const spans = data.request.getChildSpansSync();
+        const controllerSpan = spans[0];
+        if (!controllerSpan) {
+            t.fail("no ControllerSpan span");
+            throw new Error("No DB Span");
+        }
+        const innerSpans = controllerSpan.getChildSpansSync();
+        console.log("innerSpans.operation", innerSpans.map(s => s.operation));
+        // Check for the inner SQL query spans
+        const dbSpans = innerSpans.filter(s => s.operation === types_1.ScoutSpanOperation.SQLQuery);
+        t.assert(dbSpans, `db spans [${dbSpans.length}] were present on request`);
+        if (!dbSpans || dbSpans.length === 0) {
+            t.fail("no DB spans present on request");
+            throw new Error("No DB spans");
+        }
+        // Check for the inner render spans
+        const renderSpans = innerSpans.filter(s => s.operation === types_1.ScoutSpanOperation.TemplateRender);
+        t.assert(renderSpans, `render spans [${renderSpans.length}] were present on request`);
+        t.equals(renderSpans.length, 1, "only one render span is present");
+        const renderSpan = renderSpans[0];
+        if (!renderSpan) {
+            t.fail("no render span present on request");
+            throw new Error("No Render span");
+        }
+        // Check that none of the SQL query spans overlap with the render span
+        t.assert(dbSpans.every(s => s.getEndTime() && s.getEndTime() < renderSpan.getTimestamp()), "All DB spans end before the render span starts");
+        // Close the PG client & shutdown
+        client.end()
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => {
             client.end()
                 .then(() => TestUtil.shutdownScout(t, scout, err));
         });
     };
+    let app;
     // Activate the listener
     scout.on(lib_1.ScoutEvent.RequestSent, listener);
     scout
@@ -54,62 +68,29 @@ test("Many select statments and a render are in the right order", { timeout: Tes
         // Connect to the postgres
         .then(() => TestUtil.makeConnectedPGClient(() => PG_CONTAINER_AND_OPTS))
         .then(c => client = c)
-        // Start a scout transaction & perform a query
-        .then(() => scout.transaction("Controller/select-now-test", done => {
-        return client
-            .query(fixtures_1.SQL_QUERIES.SELECT_TIME)
-            .then(() => {
-            t.comment("performed query");
-            done();
+        // Build the app with the postgres client
+        .then(() => {
+        // Create an application will do many queries and render something using ejs
+        app = TestUtil.queryAndRenderRandomNumbers(express_1.scoutMiddleware({
+            scout,
+            requestTimeoutMs: 0,
+        }), "ejs", client);
+    })
+        // Perform the request to trigger the queries & render
+        .then(() => {
+        return request(app)
+            .get("/")
+            .expect("Content-Type", /text/)
+            .expect(200)
+            .then(res => {
+            t.assert(res.text.includes("Random numbers (generated)"), "html contains title");
+            t.assert(res.text.includes("<li>"), "html contains at least one <li> tag");
         });
-    }))
-        // Finish & Send the request
+    })
         .catch(err => {
         client.end()
             .then(() => TestUtil.shutdownScout(t, scout, err));
     });
-    //////////////
-    // EJS code //
-    //////////////
-    // Create an application that's set up to use ejs templating
-    const app = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
-        scout,
-        requestTimeoutMs: 0,
-    }), "ejs");
-    // Set up a listener that should fire when the request is finished
-    const listener = (data) => {
-        // Remove listener since this should fire once
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
-        // Look up the template render span from the request
-        const requestSpans = data.request.getChildSpansSync();
-        // The top level controller should be present
-        const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
-        t.assert(controllerSpan, "template controller span was present on request");
-        if (!controllerSpan) {
-            t.fail("no controller span present on request");
-            throw new Error("No controller span");
-        }
-        // The inner spans for the controller should contain a template rendering span
-        const innerSpans = controllerSpan.getChildSpansSync();
-        const renderSpan = innerSpans.find(s => s.operation === types_1.ScoutSpanOperation.TemplateRender);
-        t.assert(renderSpan, "template render span was present on request");
-        if (!renderSpan) {
-            t.fail("no render span present on request");
-            throw new Error("No render span");
-        }
-        t.assert(renderSpan.getContextValue(types_1.ScoutContextName.Name), "template name context is present");
-        // Shutdown and close scout
-        TestUtil.shutdownScout(t, scout);
-    };
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
-    return request(app)
-        .get("/")
-        .expect("Content-Type", /html/)
-        .expect(200)
-        .then(res => {
-        t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
-    })
-        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // Pseudo test that will stop a containerized postgres instance that was started
 TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);
