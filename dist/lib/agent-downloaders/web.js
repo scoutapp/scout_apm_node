@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const download = require("download");
 const path = require("path");
-const tmp = require("tmp-promise");
 const types_1 = require("../types");
 const fs = require("fs-extra");
 // tslint:disable-next-line no-var-requires
@@ -147,12 +146,11 @@ class WebAgentDownloader {
             }
         })
             // Create a temporary directory & download the agent
-            .then(() => tmp.dir({ prefix: Constants.TMP_DIR_PREFIX }))
-            .then(result => {
-            downloadDir = result.path;
-            const subdirName = `scout_apm_core-v${v}-${PLATFORM}`;
+            .then(() => {
+            const defaultSubdirName = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+            downloadDir = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, opts && opts.coreAgentFullName ? opts.coreAgentFullName : defaultSubdirName);
             // Build the expected path for the binary
-            expectedBinPath = path.join(downloadDir, opts && opts.coreAgentFullName ? opts.coreAgentFullName : subdirName, Constants.CORE_AGENT_BIN_FILE_NAME);
+            expectedBinPath = path.join(downloadDir, Constants.CORE_AGENT_BIN_FILE_NAME);
             const options = { extract: adc.zipped };
             // Ensure we're not attempting to do a download if they're disallowed
             if (opts && opts.disallowDownload) {
@@ -230,13 +228,10 @@ class WebAgentDownloader {
             return Promise.reject(new Errors.UnexpectedError("not configured to use cache"));
         }
         const dest = path.join(opts.cacheDir, adc.rawVersion);
-        return fs.ensureDir(dest)
-            .then(() => fs.pathExists(downloadDir))
-            .then(exists => {
-            if (!exists) {
-                throw new Errors.UnexpectedError(`download directory [${downloadDir}] is missing`);
-            }
-        })
+        return Promise.all([
+            fs.ensureDir(dest),
+            fs.ensureDir(downloadDir),
+        ])
             .then(() => fs.copy(downloadDir, dest))
             .then(() => path.join(dest, Constants.CORE_AGENT_BIN_FILE_NAME));
     }
