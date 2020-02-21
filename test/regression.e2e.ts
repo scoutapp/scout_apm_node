@@ -23,7 +23,6 @@ import { ScoutContextName, ScoutSpanOperation } from "../lib/types";
 
 import { SQL_QUERIES } from "./fixtures";
 
-
 const ejs = require("ejs");
 
 import { Client } from "pg";
@@ -58,7 +57,6 @@ test("Many select statments and a render are in the right order", {timeout: Test
         }
 
         const innerSpans = controllerSpan.getChildSpansSync();
-        console.log("innerSpans.operation", innerSpans.map(s => s.operation));
 
         // Check for the inner SQL query spans
         const dbSpans = innerSpans.filter(s => s.operation === ScoutSpanOperation.SQLQuery);
@@ -68,11 +66,10 @@ test("Many select statments and a render are in the right order", {timeout: Test
             throw new Error("No DB spans");
         }
 
-
         // Check for the inner render spans
         const renderSpans = innerSpans.filter(s => s.operation === ScoutSpanOperation.TemplateRender);
         t.assert(renderSpans, `render spans [${renderSpans.length}] were present on request`);
-        t.equals(renderSpans.length, 1, "only one render span is present")
+        t.equals(renderSpans.length, 1, "only one render span is present");
 
         const renderSpan = renderSpans[0];
         if (!renderSpan) {
@@ -84,7 +81,7 @@ test("Many select statments and a render are in the right order", {timeout: Test
         t.assert(
             dbSpans.every(s => s.getEndTime() && s.getEndTime() < renderSpan.getTimestamp()),
             "All DB spans end before the render span starts",
-        )
+        );
 
         // Close the PG client & shutdown
         client.end()

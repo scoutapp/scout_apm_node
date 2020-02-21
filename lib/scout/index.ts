@@ -2,7 +2,6 @@ import { EventEmitter } from "events";
 import * as path from "path";
 import * as process from "process";
 import { v4 as uuidv4 } from "uuid";
-import * as nrc from "node-request-context";
 import * as cls from "continuation-local-storage";
 import { Namespace } from "node-request-context";
 import * as semver from "semver";
@@ -91,7 +90,6 @@ export class Scout extends EventEmitter {
     private agent: ExternalProcessAgent;
     private processOptions: ProcessOptions;
     private applicationMetadata: ApplicationMetadata;
-    private canUseAsyncHooks: boolean = false;
 
     private asyncNamespace: any;
     private syncCurrentRequest: ScoutRequest | null = null;
@@ -125,9 +123,6 @@ export class Scout extends EventEmitter {
             `scout_apm_core-v${version}-${triple}`,
             Constants.CORE_AGENT_BIN_FILE_NAME,
         );
-
-        // Check node version for before/after
-        this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
 
         // Create async namespace if it does not exist
         this.createAsyncNamespace();
@@ -332,12 +327,17 @@ export class Scout extends EventEmitter {
      * @returns {Promise<any>} a promsie that resolves to the result of the callback
      */
     public instrument(operation: string, cb: DoneCallback): Promise<any> {
-        this.log(`[scout] Instrumenting operation [${operation}]`, LogLevel.Debug);
-
         const parent = this.getCurrentSpan() || this.getCurrentRequest();
         const request = this.getCurrentRequest();
+        const parentIsSpan = parent !== request;
 
-        // If no request is currently underway
+        this.log(
+            `[scout] Instrumenting operation [${operation}], parent? [${parent ? parent.id : "NONE"}]`,
+            LogLevel.Debug,
+        );
+
+        // Both parent and request must be present -- no span can start
+        // without a parent request (and that would be the parent)
         if (!parent || !request) {
             this.log(
                 "[scout] Failed to start instrumentation, no current transaction/parent instrumentation",
@@ -356,41 +356,57 @@ export class Scout extends EventEmitter {
 
         let span: ScoutSpan;
 
-        const doneFn = () => {
-            // Sometimes the async namespace is actually gone *before* doneFn gets called
-            console.log(`CLEARING SPAN NS ENTRY [${parent.id}] (op: ${operation})`);
-            this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
+        return new Promise((resolve, reject) => {
+            // Create a new async namespace for the instrumentation
+            this.asyncNamespace.run(() => {
+                // Create a done function that will clear the entry and stop the span
+                const doneFn = () => {
+                    // When the doneFn is run, this span should be over,
+                    // the active span should go back to the one above it (assuming it is not a request).
+                    if (parentIsSpan) {
+                        this.asyncNamespace.set(ASYNC_NS_SPAN, parent);
+                    }
 
-            this.log(`[scout] Stopping span with ID [${span.id}]`, LogLevel.Debug);
-            return span.stop();
-        };
+                    this.log(`[scout] Stopped span with ID [${span.id}]`, LogLevel.Debug);
 
-        return parent
-        // Start the child span
-            .startChildSpan(operation)
-        // Set up the async namespace, run the function
-            .then(s => span = s)
-            .then(() => {
-                console.log(`START ASYNC NS SPAN ${span.id} (op: ${span.operation})`);
-                this.asyncNamespace.set(ASYNC_NS_SPAN, span);
-                ranCb = true;
-                result = cb(doneFn, {span, request, parent});
+                    // If we never made the span object then don't do anything
+                    if (!span) { return Promise.resolve(); }
 
-                // Ensure that the result is a promise
-                return Promise.resolve(result);
-            })
-        // Return the result
-            .catch(err => {
-                
-                // It's possible that an error happened *before* the span could be set
-                if (!ranCb) {
-                    result = span ? cb(doneFn, {span, request, parent}) : cb(() => undefined, {span, request, parent});
-                }
-                this.log("[scout] failed to send start span", LogLevel.Error);
+                    return span.stop();
+                };
 
-                // Ensure that the result is a promise
-                return Promise.resolve(result);
+                // bind the callback
+                cb = this.asyncNamespace.bind(cb);
+
+                // Create & start a child span on the current parent (request/span)
+                parent
+                    .startChildSpan(operation)
+                    .then(s => span = s)
+                    .then(() => {
+                        // Set the span & request on the namespace
+                        this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
+                        this.asyncNamespace.set(ASYNC_NS_SPAN, span);
+
+                        // Set that the cb has been run, in the case of error so we don't run twice
+                        ranCb = true;
+                        const result = cb(doneFn, {span, request, parent});
+
+                        // Ensure that the result is a promise
+                        resolve(result);
+                    })
+                // Return the result
+                    .catch(err => {
+                        // It's possible that an error happened *before* the callback could be run
+                        if (!ranCb) {
+                            result = cb(doneFn, {span, request, parent});
+                        }
+
+                        this.log("[scout] failed to send start span", LogLevel.Error);
+                        // Ensure that the result is a promise
+                        resolve(result);
+                    });
             });
+        });
     }
 
     /**
@@ -592,12 +608,11 @@ export class Scout extends EventEmitter {
      * Create an async namespace internally for use with tracking if not already present
      */
     private createAsyncNamespace() {
-        const implementation = this.canUseAsyncHooks ? nrc : cls;
-        this.asyncNamespace = implementation.getNamespace(ASYNC_NS);
+        this.asyncNamespace = cls.getNamespace(ASYNC_NS);
 
         // Create if it doesn't exist
         if (!this.asyncNamespace) {
-            this.asyncNamespace = implementation.createNamespace(ASYNC_NS);
+            this.asyncNamespace = cls.createNamespace(ASYNC_NS);
         }
     }
 
@@ -615,7 +630,6 @@ export class Scout extends EventEmitter {
             const doneFn = () => {
                 this.log(`[scout] Finishing and sending request with ID [${request.id}]`, LogLevel.Debug);
                 this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
-                console.log("STOP ASYNC NS REQ", request.id);
 
                 return request
                     .finishAndSend();
@@ -625,13 +639,15 @@ export class Scout extends EventEmitter {
             this.asyncNamespace.run(() => {
                 this.log(`[scout] Starting request in async namespace...`, LogLevel.Debug);
 
+                // Bind the cb to this namespace
+                cb = this.asyncNamespace.bind(cb);
+
                 // Star the request
                 this.startRequest()
                     .then(r => request = r)
                 // Update async namespace, run function
                     .then(() => {
                         this.log(`[scout] Request started w/ ID [${request.id}]`, LogLevel.Debug);
-                        console.log("START ASYNC NS REQ", request.id);
                         this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
 
                         ranCb = true;

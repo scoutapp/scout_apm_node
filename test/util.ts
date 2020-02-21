@@ -287,14 +287,12 @@ export function queryAndRenderRandomNumbers(
     app.set("view engine", templateEngine);
 
     app.get("/", (req: Request, res: Response) => {
-        console.log("BEFORE PROMISE", req.scout.instance.getCurrentSpan());
         // Generate random numbers
         Promise.all(
-            [...Array(50)].map(() => dbClient.query('SELECT RANDOM() * 10 as num'))
+            [...Array(50)].map(() => dbClient.query("SELECT RANDOM() * 10 as num")),
         ).then(results => {
             const numbers = results.map(r => r.rows[0].num);
-            const numberListItems = numbers.map(n => `<li>${n}</li>`).join("\n");;
-            console.log("IN PROMISE", req.scout.instance.getCurrentSpan());
+            const numberListItems = numbers.map(n => `<li>${n}</li>`).join("\n");
             res.render("random-numbers", {numbers, numberListItems});
         });
     });

@@ -193,7 +193,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
         // Stop all child spans
         return Promise.all(
-            this.childSpans.map(s =>  s.stop())
+            this.childSpans.map(s =>  s.stop()),
         )
             .then(() => {
                 if (!this.scoutInstance) { return this; }
@@ -215,7 +215,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
                         value: scoutFrames,
                     }))
                     .then(tracebackTag => this.addContext(tracebackTag))
-                    .then(() => this)
+                    .then(() => this);
             });
     }
 

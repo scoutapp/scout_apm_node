@@ -218,13 +218,10 @@ function queryAndRenderRandomNumbers(middleware, templateEngine, dbClient) {
     app.set("views", VIEWS_DIR);
     app.set("view engine", templateEngine);
     app.get("/", (req, res) => {
-        console.log("BEFORE PROMISE", req.scout.instance.getCurrentSpan());
         // Generate random numbers
-        Promise.all([...Array(50)].map(() => dbClient.query('SELECT RANDOM() * 10 as num'))).then(results => {
+        Promise.all([...Array(50)].map(() => dbClient.query("SELECT RANDOM() * 10 as num"))).then(results => {
             const numbers = results.map(r => r.rows[0].num);
             const numberListItems = numbers.map(n => `<li>${n}</li>`).join("\n");
-            ;
-            console.log("IN PROMISE", req.scout.instance.getCurrentSpan());
             res.render("random-numbers", { numbers, numberListItems });
         });
     });

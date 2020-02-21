@@ -33,7 +33,6 @@ export declare class Scout extends EventEmitter {
     private agent;
     private processOptions;
     private applicationMetadata;
-    private canUseAsyncHooks;
     private asyncNamespace;
     private syncCurrentRequest;
     private syncCurrentSpan;

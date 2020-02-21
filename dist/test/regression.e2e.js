@@ -33,7 +33,6 @@ test("Many select statments and a render are in the right order", { timeout: Tes
             throw new Error("No DB Span");
         }
         const innerSpans = controllerSpan.getChildSpansSync();
-        console.log("innerSpans.operation", innerSpans.map(s => s.operation));
         // Check for the inner SQL query spans
         const dbSpans = innerSpans.filter(s => s.operation === types_1.ScoutSpanOperation.SQLQuery);
         t.assert(dbSpans, `db spans [${dbSpans.length}] were present on request`);

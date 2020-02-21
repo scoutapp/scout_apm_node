@@ -1748,11 +1748,6 @@ no-case@^3.0.2:
     lower-case "^2.0.1"
     tslib "^1.10.0"
 
-node-request-context@^1.0.5:
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/node-request-context/-/node-request-context-1.0.5.tgz#48c91806b18e7201ff0559c4ead89b3e390574cc"
-  integrity sha512-y7xXgz0ySpYIXdQEWNmh85n8d3fmoG8YYW2hU6C7SC/Y83jCXk2ffzpJbVVpcgNE1FwqgVuw40MCTa+Sl6zV8A==
-
 normalize-url@2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/normalize-url/-/normalize-url-2.0.1.tgz#835a9da1551fa26f70e92329069a23aa6574d7e6"

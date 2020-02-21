@@ -146,32 +146,34 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                             // Save the scout request onto the request object
                             req.scout.request = scoutReq;
 
-                            // Set up the request timeout
-                            if (requestTimeoutMs > 0) {
-                                setTimeout(() => {
-                                    // Add context to indicate request as timed out
-                                    scoutReq
-                                        .addContext({name: ScoutContextName.Timeout, value: "true"})
-                                        .then(() => finishTransaction())
-                                        .catch(() => {
-                                            if (opts && opts.logFn) {
-                                                opts.logFn(
-                                                    `[scout] Failed to finish request that timed out: ${scoutReq}`,
-                                                    LogLevel.Warn,
-                                                );
-                                            }
-                                        });
-                                }, requestTimeoutMs);
-                            }
+                            // Start a span for the Controller
+                            scout.instrument(name, finishSpan => {
 
-                            // Set up handler to act on end of request
-                            onFinished(res, (err, res) => {
-                                // Finish transaction (which will trigger a send)
-                                finishTransaction();
-                            });
+                                // Set up the request timeout
+                                if (requestTimeoutMs > 0) {
+                                    setTimeout(() => {
+                                        // Add context to indicate request as timed out
+                                        scoutReq
+                                            .addContext({name: ScoutContextName.Timeout, value: "true"})
+                                            .then(() => finishTransaction())
+                                            .catch(() => {
+                                                if (opts && opts.logFn) {
+                                                    opts.logFn(
+                                                        `[scout] Failed to finish request that timed out: ${scoutReq}`,
+                                                        LogLevel.Warn,
+                                                    );
+                                                }
+                                            });
+                                    }, requestTimeoutMs);
+                                }
 
-                            // Start a span for the request
-                            scout.instrument(name, () => {
+                                // Set up handler to act on end of request
+                                onFinished(res, (err, res) => {
+                                    // Finish transaction (which will trigger a send)
+                                    finishSpan();
+                                    finishTransaction();
+                                });
+
                                 const rootSpan = scout.getCurrentSpan();
                                 // Add the span to the request object
                                 req.scout.rootSpan = rootSpan;
