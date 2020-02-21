@@ -22,6 +22,7 @@ import {
     JSONValue,
     LogFn,
     LogLevel,
+    isLogLevel,
     ProcessOptions,
     ScoutConfiguration,
     ScoutContextName,
@@ -32,6 +33,7 @@ import {
     buildProcessOptions,
     buildScoutConfiguration,
     generateTriple,
+    parseLogLevel,
     scrubRequestPath,
     scrubRequestPathParams,
 } from "../types";
@@ -133,6 +135,11 @@ export class Scout extends EventEmitter {
 
         // Create async namespace if it does not exist
         this.createAsyncNamespace();
+
+        // If the logFn that is provided has a 'logger' attempt to set the log level to the passed in logger's level
+        if (this.logFn && this.logFn.logger && this.logFn.logger.level && isLogLevel(this.logFn.logger.level)) {
+            this.config.logLevel = parseLogLevel(this.logFn.logger.level);
+        }
     }
 
     public getSocketFilePath(): string {

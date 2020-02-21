@@ -55,6 +55,10 @@ class Scout extends events_1.EventEmitter {
         this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
         // Create async namespace if it does not exist
         this.createAsyncNamespace();
+        // If the logFn that is provided has a 'logger' attempt to set the log level to the passed in logger's level
+        if (this.logFn && this.logFn.logger && this.logFn.logger.level && types_1.isLogLevel(this.logFn.logger.level)) {
+            this.config.logLevel = types_1.parseLogLevel(this.logFn.logger.level);
+        }
     }
     getSocketFilePath() {
         return this.socketPath.slice();

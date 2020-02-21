@@ -77,6 +77,11 @@ export enum AgentResponseType {
     V1Failure = "v1-failure-response",
 }
 
+// Check if a given string is a valid log level
+export function isLogLevel(lvl: string): lvl is LogLevel {
+    return Object.values(LogLevel).includes(lvl as LogLevel);
+}
+
 /**
  * Parse a string into a log level
  *
@@ -84,10 +89,11 @@ export enum AgentResponseType {
  * @returns {LogLevel}
  */
 export function parseLogLevel(lvl: string): LogLevel {
-    if (Object.values(LogLevel).includes(lvl as LogLevel)) {
-        return lvl as LogLevel;
+    if (!isLogLevel(lvl)) {
+        throw new Error(`Invalid log level [${lvl}]`);
     }
-    throw new Error(`Invalid log level [${lvl}]`);
+
+    return lvl;
 }
 
 export enum ConfigSourceName {

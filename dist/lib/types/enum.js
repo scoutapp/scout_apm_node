@@ -67,6 +67,11 @@ var AgentResponseType;
     AgentResponseType["V1ApplicationEvent"] = "v1-application-event-response";
     AgentResponseType["V1Failure"] = "v1-failure-response";
 })(AgentResponseType = exports.AgentResponseType || (exports.AgentResponseType = {}));
+// Check if a given string is a valid log level
+function isLogLevel(lvl) {
+    return Object.values(LogLevel).includes(lvl);
+}
+exports.isLogLevel = isLogLevel;
 /**
  * Parse a string into a log level
  *
@@ -74,10 +79,10 @@ var AgentResponseType;
  * @returns {LogLevel}
  */
 function parseLogLevel(lvl) {
-    if (Object.values(LogLevel).includes(lvl)) {
-        return lvl;
+    if (!isLogLevel(lvl)) {
+        throw new Error(`Invalid log level [${lvl}]`);
     }
-    throw new Error(`Invalid log level [${lvl}]`);
+    return lvl;
 }
 exports.parseLogLevel = parseLogLevel;
 var ConfigSourceName;

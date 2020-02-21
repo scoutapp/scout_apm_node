@@ -41,7 +41,7 @@ exports.consoleLogFn = consoleLogFn;
  * @param {LogLevel} level
  */
 function buildWinstonLogFn(logger) {
-    return (message, level) => {
+    const fn = (message, level) => {
         level = level || enum_1.LogLevel.Info;
         switch (level) {
             case enum_1.LogLevel.Error:
@@ -60,6 +60,8 @@ function buildWinstonLogFn(logger) {
                 logger.log({ level, message });
         }
     };
+    fn.logger = logger;
+    return fn;
 }
 exports.buildWinstonLogFn = buildWinstonLogFn;
 /**
