@@ -3,7 +3,7 @@ import { LogLevel } from "./enum";
 import * as winston from "winston";
 export interface LogFn {
     (message: string, level?: LogLevel): void;
-    logger?: any;
+    logger?: winston.Logger;
 }
 export declare type JSONValue = object | string | number;
 export declare function convertCamelCaseToEnvVar(prop: string): string;

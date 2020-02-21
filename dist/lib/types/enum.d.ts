@@ -57,6 +57,7 @@ export declare enum AgentResponseType {
     V1ApplicationEvent = "v1-application-event-response",
     V1Failure = "v1-failure-response"
 }
+export declare function isLogLevel(lvl: string): lvl is LogLevel;
 /**
  * Parse a string into a log level
  *

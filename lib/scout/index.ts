@@ -22,6 +22,7 @@ import {
     JSONValue,
     LogFn,
     LogLevel,
+    isLogLevel,
     ProcessOptions,
     ScoutConfiguration,
     ScoutContextName,
@@ -32,6 +33,7 @@ import {
     buildProcessOptions,
     buildScoutConfiguration,
     generateTriple,
+    parseLogLevel,
     scrubRequestPath,
     scrubRequestPathParams,
 } from "../types";
@@ -135,9 +137,8 @@ export class Scout extends EventEmitter {
         this.createAsyncNamespace();
 
         // If the logFn that is provided has a 'logger' attempt to set the log level to the passed in logger's level
-        // NOTE: this only really supports winston at present
-        if (this.logFn && this.logFn.logger && this.logFn.logger.level) {
-            this.config.logLevel = this.logFn.logger.level;
+        if (this.logFn && this.logFn.logger && this.logFn.logger.level && isLogLevel(this.logFn.logger.level)) {
+            this.config.logLevel = parseLogLevel(this.logFn.logger.level);
         }
     }
 

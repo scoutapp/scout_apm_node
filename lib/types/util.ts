@@ -6,7 +6,7 @@ import * as Constants from "../constants";
 export interface LogFn {
     (message: string, level?: LogLevel): void;
 
-    logger?: any;
+    logger?: winston.Logger;
 }
 
 export type JSONValue = object | string | number;
