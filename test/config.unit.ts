@@ -141,11 +141,11 @@ test("core agent dir matches python", (t: Test) => {
     const expectedCoreAgentDir = path.join(
         os.tmpdir(),
         "scout_apm_core",
-        `scout_apm_core-v1.2.7-${generateTriple()}`,
     );
 
     const expectedSocketPath = path.join(
         expectedCoreAgentDir,
+        `scout_apm_core-v1.2.7-${generateTriple()}`,
         "core-agent.sock",
     );
 

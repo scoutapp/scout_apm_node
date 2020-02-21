@@ -137,7 +137,9 @@ export class Scout extends EventEmitter {
     }
 
     private get socketPath() {
-        if (this.config.socketPath) { return this.config.socketPath; }
+        if (this.config.socketPath) {
+            return this.config.socketPath;
+        }
 
         return path.join(
             path.dirname(this.binPath),

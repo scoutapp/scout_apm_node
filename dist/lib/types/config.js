@@ -213,7 +213,7 @@ class DerivedConfigSource {
             case "coreAgentDir":
                 coreAgentTriple = p.get({}, "coreAgentTriple");
                 const version = p.get({}, "coreAgentVersion");
-                return path.join(os.tmpdir(), "scout_apm_core", `scout_apm_core-${version}-${coreAgentTriple}`);
+                return path.join(os.tmpdir(), "scout_apm_core");
             default:
                 return undefined;
         }

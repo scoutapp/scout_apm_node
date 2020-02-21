@@ -311,7 +311,6 @@ class DerivedConfigSource implements ConfigSource {
                 return path.join(
                     os.tmpdir(),
                     "scout_apm_core",
-                    `scout_apm_core-${version}-${coreAgentTriple}`,
                 );
             default:
                 return undefined;
