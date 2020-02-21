@@ -21,7 +21,7 @@ const requests_1 = require("../lib/protocol/v1/requests");
 const app_root_dir_1 = require("app-root-dir");
 const getPort = require("get-port");
 // Wait a little longer for requests that use express
-exports.EXPRESS_TEST_TIMEOUT_MS = 2000;
+exports.EXPRESS_TEST_TIMEOUT_MS = 3000;
 // The timeouts for PG & MSQL assume an instance is *already running*
 // for control over the amount of start time alotted see `startTimeoutMs`
 exports.PG_TEST_TIMEOUT_MS = 5000;

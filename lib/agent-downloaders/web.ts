@@ -128,19 +128,15 @@ export class WebAgentDownloader implements AgentDownloader {
      * @returns {Promise<string>} A promise that resolves to a valid cached binary (if found)
      */
     private getCachedBinaryPath(baseDir: string, v: CoreAgentVersion, adc?: AgentDownloadConfig): Promise<string> {
-        const versionedPath = path.join(baseDir, v.raw, Constants.CORE_AGENT_BIN_FILE_NAME);
-        const inDirPath = path.join(baseDir, Constants.CORE_AGENT_BIN_FILE_NAME);
-        return Promise.all([
-            fs.pathExists(versionedPath),
-            fs.pathExists(inDirPath),
-        ])
-            .then(([versionedPathExists, inDirPathExists]: boolean[]) => {
-                if (!versionedPathExists && !inDirPathExists) {
+        const defaultSubdirName = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+        const versionedPath = path.join(baseDir, Constants.CORE_AGENT_BIN_FILE_NAME);
+        return fs.pathExists(versionedPath)
+            .then((versionedPathExists: boolean) => {
+                if (!versionedPathExists) {
                     throw new Errors.UnexpectedError("Failed to find cached download");
                 }
 
-                const path = versionedPathExists ? versionedPath : inDirPath;
-                return this.ensureBinary(path, adc);
+                return this.ensureBinary(versionedPath, adc);
             });
     }
 
@@ -188,7 +184,6 @@ export class WebAgentDownloader implements AgentDownloader {
                     downloadDir,
                     Constants.CORE_AGENT_BIN_FILE_NAME,
                 );
-
                 const options = {extract: adc.zipped};
 
                 // Ensure we're not attempting to do a download if they're disallowed

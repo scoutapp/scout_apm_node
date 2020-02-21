@@ -97,6 +97,8 @@ export class Scout extends EventEmitter {
     private syncCurrentRequest: ScoutRequest | null = null;
     private syncCurrentSpan: ScoutSpan | null = null;
 
+    private uncaughtExceptionListenerFn: (err) => void;
+
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         super();
 
@@ -200,7 +202,10 @@ export class Scout extends EventEmitter {
         // Set up integration(s)
             .then(() => this.setupIntegrations())
         // Set up process uncaught exception handler
-            .then(() => process.on("uncaughtException", ((err) => this.onUncaughtExceptionListener(err))))
+            .then(() => {
+                this.uncaughtExceptionListenerFn = (err) => this.onUncaughtExceptionListener(err);
+                process.on("uncaughtException", this.uncaughtExceptionListenerFn);
+            })
             .then(() => this);
     }
 
@@ -209,6 +214,9 @@ export class Scout extends EventEmitter {
             this.log("[scout] shutdown called but no agent to shutdown is present", LogLevel.Error);
             return Promise.reject(new Errors.NoAgentPresent());
         }
+
+        // Disable the uncaughtException listener
+        process.removeListener("uncaughtException", this.uncaughtExceptionListenerFn);
 
         return this.agent
             .disconnect()

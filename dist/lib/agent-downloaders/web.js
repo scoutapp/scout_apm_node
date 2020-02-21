@@ -104,18 +104,14 @@ class WebAgentDownloader {
      * @returns {Promise<string>} A promise that resolves to a valid cached binary (if found)
      */
     getCachedBinaryPath(baseDir, v, adc) {
-        const versionedPath = path.join(baseDir, v.raw, Constants.CORE_AGENT_BIN_FILE_NAME);
-        const inDirPath = path.join(baseDir, Constants.CORE_AGENT_BIN_FILE_NAME);
-        return Promise.all([
-            fs.pathExists(versionedPath),
-            fs.pathExists(inDirPath),
-        ])
-            .then(([versionedPathExists, inDirPathExists]) => {
-            if (!versionedPathExists && !inDirPathExists) {
+        const defaultSubdirName = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+        const versionedPath = path.join(baseDir, Constants.CORE_AGENT_BIN_FILE_NAME);
+        return fs.pathExists(versionedPath)
+            .then((versionedPathExists) => {
+            if (!versionedPathExists) {
                 throw new Errors.UnexpectedError("Failed to find cached download");
             }
-            const path = versionedPathExists ? versionedPath : inDirPath;
-            return this.ensureBinary(path, adc);
+            return this.ensureBinary(versionedPath, adc);
         });
     }
     /**

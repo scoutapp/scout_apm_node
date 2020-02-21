@@ -9,7 +9,7 @@ import { APIVersion, Agent, CoreAgentVersion, ProcessOptions, ScoutConfiguration
 import { ScoutOptions } from "../lib/scout";
 import { Scout } from "../lib";
 import { Test } from "tape";
-export declare const EXPRESS_TEST_TIMEOUT_MS = 2000;
+export declare const EXPRESS_TEST_TIMEOUT_MS = 3000;
 export declare const PG_TEST_TIMEOUT_MS = 5000;
 export declare const MYSQL_TEST_TIMEOUT_MS = 5000;
 export declare const DASHBOARD_SEND_TIMEOUT_MS: number;

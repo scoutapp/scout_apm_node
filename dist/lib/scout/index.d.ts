@@ -37,6 +37,7 @@ export declare class Scout extends EventEmitter {
     private asyncNamespace;
     private syncCurrentRequest;
     private syncCurrentSpan;
+    private uncaughtExceptionListenerFn;
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions);
     private get socketPath();
     getSocketFilePath(): string;

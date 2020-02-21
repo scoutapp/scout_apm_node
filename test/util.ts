@@ -43,7 +43,7 @@ import { get as getRootDir } from "app-root-dir";
 const getPort = require("get-port");
 
 // Wait a little longer for requests that use express
-export const EXPRESS_TEST_TIMEOUT_MS = 2000;
+export const EXPRESS_TEST_TIMEOUT_MS = 3000;
 // The timeouts for PG & MSQL assume an instance is *already running*
 // for control over the amount of start time alotted see `startTimeoutMs`
 export const PG_TEST_TIMEOUT_MS = 5000;
