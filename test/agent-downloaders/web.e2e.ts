@@ -5,8 +5,10 @@ import * as tmp from "tmp-promise";
 
 import * as Errors from "../../lib/errors";
 import * as Constants from "../../lib/constants";
-import { CoreAgentVersion, AgentDownloadOptions } from "../../lib/types";
+import { CoreAgentVersion, AgentDownloadOptions, PlatformTriple, detectPlatformTriple } from "../../lib/types";
 import { WebAgentDownloader } from "../../lib/agent-downloaders/web";
+
+const PLATFORM: PlatformTriple = detectPlatformTriple();
 
 test("download works (v1.1.8)", t => {
     const downloader = new WebAgentDownloader();
@@ -26,11 +28,12 @@ test("cache is updated by download (v1.1.8)", t => {
     };
     const downloader = new WebAgentDownloader();
     const version = new CoreAgentVersion("1.1.8");
+    const subdir = `scout_apm_core-v${version.raw}-${PLATFORM}`;
 
     // The cache should have created a versioned path to the binary
     const expectedDirPath = path.join(
         Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
-        version.raw,
+        subdir,
     );
     const expectedBinPath = path.join(
         expectedDirPath,

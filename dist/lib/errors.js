@@ -25,6 +25,7 @@ var ErrorCode;
     ErrorCode[ErrorCode["MonitoringDisabled"] = 18] = "MonitoringDisabled";
     ErrorCode[ErrorCode["NoAgentPresent"] = 19] = "NoAgentPresent";
     ErrorCode[ErrorCode["NoActiveParentContext"] = 20] = "NoActiveParentContext";
+    ErrorCode[ErrorCode["InvalidConfiguration"] = 21] = "InvalidConfiguration";
 })(ErrorCode = exports.ErrorCode || (exports.ErrorCode = {}));
 class ScoutError extends Error {
 }
@@ -196,3 +197,11 @@ class NoActiveParentContext extends ScoutError {
     }
 }
 exports.NoActiveParentContext = NoActiveParentContext;
+class InvalidConfiguration extends ScoutError {
+    constructor(m) {
+        super();
+        this.code = ErrorCode.InvalidConfiguration;
+        this.message = m || "Invalid configuration";
+    }
+}
+exports.InvalidConfiguration = InvalidConfiguration;

@@ -102,8 +102,8 @@ test("application metadata is correctly generated", (t) => {
 test("core agent dir matches python", (t) => {
     const config = types_1.buildScoutConfiguration({ coreAgentVersion: "v1.2.7" });
     const scout = new lib_1.Scout(config);
-    const expectedCoreAgentDir = path.join(os.tmpdir(), "scout_apm_core", `scout_apm_core-v1.2.7-${types_1.generateTriple()}`);
-    const expectedSocketPath = path.join(expectedCoreAgentDir, "core-agent.sock");
+    const expectedCoreAgentDir = path.join(os.tmpdir(), "scout_apm_core");
+    const expectedSocketPath = path.join(expectedCoreAgentDir, `scout_apm_core-v1.2.7-${types_1.generateTriple()}`, "core-agent.sock");
     t.equals(config.coreAgentDir, expectedCoreAgentDir, "core agent directory matches the expected value");
     t.equals(scout.getSocketPath(), `unix://${expectedSocketPath}`, "socket path matches expected value");
     t.end();

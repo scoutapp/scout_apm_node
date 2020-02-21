@@ -61,6 +61,7 @@ export class WebAgentDownloader implements AgentDownloader {
 
     /** @see AgentDownloader */
     public download(v: CoreAgentVersion, opts?: AgentDownloadOptions): Promise<string> {
+
         // Normally we'd look up the version from the hard-coded known configs
         let doDownload = () => this.downloadFromConfig(v, opts);
 
@@ -89,7 +90,7 @@ export class WebAgentDownloader implements AgentDownloader {
      */
     private downloadFromCustomPath(v: CoreAgentVersion, opts: AgentDownloadOptions): Promise<string> {
         const url = `${opts.downloadUrl}/${opts.coreAgentFullName}.tgz`;
-        const downloadDir: string = `${opts.coreAgentDir}`;
+        const downloadDir: string = `${opts.coreAgentDir}/${opts.coreAgentFullName}`;
         const expectedBinPath: string = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
 
         // Ensure we're not attempting to do a download if they're disallowed
@@ -128,19 +129,16 @@ export class WebAgentDownloader implements AgentDownloader {
      * @returns {Promise<string>} A promise that resolves to a valid cached binary (if found)
      */
     private getCachedBinaryPath(baseDir: string, v: CoreAgentVersion, adc?: AgentDownloadConfig): Promise<string> {
-        const versionedPath = path.join(baseDir, v.raw, Constants.CORE_AGENT_BIN_FILE_NAME);
-        const inDirPath = path.join(baseDir, Constants.CORE_AGENT_BIN_FILE_NAME);
-        return Promise.all([
-            fs.pathExists(versionedPath),
-            fs.pathExists(inDirPath),
-        ])
-            .then(([versionedPathExists, inDirPathExists]: boolean[]) => {
-                if (!versionedPathExists && !inDirPathExists) {
+        const subdir = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+        const versionedPath = path.join(baseDir, subdir, Constants.CORE_AGENT_BIN_FILE_NAME);
+
+        return fs.pathExists(versionedPath)
+            .then((versionedPathExists: boolean) => {
+                if (!versionedPathExists) {
                     throw new Errors.UnexpectedError("Failed to find cached download");
                 }
 
-                const path = versionedPathExists ? versionedPath : inDirPath;
-                return this.ensureBinary(path, adc);
+                return this.ensureBinary(versionedPath, adc);
             });
     }
 
@@ -175,10 +173,21 @@ export class WebAgentDownloader implements AgentDownloader {
                 }
             })
         // Create a temporary directory & download the agent
-            .then(() => tmp.dir({prefix: Constants.TMP_DIR_PREFIX}))
-            .then(result => {
-                downloadDir = result.path;
-                expectedBinPath = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
+            .then(() => {
+                const subdir = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+
+                // Build the expected download directory path
+                downloadDir = path.join (
+                    opts && opts.cacheDir ? opts.cacheDir : Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+                    opts && opts.coreAgentFullName ? opts.coreAgentFullName : subdir,
+                );
+
+                // Build the expected path for the binary
+                expectedBinPath = path.join(
+                    downloadDir,
+                    Constants.CORE_AGENT_BIN_FILE_NAME,
+                );
+
                 const options = {extract: adc.zipped};
 
                 // Ensure we're not attempting to do a download if they're disallowed
@@ -271,11 +280,10 @@ export class WebAgentDownloader implements AgentDownloader {
 
         const dest = path.join(opts.cacheDir, adc.rawVersion);
 
-        return fs.ensureDir(dest)
-            .then(() => fs.pathExists(downloadDir))
-            .then(exists => {
-                if (!exists) { throw new Errors.UnexpectedError(`download directory [${downloadDir}] is missing`); }
-            })
+        return Promise.all([
+            fs.ensureDir(dest),
+            fs.ensureDir(downloadDir),
+        ])
             .then(() => fs.copy(downloadDir, dest))
             .then(() => path.join(dest, Constants.CORE_AGENT_BIN_FILE_NAME));
     }
