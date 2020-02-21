@@ -3,7 +3,7 @@ import { snakeCase } from "snake-case";
 import * as winston from "winston";
 import * as Constants from "../constants";
 
-export type LogFn = {
+export interface LogFn {
     (message: string, level?: LogLevel): void;
 
     logger?: any;

@@ -1,10 +1,10 @@
 /// <reference types="node" />
 import { LogLevel } from "./enum";
 import * as winston from "winston";
-export declare type LogFn = {
+export interface LogFn {
     (message: string, level?: LogLevel): void;
     logger?: any;
-};
+}
 export declare type JSONValue = object | string | number;
 export declare function convertCamelCaseToEnvVar(prop: string): string;
 /**
