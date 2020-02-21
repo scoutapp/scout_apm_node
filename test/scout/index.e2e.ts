@@ -1,4 +1,6 @@
 import * as test from "tape";
+import * as path from "path";
+import { mkdtemp } from "fs-extra";
 
 import {
     ScoutAgentEvent,
@@ -550,4 +552,26 @@ test("Ensure that no requests are received by the agent if monitoring is off", t
         }))
     // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/139
+test("socketPath setting is honored by scout instance", t => {
+    let scout: Scout;
+
+    // Create a temp directory with a socket for scout to use
+    mkdtemp("/tmp/socketpath-config-test-")
+        .then(dir => path.join(dir, "core-agent.sock"))
+        .then(socketPath => {
+            // Create the scout instance with the custom socketPath
+            scout = new Scout(buildScoutConfiguration({
+                allowShutdown: true,
+                monitor: false,
+                coreAgentLaunch: false,
+                coreAgentDownload: false,
+                socketPath,
+            }));
+
+            t.equals(scout.getSocketFilePath(), socketPath, "socket path matches the custom value");
+            t.end();
+        });
 });

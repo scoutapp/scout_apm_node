@@ -27,7 +27,6 @@ export declare class Scout extends EventEmitter {
     private downloader;
     private downloaderOptions;
     private binPath;
-    private socketPath;
     private logFn;
     private slowRequestThresholdMs;
     private coreAgentVersion;
@@ -39,6 +38,7 @@ export declare class Scout extends EventEmitter {
     private syncCurrentRequest;
     private syncCurrentSpan;
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions);
+    private get socketPath();
     getSocketFilePath(): string;
     getCoreAgentVersion(): CoreAgentVersion;
     getApplicationMetadata(): ApplicationMetadata;

@@ -84,7 +84,6 @@ export class Scout extends EventEmitter {
     private downloader: AgentDownloader;
     private downloaderOptions: AgentDownloadOptions = {};
     private binPath: string;
-    private socketPath: string;
     private logFn: LogFn;
     private slowRequestThresholdMs: number = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
 
@@ -125,11 +124,6 @@ export class Scout extends EventEmitter {
             Constants.CORE_AGENT_BIN_FILE_NAME,
         );
 
-        this.socketPath = path.join(
-            path.dirname(this.binPath),
-            Constants.DEFAULT_SOCKET_FILE_NAME,
-        );
-
         // Check node version for before/after
         this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
 
@@ -140,6 +134,15 @@ export class Scout extends EventEmitter {
         if (this.logFn && this.logFn.logger && this.logFn.logger.level && isLogLevel(this.logFn.logger.level)) {
             this.config.logLevel = parseLogLevel(this.logFn.logger.level);
         }
+    }
+
+    private get socketPath() {
+        if (this.config.socketPath) { return this.config.socketPath; }
+
+        return path.join(
+            path.dirname(this.binPath),
+            Constants.DEFAULT_SOCKET_FILE_NAME,
+        );
     }
 
     public getSocketFilePath(): string {
@@ -174,13 +177,10 @@ export class Scout extends EventEmitter {
         // Return early if agent has already been set up
         if (this.agent) { return Promise.resolve(this); }
 
+        const shouldLaunch = this.config.coreAgentLaunch;
+
         // If the socket path exists then we may be able to skip downloading and launching
-        return pathExists(this.socketPath)
-            .then(exists => {
-                // if `coreAgentLaunch` is set to true, then force launch
-                const useExisting = exists && !this.config.coreAgentLaunch;
-                return useExisting ? this.createAgentForExistingSocket() : this.downloadAndLaunchAgent();
-            })
+        return (shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket())
             .then(() => this.agent.connect())
             .then(() => this.log("[scout] successfully connected to agent", LogLevel.Debug))
             .then(() => {
@@ -498,17 +498,29 @@ export class Scout extends EventEmitter {
     }
 
     // Helper for creating an ExternalProcessAgent for an existing, listening agent
-    private createAgentForExistingSocket(): Promise<ExternalProcessAgent> {
+    private createAgentForExistingSocket(socketPath?: string): Promise<ExternalProcessAgent> {
         this.log(`[scout] detected existing socket @ [${this.socketPath}], skipping agent launch`, LogLevel.Debug);
 
-        this.processOptions = new ProcessOptions(
-            this.binPath,
-            this.getSocketPath(),
-            buildProcessOptions(this.config),
-        );
+        socketPath = socketPath || this.socketPath;
 
-        const agent = new ExternalProcessAgent(this.processOptions, this.logFn);
-        return this.setupAgent(agent);
+        // Check if the socketPath exists
+        return pathExists(socketPath)
+            .then(exists => {
+                if (!exists) {
+                    throw new Errors.InvalidConfiguration("socket @ path [${socketPath}] does not exist");
+                }
+            })
+        // Build process options and agent
+            .then(() => {
+                this.processOptions = new ProcessOptions(
+                    this.binPath,
+                    this.getSocketPath(),
+                    buildProcessOptions(this.config),
+                );
+
+                return new ExternalProcessAgent(this.processOptions, this.logFn);
+            })
+            .then(agent => this.setupAgent(agent));
     }
 
     // Helper for downloading and launching an agent
@@ -540,10 +552,6 @@ export class Scout extends EventEmitter {
             .download(this.coreAgentVersion, this.downloaderOptions)
             .then(bp => {
                 this.binPath = bp;
-                this.socketPath = path.join(
-                    path.dirname(this.binPath),
-                    Constants.DEFAULT_SOCKET_FILE_NAME,
-                );
                 this.log(`[scout] using socket path [${this.socketPath}]`, LogLevel.Debug);
             })
         // Build options for the agent and create the agent

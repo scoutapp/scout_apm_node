@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
+const path = require("path");
+const fs_extra_1 = require("fs-extra");
 const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
-const fs_extra_1 = require("fs-extra");
+const fs_extra_2 = require("fs-extra");
 const TestUtil = require("../util");
 test("Scout object creation works without config", t => {
     const scout = new lib_1.Scout();
@@ -322,11 +324,11 @@ test("Launch disabling works via top level config", t => {
     }));
     const socketPath = scout.getSocketFilePath();
     // We need to make sure that the socket path doesn't exist
-    fs_extra_1.pathExists(socketPath)
+    fs_extra_2.pathExists(socketPath)
         .then(exists => {
         if (exists) {
             t.comment(`removing existing socket path @ [${socketPath}] to prevent use of existing agent`);
-            return fs_extra_1.remove(socketPath);
+            return fs_extra_2.remove(socketPath);
         }
     })
         // Setup scout
@@ -461,4 +463,23 @@ test("Ensure that no requests are received by the agent if monitoring is off", t
     }))
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+// https://github.com/scoutapp/scout_apm_node/issues/139
+test("socketPath setting is honored by scout instance", t => {
+    let scout;
+    // Create a temp directory with a socket for scout to use
+    fs_extra_1.mkdtemp("/tmp/socketpath-config-test-")
+        .then(dir => path.join(dir, "core-agent.sock"))
+        .then(socketPath => {
+        // Create the scout instance with the custom socketPath
+        scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+            allowShutdown: true,
+            monitor: false,
+            coreAgentLaunch: false,
+            coreAgentDownload: false,
+            socketPath,
+        }));
+        t.equals(scout.getSocketFilePath(), socketPath, "socket path matches the custom value");
+        t.end();
+    });
 });

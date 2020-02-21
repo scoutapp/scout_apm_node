@@ -22,6 +22,7 @@ export enum ErrorCode {
     MonitoringDisabled,
     NoAgentPresent,
     NoActiveParentContext,
+    InvalidConfiguration,
 }
 
 class ScoutError extends Error {
@@ -214,5 +215,14 @@ export class NoActiveParentContext extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "No active request is curently underway";
+    }
+}
+
+export class InvalidConfiguration extends ScoutError {
+    public readonly code: number = ErrorCode.InvalidConfiguration;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Invalid configuration";
     }
 }

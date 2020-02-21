@@ -50,7 +50,6 @@ class Scout extends events_1.EventEmitter {
         // Build expected bin & socket path based on current version
         const triple = types_1.generateTriple();
         this.binPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, `scout_apm_core-v${version}-${triple}`, Constants.CORE_AGENT_BIN_FILE_NAME);
-        this.socketPath = path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
         // Check node version for before/after
         this.canUseAsyncHooks = semver.gte(process.version, "8.9.0");
         // Create async namespace if it does not exist
@@ -59,6 +58,12 @@ class Scout extends events_1.EventEmitter {
         if (this.logFn && this.logFn.logger && this.logFn.logger.level && types_1.isLogLevel(this.logFn.logger.level)) {
             this.config.logLevel = types_1.parseLogLevel(this.logFn.logger.level);
         }
+    }
+    get socketPath() {
+        if (this.config.socketPath) {
+            return this.config.socketPath;
+        }
+        return path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
     }
     getSocketFilePath() {
         return this.socketPath.slice();
@@ -86,13 +91,9 @@ class Scout extends events_1.EventEmitter {
         if (this.agent) {
             return Promise.resolve(this);
         }
+        const shouldLaunch = this.config.coreAgentLaunch;
         // If the socket path exists then we may be able to skip downloading and launching
-        return fs_extra_1.pathExists(this.socketPath)
-            .then(exists => {
-            // if `coreAgentLaunch` is set to true, then force launch
-            const useExisting = exists && !this.config.coreAgentLaunch;
-            return useExisting ? this.createAgentForExistingSocket() : this.downloadAndLaunchAgent();
-        })
+        return (shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket())
             .then(() => this.agent.connect())
             .then(() => this.log("[scout] successfully connected to agent", types_1.LogLevel.Debug))
             .then(() => {
@@ -358,11 +359,22 @@ class Scout extends events_1.EventEmitter {
         }
     }
     // Helper for creating an ExternalProcessAgent for an existing, listening agent
-    createAgentForExistingSocket() {
+    createAgentForExistingSocket(socketPath) {
         this.log(`[scout] detected existing socket @ [${this.socketPath}], skipping agent launch`, types_1.LogLevel.Debug);
-        this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
-        const agent = new external_process_1.default(this.processOptions, this.logFn);
-        return this.setupAgent(agent);
+        socketPath = socketPath || this.socketPath;
+        // Check if the socketPath exists
+        return fs_extra_1.pathExists(socketPath)
+            .then(exists => {
+            if (!exists) {
+                throw new Errors.InvalidConfiguration("socket @ path [${socketPath}] does not exist");
+            }
+        })
+            // Build process options and agent
+            .then(() => {
+            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
+            return new external_process_1.default(this.processOptions, this.logFn);
+        })
+            .then(agent => this.setupAgent(agent));
     }
     // Helper for downloading and launching an agent
     downloadAndLaunchAgent() {
@@ -385,7 +397,6 @@ class Scout extends events_1.EventEmitter {
             .download(this.coreAgentVersion, this.downloaderOptions)
             .then(bp => {
             this.binPath = bp;
-            this.socketPath = path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
             this.log(`[scout] using socket path [${this.socketPath}]`, types_1.LogLevel.Debug);
         })
             // Build options for the agent and create the agent
