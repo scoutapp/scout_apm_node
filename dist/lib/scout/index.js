@@ -389,7 +389,7 @@ class Scout extends events_1.EventEmitter {
         this.coreAgentVersion = new types_1.CoreAgentVersion(this.config.coreAgentVersion);
         // Build options for download
         this.downloaderOptions = Object.assign({
-            cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+            cacheDir: path.dirname(this.binPath),
             updateCache: true,
         }, this.downloaderOptions, types_1.buildDownloadOptions(this.config));
         // Download the appropriate binary

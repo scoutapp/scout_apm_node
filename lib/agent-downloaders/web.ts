@@ -89,7 +89,7 @@ export class WebAgentDownloader implements AgentDownloader {
      */
     private downloadFromCustomPath(v: CoreAgentVersion, opts: AgentDownloadOptions): Promise<string> {
         const url = `${opts.downloadUrl}/${opts.coreAgentFullName}.tgz`;
-        const downloadDir: string = `${opts.coreAgentDir}`;
+        const downloadDir: string = `${opts.coreAgentDir}/${opts.coreAgentFullName}`;
         const expectedBinPath: string = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
 
         // Ensure we're not attempting to do a download if they're disallowed
@@ -178,7 +178,15 @@ export class WebAgentDownloader implements AgentDownloader {
             .then(() => tmp.dir({prefix: Constants.TMP_DIR_PREFIX}))
             .then(result => {
                 downloadDir = result.path;
-                expectedBinPath = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
+                const subdirName = `scout_apm_core-v${v}-${PLATFORM}`;
+
+                // Build the expected path for the binary
+                expectedBinPath = path.join(
+                    downloadDir,
+                    opts && opts.coreAgentFullName ? opts.coreAgentFullName : subdirName,
+                    Constants.CORE_AGENT_BIN_FILE_NAME,
+                );
+
                 const options = {extract: adc.zipped};
 
                 // Ensure we're not attempting to do a download if they're disallowed

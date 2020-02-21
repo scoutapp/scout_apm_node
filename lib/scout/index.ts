@@ -542,7 +542,7 @@ export class Scout extends EventEmitter {
         // Build options for download
         this.downloaderOptions = Object.assign(
             {
-                cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+                cacheDir: path.dirname(this.binPath),
                 updateCache: true,
             },
             this.downloaderOptions,
