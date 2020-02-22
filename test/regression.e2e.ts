@@ -40,8 +40,6 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
 test("Many select statments and a render are in the right order", {timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000}, t => {
     const config = buildScoutConfiguration({
         allowShutdown: true,
-        coreAgentLaunch: false,
-        coreAgentDownload: false,
         monitor: true,
     });
     const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
