@@ -51,6 +51,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     addContextsSync(tags: ScoutTag[]): this;
     /** @see Taggable */
     getContextValue(name: string): JSONValue | JSONValue[] | undefined;
+    getTags(): ScoutTag[];
     /** @see ChildSpannable */
     startChildSpan(operation: string): Promise<ScoutSpan>;
     /** @see ChildSpannable */

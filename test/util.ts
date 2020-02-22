@@ -32,7 +32,7 @@ import {
 } from "../lib/types";
 import { ScoutOptions } from "../lib/scout";
 import { DEFAULT_SCOUT_CONFIGURATION } from "../lib/types/config";
-import { Scout } from "../lib";
+import { Scout, ScoutRequest, ScoutSpan } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
 
@@ -289,7 +289,7 @@ export function queryAndRenderRandomNumbers(
     app.get("/", (req: Request, res: Response) => {
         // Generate random numbers
         Promise.all(
-            [...Array(50)].map(() => dbClient.query("SELECT RANDOM() * 10 as num")),
+            [...Array(10)].map(() => dbClient.query("SELECT RANDOM() * 10 as num")),
         ).then(results => {
             const numbers = results.map(r => r.rows[0].num);
             const numberListItems = numbers.map(n => `<li>${n}</li>`).join("\n");
@@ -892,4 +892,30 @@ export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts |
     } catch {
         return Promise.reject(new Error("connect failed"));
     }
+}
+
+// Create a minimal object for easy printing (or util.inspecting) of scout requests/spans
+export function minimal(reqOrSpan: ScoutRequest | ScoutSpan): object {
+    if (reqOrSpan instanceof ScoutRequest) {
+        return {
+            tags: reqOrSpan.getTags(),
+            id: reqOrSpan.id,
+            start: reqOrSpan.getTimestamp(),
+            end: reqOrSpan.getEndTime(),
+            childSpans: reqOrSpan.getChildSpansSync().map(minimal),
+        };
+    }
+
+    if (reqOrSpan instanceof ScoutSpan) {
+        return {
+            operation: reqOrSpan.operation,
+            tags: reqOrSpan.getTags(),
+            id: reqOrSpan.id,
+            start: reqOrSpan.getTimestamp(),
+            end: reqOrSpan.getEndTime(),
+            childSpans: reqOrSpan.getChildSpansSync().map(minimal),
+        };
+    }
+
+    throw new Error("Invalid object, neither ScoutReqOrRequest nor ScoutSpan");
 }

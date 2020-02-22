@@ -575,7 +575,7 @@ exports.sendStartRequest = sendStartRequest;
  * @returns {Promise<ScoutRequest>} the passed in request
  */
 function sendStopRequest(scout, req) {
-    const stopReq = new Requests.V1FinishRequest(req.id);
+    const stopReq = new Requests.V1FinishRequest(req.id, { timestamp: req.getEndTime() });
     return sendThroughAgent(scout, stopReq)
         .then(() => {
         scout.emit(types_1.ScoutEvent.RequestSent, { request: req });
@@ -654,7 +654,7 @@ exports.sendTagSpan = sendTagSpan;
  * @returns {Promise<ScoutSpan>} the passed in request
  */
 function sendStopSpan(scout, span) {
-    const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id);
+    const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id, { timestamp: span.getEndTime() });
     return sendThroughAgent(scout, stopSpanReq)
         .then(() => span)
         .catch(err => {

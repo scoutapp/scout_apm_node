@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
+const util_1 = require("util");
 const request = require("supertest");
 const lib_1 = require("../lib");
 // This needs to be set up *before* TestUtil runs so pg used there will be instrumented
@@ -15,7 +16,7 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
 // https://github.com/scoutapp/scout_apm_node/issues/140
-test("Many select statments and a render are in the right order", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
+test("Many select statments and a render are in the right order", { timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000 }, t => {
     const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -25,9 +26,10 @@ test("Many select statments and a render are in the right order", { timeout: Tes
     // Set up a listener for the scout request that will be sent for the endpoint being hit
     const listener = (data) => {
         scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        console.log("REQUEST:", util_1.inspect(TestUtil.minimal(data.request), false, null, true));
         // Look up the database span from the request
-        const spans = data.request.getChildSpansSync();
-        const controllerSpan = spans[0];
+        const requestSpans = data.request.getChildSpansSync();
+        const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
         if (!controllerSpan) {
             t.fail("no ControllerSpan span");
             throw new Error("No DB Span");
@@ -40,6 +42,8 @@ test("Many select statments and a render are in the right order", { timeout: Tes
             t.fail("no DB spans present on request");
             throw new Error("No DB spans");
         }
+        // All the DB spans should have the controllerSpan as parent
+        t.assert(dbSpans.every(s => s.parent && s.parent.id === controllerSpan.id), "db spans have controller as parent");
         // Check for the inner render spans
         const renderSpans = innerSpans.filter(s => s.operation === types_1.ScoutSpanOperation.TemplateRender);
         t.assert(renderSpans, `render spans [${renderSpans.length}] were present on request`);
@@ -49,10 +53,13 @@ test("Many select statments and a render are in the right order", { timeout: Tes
             t.fail("no render span present on request");
             throw new Error("No Render span");
         }
+        // Ensure controller span has controller as parent
+        t.assert(renderSpan.parent && renderSpan.parent.id === controllerSpan.id, "render span has controller as parent");
         // Check that none of the SQL query spans overlap with the render span
-        t.assert(dbSpans.every(s => s.getEndTime() && s.getEndTime() < renderSpan.getTimestamp()), "All DB spans end before the render span starts");
+        t.assert(dbSpans.every(dbSpan => dbSpan.getEndTime() <= renderSpan.getTimestamp()), "All DB spans end before the render span starts");
         // Close the PG client & shutdown
         client.end()
+            .then(() => TestUtil.waitMinutes(3))
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => {
             client.end()

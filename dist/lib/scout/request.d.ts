@@ -17,11 +17,13 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     private finished;
     private sent;
     private sending;
+    private endTime;
     private childSpans;
     private tags;
     constructor(opts?: ScoutRequestOptions);
     span(operation: string): Promise<ScoutSpan>;
     getTimestamp(): Date;
+    getDurationMs(): number;
     /** @see ChildSpannable */
     startChildSpan(operation: string): Promise<ScoutSpan>;
     /** @see ChildSpannable */
@@ -44,6 +46,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     finish(): Promise<this>;
     finishAndSend(): Promise<this>;
     isStopped(): boolean;
+    getEndTime(): Date;
     stop(): Promise<this>;
     stopSync(): this;
     isStarted(): boolean;

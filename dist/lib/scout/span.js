@@ -68,6 +68,12 @@ class ScoutSpan {
     getContextValue(name) {
         return this.tags[name];
     }
+    getTags() {
+        return Object.entries(this.tags)
+            .map(([name, value]) => {
+            return { name, value };
+        });
+    }
     /** @see ChildSpannable */
     startChildSpan(operation) {
         return new Promise((resolve, reject) => {

@@ -774,7 +774,7 @@ export function sendStartRequest(scout: Scout, req: ScoutRequest): Promise<Scout
  * @returns {Promise<ScoutRequest>} the passed in request
  */
 export function sendStopRequest(scout: Scout, req: ScoutRequest): Promise<ScoutRequest> {
-    const stopReq = new Requests.V1FinishRequest(req.id);
+    const stopReq = new Requests.V1FinishRequest(req.id, {timestamp: req.getEndTime()});
 
     return sendThroughAgent(scout, stopReq)
         .then(() => {
@@ -878,7 +878,7 @@ export function sendTagSpan(
  * @returns {Promise<ScoutSpan>} the passed in request
  */
 export function sendStopSpan(scout: Scout, span: ScoutSpan): Promise<ScoutSpan> {
-    const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id);
+    const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id, {timestamp: span.getEndTime()});
 
     return sendThroughAgent(scout, stopSpanReq)
         .then(() => span)

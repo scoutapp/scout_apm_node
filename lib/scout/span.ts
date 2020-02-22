@@ -126,6 +126,13 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         return this.tags[name];
     }
 
+    public getTags(): ScoutTag[] {
+        return Object.entries(this.tags)
+            .map(([name, value]) => {
+                return {name, value} as ScoutTag;
+            });
+    }
+
     /** @see ChildSpannable */
     public startChildSpan(operation: string): Promise<ScoutSpan> {
         return new Promise((resolve, reject) => {

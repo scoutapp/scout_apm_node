@@ -219,7 +219,7 @@ function queryAndRenderRandomNumbers(middleware, templateEngine, dbClient) {
     app.set("view engine", templateEngine);
     app.get("/", (req, res) => {
         // Generate random numbers
-        Promise.all([...Array(50)].map(() => dbClient.query("SELECT RANDOM() * 10 as num"))).then(results => {
+        Promise.all([...Array(10)].map(() => dbClient.query("SELECT RANDOM() * 10 as num"))).then(results => {
             const numbers = results.map(r => r.rows[0].num);
             const numberListItems = numbers.map(n => `<li>${n}</li>`).join("\n");
             res.render("random-numbers", { numbers, numberListItems });
@@ -729,3 +729,27 @@ function makeConnectedMySQL2Connection(provider) {
     }
 }
 exports.makeConnectedMySQL2Connection = makeConnectedMySQL2Connection;
+// Create a minimal object for easy printing (or util.inspecting) of scout requests/spans
+function minimal(reqOrSpan) {
+    if (reqOrSpan instanceof lib_1.ScoutRequest) {
+        return {
+            tags: reqOrSpan.getTags(),
+            id: reqOrSpan.id,
+            start: reqOrSpan.getTimestamp(),
+            end: reqOrSpan.getEndTime(),
+            childSpans: reqOrSpan.getChildSpansSync().map(minimal),
+        };
+    }
+    if (reqOrSpan instanceof lib_1.ScoutSpan) {
+        return {
+            operation: reqOrSpan.operation,
+            tags: reqOrSpan.getTags(),
+            id: reqOrSpan.id,
+            start: reqOrSpan.getTimestamp(),
+            end: reqOrSpan.getEndTime(),
+            childSpans: reqOrSpan.getChildSpansSync().map(minimal),
+        };
+    }
+    throw new Error("Invalid object, neither ScoutReqOrRequest nor ScoutSpan");
+}
+exports.minimal = minimal;

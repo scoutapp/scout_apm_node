@@ -7,7 +7,7 @@ import { Connection } from "mysql";
 import ExternalProcessAgent from "../lib/agents/external-process";
 import { APIVersion, Agent, CoreAgentVersion, ProcessOptions, ScoutConfiguration, ExpressFn } from "../lib/types";
 import { ScoutOptions } from "../lib/scout";
-import { Scout } from "../lib";
+import { Scout, ScoutRequest, ScoutSpan } from "../lib";
 import { Test } from "tape";
 export declare const EXPRESS_TEST_TIMEOUT_MS = 3000;
 export declare const PG_TEST_TIMEOUT_MS = 5000;
@@ -91,4 +91,5 @@ export declare function startContainerizedMySQLTest(test: any, cb: (cao: Contain
 export declare function stopContainerizedMySQLTest(test: any, provider: () => ContainerAndOpts | null): void;
 export declare function makeConnectedMySQLConnection(provider: () => ContainerAndOpts | null): Promise<Connection>;
 export declare function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts | null): Promise<Connection>;
+export declare function minimal(reqOrSpan: ScoutRequest | ScoutSpan): object;
 export {};
