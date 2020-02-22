@@ -211,7 +211,9 @@ export class Scout extends EventEmitter {
         }
 
         // Disable the uncaughtException listener
-        process.removeListener("uncaughtException", this.uncaughtExceptionListenerFn);
+        if (this.uncaughtExceptionListenerFn) {
+            process.removeListener("uncaughtException", this.uncaughtExceptionListenerFn);
+        }
 
         return this.agent
             .disconnect()

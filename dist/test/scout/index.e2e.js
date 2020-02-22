@@ -337,11 +337,19 @@ test("Launch disabling works via top level config", t => {
         throw new Error("Agent launch failure expected since launching is disabled");
     })
         .catch(err => {
-        if (!(err instanceof lib_1.AgentLaunchDisabled)) {
-            return TestUtil.shutdownScout(t, scout, err);
+        // These errors should occur when scout tries to send with the bad socketPath
+        // after not being allowed to launch
+        const isExpectedError = [
+            lib_1.AgentLaunchDisabled,
+            lib_1.NoAgentPresent,
+            lib_1.InvalidConfiguration,
+        ].some(v => err instanceof v);
+        // If AgentLaunchDisabled wasn't the error, this was a failure
+        if (isExpectedError) {
+            t.pass("setup failed due to LaunchDisabled error");
+            return t.end();
         }
-        t.pass("setup failed due to LaunchDisabled error");
-        return t.end();
+        return TestUtil.shutdownScout(t, scout, err);
     });
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59

@@ -3,14 +3,16 @@ import * as path from "path";
 import { mkdtemp } from "fs-extra";
 
 import {
-    ScoutAgentEvent,
     AgentLaunchDisabled,
     ApplicationMetadata,
     ExternalDownloadDisallowed,
+    InvalidConfiguration,
     LogLevel,
+    NoAgentPresent,
     Scout,
-    ScoutRequest,
+    ScoutAgentEvent,
     ScoutEvent,
+    ScoutRequest,
     ScoutSpan,
     buildScoutConfiguration,
     consoleLogFn,
@@ -397,12 +399,21 @@ test("Launch disabling works via top level config", t => {
             throw new Error("Agent launch failure expected since launching is disabled");
         })
         .catch(err => {
-            if (!(err instanceof AgentLaunchDisabled)) {
-                return TestUtil.shutdownScout(t, scout, err);
+            // These errors should occur when scout tries to send with the bad socketPath
+            // after not being allowed to launch
+            const isExpectedError = [
+                AgentLaunchDisabled,
+                NoAgentPresent,
+                InvalidConfiguration,
+            ].some(v => err instanceof v);
+
+            // If AgentLaunchDisabled wasn't the error, this was a failure
+            if (isExpectedError) {
+                t.pass("setup failed due to LaunchDisabled error");
+                return t.end();
             }
 
-            t.pass("setup failed due to LaunchDisabled error");
-            return t.end();
+            return TestUtil.shutdownScout(t, scout, err);
         });
 });
 
