@@ -46,8 +46,8 @@ const getPort = require("get-port");
 export const EXPRESS_TEST_TIMEOUT_MS = 3000;
 // The timeouts for PG & MSQL assume an instance is *already running*
 // for control over the amount of start time alotted see `startTimeoutMs`
-export const PG_TEST_TIMEOUT_MS = 5000;
-export const MYSQL_TEST_TIMEOUT_MS = 5000;
+export const PG_TEST_TIMEOUT_MS = 10000;
+export const MYSQL_TEST_TIMEOUT_MS = 10000;
 export const DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
 
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";

@@ -87,23 +87,30 @@ export class MySQLIntegration extends RequireIntegration {
                 const wrappedCb = (err, results) => {
                     // If an error occurred mark the span as errored and then stop it
                     if (err) {
-                        integration.logFn("[scout/integrations/mysql] Query failed", LogLevel.Trace);
+                        // If there was no span we can run the callback and move on
                         if (!span) {
                             cb(err, results);
                             return;
                         }
 
-                        span!
-                            .addContext({name: "error", value: "true"})
-                            .then(() => stopSpan())
-                            .finally(() => cb(err, results));
+                        // Stop the span ASAP
+                        stopSpan();
+
+                        // Add context to indicate error (we assume this will run *before* the span is sent off)
+                        span!.addContextSync({name: "error", value: "true"});
+                        integration.logFn("[scout/integrations/mysql] Query failed", LogLevel.Trace);
+
+                        // Run the callback
+                        cb(err, results);
 
                         return;
                     }
 
+                    // Stop the span ASAP
+                    stopSpan();
+
                     integration.logFn("[scout/integrations/mysql] Successfully queried MySQL db", LogLevel.Debug);
                     // If no errors ocurred stop the span and run the user's callback
-                    stopSpan();
                     ranFn = true;
                     cb(err, results);
                 };

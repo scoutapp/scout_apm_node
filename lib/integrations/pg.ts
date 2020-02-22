@@ -86,49 +86,48 @@ export class PGIntegration extends RequireIntegration {
 
         // By the time this function runs we *should* have a scout instance set.
         const fn: any = function(this: Client, config, values, userCallback) {
+            const originalArgs = arguments;
             integration.logFn("[scout/integrations/pg] Querying Postgres db...", LogLevel.Trace);
 
             // If no scout instsance or the query is undefined go straight to pg
             if (!integration.scout || !config) {
-                return originalQueryFn.apply(this, [config, values, userCallback]);
+                return originalQueryFn.apply(this, originalArgs);
             }
 
             // Detect what kind of query is being used
             // https://github.com/brianc/node-postgres/blob/master/packages/pg/lib/client.js
-            let query: Query;
-            if (typeof config.submit === "function") {
-                query = config;
-            } else {
-                query = new Query(...arguments);
-            }
+            const  query: Query = typeof config.submit === "function" ? config : new Query(...originalArgs);
 
             return integration.scout.instrument(ScoutSpanOperation.SQLQuery, done => {
                 const span = integration.scout.getCurrentSpan();
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {
                     integration.logFn("[scout/integrations/pg] Unable to get current span", LogLevel.Debug);
-                    return originalQueryFn.apply(this, [config, values, userCallback]).then(() => done());
+                    return originalQueryFn.apply(this, [config, values, userCallback])
+                        .then(() => done());
                 }
+
+                let queryResult: any;
 
                 return span
                 // Update span context with the DB statement
                     .addContext({name: ScoutContextName.DBStatement, value: (query as any).text})
-                // Run pg's query function
-                    .then(() => originalQueryFn.apply(this, [config, values, userCallback]))
+                // Run pg's query function, saving the result
+                    .then(() => originalQueryFn.apply(this, originalArgs))
+                    .then(r => queryResult = r)
                 // Finish the instrumentation
-                    .then(res => {
-                        done();
-                        return res;
-                    })
-                    .then(res => {
-                        integration.logFn("[scout/integrations/pg] Successfully queried Postgres db", LogLevel.Trace);
-                        return res;
-                    })
+                    .then(() => done())
+                    .then(() => integration.logFn(
+                        "[scout/integrations/pg] Successfully queried Postgres db",
+                        LogLevel.Trace,
+                    ))
+                    .then(() => queryResult)
                     .catch(err => {
-                        // Finish the instrumentation
+                        // Finish the instrumentation ASAP
                         done();
 
-                        // Mark the span as errored
+                        // Mark the span as errored, we assume that the span won't be sent before this line can run
+                        // otherwise the context would miss it's window to be sent
                         if (span) { span.addContext({name: "error", value: "true"}); }
 
                         integration.logFn("[scout/integrations/pg] Query failed", LogLevel.Trace);

@@ -361,10 +361,16 @@ export class Scout extends EventEmitter {
             this.asyncNamespace.run(() => {
                 // Create a done function that will clear the entry and stop the span
                 const doneFn = () => {
-                    // When the doneFn is run, this span should be over,
-                    // the active span should go back to the one above it (assuming it is not a request).
+                    // Set the parent for other sibling/same-level spans
                     if (parentIsSpan) {
+                        // If the parent of this span is a span, then we want other spans in this namespace
+                        // to be children of that parent span, so save the parent
                         this.asyncNamespace.set(ASYNC_NS_SPAN, parent);
+                    } else {
+                        // If the parent of this span *not* a span,
+                        // then the parent of sibling spans should be the request,
+                        // so we can clear the current span entry
+                        this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
                     }
 
                     this.log(`[scout] Stopped span with ID [${span.id}]`, LogLevel.Debug);
