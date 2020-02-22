@@ -87,6 +87,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
             if (opts.parent)  { this.parent = opts.parent; }
         }
+
     }
 
     // Get the start of this span

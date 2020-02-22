@@ -898,8 +898,8 @@ export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts |
 export function minimal(reqOrSpan: ScoutRequest | ScoutSpan): object {
     if (reqOrSpan instanceof ScoutRequest) {
         return {
-            tags: reqOrSpan.getTags(),
             id: reqOrSpan.id,
+            tags: reqOrSpan.getTags(),
             start: reqOrSpan.getTimestamp(),
             end: reqOrSpan.getEndTime(),
             childSpans: reqOrSpan.getChildSpansSync().map(minimal),
@@ -908,9 +908,9 @@ export function minimal(reqOrSpan: ScoutRequest | ScoutSpan): object {
 
     if (reqOrSpan instanceof ScoutSpan) {
         return {
+            id: reqOrSpan.id,
             operation: reqOrSpan.operation,
             tags: reqOrSpan.getTags(),
-            id: reqOrSpan.id,
             start: reqOrSpan.getTimestamp(),
             end: reqOrSpan.getEndTime(),
             childSpans: reqOrSpan.getChildSpansSync().map(minimal),

@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
-const util_1 = require("util");
 const request = require("supertest");
 const lib_1 = require("../lib");
 // This needs to be set up *before* TestUtil runs so pg used there will be instrumented
@@ -17,16 +16,19 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/140
 test("Many select statments and a render are in the right order", { timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000 }, t => {
-    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+    const config = lib_1.buildScoutConfiguration({
         allowShutdown: true,
+        coreAgentLaunch: false,
+        coreAgentDownload: false,
         monitor: true,
-    }));
+    });
+    const appMeta = new lib_1.ApplicationMetadata(config, { frameworkVersion: "test" });
+    const scout = new lib_1.Scout(config, { appMeta });
     // Setup a PG Client that we'll use later
     let client;
     // Set up a listener for the scout request that will be sent for the endpoint being hit
     const listener = (data) => {
         scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
-        console.log("REQUEST:", util_1.inspect(TestUtil.minimal(data.request), false, null, true));
         // Look up the database span from the request
         const requestSpans = data.request.getChildSpansSync();
         const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
@@ -59,7 +61,7 @@ test("Many select statments and a render are in the right order", { timeout: Tes
         t.assert(dbSpans.every(dbSpan => dbSpan.getEndTime() <= renderSpan.getTimestamp()), "All DB spans end before the render span starts");
         // Close the PG client & shutdown
         client.end()
-            .then(() => TestUtil.waitMinutes(3))
+            .then(() => TestUtil.waitMinutes(2))
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => {
             client.end()

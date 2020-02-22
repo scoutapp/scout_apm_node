@@ -733,8 +733,8 @@ exports.makeConnectedMySQL2Connection = makeConnectedMySQL2Connection;
 function minimal(reqOrSpan) {
     if (reqOrSpan instanceof lib_1.ScoutRequest) {
         return {
-            tags: reqOrSpan.getTags(),
             id: reqOrSpan.id,
+            tags: reqOrSpan.getTags(),
             start: reqOrSpan.getTimestamp(),
             end: reqOrSpan.getEndTime(),
             childSpans: reqOrSpan.getChildSpansSync().map(minimal),
@@ -742,9 +742,9 @@ function minimal(reqOrSpan) {
     }
     if (reqOrSpan instanceof lib_1.ScoutSpan) {
         return {
+            id: reqOrSpan.id,
             operation: reqOrSpan.operation,
             tags: reqOrSpan.getTags(),
-            id: reqOrSpan.id,
             start: reqOrSpan.getTimestamp(),
             end: reqOrSpan.getEndTime(),
             childSpans: reqOrSpan.getChildSpansSync().map(minimal),
