@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [1.1.2] - 2020-02-21
+
 ### Added
+- feature: Use addContext for single tags, top level scout.addContext method ([#138](https://github.com/scoutapp/scout_apm_node/issues/138))
 - feature: Winston support for log-level inheritance ([#135](https://github.com/scoutapp/scout_apm_node/issues/135)
 
 ### Changed
@@ -16,23 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.1] - 2020-01-10
 ### Added
-- <TODO>
+- feature: Modify dashboard send tests to send at the end ([#128](https://github.com/scoutapp/scout_apm_node/issues/128))
+- feature: enable express controller exception catching ([#127](https://github.com/scoutapp/scout_apm_node/issues/127))
 
-### Added
-- <TODO>
-
-### Removed
-- <TODO>
+### Changed
+- bugfix: Fix span parent nesting and add test ([#129](https://github.com/scoutapp/scout_apm_node/issues/129))
 
 ## [0.1.0] - 2015-10-06
 ### Added
-- <TODO>
-
-### Changed
-- <TODO>
-
-### Removed
-- <TODO>
+- Initial implementation of NodeJS agent
 
 [Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v1.1.2...HEAD
 [0.1.2]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.1...v0.1.2
