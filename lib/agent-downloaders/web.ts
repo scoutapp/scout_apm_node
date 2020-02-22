@@ -94,9 +94,9 @@ export class WebAgentDownloader implements AgentDownloader {
         const expectedBinPath: string = `${downloadDir}/${Constants.CORE_AGENT_BIN_FILE_NAME}`;
 
         // Ensure we're not attempting to do a download if they're disallowed
-        if (opts && opts.disallowDownload) { throw new Errors.ExternalDownloadDisallowed(); }
+        if (opts && opts.disallowDownload) { return Promise.reject(new Errors.ExternalDownloadDisallowed()); }
 
-        // check if file has already been downloaded
+        // Check if file has already been downloaded
         this.logFn(`[scout/agent-downloader/web] Checking for existing file @ [${expectedBinPath}]`, LogLevel.Debug);
         return fs.pathExists(expectedBinPath)
             .then(binExists => {

@@ -218,8 +218,7 @@ test("transaction with with postgres DB query to dashboard", {timeout: TestUtil.
                 .then(() => t.pass("db transaction finished"))
             // If an error happens then shutdown the DB client and end test
                 .catch(err => {
-                    t.fail("some error occurred");
-
+                    t.fail(`An error occurred: ${err.message}`);
                     if (client) { client.end(); }
                 });
         });
@@ -393,7 +392,6 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
 
     const scout = new Scout(config);
     SCOUT_INSTANCES.push(scout);
-    const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
 
     // Create an application that's set up to use pug templating
     const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
@@ -445,8 +443,8 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
 
 // Shutdown all the scout instances after waiting what we expect should be enough time to send the tests
 test("wait for all scout instances to send", t => {
-    // Wait ~3 minutes for request to be sent to scout in the cloud then shutdown
-        TestUtil.waitMinutes(3)
+    // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
+        TestUtil.waitMinutes(2)
         .then(() => t.comment(`shutting down [${SCOUT_INSTANCES.length}] scout instances...`))
         .then(() =>  Promise.all(SCOUT_INSTANCES.map(s => s.shutdown())))
         .then(() => {

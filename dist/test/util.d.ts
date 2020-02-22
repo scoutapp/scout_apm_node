@@ -7,11 +7,11 @@ import { Connection } from "mysql";
 import ExternalProcessAgent from "../lib/agents/external-process";
 import { APIVersion, Agent, CoreAgentVersion, ProcessOptions, ScoutConfiguration, ExpressFn } from "../lib/types";
 import { ScoutOptions } from "../lib/scout";
-import { Scout } from "../lib";
+import { Scout, ScoutRequest, ScoutSpan } from "../lib";
 import { Test } from "tape";
 export declare const EXPRESS_TEST_TIMEOUT_MS = 3000;
-export declare const PG_TEST_TIMEOUT_MS = 5000;
-export declare const MYSQL_TEST_TIMEOUT_MS = 5000;
+export declare const PG_TEST_TIMEOUT_MS = 10000;
+export declare const MYSQL_TEST_TIMEOUT_MS = 10000;
 export declare const DASHBOARD_SEND_TIMEOUT_MS: number;
 export declare function bootstrapExternalProcessAgent(t: Test, rawVersion: string, opts?: {
     buildProcOpts?: (bp: string, uri: string) => ProcessOptions;
@@ -28,6 +28,7 @@ export declare function simpleErrorApp(middleware: any, delayMs?: number): Appli
 export declare function simpleHTML5BoilerplateApp(middleware: any, templateEngine: "pug" | "ejs" | "mustache"): Application;
 export declare function simpleInstrumentApp(middleware: any): Application;
 export declare function appWithGETSynchronousError(middleware: any, expressFnTransform: (expressFn: ExpressFn) => ExpressFn): Application;
+export declare function queryAndRenderRandomNumbers(middleware: any, templateEngine: "pug" | "ejs" | "mustache", dbClient: Client): Application;
 export declare function testConfigurationOverlay(t: Test, opts: {
     appKey: string;
     envValue: string;
@@ -90,4 +91,5 @@ export declare function startContainerizedMySQLTest(test: any, cb: (cao: Contain
 export declare function stopContainerizedMySQLTest(test: any, provider: () => ContainerAndOpts | null): void;
 export declare function makeConnectedMySQLConnection(provider: () => ContainerAndOpts | null): Promise<Connection>;
 export declare function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts | null): Promise<Connection>;
+export declare function minimal(reqOrSpan: ScoutRequest | ScoutSpan): object;
 export {};

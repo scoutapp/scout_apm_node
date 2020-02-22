@@ -35,6 +35,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private stopped;
     private sending;
     private sent;
+    private endTime;
     private childSpans;
     private tags;
     constructor(opts: ScoutSpanOptions);
@@ -50,6 +51,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     addContextsSync(tags: ScoutTag[]): this;
     /** @see Taggable */
     getContextValue(name: string): JSONValue | JSONValue[] | undefined;
+    getTags(): ScoutTag[];
     /** @see ChildSpannable */
     startChildSpan(operation: string): Promise<ScoutSpan>;
     /** @see ChildSpannable */
@@ -61,6 +63,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     finish(): Promise<this>;
     finishAndSend(): Promise<this>;
     isStopped(): boolean;
+    getEndTime(): Date;
     stop(): Promise<this>;
     stopSync(): this;
     isStarted(): boolean;

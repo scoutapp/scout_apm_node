@@ -43,6 +43,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     private finished: boolean = false;
     private sent: boolean = false;
     private sending: Promise<this>;
+    private endTime: Date;
 
     private childSpans: ScoutSpan[] = [];
     private tags: { [key: string]: JSONValue | JSONValue[] } = {};
@@ -67,6 +68,11 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
     public getTimestamp(): Date {
         return new Date(this.timestamp);
+    }
+
+    // Get the amount of time this span has been running in milliseconds
+    public getDurationMs(): number {
+        return new Date().getTime() - this.getTimestamp().getTime();
     }
 
     /** @see ChildSpannable */
@@ -162,16 +168,21 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         return this.finished;
     }
 
+    public getEndTime(): Date {
+        return new Date(this.endTime);
+    }
+
     public stop(): Promise<this> {
         if (this.finished) { return Promise.resolve(this); }
 
         // Stop all child spans
-        this.childSpans.forEach(s => s.stop());
-
-        // Finish the request
-        this.finished = true;
-
-        return Promise.resolve(this);
+        return Promise.all(
+            this.childSpans.map(s => s.stop()),
+        ).then(() => {
+            this.endTime = new Date(this.timestamp.getTime() + this.getDurationMs());
+            this.finished = true;
+            return this;
+        });
     }
 
     public stopSync(): this {
@@ -181,6 +192,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         this.childSpans.forEach(s => s.stopSync());
 
         // Finish the request
+        this.endTime = new Date(this.timestamp.getTime() + this.getDurationMs());
         this.finished = true;
 
         return this;

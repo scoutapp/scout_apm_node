@@ -32,7 +32,7 @@ import {
 } from "../lib/types";
 import { ScoutOptions } from "../lib/scout";
 import { DEFAULT_SCOUT_CONFIGURATION } from "../lib/types/config";
-import { Scout } from "../lib";
+import { Scout, ScoutRequest, ScoutSpan } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
 
@@ -46,8 +46,8 @@ const getPort = require("get-port");
 export const EXPRESS_TEST_TIMEOUT_MS = 3000;
 // The timeouts for PG & MSQL assume an instance is *already running*
 // for control over the amount of start time alotted see `startTimeoutMs`
-export const PG_TEST_TIMEOUT_MS = 5000;
-export const MYSQL_TEST_TIMEOUT_MS = 5000;
+export const PG_TEST_TIMEOUT_MS = 10000;
+export const MYSQL_TEST_TIMEOUT_MS = 10000;
 export const DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
 
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
@@ -263,6 +263,38 @@ export function appWithGETSynchronousError(
 
     app.get("/", (req: any, res: Response) => {
         throw new Error("Expected application error (appWithGETSynchronousError)");
+    });
+
+    return app;
+}
+
+// An express application which performs a bunch of trivial SQL queries and renders a template that uses the reuslts
+export function queryAndRenderRandomNumbers(
+    middleware: any,
+    templateEngine: "pug" | "ejs" | "mustache",
+    dbClient: Client,
+): Application {
+    const app = express();
+    app.use(middleware);
+
+    if (templateEngine === "mustache") {
+        app.engine("mustache", require("mustache-express")());
+    }
+
+    // Expect all the views to be in the same fixtures/files path
+    const VIEWS_DIR = path.join(getRootDir(), "test/fixtures/files");
+    app.set("views", VIEWS_DIR);
+    app.set("view engine", templateEngine);
+
+    app.get("/", (req: Request, res: Response) => {
+        // Generate random numbers
+        Promise.all(
+            [...Array(10)].map(() => dbClient.query("SELECT RANDOM() * 10 as num")),
+        ).then(results => {
+            const numbers = results.map(r => r.rows[0].num);
+            const numberListItems = numbers.map(n => `<li>${n}</li>`).join("\n");
+            res.render("random-numbers", {numbers, numberListItems});
+        });
     });
 
     return app;
@@ -860,4 +892,30 @@ export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts |
     } catch {
         return Promise.reject(new Error("connect failed"));
     }
+}
+
+// Create a minimal object for easy printing (or util.inspecting) of scout requests/spans
+export function minimal(reqOrSpan: ScoutRequest | ScoutSpan): object {
+    if (reqOrSpan instanceof ScoutRequest) {
+        return {
+            id: reqOrSpan.id,
+            tags: reqOrSpan.getTags(),
+            start: reqOrSpan.getTimestamp(),
+            end: reqOrSpan.getEndTime(),
+            childSpans: reqOrSpan.getChildSpansSync().map(minimal),
+        };
+    }
+
+    if (reqOrSpan instanceof ScoutSpan) {
+        return {
+            id: reqOrSpan.id,
+            operation: reqOrSpan.operation,
+            tags: reqOrSpan.getTags(),
+            start: reqOrSpan.getTimestamp(),
+            end: reqOrSpan.getEndTime(),
+            childSpans: reqOrSpan.getChildSpansSync().map(minimal),
+        };
+    }
+
+    throw new Error("Invalid object, neither ScoutReqOrRequest nor ScoutSpan");
 }

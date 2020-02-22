@@ -267,7 +267,9 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
             // If the agent is supposedly running, but connection fails too many times for any reason
             if (!this.stopped && this.poolErrors.length > this.maxPoolErrors) {
-                this.emit("error", new Errors.ResourceAllocationFailureLimitExceeded());
+                const socketPath = this.getSocketPath();
+                const msg = `Connection attempt limit reached -- is core-agent is listening on [${socketPath}]?`;
+                this.emit("error", new Errors.ResourceAllocationFailureLimitExceeded(msg));
                 this.disconnect();
             }
         });

@@ -66,6 +66,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private stopped: boolean = false;
     private sending: Promise<this>;
     private sent: boolean = false;
+    private endTime: Date;
 
     private childSpans: ScoutSpan[] = [];
     private tags: { [key: string]: JSONValue | JSONValue[] } = {};
@@ -86,6 +87,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
             if (opts.parent)  { this.parent = opts.parent; }
         }
+
     }
 
     // Get the start of this span
@@ -123,6 +125,13 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     /** @see Taggable */
     public getContextValue(name: string): JSONValue | JSONValue[] | undefined {
         return this.tags[name];
+    }
+
+    public getTags(): ScoutTag[] {
+        return Object.entries(this.tags)
+            .map(([name, value]) => {
+                return {name, value} as ScoutTag;
+            });
     }
 
     /** @see ChildSpannable */
@@ -183,36 +192,50 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         return this.stopped;
     }
 
+    public getEndTime(): Date {
+        return new Date(this.endTime);
+    }
+
     public stop(): Promise<this> {
         if (this.stopped) { return Promise.resolve(this); }
 
-        this.stopped = true;
-
         // Stop all child spans
-        this.childSpans.forEach(s => s.stop());
+        return Promise.all(
+            this.childSpans.map(s =>  s.stop()),
+        )
+            .then(() => {
+                if (!this.scoutInstance) { return this; }
 
-        if (!this.scoutInstance) { return Promise.resolve(this); }
+                // Update the endtime of the span
+                this.endTime = new Date(this.timestamp.getTime() + this.getDurationMs());
+                this.stopped = true;
 
-        // If the span request is still under the threshold then don't save the traceback
-        if (this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {
-            return Promise.resolve(this);
-        }
+                // If the span request is still under the threshold then don't save the traceback
+                if (this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {
+                    return Promise.resolve(this);
+                }
 
-        // Add stack trace to the span
-        return getStackTrace()
-            .then(this.processStackFrames)
-            .then(scoutFrames => ({
-                name: ScoutContextName.Traceback,
-                value: scoutFrames,
-            }))
-            .then(tracebackTag => this.addContext(tracebackTag))
-            .then(() => this);
+                // Add stack trace to the span
+                return getStackTrace()
+                    .then(this.processStackFrames)
+                    .then(scoutFrames => ({
+                        name: ScoutContextName.Traceback,
+                        value: scoutFrames,
+                    }))
+                    .then(tracebackTag => this.addContext(tracebackTag))
+                    .then(() => this);
+            });
     }
 
     public stopSync(): this {
         if (this.stopped) { return this; }
 
+        // Update the endtime of the span
+        this.endTime = new Date(this.timestamp.getTime() + this.getDurationMs());
         this.stopped = true;
+
+        // Stop all the child spans
+        this.childSpans.map(s => s.stopSync());
 
         // If the span request is still under the threshold then don't save the traceback
         if (this.scoutInstance && this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {

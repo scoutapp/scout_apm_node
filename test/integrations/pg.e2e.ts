@@ -159,7 +159,8 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_
             // Insert a value into the string KV
                 .then(() => {
                     const query = SQL_QUERIES.INSERT_STRING_KV_TABLE;
-                    return client.query(query, ["testKey", "testValue"]);
+                    const result = client.query(query, ["testKey", "testValue"]);
+                    return result;
                 })
                 .then(results => {
                     t.equals(results.rowCount, 1, "one row was inserted");
@@ -168,7 +169,7 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_
         }))
     // Finish & Send the request
         .catch(err => {
-            client.end()
+            (client ? client.end() : Promise.resolve())
                 .then(() => TestUtil.shutdownScout(t, scout, err));
         });
 });

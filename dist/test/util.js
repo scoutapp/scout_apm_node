@@ -24,8 +24,8 @@ const getPort = require("get-port");
 exports.EXPRESS_TEST_TIMEOUT_MS = 3000;
 // The timeouts for PG & MSQL assume an instance is *already running*
 // for control over the amount of start time alotted see `startTimeoutMs`
-exports.PG_TEST_TIMEOUT_MS = 5000;
-exports.MYSQL_TEST_TIMEOUT_MS = 5000;
+exports.PG_TEST_TIMEOUT_MS = 10000;
+exports.MYSQL_TEST_TIMEOUT_MS = 10000;
 exports.DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
 const PROJECT_ROOT = path.join(path.dirname(require.main.filename), "../../");
@@ -206,6 +206,28 @@ function appWithGETSynchronousError(middleware, expressFnTransform) {
     return app;
 }
 exports.appWithGETSynchronousError = appWithGETSynchronousError;
+// An express application which performs a bunch of trivial SQL queries and renders a template that uses the reuslts
+function queryAndRenderRandomNumbers(middleware, templateEngine, dbClient) {
+    const app = express();
+    app.use(middleware);
+    if (templateEngine === "mustache") {
+        app.engine("mustache", require("mustache-express")());
+    }
+    // Expect all the views to be in the same fixtures/files path
+    const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
+    app.set("views", VIEWS_DIR);
+    app.set("view engine", templateEngine);
+    app.get("/", (req, res) => {
+        // Generate random numbers
+        Promise.all([...Array(10)].map(() => dbClient.query("SELECT RANDOM() * 10 as num"))).then(results => {
+            const numbers = results.map(r => r.rows[0].num);
+            const numberListItems = numbers.map(n => `<li>${n}</li>`).join("\n");
+            res.render("random-numbers", { numbers, numberListItems });
+        });
+    });
+    return app;
+}
+exports.queryAndRenderRandomNumbers = queryAndRenderRandomNumbers;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;
@@ -707,3 +729,27 @@ function makeConnectedMySQL2Connection(provider) {
     }
 }
 exports.makeConnectedMySQL2Connection = makeConnectedMySQL2Connection;
+// Create a minimal object for easy printing (or util.inspecting) of scout requests/spans
+function minimal(reqOrSpan) {
+    if (reqOrSpan instanceof lib_1.ScoutRequest) {
+        return {
+            id: reqOrSpan.id,
+            tags: reqOrSpan.getTags(),
+            start: reqOrSpan.getTimestamp(),
+            end: reqOrSpan.getEndTime(),
+            childSpans: reqOrSpan.getChildSpansSync().map(minimal),
+        };
+    }
+    if (reqOrSpan instanceof lib_1.ScoutSpan) {
+        return {
+            id: reqOrSpan.id,
+            operation: reqOrSpan.operation,
+            tags: reqOrSpan.getTags(),
+            start: reqOrSpan.getTimestamp(),
+            end: reqOrSpan.getEndTime(),
+            childSpans: reqOrSpan.getChildSpansSync().map(minimal),
+        };
+    }
+    throw new Error("Invalid object, neither ScoutReqOrRequest nor ScoutSpan");
+}
+exports.minimal = minimal;
