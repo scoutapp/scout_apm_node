@@ -491,3 +491,36 @@ test("socketPath setting is honored by scout instance", t => {
         t.end();
     });
 });
+// https://github.com/scoutapp/scout_apm_node/issues/142
+test("Ignored requests are not sent", t => {
+    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: false,
+    }));
+    // Fail the test if a request is sent from the agent
+    scout.on(lib_1.ScoutAgentEvent.RequestSent, (req) => {
+        t.fail("Agent sent a request, it should have skipped");
+    });
+    // Pick up on the ignored request processing skipped event
+    scout.on(lib_1.ScoutEvent.IgnoredRequestProcessingSkipped, (skippedReq) => {
+        t.equals(req.id, skippedReq.id, "skipped request matches what was passed");
+        TestUtil.shutdownScout(t, scout);
+    });
+    let req;
+    scout
+        .setup()
+        // Create the first & second request
+        .then(() => scout.transaction("Controller/test-ignored-request-not-sent", (done, { request }) => {
+        if (!request) {
+            throw new Error("request not present");
+        }
+        // Save the request ofr future validation
+        req = request;
+        // Ignore the request;
+        request.ignore();
+        t.pass("request ignored");
+        done();
+    }))
+        // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});

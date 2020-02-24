@@ -5,7 +5,7 @@ export interface LogFn {
     (message: string, level?: LogLevel): void;
     logger?: winston.Logger;
 }
-export declare type JSONValue = object | string | number;
+export declare type JSONValue = object | string | number | boolean;
 export declare function convertCamelCaseToEnvVar(prop: string): string;
 /**
  * Default implementation for logging simple messages to console

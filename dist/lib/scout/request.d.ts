@@ -8,6 +8,7 @@ export interface ScoutRequestOptions {
     scoutInstance?: Scout;
     timestamp?: Date;
     started?: boolean;
+    ignored?: boolean;
 }
 export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable, Startable {
     readonly id: string;
@@ -20,10 +21,13 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     private endTime;
     private childSpans;
     private tags;
+    private ignored;
     constructor(opts?: ScoutRequestOptions);
     span(operation: string): Promise<ScoutSpan>;
     getTimestamp(): Date;
     getDurationMs(): number;
+    isIgnored(): boolean;
+    ignore(): this;
     /** @see ChildSpannable */
     startChildSpan(operation: string): Promise<ScoutSpan>;
     /** @see ChildSpannable */

@@ -23,7 +23,7 @@ CREATE TABLE kv(
   key text NOT NULL,
   value text NOT NULL
 );`,
-    INSERT_STRING_KV_TABLE: "INSERT INTO kv (key, value) VALUES ($1, $2);",
+    INSERT_STRING_KV_TABLE: "INSERT INTO kv (key, value) VALUES ($1, $2)",
 };
 exports.MUSTACHE_TEMPLATES = {
     HELLO_WORLD: {

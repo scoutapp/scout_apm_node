@@ -116,6 +116,7 @@ var ScoutEvent;
 (function (ScoutEvent) {
     ScoutEvent["IgnoredPathDetected"] = "scout-event-ignored-path-detected";
     ScoutEvent["RequestSent"] = "scout-event-request-sent";
+    ScoutEvent["IgnoredRequestProcessingSkipped"] = "ignored-request-processing-skipped";
 })(ScoutEvent = exports.ScoutEvent || (exports.ScoutEvent = {}));
 var ScoutContextName;
 (function (ScoutContextName) {
@@ -125,6 +126,7 @@ var ScoutContextName;
     ScoutContextName["Name"] = "name";
     ScoutContextName["URL"] = "url";
     ScoutContextName["Timeout"] = "timeout";
+    ScoutContextName["IgnoreTransaction"] = "ignore_transaction";
 })(ScoutContextName = exports.ScoutContextName || (exports.ScoutContextName = {}));
 var ScoutSpanOperation;
 (function (ScoutSpanOperation) {

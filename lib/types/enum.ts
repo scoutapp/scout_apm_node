@@ -126,6 +126,7 @@ export enum PlatformTriple {
 export enum ScoutEvent {
     IgnoredPathDetected = "scout-event-ignored-path-detected",
     RequestSent = "scout-event-request-sent",
+    IgnoredRequestProcessingSkipped = "ignored-request-processing-skipped",
 }
 
 export enum ScoutContextName {
@@ -135,6 +136,7 @@ export enum ScoutContextName {
     Name = "name",
     URL = "url",
     Timeout = "timeout",
+    IgnoreTransaction = "ignore_transaction",
 }
 
 export enum ScoutSpanOperation {
