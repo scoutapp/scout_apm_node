@@ -4,6 +4,7 @@ import {
     LogLevel,
     ScoutConfiguration,
     ScoutContextName,
+    ScoutEvent,
     ScoutTag,
     buildScoutConfiguration,
     consoleLogFn,
@@ -81,16 +82,6 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                 })[0];
         }
 
-        // If no route matches then we don't need to record
-        if (!matchedRouteMiddleware) {
-            next();
-            return;
-        }
-
-        // Create a Controller/ span for the request
-        const path = matchedRouteMiddleware.route.path;
-        const reqMethod = req.method.toUpperCase();
-
         let getScout: () => Promise<Scout> = () => Promise.resolve(req.app.scout);
 
         // Create the scout agent if not present on the app
@@ -120,6 +111,17 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // Get the scout instance
         getScout()
             .then(scout => {
+                // If no route matches then we don't need to record
+                if (!matchedRouteMiddleware) {
+                    scout.emit(ScoutEvent.UnknownRequestPathSkipped, req.url);
+                    next();
+                    return;
+                }
+
+                // Create a Controller/ span for the request
+                const path = matchedRouteMiddleware.route.path;
+                const reqMethod = req.method.toUpperCase();
+
                 // Exit early if this path is on the list of ignored paths
                 if (scout.ignoresPath(path)) {
                     next();

@@ -91,7 +91,8 @@ export declare enum PlatformTriple {
 export declare enum ScoutEvent {
     IgnoredPathDetected = "scout-event-ignored-path-detected",
     RequestSent = "scout-event-request-sent",
-    IgnoredRequestProcessingSkipped = "ignored-request-processing-skipped"
+    IgnoredRequestProcessingSkipped = "ignored-request-processing-skipped",
+    UnknownRequestPathSkipped = "unknown-request-path-skipped"
 }
 export declare enum ScoutContextName {
     Traceback = "stack",
