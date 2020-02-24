@@ -16,9 +16,11 @@ declare const _default: {
         instrumentSync(operation: string, fn: SpanCallback, scout?: Scout | undefined): Promise<any>;
         readonly Config: Partial<ScoutConfiguration> | undefined;
         Context: {
-            add(name: string, value: JSONValue, scout?: Scout | undefined): Promise<ScoutRequest>;
+            add(name: string, value: JSONValue, scout?: Scout | undefined): Promise<void | ScoutRequest>;
             addSync(name: string, value: JSONValue, scout?: Scout | undefined): ScoutRequest | undefined;
         };
+        ignoreTransaction(scout?: Scout | undefined): Promise<void | ScoutRequest>;
+        ignoreTransactionSync(scout?: Scout | undefined): void | ScoutRequest;
     };
 };
 export default _default;

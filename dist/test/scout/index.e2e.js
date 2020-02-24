@@ -705,3 +705,98 @@ test("export Context.addSync to add context (global scout instance)", t => {
         return TestUtil.shutdownScout(t, scout);
     });
 });
+// https://github.com/scoutapp/scout_apm_node/issues/152
+test("export ignoreTransaction successfully ignores transaction (global scout instance)", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    global_1.getOrCreateGlobalScoutInstance(config)
+        .then(scout => {
+        const listener = () => {
+            scout.removeListener(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, listener);
+            t.pass("ignored request's processing was skipped");
+            TestUtil.shutdownScout(t, scout);
+        };
+        // Fail the test if a request is sent from the agent
+        scout.on(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, listener);
+        // The scout object should be created as sa result of doing the .run
+        lib_1.default.api.WebTransaction.run("test-web-transaction-export", (done) => {
+            // Ignore the transaction
+            return lib_1.default.api.ignoreTransaction()
+                .then(() => t.pass("ignoreTransaction completed"))
+                .then(() => done());
+        });
+    });
+});
+// https://github.com/scoutapp/scout_apm_node/issues/152
+test("export ignoreTransaction successfully ignores transaction (provided scout instance)", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+    const listener = (data) => {
+        scout.removeListener(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, listener);
+        t.pass("ignored request's processing was skipped");
+        TestUtil.shutdownScout(t, scout);
+    };
+    scout.on(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, listener);
+    // Teardown and end test
+    // The scout object should be created as sa result of doing the .run
+    scout
+        .setup()
+        .then(scout => {
+        lib_1.default.api.WebTransaction.run("test-web-transaction-export", (done) => {
+            // Ignore the transaction
+            return lib_1.default.api.ignoreTransaction(scout)
+                .then(() => t.pass("ignoreTransaction completed"))
+                .then(() => done());
+        }, scout);
+    })
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+// https://github.com/scoutapp/scout_apm_node/issues/152
+test("export ignoreTransactionSync successfully ignores transaction (provided scout instance)", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+    // TS cannot know that runSync will modify this synchronously
+    // so we use any to force the runtime check
+    let req;
+    scout
+        .setup()
+        .then(scout => {
+        // The scout object should be created as sa result of doing the .run
+        lib_1.default.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+            t.pass("transaction was run");
+            req = request;
+            // Ignore the current request
+            lib_1.default.api.ignoreTransactionSync(scout);
+        }, scout);
+        t.assert(req.isIgnored(), "request is ignored");
+        return TestUtil.shutdownScout(t, scout);
+    });
+});
+// https://github.com/scoutapp/scout_apm_node/issues/152
+test("export ignoreTransactionSync successfully ignores transaction (global scout instance)", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    let req;
+    global_1.getOrCreateGlobalScoutInstance(config)
+        .then(scout => {
+        // The scout object should be created as sa result of doing the .run
+        lib_1.default.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+            t.pass("transaction was run");
+            req = request;
+            // ignore the current request
+            lib_1.default.api.ignoreTransactionSync();
+        });
+        t.assert(req.isIgnored(), "request is ignored");
+        return TestUtil.shutdownScout(t, scout);
+    });
+});

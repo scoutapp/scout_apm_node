@@ -55,7 +55,7 @@ class ScoutRequest {
     }
     // Set a request as ignored
     ignore() {
-        this.addContext({ name: types_2.ScoutContextName.IgnoreTransaction, value: true });
+        this.addContextSync({ name: types_2.ScoutContextName.IgnoreTransaction, value: true });
         this.ignored = true;
         return this;
     }

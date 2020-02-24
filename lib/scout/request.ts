@@ -89,7 +89,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
     // Set a request as ignored
     public ignore(): this {
-        this.addContext({name: ScoutContextName.IgnoreTransaction, value: true});
+        this.addContextSync({name: ScoutContextName.IgnoreTransaction, value: true});
         this.ignored = true;
         return this;
     }

@@ -105,11 +105,11 @@ export default {
         },
 
         Context: {
-            add(name: string, value: JSONValue, scout?: Scout): Promise<ScoutRequest> {
+            add(name: string, value: JSONValue, scout?: Scout): Promise<ScoutRequest | void> {
                 return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
                     .then(scout => {
                         const req = scout.getCurrentRequest();
-                        if (!req) { throw new Error("Request not present"); }
+                        if (!req) { return; }
 
                         return req.addContext({name, value});
                     });
@@ -125,5 +125,26 @@ export default {
                 return req.addContextSync({name, value});
             },
         },
+
+        ignoreTransaction(scout?: Scout): Promise<ScoutRequest | void> {
+            return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+                .then(scout => {
+                    const req = scout.getCurrentRequest();
+                    if (!req) { return; }
+
+                    return Promise.resolve(req.ignore());
+                });
+        },
+
+        ignoreTransactionSync(scout?: Scout): ScoutRequest | void {
+            scout = scout || getGlobalScoutInstance();
+            if (!scout) { return; }
+
+            const req = scout.getCurrentRequest();
+            if (!req) { return; }
+
+            return req.ignore();
+        },
+
     },
 };
