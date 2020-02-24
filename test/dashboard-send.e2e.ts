@@ -40,7 +40,6 @@ import {
     ScoutEventRequestSentData,
 } from "../lib/scout";
 
-
 import { V1FinishRequest } from "../lib/protocol/v1/requests";
 
 import { Application } from "express";

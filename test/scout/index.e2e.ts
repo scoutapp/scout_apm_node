@@ -2,7 +2,6 @@ import * as test from "tape";
 import * as path from "path";
 import { mkdtemp } from "fs-extra";
 
-
 import { ScoutEventRequestSentData } from "../../lib/scout";
 
 import {
@@ -26,11 +25,11 @@ import {
     AgentEvent as ScoutAgentEvent,
 } from "../../lib/types";
 
-import { 
+import {
     AgentLaunchDisabled,
-    ExternalDownloadDisallowed, 
-    InvalidConfiguration, 
-    NoAgentPresent
+    ExternalDownloadDisallowed,
+    InvalidConfiguration,
+    NoAgentPresent,
 } from "../../lib/errors";
 
 import { V1ApplicationEvent } from "../../lib/protocol/v1/requests";

@@ -16,7 +16,6 @@ import {
     ScoutEventRequestSentData,
 } from "../../lib/scout";
 
-
 import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { FILE_PATHS } from "../fixtures";
