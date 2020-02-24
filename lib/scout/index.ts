@@ -220,6 +220,9 @@ export class Scout extends EventEmitter {
                 if (this.config.allowShutdown) {
                     return this.agent.stopProcess();
                 }
+            })
+            .then(() => {
+                delete this.agent;
             });
     }
 

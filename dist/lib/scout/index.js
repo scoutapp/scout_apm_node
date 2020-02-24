@@ -127,6 +127,9 @@ class Scout extends events_1.EventEmitter {
             if (this.config.allowShutdown) {
                 return this.agent.stopProcess();
             }
+        })
+            .then(() => {
+            delete this.agent;
         });
     }
     hasAgent() {

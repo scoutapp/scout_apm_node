@@ -722,14 +722,21 @@ test("export BackgroundTransaction is working", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Config returns a populated special object", t => {
-    getOrCreateGlobalScoutInstance()
-        .then(() => {
+    // We'll need to create a config to use with the global scout instance
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+
+    getOrCreateGlobalScoutInstance(config)
+        .then(scout => {
             const config = scoutExport.api.Config;
             if (!config) { throw new Error("config is undefined"); }
 
             t.assert(config.coreAgentVersion, "core agent version is set");
             t.assert(config.coreAgentLogLevel, "core agent log level is set");
-            t.end();
+
+            return TestUtil.shutdownScout(t, scout);
         });
 });
 
@@ -834,11 +841,17 @@ test("export Context.addSync to add context (provided scout instance)", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.addSync to add context (global scout instance)", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+
     // TS cannot know that runSync will modify this synchronously
     // so we use any to force the runtime check
     let req: any;
 
-    getOrCreateGlobalScoutInstance()
+    getOrCreateGlobalScoutInstance(config)
         .then(scout => {
             // The scout object should be created as sa result of doing the .run
             scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
@@ -848,7 +861,7 @@ test("export Context.addSync to add context (global scout instance)", t => {
             });
 
             if (!req) {
-                throw new Error("req not saved");
+                return TestUtil.shutdownScout(t, scout, new Error("req not saved"));
             }
 
             t.equals(req.getContextValue("testKey"), "testValue", "request context was updated");

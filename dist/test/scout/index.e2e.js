@@ -589,15 +589,20 @@ test("export BackgroundTransaction is working", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Config returns a populated special object", t => {
-    global_1.getOrCreateGlobalScoutInstance()
-        .then(() => {
+    // We'll need to create a config to use with the global scout instance
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    global_1.getOrCreateGlobalScoutInstance(config)
+        .then(scout => {
         const config = lib_1.default.api.Config;
         if (!config) {
             throw new Error("config is undefined");
         }
         t.assert(config.coreAgentVersion, "core agent version is set");
         t.assert(config.coreAgentLogLevel, "core agent log level is set");
-        t.end();
+        return TestUtil.shutdownScout(t, scout);
     });
 });
 // https://github.com/scoutapp/scout_apm_node/issues/141
@@ -677,10 +682,15 @@ test("export Context.addSync to add context (provided scout instance)", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.addSync to add context (global scout instance)", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
     // TS cannot know that runSync will modify this synchronously
     // so we use any to force the runtime check
     let req;
-    global_1.getOrCreateGlobalScoutInstance()
+    global_1.getOrCreateGlobalScoutInstance(config)
         .then(scout => {
         // The scout object should be created as sa result of doing the .run
         lib_1.default.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
@@ -689,7 +699,7 @@ test("export Context.addSync to add context (global scout instance)", t => {
             lib_1.default.api.Context.addSync("testKey", "testValue");
         });
         if (!req) {
-            throw new Error("req not saved");
+            return TestUtil.shutdownScout(t, scout, new Error("req not saved"));
         }
         t.equals(req.getContextValue("testKey"), "testValue", "request context was updated");
         return TestUtil.shutdownScout(t, scout);
