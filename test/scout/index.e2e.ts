@@ -2,12 +2,11 @@ import * as test from "tape";
 import * as path from "path";
 import { mkdtemp } from "fs-extra";
 
-import { ScoutEventRequestSentData } from "../../lib/scout";
-
 import {
     Scout,
     ScoutRequest,
     ScoutSpan,
+    ScoutEventRequestSentData,
 } from "../../lib/scout";
 
 import {
@@ -37,6 +36,8 @@ import { V1ApplicationEvent } from "../../lib/protocol/v1/requests";
 import { pathExists, remove } from "fs-extra";
 
 import * as TestUtil from "../util";
+
+import scoutExport from "../../lib";
 
 test("Scout object creation works without config", t => {
     const scout = new Scout();
@@ -627,6 +628,92 @@ test("Ignored requests are not sent", t => {
             t.pass("request ignored");
             done();
         }))
+    // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export WebTransaction is working", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    const expectedSpanName = "Controller/test-web-transaction-export";
+
+    const listener = (data: ScoutEventRequestSentData) => {
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        const req = data.request;
+
+        const innerSpans = req.getChildSpansSync();
+        t.assert(innerSpans.length === 1, "one inner span was present");
+        if (!innerSpans || innerSpans.length !== 1) {
+            throw new Error("Single inner top level span not present");
+        }
+
+        const topLevelInnerSpan = innerSpans[0];
+        t.equals(topLevelInnerSpan.operation, expectedSpanName, `span name is [${expectedSpanName}]`);
+
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    // Fail the test if a request is sent from the agent
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    // The scout object should be created as sa result of doing the .run
+    scoutExport.api.WebTransaction
+        .run(
+            "test-web-transaction-export",
+            (done, {request}) => {
+                t.pass("transaction was run");
+                done();
+            },
+            scout,
+        )
+    // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export BackgroundTransaction is working", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    const expectedSpanName = "Job/test-background-transaction-export";
+
+    const listener = (data: ScoutEventRequestSentData) => {
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        const req = data.request;
+
+        const innerSpans = req.getChildSpansSync();
+        t.assert(innerSpans.length === 1, "one inner span was present");
+        if (!innerSpans || innerSpans.length !== 1) {
+            throw new Error("Single inner top level span not present");
+        }
+
+        const topLevelInnerSpan = innerSpans[0];
+        t.equals(topLevelInnerSpan.operation, expectedSpanName, `span name is [${expectedSpanName}]`);
+
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    // Fail the test if a request is sent from the agent
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    // The scout object should be created as sa result of doing the .run
+    scoutExport.api.BackgroundTransaction
+        .run(
+            "test-background-transaction-export",
+            (done, {request}) => {
+                t.pass("transaction was run");
+                done();
+            },
+            scout,
+        )
     // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });

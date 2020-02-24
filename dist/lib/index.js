@@ -44,15 +44,25 @@ setupRequireIntegrations([
 exports.default = {
     api: {
         WebTransaction: {
-            run(name, cb) {
-                return global_1.getOrCreateGlobalScoutInstance()
-                    .then(scout => scout.transaction(`Controller/${name}`, cb));
+            run(op, cb, scout) {
+                const name = `Controller/${op}`;
+                return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateGlobalScoutInstance())
+                    .then(scout => scout.transaction(name, (finishRequest, other) => {
+                    return scout.instrument(name, (finishSpan, info) => {
+                        return cb(finishRequest, info);
+                    });
+                }));
             },
         },
         BackgroundTransaction: {
-            run(name, cb) {
-                return global_1.getOrCreateGlobalScoutInstance()
-                    .then(scout => scout.transaction(`Job/${name}`, cb));
+            run(op, cb, scout) {
+                const name = `Job/${op}`;
+                return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateGlobalScoutInstance())
+                    .then(scout => scout.transaction(name, (finishRequest, other) => {
+                    return scout.instrument(name, (finishSpan, info) => {
+                        return cb(finishRequest, info);
+                    });
+                }));
             },
         },
     },
