@@ -4,9 +4,15 @@ const test = require("tape");
 const TestUtil = require("../util");
 const integrations_1 = require("../../lib/types/integrations");
 const types_1 = require("../../lib/types");
+const lib_1 = require("../../lib");
 const scout_1 = require("../../lib/scout");
 const types_2 = require("../../lib/types");
 const fixtures_1 = require("../fixtures");
+// The hook for mysql2 has to be triggered this way in a typescript context
+// since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
+lib_1.setupRequireIntegrations([
+    "mysql2",
+]);
 // The hook for MYSQL2 has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
 const mysql2 = require("mysql2");

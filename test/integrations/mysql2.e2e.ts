@@ -20,6 +20,12 @@ import {
 import { ScoutContextName } from "../../lib/types";
 import { SQL_QUERIES } from "../fixtures";
 
+// The hook for mysql2 has to be triggered this way in a typescript context
+// since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
+setupRequireIntegrations([
+    "mysql2",
+]);
+
 // The hook for MYSQL2 has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
 const mysql2 = require("mysql2");
