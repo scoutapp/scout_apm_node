@@ -90,7 +90,8 @@ export declare enum PlatformTriple {
 }
 export declare enum ScoutEvent {
     IgnoredPathDetected = "scout-event-ignored-path-detected",
-    RequestSent = "scout-event-request-sent"
+    RequestSent = "scout-event-request-sent",
+    IgnoredRequestProcessingSkipped = "ignored-request-processing-skipped"
 }
 export declare enum ScoutContextName {
     Traceback = "stack",
@@ -98,7 +99,8 @@ export declare enum ScoutContextName {
     Error = "error",
     Name = "name",
     URL = "url",
-    Timeout = "timeout"
+    Timeout = "timeout",
+    IgnoreTransaction = "ignore_transaction"
 }
 export declare enum ScoutSpanOperation {
     SQLQuery = "SQL/Query",

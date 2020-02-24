@@ -21,6 +21,7 @@ import {
     sendStopSpan,
 } from "./index";
 
+import { ScoutContextName, ScoutEvent } from "../types";
 import * as Constants from "../constants";
 import * as Errors from "../errors";
 
@@ -65,6 +66,8 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
             if (typeof opts.ignored === "boolean") { this.ignored = opts.ignored; }
         }
+
+        if (this.ignored) { this.addContext({name: ScoutContextName.IgnoreTransaction, value: true}); }
     }
 
     public span(operation: string): Promise<ScoutSpan> {
@@ -82,6 +85,13 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
     public isIgnored(): boolean {
         return this.ignored;
+    }
+
+    // Set a request as ignored
+    public ignore(): this {
+        this.addContext({name: ScoutContextName.IgnoreTransaction, value: true});
+        this.ignored = true;
+        return this;
     }
 
     /** @see ChildSpannable */
@@ -244,6 +254,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         // If request is ignored don't send it
         if (this.ignored) {
             this.logFn(`[scout/request/${this.id}] skipping ignored request send`, LogLevel.Warn);
+            inst.emit(ScoutEvent.IgnoredRequestProcessingSkipped, this);
             return Promise.resolve(this);
         }
 

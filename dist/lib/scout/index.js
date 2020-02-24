@@ -464,8 +464,7 @@ class Scout extends events_1.EventEmitter {
             const doneFn = () => {
                 this.log(`[scout] Finishing and sending request with ID [${request.id}]`, types_1.LogLevel.Debug);
                 this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
-                return request
-                    .finishAndSend();
+                return request.finishAndSend();
             };
             // Run in the async namespace
             this.asyncNamespace.run(() => {
@@ -566,6 +565,7 @@ exports.Scout = Scout;
 function sendStartRequest(scout, req) {
     if (req.isIgnored()) {
         scout.log(`[scout] Skipping sending StartRequest for ignored req [${req.id}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, req);
         return Promise.resolve(req);
     }
     const startReq = new Requests.V1StartRequest({
@@ -590,6 +590,7 @@ exports.sendStartRequest = sendStartRequest;
 function sendStopRequest(scout, req) {
     if (req.isIgnored()) {
         scout.log(`[scout] Skipping sending StopRequest for ignored req [${req.id}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, req);
         return Promise.resolve(req);
     }
     const stopReq = new Requests.V1FinishRequest(req.id, { timestamp: req.getEndTime() });
@@ -616,6 +617,7 @@ exports.sendStopRequest = sendStopRequest;
 function sendTagRequest(scout, req, name, value) {
     if (req.isIgnored()) {
         scout.log(`[scout] Skipping sending TagRequest for ignored req [${req.id}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, req);
         return Promise.resolve();
     }
     const tagReq = new Requests.V1TagRequest(name, value, req.id);
@@ -636,6 +638,7 @@ exports.sendTagRequest = sendTagRequest;
 function sendStartSpan(scout, span) {
     if (span.request && span.request.isIgnored()) {
         scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.request.id}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
         return Promise.resolve(span);
     }
     const opts = {
@@ -664,6 +667,7 @@ exports.sendStartSpan = sendStartSpan;
 function sendTagSpan(scout, span, name, value) {
     if (span.request && span.request.isIgnored()) {
         scout.log(`[scout] Skipping sending TagSpan for span [${span.id}] of ignored request [${span.request.id}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
         return Promise.resolve();
     }
     const tagSpanReq = new Requests.V1TagSpan(name, value, span.id, span.request.id);
@@ -685,6 +689,7 @@ exports.sendTagSpan = sendTagSpan;
 function sendStopSpan(scout, span) {
     if (span.request && span.request.isIgnored()) {
         scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.request.id}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
         return Promise.resolve(span);
     }
     const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id, { timestamp: span.getEndTime() });

@@ -9,7 +9,7 @@ export interface LogFn {
     logger?: winston.Logger;
 }
 
-export type JSONValue = object | string | number;
+export type JSONValue = object | string | number | boolean;
 
 export function convertCamelCaseToEnvVar(prop: string): string {
     return `SCOUT_${snakeCase(prop).toUpperCase()}`;

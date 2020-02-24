@@ -27,6 +27,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     getTimestamp(): Date;
     getDurationMs(): number;
     isIgnored(): boolean;
+    ignore(): this;
     /** @see ChildSpannable */
     startChildSpan(operation: string): Promise<ScoutSpan>;
     /** @see ChildSpannable */

@@ -4,6 +4,7 @@ const uuid_1 = require("uuid");
 const types_1 = require("../types");
 const span_1 = require("./span");
 const index_1 = require("./index");
+const types_2 = require("../types");
 const Constants = require("../constants");
 const Errors = require("../errors");
 class ScoutRequest {
@@ -35,6 +36,9 @@ class ScoutRequest {
                 this.ignored = opts.ignored;
             }
         }
+        if (this.ignored) {
+            this.addContext({ name: types_2.ScoutContextName.IgnoreTransaction, value: true });
+        }
     }
     span(operation) {
         return this.startChildSpan(operation);
@@ -48,6 +52,12 @@ class ScoutRequest {
     }
     isIgnored() {
         return this.ignored;
+    }
+    // Set a request as ignored
+    ignore() {
+        this.addContext({ name: types_2.ScoutContextName.IgnoreTransaction, value: true });
+        this.ignored = true;
+        return this;
     }
     /** @see ChildSpannable */
     startChildSpan(operation) {
@@ -183,6 +193,7 @@ class ScoutRequest {
         // If request is ignored don't send it
         if (this.ignored) {
             this.logFn(`[scout/request/${this.id}] skipping ignored request send`, types_1.LogLevel.Warn);
+            inst.emit(types_2.ScoutEvent.IgnoredRequestProcessingSkipped, this);
             return Promise.resolve(this);
         }
         this.sending = index_1.sendStartRequest(inst, this)
