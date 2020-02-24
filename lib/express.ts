@@ -81,8 +81,14 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                 })[0];
         }
 
+        // If no route matches then we don't need to record
+        if (!matchedRouteMiddleware) {
+            next();
+            return;
+        }
+
         // Create a Controller/ span for the request
-        const path = matchedRouteMiddleware ? matchedRouteMiddleware.route.path : reqPath;
+        const path = matchedRouteMiddleware.route.path;
         const reqMethod = req.method.toUpperCase();
 
         let getScout: () => Promise<Scout> = () => Promise.resolve(req.app.scout);
