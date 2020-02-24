@@ -17,6 +17,9 @@ function getGlobalScoutInstance() {
 }
 exports.getGlobalScoutInstance = getGlobalScoutInstance;
 function getOrCreateGlobalScoutInstance(config) {
+    if (SCOUT_INSTANCE) {
+        return SCOUT_INSTANCE.setup();
+    }
     setGlobalScoutInstance(new scout_1.Scout(config || types_1.buildScoutConfiguration()));
     return getGlobalScoutInstance().setup();
 }

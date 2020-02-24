@@ -4,8 +4,6 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./errors"));
-const scout_1 = require("./scout");
-const types_1 = require("./types");
 const integrations_1 = require("./integrations");
 const global_1 = require("./global");
 // Set up PG integration
@@ -13,10 +11,6 @@ const global_1 = require("./global");
 // run global code unless you do a whole-file import
 function setupRequireIntegrations(packages, scoutConfig) {
     packages = packages || [];
-    // If we're setting up the scout require integrations, let's build a scout instance
-    if (!global_1.getGlobalScoutInstance()) {
-        global_1.setGlobalScoutInstance(new scout_1.Scout(types_1.buildScoutConfiguration(scoutConfig)));
-    }
     packages.forEach(name => {
         const integration = integrations_1.getIntegrationForPackage(name);
         if (integration) {
@@ -53,6 +47,16 @@ exports.default = {
                     });
                 }));
             },
+            runSync(op, cb, scout) {
+                const name = `Controller/${op}`;
+                scout = scout || global_1.getGlobalScoutInstance();
+                if (!scout) {
+                    return;
+                }
+                return scout.transactionSync(name, (request) => {
+                    return cb(request);
+                });
+            },
         },
         BackgroundTransaction: {
             run(op, cb, scout) {
@@ -63,6 +67,16 @@ exports.default = {
                         return cb(finishRequest, info);
                     });
                 }));
+            },
+            runSync(op, cb, scout) {
+                const name = `Job/${op}`;
+                scout = scout || global_1.getGlobalScoutInstance();
+                if (!scout) {
+                    return;
+                }
+                return scout.instrumentSync(name, (span) => {
+                    return cb(span);
+                });
             },
         },
         instrument(op, cb, scout) {
@@ -85,10 +99,21 @@ exports.default = {
                     .then(scout => {
                     const req = scout.getCurrentRequest();
                     if (!req) {
-                        return;
+                        throw new Error("Request not present");
                     }
-                    req.addContext({ name, value });
+                    return req.addContext({ name, value });
                 });
+            },
+            addSync(name, value, scout) {
+                scout = scout || global_1.getGlobalScoutInstance();
+                if (!scout) {
+                    return;
+                }
+                const req = scout.getCurrentRequest();
+                if (!req) {
+                    return;
+                }
+                return req.addContextSync({ name, value });
             },
         },
     },

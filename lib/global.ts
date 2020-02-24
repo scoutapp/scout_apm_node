@@ -19,6 +19,9 @@ export function getGlobalScoutInstance() {
 }
 
 export function getOrCreateGlobalScoutInstance(config?: Partial<ScoutConfiguration>): Promise<Scout> {
+    if (SCOUT_INSTANCE) { return SCOUT_INSTANCE.setup(); }
+
     setGlobalScoutInstance(new Scout(config || buildScoutConfiguration()));
+
     return getGlobalScoutInstance().setup();
 }

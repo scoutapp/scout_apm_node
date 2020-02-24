@@ -342,7 +342,8 @@ class Scout extends events_1.EventEmitter {
      */
     getCurrentRequest() {
         try {
-            return this.asyncNamespace.get(ASYNC_NS_REQUEST);
+            const req = this.asyncNamespace.get(ASYNC_NS_REQUEST);
+            return req || this.syncCurrentRequest;
         }
         catch (_a) {
             return null;
@@ -355,7 +356,8 @@ class Scout extends events_1.EventEmitter {
      */
     getCurrentSpan() {
         try {
-            return this.asyncNamespace.get(ASYNC_NS_SPAN);
+            const span = this.asyncNamespace.get(ASYNC_NS_SPAN);
+            return span || this.syncCurrentSpan;
         }
         catch (_a) {
             return null;
