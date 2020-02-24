@@ -12,7 +12,7 @@ declare const _default: {
         };
         instrument(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;
         instrumentSync(operation: string, fn: SpanCallback, scout?: Scout | undefined): Promise<any>;
-        readonly Config: Partial<ScoutConfiguration>;
+        readonly Config: Partial<ScoutConfiguration> | undefined;
         Context: {
             add(name: string, value: JSONValue, scout?: Scout | undefined): Promise<void>;
         };

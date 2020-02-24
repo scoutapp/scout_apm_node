@@ -76,7 +76,8 @@ exports.default = {
                 .then(scout => scout.instrumentSync(operation, fn));
         },
         get Config() {
-            return global_1.getGlobalScoutInstance().getConfig();
+            const scout = global_1.getGlobalScoutInstance();
+            return scout ? scout.getConfig() : undefined;
         },
         Context: {
             add(name, value, scout) {

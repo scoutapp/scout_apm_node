@@ -256,6 +256,10 @@ class EnvConfigSource implements ConfigSource {
     public getName() { return ConfigSourceName.Env; }
 
     public getConfigValue(prop: string): any {
+        if (typeof prop === "symbol") {
+            return this.env[prop];
+        }
+
         const envVar = convertCamelCaseToEnvVar(prop);
         let val = this.env[envVar];
 

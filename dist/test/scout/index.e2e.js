@@ -5,6 +5,7 @@ const path = require("path");
 const fs_extra_1 = require("fs-extra");
 const scout_1 = require("../../lib/scout");
 const types_1 = require("../../lib/types");
+const global_1 = require("../../lib/global");
 const errors_1 = require("../../lib/errors");
 const fs_extra_2 = require("fs-extra");
 const TestUtil = require("../util");
@@ -585,4 +586,17 @@ test("export BackgroundTransaction is working", t => {
     }, scout)
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Config returns a populated special object", t => {
+    global_1.getOrCreateGlobalScoutInstance()
+        .then(() => {
+        const config = lib_1.default.api.Config;
+        if (!config) {
+            throw new Error("config is undefined");
+        }
+        t.assert(config.coreAgentVersion, "core agent version is set");
+        t.assert(config.coreAgentLogLevel, "core agent log level is set");
+        t.end();
+    });
 });

@@ -24,6 +24,8 @@ import {
     AgentEvent as ScoutAgentEvent,
 } from "../../lib/types";
 
+import { getOrCreateGlobalScoutInstance } from "../../lib/global";
+
 import {
     AgentLaunchDisabled,
     ExternalDownloadDisallowed,
@@ -716,4 +718,17 @@ test("export BackgroundTransaction is working", t => {
         )
     // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Config returns a populated special object", t => {
+    getOrCreateGlobalScoutInstance()
+        .then(() => {
+            const config = scoutExport.api.Config;
+            if (!config) { throw new Error("config is undefined"); }
+
+            t.assert(config.coreAgentVersion, "core agent version is set");
+            t.assert(config.coreAgentLogLevel, "core agent log level is set");
+            t.end();
+        });
 });

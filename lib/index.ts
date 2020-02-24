@@ -83,7 +83,8 @@ export default {
         },
 
         get Config() {
-            return getGlobalScoutInstance().getConfig();
+            const scout = getGlobalScoutInstance();
+            return scout ? scout.getConfig() : undefined;
         },
 
         Context: {

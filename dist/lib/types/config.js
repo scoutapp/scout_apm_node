@@ -170,6 +170,9 @@ class EnvConfigSource {
     }
     getName() { return enum_1.ConfigSourceName.Env; }
     getConfigValue(prop) {
+        if (typeof prop === "symbol") {
+            return this.env[prop];
+        }
         const envVar = util_1.convertCamelCaseToEnvVar(prop);
         let val = this.env[envVar];
         if (typeof val !== "undefined" && envVar in ENV_TRANSFORMS) {
