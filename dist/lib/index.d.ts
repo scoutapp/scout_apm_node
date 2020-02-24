@@ -1,4 +1,5 @@
 export * from "./errors";
+export { buildScoutConfiguration } from "./types/config";
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, JSONValue } from "./types";
 export declare function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<ScoutConfiguration>): void;
