@@ -26,7 +26,7 @@ class HttpIntegration extends integrations_1.RequireIntegration {
             integration.logFn("[scout/integrations/http] requesting...", types_1.LogLevel.Trace);
             // If no scout instance is available then run the function normally
             if (!integration.scout) {
-                originalFn.apply(this, originalArgsArr);
+                return originalFn.apply(this, originalArgsArr);
             }
             // We need to find which one of the arguments was the callback (if there was one)
             // if one wasn't provided we'll use a do-nothing callback
