@@ -207,7 +207,6 @@ class ScoutRequest {
             .then(() => this.sent = true)
             .then(() => this)
             .catch(err => {
-            console.log("SEND FAILED?", err);
             this.logFn(`[scout/request/${this.id}]Failed to send request`);
             return this;
         });

@@ -141,7 +141,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (!msg) { return Promise.reject(new Errors.UnexpectedError("No message provided to send()")); }
         const requestType = msg.type;
 
-
         this.logFn(`[scout/external-process] sending message:\n ${JSON.stringify(msg.json)}`, LogLevel.Debug);
 
         const sendPromise = new Promise((resolve, reject) => {
