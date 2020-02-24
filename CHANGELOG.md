@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - feature: directly ignore transaction ([#148](https://github.com/scoutapp/scout_apm_node/issues/148))
+- feature: add ignoring transaction to top level API ([#153](https://github.com/scoutapp/scout_apm_node/issues/153))
 
 ### Changed
 - bugfix: trim library export ([#149](https://github.com/scoutapp/scout_apm_node/issues/149))
