@@ -623,3 +623,42 @@ test("Nested spans on the top level controller have parent ID specified", t => {
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
+
+// https://github.com/scoutapp/scout_apm_node/issues/150
+test("Unknown routes should not be recorded", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    // Create an application that's set up to do a simple instrumentation
+    const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+    }));
+
+    // Set up a listener that should fire when the request is finished
+    const listener = (url: string) => {
+        // Remove listener since this should fire once
+        scout.removeListener(ScoutEvent.UnknownRequestPathSkipped, listener);
+
+        t.pass("UnknownRequestPathSkipped event was fired");
+        t.equals(url, "/nope", "url matches");
+
+        // Shutdown and close scout
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    scout.on(ScoutEvent.UnknownRequestPathSkipped, listener);
+
+    scout
+        .setup()
+        .then(() => {
+            return request(app)
+                .get("/nope")
+                .expect("Content-Type", /html/)
+                .expect(404)
+                .then(() => t.pass("unknown route was visited"))
+                .catch(err => TestUtil.shutdownScout(t, scout, err));
+        });
+});

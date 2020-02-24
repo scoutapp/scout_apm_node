@@ -127,6 +127,7 @@ export enum ScoutEvent {
     IgnoredPathDetected = "scout-event-ignored-path-detected",
     RequestSent = "scout-event-request-sent",
     IgnoredRequestProcessingSkipped = "ignored-request-processing-skipped",
+    UnknownRequestPathSkipped = "unknown-request-path-skipped",
 }
 
 export enum ScoutContextName {
