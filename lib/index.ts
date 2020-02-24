@@ -1,7 +1,7 @@
 export * from "./errors";
 
-import { Scout, DoneCallback } from "./scout";
-import { ScoutConfiguration, buildScoutConfiguration } from "./types";
+import { Scout, ScoutRequest, DoneCallback, SpanCallback } from "./scout";
+import { ScoutConfiguration, buildScoutConfiguration, JSONValue } from "./types";
 import { getIntegrationForPackage } from "./integrations";
 import { setGlobalScoutInstance, getGlobalScoutInstance, getOrCreateGlobalScoutInstance, EXPORT_BAG } from "./global";
 
@@ -65,8 +65,36 @@ export default {
                     .then(scout => scout.transaction(name, (finishRequest, other) => {
                         return scout.instrument(name, (finishSpan, info) => {
                             return cb(finishRequest, info);
-                        })
+                        });
                     }));
+            },
+        },
+
+        instrument(op: string, cb: DoneCallback, scout?: Scout): Promise<any> {
+            return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+                .then(scout => scout.instrument(op, (finishSpan, info) => {
+                    return cb(finishSpan, info);
+                }));
+        },
+
+        instrumentSync(operation: string, fn: SpanCallback, scout?: Scout) {
+            return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+                .then(scout => scout.instrumentSync(operation, fn));
+        },
+
+        get Config() {
+            return getGlobalScoutInstance().getConfig();
+        },
+
+        Context: {
+            add(name: string, value: JSONValue, scout?: Scout) {
+                return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+                    .then(scout => {
+                        const req = scout.getCurrentRequest();
+                        if (!req) { return; }
+
+                        req.addContext({name, value});
+                    });
             },
         },
     },

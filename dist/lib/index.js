@@ -65,5 +65,30 @@ exports.default = {
                 }));
             },
         },
+        instrument(op, cb, scout) {
+            return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateGlobalScoutInstance())
+                .then(scout => scout.instrument(op, (finishSpan, info) => {
+                return cb(finishSpan, info);
+            }));
+        },
+        instrumentSync(operation, fn, scout) {
+            return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateGlobalScoutInstance())
+                .then(scout => scout.instrumentSync(operation, fn));
+        },
+        get Config() {
+            return global_1.getGlobalScoutInstance().getConfig();
+        },
+        Context: {
+            add(name, value, scout) {
+                return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateGlobalScoutInstance())
+                    .then(scout => {
+                    const req = scout.getCurrentRequest();
+                    if (!req) {
+                        return;
+                    }
+                    req.addContext({ name, value });
+                });
+            },
+        },
     },
 };
