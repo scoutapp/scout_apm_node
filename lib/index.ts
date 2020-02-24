@@ -1,9 +1,9 @@
 export * from "./errors";
 
-import { Scout } from "./scout";
+import { Scout, DoneCallback } from "./scout";
 import { ScoutConfiguration, buildScoutConfiguration } from "./types";
 import { getIntegrationForPackage } from "./integrations";
-import { setGlobalScoutInstance, getGlobalScoutInstance, EXPORT_BAG } from "./global";
+import { setGlobalScoutInstance, getGlobalScoutInstance, getOrCreateGlobalScoutInstance, EXPORT_BAG } from "./global";
 
 // Set up PG integration
 // This is needed for use in Typescript projects since `import` will not
@@ -43,3 +43,21 @@ setupRequireIntegrations([
     // NodeJS internals
     "http",
 ]);
+
+export default {
+    api: {
+        WebTransaction: {
+            run(name: string, cb: DoneCallback): Promise<any> {
+                return getOrCreateGlobalScoutInstance()
+                    .then(scout => scout.transaction(`Controller/${name}`, cb));
+            },
+        },
+
+        BackgroundTransaction: {
+            run(name: string, cb: DoneCallback): Promise<any> {
+                return getOrCreateGlobalScoutInstance()
+                    .then(scout => scout.transaction(`Job/${name}`, cb));
+            },
+        },
+    },
+};

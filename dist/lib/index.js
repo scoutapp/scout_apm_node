@@ -41,3 +41,19 @@ setupRequireIntegrations([
     // NodeJS internals
     "http",
 ]);
+exports.default = {
+    api: {
+        WebTransaction: {
+            run(name, cb) {
+                return global_1.getOrCreateGlobalScoutInstance()
+                    .then(scout => scout.transaction(`Controller/${name}`, cb));
+            },
+        },
+        BackgroundTransaction: {
+            run(name, cb) {
+                return global_1.getOrCreateGlobalScoutInstance()
+                    .then(scout => scout.transaction(`Job/${name}`, cb));
+            },
+        },
+    },
+};
