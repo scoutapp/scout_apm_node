@@ -78,9 +78,6 @@ export class ExpressIntegration extends RequireIntegration {
             const originalArgs = arguments;
             const originalArgsArr = Array.from(originalArgs);
 
-            // If no scout instance is available then run the function normally
-            if (!integration.scout) { return originalFn.apply(this, originalArgsArr); }
-
             // Find the argument that is the handler
             const handlerIdx = originalArgsArr.findIndex(a => typeof a === "function");
             // If there's no handler we're in an unknown state
@@ -90,6 +87,10 @@ export class ExpressIntegration extends RequireIntegration {
 
             // Shim the handler
             originalArgs[handlerIdx] = function(this: any) {
+                // If no scout instance is available when the handler is executed,
+                // then run original handler
+                if (!integration.scout) { return handler.apply(this, originalArgsArr); }
+
                 try {
                     return handler.apply(this, arguments);
                 } catch (err) {

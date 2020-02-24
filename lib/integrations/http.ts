@@ -30,7 +30,7 @@ export class HttpIntegration extends RequireIntegration {
             integration.logFn("[scout/integrations/http] requesting...", LogLevel.Trace);
 
             // If no scout instance is available then run the function normally
-            if (!integration.scout) { originalFn.apply(this, originalArgsArr); }
+            if (!integration.scout) { return originalFn.apply(this, originalArgsArr); }
 
             // We need to find which one of the arguments was the callback (if there was one)
             // if one wasn't provided we'll use a do-nothing callback
@@ -72,6 +72,7 @@ export class HttpIntegration extends RequireIntegration {
             // Start an asynchronous instrumentation and pull particulars from it
             let stopSpan: () => void;
             let reqSpan: ScoutSpan;
+
             integration.scout.instrument(opName, (stop, {span}) => {
                 stopSpan = stop;
 

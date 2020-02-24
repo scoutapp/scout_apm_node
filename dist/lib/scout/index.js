@@ -6,7 +6,7 @@ const process = require("process");
 const cls = require("continuation-local-storage");
 const fs_extra_1 = require("fs-extra");
 const types_1 = require("../types");
-const index_1 = require("../index");
+const global_1 = require("../global");
 const integrations_1 = require("../integrations");
 const web_1 = require("../agent-downloaders/web");
 const external_process_1 = require("../agents/external-process");
@@ -127,6 +127,9 @@ class Scout extends events_1.EventEmitter {
             if (this.config.allowShutdown) {
                 return this.agent.stopProcess();
             }
+        })
+            .then(() => {
+            delete this.agent;
         });
     }
     hasAgent() {
@@ -342,7 +345,8 @@ class Scout extends events_1.EventEmitter {
      */
     getCurrentRequest() {
         try {
-            return this.asyncNamespace.get(ASYNC_NS_REQUEST);
+            const req = this.asyncNamespace.get(ASYNC_NS_REQUEST);
+            return req || this.syncCurrentRequest;
         }
         catch (_a) {
             return null;
@@ -355,7 +359,8 @@ class Scout extends events_1.EventEmitter {
      */
     getCurrentSpan() {
         try {
-            return this.asyncNamespace.get(ASYNC_NS_SPAN);
+            const span = this.asyncNamespace.get(ASYNC_NS_SPAN);
+            return span || this.syncCurrentSpan;
         }
         catch (_a) {
             return null;
@@ -363,7 +368,7 @@ class Scout extends events_1.EventEmitter {
     }
     // Setup integrations
     setupIntegrations() {
-        Object.keys(index_1.EXPORT_BAG)
+        Object.keys(global_1.EXPORT_BAG)
             .map(packageName => integrations_1.getIntegrationForPackage(packageName))
             .forEach(integration => integration.setScoutInstance(this));
     }

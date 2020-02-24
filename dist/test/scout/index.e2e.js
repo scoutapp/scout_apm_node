@@ -3,12 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const path = require("path");
 const fs_extra_1 = require("fs-extra");
-const lib_1 = require("../../lib");
+const scout_1 = require("../../lib/scout");
 const types_1 = require("../../lib/types");
+const global_1 = require("../../lib/global");
+const errors_1 = require("../../lib/errors");
 const fs_extra_2 = require("fs-extra");
 const TestUtil = require("../util");
+const lib_1 = require("../../lib");
 test("Scout object creation works without config", t => {
-    const scout = new lib_1.Scout();
+    const scout = new scout_1.Scout();
     t.assert(scout, "scout object was created");
     t.end();
 });
@@ -26,14 +29,14 @@ test("Request can be created and finished", t => {
     const scout = TestUtil.buildTestScoutInstance();
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         t.assert(data.request, "request is present");
         // Look up the database span from the request
         TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Set up listener on the agent
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Create the request
@@ -50,7 +53,7 @@ test("Single span request", t => {
     let span;
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         if (!data.request) {
             throw new Error("request missing");
         }
@@ -62,7 +65,7 @@ test("Single span request", t => {
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Set up listener on the agent
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Create the request
@@ -91,7 +94,7 @@ test("Multi span request (2 top level)", t => {
     const spans = [];
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         if (!data.request) {
             throw new Error("request missing");
         }
@@ -107,7 +110,7 @@ test("Multi span request (2 top level)", t => {
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Set up listener on the agent
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Create the request
@@ -132,7 +135,7 @@ test("Multi span request (1 top level, 1 nested)", t => {
     const scout = TestUtil.buildTestScoutInstance();
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         if (!data.request) {
             throw new Error("request missing");
         }
@@ -153,7 +156,7 @@ test("Multi span request (1 top level, 1 nested)", t => {
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Set up listener on the agent
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Create the request
@@ -174,7 +177,7 @@ test("Parent Span auto close works (1 top level, 1 nested)", t => {
     const scout = TestUtil.buildTestScoutInstance();
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         if (!data.request) {
             throw new Error("request missing");
         }
@@ -191,7 +194,7 @@ test("Parent Span auto close works (1 top level, 1 nested)", t => {
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Set up listener on the agent
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Create the request
@@ -212,7 +215,7 @@ test("Request auto close works (1 top level, 1 nested)", t => {
     const scout = TestUtil.buildTestScoutInstance();
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         if (!data.request) {
             throw new Error("request missing");
         }
@@ -229,7 +232,7 @@ test("Request auto close works (1 top level, 1 nested)", t => {
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Set up listener on the agent
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Create the request
@@ -249,7 +252,7 @@ test("Request auto close works (2 top level)", t => {
     const scout = TestUtil.buildTestScoutInstance();
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         if (!data.request) {
             throw new Error("request missing");
         }
@@ -276,7 +279,7 @@ test("Request auto close works (2 top level)", t => {
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Set up listener on the agent
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Create the request
@@ -298,17 +301,17 @@ test("Request auto close works (2 top level)", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
 test("Download disabling works via top level config", t => {
-    const config = lib_1.buildScoutConfiguration({
+    const config = types_1.buildScoutConfiguration({
         coreAgentDownload: false,
         allowShutdown: true,
         monitor: true,
     });
-    const scout = new lib_1.Scout(config, { downloadOptions: { disableCache: true } });
+    const scout = new scout_1.Scout(config, { downloadOptions: { disableCache: true } });
     scout
         .setup()
         .then(() => Promise.reject(new Error("Download failure expected since downloading is disabled")))
         .catch(err => {
-        if (!(err instanceof lib_1.ExternalDownloadDisallowed)) {
+        if (!(err instanceof errors_1.ExternalDownloadDisallowed)) {
             return TestUtil.shutdownScout(t, scout, err);
         }
         t.pass("setup failed due to ExternalDownloadDisallowed error");
@@ -317,7 +320,7 @@ test("Download disabling works via top level config", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
 test("Launch disabling works via top level config", t => {
-    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         coreAgentLaunch: false,
         allowShutdown: true,
         monitor: true,
@@ -340,9 +343,9 @@ test("Launch disabling works via top level config", t => {
         // These errors should occur when scout tries to send with the bad socketPath
         // after not being allowed to launch
         const isExpectedError = [
-            lib_1.AgentLaunchDisabled,
-            lib_1.NoAgentPresent,
-            lib_1.InvalidConfiguration,
+            errors_1.AgentLaunchDisabled,
+            errors_1.NoAgentPresent,
+            errors_1.InvalidConfiguration,
         ].some(v => err instanceof v);
         // If AgentLaunchDisabled wasn't the error, this was a failure
         if (isExpectedError) {
@@ -354,7 +357,7 @@ test("Launch disabling works via top level config", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
 test("Custom version specification works via top level config", t => {
-    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         coreAgentVersion: "v1.1.8",
         allowShutdown: true,
         monitor: true,
@@ -370,16 +373,16 @@ test("Custom version specification works via top level config", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/61
 test("Application metadata is built and sent", t => {
-    const appMeta = new lib_1.ApplicationMetadata({
+    const appMeta = new types_1.ApplicationMetadata({
         frameworkVersion: "framework-version-from-app-meta",
     });
-    const config = lib_1.buildScoutConfiguration({ allowShutdown: true, monitor: true, coreAgentLaunch: true }, {
+    const config = types_1.buildScoutConfiguration({ allowShutdown: true, monitor: true, coreAgentLaunch: true }, {
         env: {
             SCOUT_FRAMEWORK: "framework-from-env",
             SCOUT_FRAMEWORK_VERSION: "framework-version-from-env",
         },
     });
-    const scout = new lib_1.Scout(config, { appMeta });
+    const scout = new scout_1.Scout(config, { appMeta });
     // Check that the applicationMetdata has values overlaid
     const returnedAppMeta = scout.getApplicationMetadata();
     t.equals(returnedAppMeta.framework, "framework-from-env", "framework value is from env");
@@ -400,7 +403,7 @@ test("Application metadata is built and sent", t => {
         t.pass("application event was sent");
         t.equals(msg.eventType, types_1.ApplicationEventType.ScoutMetadata, "eventType is scout metadata");
         // Remove agent, pass test
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         // Wait a little while for request to finish up, then shutdown
         TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
@@ -425,13 +428,13 @@ test("Multiple ongoing requests are possible at the same time", t => {
             return;
         }
         t.equals(requests.length, 2, "two requests were recorded");
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         // Look up the database span from the request
         TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Set up listener on the agent
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Create the first & second request
@@ -451,12 +454,12 @@ test("Multiple ongoing requests are possible at the same time", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/72
 test("Ensure that no requests are received by the agent if monitoring is off", t => {
-    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: false,
     }));
     // Fail the test if a request is sent from the agent
-    scout.on(lib_1.ScoutAgentEvent.RequestSent, (req) => {
+    scout.on(types_1.AgentEvent.RequestSent, (req) => {
         t.fail("agent sent a request");
     });
     scout
@@ -480,7 +483,7 @@ test("socketPath setting is honored by scout instance", t => {
         .then(dir => path.join(dir, "core-agent.sock"))
         .then(socketPath => {
         // Create the scout instance with the custom socketPath
-        scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+        scout = new scout_1.Scout(types_1.buildScoutConfiguration({
             allowShutdown: true,
             monitor: false,
             coreAgentLaunch: false,
@@ -493,16 +496,16 @@ test("socketPath setting is honored by scout instance", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/142
 test("Ignored requests are not sent", t => {
-    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: false,
     }));
     // Fail the test if a request is sent from the agent
-    scout.on(lib_1.ScoutAgentEvent.RequestSent, (req) => {
+    scout.on(types_1.AgentEvent.RequestSent, (req) => {
         t.fail("Agent sent a request, it should have skipped");
     });
     // Pick up on the ignored request processing skipped event
-    scout.on(lib_1.ScoutEvent.IgnoredRequestProcessingSkipped, (skippedReq) => {
+    scout.on(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, (skippedReq) => {
         t.equals(req.id, skippedReq.id, "skipped request matches what was passed");
         TestUtil.shutdownScout(t, scout);
     });
@@ -523,4 +526,182 @@ test("Ignored requests are not sent", t => {
     }))
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export WebTransaction is working", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+    const expectedSpanName = "Controller/test-web-transaction-export";
+    const listener = (data) => {
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        const req = data.request;
+        const innerSpans = req.getChildSpansSync();
+        t.assert(innerSpans.length === 1, "one inner span was present");
+        if (!innerSpans || innerSpans.length !== 1) {
+            throw new Error("Single inner top level span not present");
+        }
+        const topLevelInnerSpan = innerSpans[0];
+        t.equals(topLevelInnerSpan.operation, expectedSpanName, `span name is [${expectedSpanName}]`);
+        TestUtil.shutdownScout(t, scout);
+    };
+    // Fail the test if a request is sent from the agent
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
+    // The scout object should be created as sa result of doing the .run
+    lib_1.default.api.WebTransaction
+        .run("test-web-transaction-export", (done, { request }) => {
+        t.pass("transaction was run");
+        done();
+    }, scout)
+        // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export BackgroundTransaction is working", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+    const expectedSpanName = "Job/test-background-transaction-export";
+    const listener = (data) => {
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        const req = data.request;
+        const innerSpans = req.getChildSpansSync();
+        t.assert(innerSpans.length === 1, "one inner span was present");
+        if (!innerSpans || innerSpans.length !== 1) {
+            throw new Error("Single inner top level span not present");
+        }
+        const topLevelInnerSpan = innerSpans[0];
+        t.equals(topLevelInnerSpan.operation, expectedSpanName, `span name is [${expectedSpanName}]`);
+        TestUtil.shutdownScout(t, scout);
+    };
+    // Fail the test if a request is sent from the agent
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
+    // The scout object should be created as sa result of doing the .run
+    lib_1.default.api.BackgroundTransaction
+        .run("test-background-transaction-export", (done, { request }) => {
+        t.pass("transaction was run");
+        done();
+    }, scout)
+        // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Config returns a populated special object", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    global_1.getOrCreateGlobalScoutInstance(config)
+        .then(scout => {
+        const config = lib_1.default.api.Config;
+        if (!config) {
+            throw new Error("config is undefined");
+        }
+        t.assert(config.coreAgentVersion, "core agent version is set");
+        t.assert(config.coreAgentLogLevel, "core agent log level is set");
+        return TestUtil.shutdownScout(t, scout);
+    });
+});
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Context.add add context (provided scout instance)", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+    const listener = (data) => {
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        const req = data.request;
+        const val = req.getContextValue("testKey");
+        t.equals(val, "testValue", "context value was saved");
+        TestUtil.shutdownScout(t, scout);
+    };
+    // Fail the test if a request is sent from the agent
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
+    // The scout object should be created as sa result of doing the .run
+    lib_1.default.api.WebTransaction.run("test-web-transaction-export", (done, { request }) => {
+        t.pass("transaction was run");
+        // Add context
+        return lib_1.default.api.Context
+            .add("testKey", "testValue", scout)
+            .then(() => done());
+    }, scout)
+        // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Context.add add context (global scout instance)", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    global_1.getOrCreateGlobalScoutInstance(config)
+        .then(scout => {
+        const listener = (data) => {
+            scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+            const req = data.request;
+            const val = req.getContextValue("testKey");
+            t.equals(val, "testValue", "context value was saved");
+            TestUtil.shutdownScout(t, scout);
+        };
+        // Fail the test if a request is sent from the agent
+        scout.on(types_1.ScoutEvent.RequestSent, listener);
+        // The scout object should be created as sa result of doing the .run
+        lib_1.default.api.WebTransaction.run("test-web-transaction-export", (done, { request }) => {
+            t.pass("transaction was run");
+            // Add context
+            return lib_1.default.api.Context
+                .add("testKey", "testValue")
+                .then(() => done());
+        });
+    });
+});
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Context.addSync to add context (provided scout instance)", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+    // TS cannot know that runSync will modify this synchronously
+    // so we use any to force the runtime check
+    let req;
+    // The scout object should be created as sa result of doing the .run
+    lib_1.default.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+        t.pass("transaction was run");
+        req = request;
+        lib_1.default.api.Context.addSync("testKey", "testValue", scout);
+    }, scout);
+    if (!req) {
+        throw new Error("req not saved");
+    }
+    t.equals(req.getContextValue("testKey"), "testValue", "request context was updated");
+    t.end();
+});
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Context.addSync to add context (global scout instance)", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    // TS cannot know that runSync will modify this synchronously
+    // so we use any to force the runtime check
+    let req;
+    global_1.getOrCreateGlobalScoutInstance(config)
+        .then(scout => {
+        // The scout object should be created as sa result of doing the .run
+        lib_1.default.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+            t.pass("transaction was run");
+            req = request;
+            lib_1.default.api.Context.addSync("testKey", "testValue");
+        });
+        if (!req) {
+            return TestUtil.shutdownScout(t, scout, new Error("req not saved"));
+        }
+        t.equals(req.getContextValue("testKey"), "testValue", "request context was updated");
+        return TestUtil.shutdownScout(t, scout);
+    });
 });

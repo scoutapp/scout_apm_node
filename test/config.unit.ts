@@ -14,7 +14,7 @@ import {
     generateTriple,
 } from "../lib/types";
 
-import { Scout } from "../lib";
+import { Scout } from "../lib/scout";
 
 import { testConfigurationOverlay } from "./util";
 

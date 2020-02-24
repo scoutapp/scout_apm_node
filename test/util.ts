@@ -30,9 +30,8 @@ import {
     convertCamelCaseToEnvVar,
     ExpressFn,
 } from "../lib/types";
-import { ScoutOptions } from "../lib/scout";
+import { ScoutOptions, Scout, ScoutRequest, ScoutSpan } from "../lib/scout";
 import { DEFAULT_SCOUT_CONFIGURATION } from "../lib/types/config";
-import { Scout, ScoutRequest, ScoutSpan } from "../lib";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
 

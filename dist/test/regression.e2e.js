@@ -2,12 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const request = require("supertest");
+const types_1 = require("../lib/types");
 const lib_1 = require("../lib");
+const scout_1 = require("../lib/scout");
 // This needs to be set up *before* TestUtil runs so pg used there will be instrumented
 lib_1.setupRequireIntegrations(["pg", "ejs"]);
 const TestUtil = require("./util");
 const express_1 = require("../lib/express");
-const types_1 = require("../lib/types");
+const types_2 = require("../lib/types");
 const ejs = require("ejs");
 let PG_CONTAINER_AND_OPTS = null;
 // Pseudo test that will start a containerized postgres instance
@@ -16,17 +18,17 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/140
 test("Many select statments and a render are in the right order", { timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000 }, t => {
-    const config = lib_1.buildScoutConfiguration({
+    const config = types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
     });
-    const appMeta = new lib_1.ApplicationMetadata(config, { frameworkVersion: "test" });
-    const scout = new lib_1.Scout(config, { appMeta });
+    const appMeta = new types_1.ApplicationMetadata(config, { frameworkVersion: "test" });
+    const scout = new scout_1.Scout(config, { appMeta });
     // Setup a PG Client that we'll use later
     let client;
     // Set up a listener for the scout request that will be sent for the endpoint being hit
     const listener = (data) => {
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         // Look up the database span from the request
         const requestSpans = data.request.getChildSpansSync();
         const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
@@ -36,7 +38,7 @@ test("Many select statments and a render are in the right order", { timeout: Tes
         }
         const innerSpans = controllerSpan.getChildSpansSync();
         // Check for the inner SQL query spans
-        const dbSpans = innerSpans.filter(s => s.operation === types_1.ScoutSpanOperation.SQLQuery);
+        const dbSpans = innerSpans.filter(s => s.operation === types_2.ScoutSpanOperation.SQLQuery);
         t.assert(dbSpans, `db spans [${dbSpans.length}] were present on request`);
         if (!dbSpans || dbSpans.length === 0) {
             t.fail("no DB spans present on request");
@@ -45,7 +47,7 @@ test("Many select statments and a render are in the right order", { timeout: Tes
         // All the DB spans should have the controllerSpan as parent
         t.assert(dbSpans.every(s => s.parent && s.parent.id === controllerSpan.id), "db spans have controller as parent");
         // Check for the inner render spans
-        const renderSpans = innerSpans.filter(s => s.operation === types_1.ScoutSpanOperation.TemplateRender);
+        const renderSpans = innerSpans.filter(s => s.operation === types_2.ScoutSpanOperation.TemplateRender);
         t.assert(renderSpans, `render spans [${renderSpans.length}] were present on request`);
         t.equals(renderSpans.length, 1, "only one render span is present");
         const renderSpan = renderSpans[0];
@@ -68,7 +70,7 @@ test("Many select statments and a render are in the right order", { timeout: Tes
     };
     let app;
     // Activate the listener
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Connect to the postgres

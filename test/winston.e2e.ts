@@ -4,13 +4,16 @@ import * as winston from "winston";
 const tempfile = require("tempfile");
 
 import {
-    Scout,
-    ScoutRequest,
-    ScoutSpan,
     buildScoutConfiguration,
     buildWinstonLogFn,
     LogLevel,
-} from "../lib";
+} from "../lib/types";
+
+import {
+    Scout,
+    ScoutRequest,
+    ScoutSpan,
+} from "../lib/scout";
 
 import { ScoutConfiguration } from "../lib/types";
 

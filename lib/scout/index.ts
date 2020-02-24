@@ -35,7 +35,7 @@ import {
     scrubRequestPath,
     scrubRequestPathParams,
 } from "../types";
-import { EXPORT_BAG } from "../index";
+import { EXPORT_BAG } from "../global";
 import { getIntegrationForPackage } from "../integrations";
 
 import WebAgentDownloader from "../agent-downloaders/web";
@@ -220,6 +220,9 @@ export class Scout extends EventEmitter {
                 if (this.config.allowShutdown) {
                     return this.agent.stopProcess();
                 }
+            })
+            .then(() => {
+                delete this.agent;
             });
     }
 
@@ -488,7 +491,8 @@ export class Scout extends EventEmitter {
      */
     public getCurrentRequest(): ScoutRequest | null {
         try {
-            return this.asyncNamespace.get(ASYNC_NS_REQUEST);
+            const req = this.asyncNamespace.get(ASYNC_NS_REQUEST);
+            return req || this.syncCurrentRequest;
         } catch {
             return null;
         }
@@ -501,9 +505,11 @@ export class Scout extends EventEmitter {
      */
     public getCurrentSpan(): ScoutSpan | null {
         try {
-            return this.asyncNamespace.get(ASYNC_NS_SPAN);
+            const span = this.asyncNamespace.get(ASYNC_NS_SPAN);
+            return span || this.syncCurrentSpan;
         } catch {
             return null;
+
         }
     }
 

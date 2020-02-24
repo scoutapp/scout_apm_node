@@ -3,22 +3,11 @@ import * as path from "path";
 import { mkdtemp } from "fs-extra";
 
 import {
-    AgentLaunchDisabled,
-    ApplicationMetadata,
-    ExternalDownloadDisallowed,
-    InvalidConfiguration,
-    LogLevel,
-    NoAgentPresent,
     Scout,
-    ScoutAgentEvent,
-    ScoutEvent,
     ScoutRequest,
     ScoutSpan,
-    buildScoutConfiguration,
-    consoleLogFn,
-} from "../../lib";
-
-import { ScoutEventRequestSentData } from "../../lib/scout";
+    ScoutEventRequestSentData,
+} from "../../lib/scout";
 
 import {
     BaseAgentRequest,
@@ -27,12 +16,30 @@ import {
     ApplicationEventType,
     ScoutContextName,
     JSONValue,
+    ApplicationMetadata,
+    LogLevel,
+    buildScoutConfiguration,
+    consoleLogFn,
+    ScoutEvent,
+    AgentEvent as ScoutAgentEvent,
 } from "../../lib/types";
+
+import { getOrCreateGlobalScoutInstance } from "../../lib/global";
+
+import {
+    AgentLaunchDisabled,
+    ExternalDownloadDisallowed,
+    InvalidConfiguration,
+    NoAgentPresent,
+} from "../../lib/errors";
+
 import { V1ApplicationEvent } from "../../lib/protocol/v1/requests";
 
 import { pathExists, remove } from "fs-extra";
 
 import * as TestUtil from "../util";
+
+import scoutExport from "../../lib";
 
 test("Scout object creation works without config", t => {
     const scout = new Scout();
@@ -625,4 +632,240 @@ test("Ignored requests are not sent", t => {
         }))
     // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export WebTransaction is working", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    const expectedSpanName = "Controller/test-web-transaction-export";
+
+    const listener = (data: ScoutEventRequestSentData) => {
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        const req = data.request;
+
+        const innerSpans = req.getChildSpansSync();
+        t.assert(innerSpans.length === 1, "one inner span was present");
+        if (!innerSpans || innerSpans.length !== 1) {
+            throw new Error("Single inner top level span not present");
+        }
+
+        const topLevelInnerSpan = innerSpans[0];
+        t.equals(topLevelInnerSpan.operation, expectedSpanName, `span name is [${expectedSpanName}]`);
+
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    // Fail the test if a request is sent from the agent
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    // The scout object should be created as sa result of doing the .run
+    scoutExport.api.WebTransaction
+        .run(
+            "test-web-transaction-export",
+            (done, {request}) => {
+                t.pass("transaction was run");
+                done();
+            },
+            scout,
+        )
+    // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export BackgroundTransaction is working", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    const expectedSpanName = "Job/test-background-transaction-export";
+
+    const listener = (data: ScoutEventRequestSentData) => {
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        const req = data.request;
+
+        const innerSpans = req.getChildSpansSync();
+        t.assert(innerSpans.length === 1, "one inner span was present");
+        if (!innerSpans || innerSpans.length !== 1) {
+            throw new Error("Single inner top level span not present");
+        }
+
+        const topLevelInnerSpan = innerSpans[0];
+        t.equals(topLevelInnerSpan.operation, expectedSpanName, `span name is [${expectedSpanName}]`);
+
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    // Fail the test if a request is sent from the agent
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    // The scout object should be created as sa result of doing the .run
+    scoutExport.api.BackgroundTransaction
+        .run(
+            "test-background-transaction-export",
+            (done, {request}) => {
+                t.pass("transaction was run");
+                done();
+            },
+            scout,
+        )
+    // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Config returns a populated special object", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+
+    getOrCreateGlobalScoutInstance(config)
+        .then(scout => {
+            const config = scoutExport.api.Config;
+            if (!config) { throw new Error("config is undefined"); }
+
+            t.assert(config.coreAgentVersion, "core agent version is set");
+            t.assert(config.coreAgentLogLevel, "core agent log level is set");
+
+            return TestUtil.shutdownScout(t, scout);
+        });
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Context.add add context (provided scout instance)", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    const listener = (data: ScoutEventRequestSentData) => {
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        const req = data.request;
+        const val = req.getContextValue("testKey");
+        t.equals(val, "testValue", "context value was saved");
+
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    // Fail the test if a request is sent from the agent
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    // The scout object should be created as sa result of doing the .run
+    scoutExport.api.WebTransaction.run(
+        "test-web-transaction-export",
+        (done, {request}) => {
+            t.pass("transaction was run");
+            // Add context
+            return scoutExport.api.Context
+                .add("testKey", "testValue", scout)
+                .then(() => done());
+        },
+        scout,
+    )
+    // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Context.add add context (global scout instance)", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+
+    getOrCreateGlobalScoutInstance(config)
+        .then(scout => {
+            const listener = (data: ScoutEventRequestSentData) => {
+                scout.removeListener(ScoutEvent.RequestSent, listener);
+
+                const req = data.request;
+                const val = req.getContextValue("testKey");
+                t.equals(val, "testValue", "context value was saved");
+
+                TestUtil.shutdownScout(t, scout);
+            };
+
+            // Fail the test if a request is sent from the agent
+            scout.on(ScoutEvent.RequestSent, listener);
+
+            // The scout object should be created as sa result of doing the .run
+            scoutExport.api.WebTransaction.run(
+                "test-web-transaction-export",
+                (done, {request}) => {
+                    t.pass("transaction was run");
+                    // Add context
+                    return scoutExport.api.Context
+                        .add("testKey", "testValue")
+                        .then(() => done());
+                },
+            );
+        });
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Context.addSync to add context (provided scout instance)", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    // TS cannot know that runSync will modify this synchronously
+    // so we use any to force the runtime check
+    let req: any;
+
+    // The scout object should be created as sa result of doing the .run
+    scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+        t.pass("transaction was run");
+        req = request;
+        scoutExport.api.Context.addSync("testKey", "testValue", scout);
+    }, scout);
+
+    if (!req) {
+        throw new Error("req not saved");
+    }
+
+    t.equals(req.getContextValue("testKey"), "testValue", "request context was updated");
+    t.end();
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/141
+test("export Context.addSync to add context (global scout instance)", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+
+    // TS cannot know that runSync will modify this synchronously
+    // so we use any to force the runtime check
+    let req: any;
+
+    getOrCreateGlobalScoutInstance(config)
+        .then(scout => {
+            // The scout object should be created as sa result of doing the .run
+            scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+                t.pass("transaction was run");
+                req = request;
+                scoutExport.api.Context.addSync("testKey", "testValue");
+            });
+
+            if (!req) {
+                return TestUtil.shutdownScout(t, scout, new Error("req not saved"));
+            }
+
+            t.equals(req.getContextValue("testKey"), "testValue", "request context was updated");
+
+            return TestUtil.shutdownScout(t, scout);
+        });
 });

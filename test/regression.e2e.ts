@@ -4,14 +4,19 @@ import * as request from "supertest";
 import { Application } from "express";
 
 import {
-    Scout,
     ScoutEvent,
-    ScoutEventRequestSentData,
-    ScoutRequest,
     buildScoutConfiguration,
-    setupRequireIntegrations,
     ApplicationMetadata,
-} from "../lib";
+} from "../lib/types";
+
+import { setupRequireIntegrations } from "../lib";
+
+import {
+    Scout,
+    ScoutRequest,
+    ScoutSpan,
+    ScoutEventRequestSentData,
+} from "../lib/scout";
 
 // This needs to be set up *before* TestUtil runs so pg used there will be instrumented
 setupRequireIntegrations(["pg", "ejs"]);

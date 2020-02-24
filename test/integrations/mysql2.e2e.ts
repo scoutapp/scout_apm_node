@@ -4,16 +4,27 @@ import * as Constants from "../../lib/constants";
 
 import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
-    Scout,
     ScoutEvent,
-    ScoutEventRequestSentData,
-    ScoutRequest,
     buildScoutConfiguration,
-    setupRequireIntegrations,
-} from "../../lib";
+} from "../../lib/types";
+
+import { setupRequireIntegrations } from "../../lib";
+
+import {
+    Scout,
+    ScoutRequest,
+    ScoutSpan,
+    ScoutEventRequestSentData,
+} from "../../lib/scout";
 
 import { ScoutContextName } from "../../lib/types";
 import { SQL_QUERIES } from "../fixtures";
+
+// The hook for mysql2 has to be triggered this way in a typescript context
+// since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
+setupRequireIntegrations([
+    "mysql2",
+]);
 
 // The hook for MYSQL2 has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require

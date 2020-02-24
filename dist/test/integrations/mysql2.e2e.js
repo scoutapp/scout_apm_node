@@ -3,9 +3,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const TestUtil = require("../util");
 const integrations_1 = require("../../lib/types/integrations");
-const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
+const lib_1 = require("../../lib");
+const scout_1 = require("../../lib/scout");
+const types_2 = require("../../lib/types");
 const fixtures_1 = require("../fixtures");
+// The hook for mysql2 has to be triggered this way in a typescript context
+// since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
+lib_1.setupRequireIntegrations([
+    "mysql2",
+]);
 // The hook for MYSQL2 has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
 const mysql2 = require("mysql2");
@@ -22,7 +29,7 @@ test("the shim works", t => {
         .catch(err => t.end(err));
 });
 test("SELECT query during a request is recorded", t => {
-    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
     }));
@@ -30,7 +37,7 @@ test("SELECT query during a request is recorded", t => {
     let conn;
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data) => {
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         // Look up the database span from the request
         data.request
             .getChildSpans()
@@ -41,7 +48,7 @@ test("SELECT query during a request is recorded", t => {
                 t.fail("no DB span present on request");
                 throw new Error("No DB Span");
             }
-            t.equals(dbSpan.getContextValue(types_1.ScoutContextName.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
+            t.equals(dbSpan.getContextValue(types_2.ScoutContextName.DBStatement), fixtures_1.SQL_QUERIES.SELECT_TIME, "db.statement tag is correct");
         })
             .then(() => conn.end())
             .then(() => TestUtil.shutdownScout(t, scout))
@@ -52,7 +59,7 @@ test("SELECT query during a request is recorded", t => {
         });
     };
     // Activate the listener
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Connect to the mysql2

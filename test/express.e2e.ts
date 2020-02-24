@@ -15,6 +15,7 @@ import {
     URIReportingLevel,
     buildScoutConfiguration,
 } from "../lib/types";
+
 import { Scout, ScoutEventRequestSentData } from "../lib/scout";
 import { setupRequireIntegrations } from "../lib";
 import { V1StartSpan } from "../lib/protocol/v1/requests";

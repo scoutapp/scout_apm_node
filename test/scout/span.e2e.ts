@@ -2,12 +2,10 @@ import * as test from "tape";
 
 import {
     Scout,
-    ScoutEvent,
-    buildScoutConfiguration,
-    consoleLogFn,
-} from "../../lib";
-
-import { ScoutEventRequestSentData } from "../../lib/scout";
+    ScoutRequest,
+    ScoutSpan,
+    ScoutEventRequestSentData,
+} from "../../lib/scout";
 
 import {
     BaseAgentRequest,
@@ -16,6 +14,9 @@ import {
     ApplicationEventType,
     ScoutContextName,
     JSONValue,
+    ScoutEvent,
+    buildScoutConfiguration,
+    consoleLogFn,
 } from "../../lib/types";
 import { V1ApplicationEvent } from "../../lib/protocol/v1/requests";
 
