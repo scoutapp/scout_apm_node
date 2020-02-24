@@ -1,6 +1,9 @@
 import { Scout } from "./scout";
-import { ScoutConfiguration } from "./types";
-import { buildScoutConfiguration } from "./types";
+import { ScoutConfiguration, buildScoutConfiguration } from "./types";
+import { ExportBag } from "./types/integrations";
+
+// Create an export bag which will contain exports modified by scout
+export const EXPORT_BAG: ExportBag = {};
 
 // Global scout instance
 let SCOUT_INSTANCE: Scout;

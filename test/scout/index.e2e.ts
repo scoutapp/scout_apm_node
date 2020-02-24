@@ -2,23 +2,14 @@ import * as test from "tape";
 import * as path from "path";
 import { mkdtemp } from "fs-extra";
 
-import {
-    AgentLaunchDisabled,
-    ApplicationMetadata,
-    ExternalDownloadDisallowed,
-    InvalidConfiguration,
-    LogLevel,
-    NoAgentPresent,
-    Scout,
-    ScoutAgentEvent,
-    ScoutEvent,
-    ScoutRequest,
-    ScoutSpan,
-    buildScoutConfiguration,
-    consoleLogFn,
-} from "../../lib";
 
 import { ScoutEventRequestSentData } from "../../lib/scout";
+
+import {
+    Scout,
+    ScoutRequest,
+    ScoutSpan,
+} from "../../lib/scout";
 
 import {
     BaseAgentRequest,
@@ -27,7 +18,21 @@ import {
     ApplicationEventType,
     ScoutContextName,
     JSONValue,
+    ApplicationMetadata,
+    LogLevel,
+    buildScoutConfiguration,
+    consoleLogFn,
+    ScoutEvent,
+    AgentEvent as ScoutAgentEvent,
 } from "../../lib/types";
+
+import { 
+    AgentLaunchDisabled,
+    ExternalDownloadDisallowed, 
+    InvalidConfiguration, 
+    NoAgentPresent
+} from "../../lib/errors";
+
 import { V1ApplicationEvent } from "../../lib/protocol/v1/requests";
 
 import { pathExists, remove } from "fs-extra";

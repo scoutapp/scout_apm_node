@@ -35,7 +35,7 @@ import {
     scrubRequestPath,
     scrubRequestPathParams,
 } from "../types";
-import { EXPORT_BAG } from "../index";
+import { EXPORT_BAG } from "../global";
 import { getIntegrationForPackage } from "../integrations";
 
 import WebAgentDownloader from "../agent-downloaders/web";

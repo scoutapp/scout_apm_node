@@ -3,14 +3,19 @@ import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
 import { getIntegrationSymbol } from "../../lib/types/integrations";
+
+import {
+    ScoutEvent,
+    buildScoutConfiguration,
+} from "../../lib/types";
+
+import { setupRequireIntegrations } from "../../lib";
+
 import {
     Scout,
-    ScoutEvent,
     ScoutEventRequestSentData,
     ScoutRequest,
-    buildScoutConfiguration,
-    setupRequireIntegrations,
-} from "../../lib";
+} from "../../lib/scout";
 
 import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 

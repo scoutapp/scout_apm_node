@@ -13,8 +13,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const request = require("supertest");
 const randomstring_1 = require("randomstring");
-const lib_1 = require("../lib");
 const types_1 = require("../lib/types");
+const lib_1 = require("../lib");
+const scout_1 = require("../lib/scout");
 const express_1 = require("../lib/express");
 const TestUtil = require("./util");
 const TestConstants = require("./constants");
@@ -43,9 +44,9 @@ test("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_
     config.revisionSHA = sha;
     t.comment(`set revision sha to ${sha}`);
     // Generate generic app metadata
-    const appMeta = new lib_1.ApplicationMetadata(config, { frameworkVersion: "test" });
+    const appMeta = new types_1.ApplicationMetadata(config, { frameworkVersion: "test" });
     // Create scout instance, save it in the list of instances to be removed at test-suite end
-    const scout = new lib_1.Scout(config, { appMeta });
+    const scout = new scout_1.Scout(config, { appMeta });
     SCOUT_INSTANCES.push(scout);
     // Create a simple application and setup scout middleware
     const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
@@ -75,14 +76,14 @@ test("Scout sends basic controller span to dashboard", { timeout: TestUtil.DASHB
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
-    const appMeta = new lib_1.ApplicationMetadata(config, { frameworkVersion: "test" });
+    const appMeta = new types_1.ApplicationMetadata(config, { frameworkVersion: "test" });
     if (!config.key) {
         throw new Error("No Scout key! Provide one with the SCOUT_KEY ENV variable");
     }
     if (!config.name) {
         throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable");
     }
-    const scout = new lib_1.Scout(config, { appMeta });
+    const scout = new scout_1.Scout(config, { appMeta });
     SCOUT_INSTANCES.push(scout);
     // Set up a listener to wait for scout to report the transaction
     const listener = (message) => {
@@ -121,14 +122,14 @@ test("transaction with with postgres DB query to dashboard", { timeout: TestUtil
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
-    const appMeta = new lib_1.ApplicationMetadata(config, { frameworkVersion: "test" });
+    const appMeta = new types_1.ApplicationMetadata(config, { frameworkVersion: "test" });
     if (!config.key) {
         throw new Error("No Scout key! Provide one with the SCOUT_KEY ENV variable");
     }
     if (!config.name) {
         throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable");
     }
-    const scout = new lib_1.Scout(config, { appMeta });
+    const scout = new scout_1.Scout(config, { appMeta });
     SCOUT_INSTANCES.push(scout);
     let client;
     // Set up a listener to wait for scout to report the transaction
@@ -199,9 +200,9 @@ test("transaction with mysql query to dashboard", { timeout: TestUtil.DASHBOARD_
     if (!config.name) {
         throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable");
     }
-    const appMeta = new lib_1.ApplicationMetadata(config, { frameworkVersion: "test" });
+    const appMeta = new types_1.ApplicationMetadata(config, { frameworkVersion: "test" });
     // Build scout instance, get ready to hold an active mysql connection
-    const scout = new lib_1.Scout(config, { appMeta });
+    const scout = new scout_1.Scout(config, { appMeta });
     SCOUT_INSTANCES.push(scout);
     let conn;
     // Set up a listener to wait for scout to report the transaction
@@ -261,9 +262,9 @@ test("transaction with mysql2 query to dashboard", { timeout: TestUtil.DASHBOARD
     if (!config.name) {
         throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable");
     }
-    const appMeta = new lib_1.ApplicationMetadata(config, { frameworkVersion: "test" });
+    const appMeta = new types_1.ApplicationMetadata(config, { frameworkVersion: "test" });
     // Build scout instance, get ready to hold an active mysql connection
-    const scout = new lib_1.Scout(config, { appMeta });
+    const scout = new scout_1.Scout(config, { appMeta });
     SCOUT_INSTANCES.push(scout);
     let conn;
     // Set up a listener to wait for scout to report the transaction
@@ -329,7 +330,7 @@ test("Express pug integration dashboard send", { timeout: TestUtil.DASHBOARD_SEN
     if (!config.name) {
         throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable");
     }
-    const scout = new lib_1.Scout(config);
+    const scout = new scout_1.Scout(config);
     SCOUT_INSTANCES.push(scout);
     // Create an application that's set up to use pug templating
     const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({

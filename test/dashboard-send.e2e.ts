@@ -14,19 +14,9 @@ import * as request from "supertest";
 import { generate as generateRandomString } from "randomstring";
 
 import {
-    AgentLaunchDisabled,
     ApplicationMetadata,
-    ExternalDownloadDisallowed,
     LogLevel,
-    Scout,
-    ScoutEventRequestSentData,
-    ScoutRequest,
-    ScoutSpan,
     consoleLogFn,
-    setupRequireIntegrations,
-} from "../lib";
-
-import {
     AgentEvent,
     AgentRequestType,
     BaseAgentRequest,
@@ -35,6 +25,21 @@ import {
     ScoutContextName,
     buildScoutConfiguration,
 } from "../lib/types";
+
+import { setupRequireIntegrations } from "../lib";
+
+import {
+    ExternalDownloadDisallowed,
+    AgentLaunchDisabled,
+} from "../lib/errors";
+
+import {
+    Scout,
+    ScoutRequest,
+    ScoutSpan,
+    ScoutEventRequestSentData,
+} from "../lib/scout";
+
 
 import { V1FinishRequest } from "../lib/protocol/v1/requests";
 

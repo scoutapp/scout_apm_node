@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const scout_1 = require("./scout");
 const types_1 = require("./types");
+// Create an export bag which will contain exports modified by scout
+exports.EXPORT_BAG = {};
 // Global scout instance
 let SCOUT_INSTANCE;
 function setGlobalScoutInstance(scout) {

@@ -3,8 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const TestUtil = require("../util");
 const integrations_1 = require("../../lib/types/integrations");
-const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
+const lib_1 = require("../../lib");
+const scout_1 = require("../../lib/scout");
 const fixtures_1 = require("../fixtures");
 const Mustache = require("mustache");
 // The hook for mustache has to be triggered this way in a typescript context
@@ -17,7 +18,7 @@ test("the shim works", t => {
     t.end();
 });
 test("mustache rendering a string is captured", t => {
-    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
     }));
@@ -25,7 +26,7 @@ test("mustache rendering a string is captured", t => {
     const interpolated = fixtures_1.MUSTACHE_TEMPLATES.HELLO_WORLD_INTERPOLATED;
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data) => {
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         // Look up the template render span from the request
         data.request
             .getChildSpans()
@@ -39,7 +40,7 @@ test("mustache rendering a string is captured", t => {
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Activate the listener
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Start a scout transaction & render a string

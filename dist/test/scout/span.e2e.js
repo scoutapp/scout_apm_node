@@ -1,20 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
-const lib_1 = require("../../lib");
+const scout_1 = require("../../lib/scout");
 const types_1 = require("../../lib/types");
 const TestUtil = require("../util");
 const Constants = require("../../lib/constants");
 // https://github.com/scoutapp/scout_apm_node/issues/76
 test("spans should have traces attached", t => {
-    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
     }), { slowRequestThresholdMs: 50 });
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
         const request = data.request;
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         data.request
             .getChildSpans()
             .then(spans => {
@@ -28,7 +28,7 @@ test("spans should have traces attached", t => {
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Set up listener on the agent
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Create the first & second request
@@ -44,14 +44,14 @@ test("spans should have traces attached", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/107
 test("spans within the threshold should not have traces attached", t => {
-    const scout = new lib_1.Scout(lib_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
     }));
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
         const request = data.request;
-        scout.removeListener(lib_1.ScoutEvent.RequestSent, listener);
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         data.request
             .getChildSpans()
             .then(spans => {
@@ -63,7 +63,7 @@ test("spans within the threshold should not have traces attached", t => {
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Set up listener on the agent
-    scout.on(lib_1.ScoutEvent.RequestSent, listener);
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
     scout
         .setup()
         // Create the first & second request

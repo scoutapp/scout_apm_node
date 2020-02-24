@@ -1,35 +1,9 @@
-export {
-    Scout,
-    ScoutRequest,
-    ScoutSpan,
-    ScoutEventRequestSentData,
-} from "./scout";
-
-export {
-    AgentEvent as ScoutAgentEvent,
-    ScoutEvent,
-    ApplicationMetadata,
-    buildScoutConfiguration,
-    LogLevel,
-    consoleLogFn,
-    buildWinstonLogFn,
-} from "./types";
-
-export {
-    ExpressMiddlewareOptions as ScoutExpressOptions,
-    scoutMiddleware as expressMiddleware,
-} from "./express";
-
 export * from "./errors";
 
 import { Scout } from "./scout";
 import { ScoutConfiguration, buildScoutConfiguration } from "./types";
-import { ExportBag } from "./types/integrations";
 import { getIntegrationForPackage } from "./integrations";
-import { setGlobalScoutInstance, getGlobalScoutInstance } from "./global";
-
-// Create an export bag which will contain
-export const EXPORT_BAG: ExportBag = {};
+import { setGlobalScoutInstance, getGlobalScoutInstance, EXPORT_BAG } from "./global";
 
 // Set up PG integration
 // This is needed for use in Typescript projects since `import` will not
@@ -62,6 +36,9 @@ setupRequireIntegrations([
     "pug",
     "mustache",
     "ejs",
+
+    // Web frameworks
+    "express",
 
     // NodeJS internals
     "http",

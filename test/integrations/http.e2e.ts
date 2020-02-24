@@ -3,13 +3,17 @@ import * as request from "supertest";
 import { Application } from "express";
 
 import {
-    Scout,
     ScoutEvent,
-    ScoutEventRequestSentData,
-    ScoutRequest,
     buildScoutConfiguration,
-    setupRequireIntegrations,
-} from "../../lib";
+} from "../../lib/types";
+
+import { setupRequireIntegrations } from "../../lib";
+import {
+    Scout,
+    ScoutRequest,
+    ScoutSpan,
+    ScoutEventRequestSentData,
+} from "../../lib/scout";
 
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";

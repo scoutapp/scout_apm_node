@@ -4,13 +4,18 @@ import * as Constants from "../../lib/constants";
 
 import { getIntegrationSymbol } from "../../lib/types/integrations";
 import {
-    Scout,
     ScoutEvent,
-    ScoutEventRequestSentData,
-    ScoutRequest,
     buildScoutConfiguration,
-    setupRequireIntegrations,
-} from "../../lib";
+} from "../../lib/types";
+
+import { setupRequireIntegrations } from "../../lib";
+
+import {
+    Scout,
+    ScoutRequest,
+    ScoutSpan,
+    ScoutEventRequestSentData,
+} from "../../lib/scout";
 
 import { ScoutContextName } from "../../lib/types";
 import { SQL_QUERIES } from "../fixtures";

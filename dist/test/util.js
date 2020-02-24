@@ -15,8 +15,8 @@ const Constants = require("../lib/constants");
 const external_process_1 = require("../lib/agents/external-process");
 const web_1 = require("../lib/agent-downloaders/web");
 const types_1 = require("../lib/types");
+const scout_1 = require("../lib/scout");
 const config_1 = require("../lib/types/config");
-const lib_1 = require("../lib");
 const requests_1 = require("../lib/protocol/v1/requests");
 const app_root_dir_1 = require("app-root-dir");
 const getPort = require("get-port");
@@ -280,7 +280,7 @@ function buildCoreAgentSocketResponse(json) {
 exports.buildCoreAgentSocketResponse = buildCoreAgentSocketResponse;
 function buildTestScoutInstance(configOverride, options) {
     const cfg = types_1.buildScoutConfiguration(Object.assign({ allowShutdown: true, monitor: true }, configOverride));
-    return new lib_1.Scout(cfg, options);
+    return new scout_1.Scout(cfg, options);
 }
 exports.buildTestScoutInstance = buildTestScoutInstance;
 class TestContainerStartOpts {
@@ -731,7 +731,7 @@ function makeConnectedMySQL2Connection(provider) {
 exports.makeConnectedMySQL2Connection = makeConnectedMySQL2Connection;
 // Create a minimal object for easy printing (or util.inspecting) of scout requests/spans
 function minimal(reqOrSpan) {
-    if (reqOrSpan instanceof lib_1.ScoutRequest) {
+    if (reqOrSpan instanceof scout_1.ScoutRequest) {
         return {
             id: reqOrSpan.id,
             tags: reqOrSpan.getTags(),
@@ -740,7 +740,7 @@ function minimal(reqOrSpan) {
             childSpans: reqOrSpan.getChildSpansSync().map(minimal),
         };
     }
-    if (reqOrSpan instanceof lib_1.ScoutSpan) {
+    if (reqOrSpan instanceof scout_1.ScoutSpan) {
         return {
             id: reqOrSpan.id,
             operation: reqOrSpan.operation,

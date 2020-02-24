@@ -3,13 +3,18 @@ import * as request from "supertest";
 import { Express, Application } from "express";
 
 import {
-    Scout,
     ScoutEvent,
-    ScoutEventRequestSentData,
-    ScoutRequest,
     buildScoutConfiguration,
-    setupRequireIntegrations,
-} from "../../lib";
+} from "../../lib/types";
+
+import { setupRequireIntegrations } from "../../lib";
+
+import {
+    Scout,
+    ScoutRequest,
+    ScoutSpan,
+    ScoutEventRequestSentData,
+} from "../../lib/scout";
 
 // The hook for http has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
