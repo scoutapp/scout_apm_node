@@ -4,6 +4,8 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./errors"));
+var config_1 = require("./types/config");
+exports.buildScoutConfiguration = config_1.buildScoutConfiguration;
 const integrations_1 = require("./integrations");
 const global_1 = require("./global");
 // Set up PG integration

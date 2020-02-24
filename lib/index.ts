@@ -1,5 +1,7 @@
 export * from "./errors";
 
+export { buildScoutConfiguration } from "./types/config";
+
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, buildScoutConfiguration, JSONValue } from "./types";
 import { getIntegrationForPackage } from "./integrations";
