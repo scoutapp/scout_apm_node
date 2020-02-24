@@ -99,7 +99,7 @@ exports.default = {
                     .then(scout => {
                     const req = scout.getCurrentRequest();
                     if (!req) {
-                        throw new Error("Request not present");
+                        return;
                     }
                     return req.addContext({ name, value });
                 });
@@ -115,6 +115,27 @@ exports.default = {
                 }
                 return req.addContextSync({ name, value });
             },
+        },
+        ignoreTransaction(scout) {
+            return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateGlobalScoutInstance())
+                .then(scout => {
+                const req = scout.getCurrentRequest();
+                if (!req) {
+                    return;
+                }
+                return Promise.resolve(req.ignore());
+            });
+        },
+        ignoreTransactionSync(scout) {
+            scout = scout || global_1.getGlobalScoutInstance();
+            if (!scout) {
+                return;
+            }
+            const req = scout.getCurrentRequest();
+            if (!req) {
+                return;
+            }
+            return req.ignore();
         },
     },
 };
