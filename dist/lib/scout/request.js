@@ -13,6 +13,7 @@ class ScoutRequest {
         this.sent = false;
         this.childSpans = [];
         this.tags = {};
+        this.ignored = false;
         this.logFn = () => undefined;
         this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_REQUEST_PREFIX}${uuid_1.v4()}`;
         if (opts) {
@@ -30,6 +31,9 @@ class ScoutRequest {
             if (opts.started) {
                 this.started = opts.started;
             }
+            if (typeof opts.ignored === "boolean") {
+                this.ignored = opts.ignored;
+            }
         }
     }
     span(operation) {
@@ -41,6 +45,9 @@ class ScoutRequest {
     // Get the amount of time this span has been running in milliseconds
     getDurationMs() {
         return new Date().getTime() - this.getTimestamp().getTime();
+    }
+    isIgnored() {
+        return this.ignored;
     }
     /** @see ChildSpannable */
     startChildSpan(operation) {
@@ -171,6 +178,11 @@ class ScoutRequest {
         // Ensure a scout instance was available
         if (!inst) {
             this.logFn(`[scout/request/${this.id}] No scout instance available, send failed`);
+            return Promise.resolve(this);
+        }
+        // If request is ignored don't send it
+        if (this.ignored) {
+            this.logFn(`[scout/request/${this.id}] skipping ignored request send`, types_1.LogLevel.Warn);
             return Promise.resolve(this);
         }
         this.sending = index_1.sendStartRequest(inst, this)

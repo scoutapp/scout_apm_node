@@ -3,7 +3,6 @@ import * as path from "path";
 import * as process from "process";
 import { v4 as uuidv4 } from "uuid";
 import * as cls from "continuation-local-storage";
-import { Namespace } from "node-request-context";
 import * as semver from "semver";
 import { pathExists } from "fs-extra";
 
@@ -761,6 +760,11 @@ export class Scout extends EventEmitter {
  * @returns {Promise<ScoutRequest>} the passed in request
  */
 export function sendStartRequest(scout: Scout, req: ScoutRequest): Promise<ScoutRequest> {
+    if (req.isIgnored()) {
+        scout.log(`[scout] Skipping sending StartRequest for ignored req [${req.id}]`, LogLevel.Warn);
+        return Promise.resolve(req);
+    }
+
     const startReq = new Requests.V1StartRequest({
         requestId: req.id,
         timestamp: req.getTimestamp(),
@@ -782,6 +786,11 @@ export function sendStartRequest(scout: Scout, req: ScoutRequest): Promise<Scout
  * @returns {Promise<ScoutRequest>} the passed in request
  */
 export function sendStopRequest(scout: Scout, req: ScoutRequest): Promise<ScoutRequest> {
+    if (req.isIgnored()) {
+        scout.log(`[scout] Skipping sending StopRequest for ignored req [${req.id}]`, LogLevel.Warn);
+        return Promise.resolve(req);
+    }
+
     const stopReq = new Requests.V1FinishRequest(req.id, {timestamp: req.getEndTime()});
 
     return sendThroughAgent(scout, stopReq)
@@ -811,6 +820,11 @@ export function sendTagRequest(
     name: string,
     value: JSONValue | JSONValue[],
 ): Promise<void> {
+    if (req.isIgnored()) {
+        scout.log(`[scout] Skipping sending TagRequest for ignored req [${req.id}]`, LogLevel.Warn);
+        return Promise.resolve();
+    }
+
     const tagReq = new Requests.V1TagRequest(name, value, req.id);
 
     return sendThroughAgent(scout, tagReq)
@@ -828,6 +842,11 @@ export function sendTagRequest(
  * @returns {Promise<ScoutSpan>} the passed in span
  */
 export function sendStartSpan(scout: Scout, span: ScoutSpan): Promise<ScoutSpan> {
+    if (span.request && span.request.isIgnored()) {
+        scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.request.id}]`, LogLevel.Warn);
+        return Promise.resolve(span);
+    }
+
     const opts = {
         spanId: span.id,
         parentId: span.parent ? span.parent.id : undefined,
@@ -863,6 +882,11 @@ export function sendTagSpan(
     name: string,
     value: JSONValue | JSONValue[],
 ): Promise<void> {
+    if (span.request && span.request.isIgnored()) {
+        scout.log(`[scout] Skipping sending TagSpan for span [${span.id}] of ignored request [${span.request.id}]`, LogLevel.Warn);
+        return Promise.resolve();
+    }
+
     const tagSpanReq = new Requests.V1TagSpan(
         name,
         value,
@@ -886,6 +910,11 @@ export function sendTagSpan(
  * @returns {Promise<ScoutSpan>} the passed in request
  */
 export function sendStopSpan(scout: Scout, span: ScoutSpan): Promise<ScoutSpan> {
+    if (span.request && span.request.isIgnored()) {
+        scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.request.id}]`, LogLevel.Warn);
+        return Promise.resolve(span);
+    }
+
     const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id, {timestamp: span.getEndTime()});
 
     return sendThroughAgent(scout, stopSpanReq)

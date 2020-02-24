@@ -30,6 +30,7 @@ export interface ScoutRequestOptions {
     scoutInstance?: Scout;
     timestamp?: Date;
     started?: boolean;
+    ignored?: boolean;
 }
 
 export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable, Startable {
@@ -48,6 +49,8 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     private childSpans: ScoutSpan[] = [];
     private tags: { [key: string]: JSONValue | JSONValue[] } = {};
 
+    private ignored: boolean = false;
+
     constructor(opts?: ScoutRequestOptions) {
         this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_REQUEST_PREFIX}${uuidv4()}`;
 
@@ -59,6 +62,8 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
             // It's possible that the scout request has already been started
             // ex. when startRequest is used by a Scout instance
             if (opts.started) { this.started = opts.started; }
+
+            if (typeof opts.ignored === "boolean") { this.ignored = opts.ignored; }
         }
     }
 
@@ -73,6 +78,10 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     // Get the amount of time this span has been running in milliseconds
     public getDurationMs(): number {
         return new Date().getTime() - this.getTimestamp().getTime();
+    }
+
+    public isIgnored(): boolean {
+        return this.ignored;
     }
 
     /** @see ChildSpannable */
@@ -229,6 +238,12 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         // Ensure a scout instance was available
         if (!inst) {
             this.logFn(`[scout/request/${this.id}] No scout instance available, send failed`);
+            return Promise.resolve(this);
+        }
+
+        // If request is ignored don't send it
+        if (this.ignored) {
+            this.logFn(`[scout/request/${this.id}] skipping ignored request send`, LogLevel.Warn);
             return Promise.resolve(this);
         }
 
