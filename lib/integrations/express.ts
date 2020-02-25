@@ -57,6 +57,9 @@ export class ExpressIntegration extends RequireIntegration {
             return app;
         };
 
+        // Add all the properties that express normally has on the express fn export
+        Object.assign(expressExport, originalFn);
+
         return expressExport;
     }
 
