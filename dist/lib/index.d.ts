@@ -1,9 +1,11 @@
 export * from "./errors";
-export { buildScoutConfiguration } from "./types/config";
+import { scoutMiddleware as expressMiddleware } from "./express";
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
-import { ScoutConfiguration, JSONValue } from "./types";
+import { ScoutConfiguration, buildScoutConfiguration, JSONValue } from "./types";
 export declare function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<ScoutConfiguration>): void;
 declare const _default: {
+    expressMiddleware: typeof expressMiddleware;
+    buildScoutConfiguration: typeof buildScoutConfiguration;
     api: {
         WebTransaction: {
             run(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;

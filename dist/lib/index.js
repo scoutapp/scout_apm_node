@@ -4,8 +4,8 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./errors"));
-var config_1 = require("./types/config");
-exports.buildScoutConfiguration = config_1.buildScoutConfiguration;
+const express_1 = require("./express");
+const types_1 = require("./types");
 const integrations_1 = require("./integrations");
 const global_1 = require("./global");
 // Set up PG integration
@@ -38,6 +38,8 @@ setupRequireIntegrations([
     "http",
 ]);
 exports.default = {
+    expressMiddleware: express_1.scoutMiddleware,
+    buildScoutConfiguration: types_1.buildScoutConfiguration,
     api: {
         WebTransaction: {
             run(op, cb, scout) {
