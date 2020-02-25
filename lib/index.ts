@@ -1,16 +1,16 @@
-export * from "./errors";
+import * as Errors from "./errors";
 
 import { scoutMiddleware as expressMiddleware } from "./express";
 
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
-import { ScoutConfiguration, buildScoutConfiguration, JSONValue } from "./types";
+import { ScoutConfiguration, JSONValue, buildScoutConfiguration } from "./types";
 import { getIntegrationForPackage } from "./integrations";
 import { setGlobalScoutInstance, getGlobalScoutInstance, getOrCreateGlobalScoutInstance, EXPORT_BAG } from "./global";
 
 // Set up PG integration
 // This is needed for use in Typescript projects since `import` will not
 // run global code unless you do a whole-file import
-export function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<ScoutConfiguration>) {
+function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<ScoutConfiguration>) {
     packages = packages || [];
 
     packages.forEach(name => {
@@ -41,10 +41,11 @@ setupRequireIntegrations([
     "http",
 ]);
 
-export default {
-    expressMiddleware,
-
+const API = {
+    Errors,
     buildScoutConfiguration,
+    expressMiddleware,
+    setupRequireIntegrations,
 
     api: {
         WebTransaction: {
@@ -151,6 +152,7 @@ export default {
 
             return req.ignore();
         },
-
     },
 };
+
+export = API;

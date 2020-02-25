@@ -39,7 +39,7 @@ import { pathExists, remove } from "fs-extra";
 
 import * as TestUtil from "../util";
 
-import scoutExport from "../../lib";
+const scoutExport = require("../../lib");
 
 test("Scout object creation works without config", t => {
     const scout = new Scout();
