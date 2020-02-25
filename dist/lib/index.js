@@ -1,9 +1,5 @@
 "use strict";
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
-Object.defineProperty(exports, "__esModule", { value: true });
-__export(require("./errors"));
+const Errors = require("./errors");
 const express_1 = require("./express");
 const types_1 = require("./types");
 const integrations_1 = require("./integrations");
@@ -21,7 +17,6 @@ function setupRequireIntegrations(packages, scoutConfig) {
         }
     });
 }
-exports.setupRequireIntegrations = setupRequireIntegrations;
 // For pure NodeJS contexts this will be run automatically
 setupRequireIntegrations([
     // Databases
@@ -37,9 +32,11 @@ setupRequireIntegrations([
     // NodeJS internals
     "http",
 ]);
-exports.default = {
-    expressMiddleware: express_1.scoutMiddleware,
+const API = {
+    Errors,
     buildScoutConfiguration: types_1.buildScoutConfiguration,
+    expressMiddleware: express_1.scoutMiddleware,
+    setupRequireIntegrations,
     api: {
         WebTransaction: {
             run(op, cb, scout) {
@@ -143,3 +140,4 @@ exports.default = {
         },
     },
 };
+module.exports = API;

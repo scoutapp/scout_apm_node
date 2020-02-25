@@ -9,7 +9,7 @@ const global_1 = require("../../lib/global");
 const errors_1 = require("../../lib/errors");
 const fs_extra_2 = require("fs-extra");
 const TestUtil = require("../util");
-const lib_1 = require("../../lib");
+const scoutExport = require("../../lib");
 test("Scout object creation works without config", t => {
     const scout = new scout_1.Scout();
     t.assert(scout, "scout object was created");
@@ -549,7 +549,7 @@ test("export WebTransaction is working", t => {
     // Fail the test if a request is sent from the agent
     scout.on(types_1.ScoutEvent.RequestSent, listener);
     // The scout object should be created as sa result of doing the .run
-    lib_1.default.api.WebTransaction
+    scoutExport.api.WebTransaction
         .run("test-web-transaction-export", (done, { request }) => {
         t.pass("transaction was run");
         done();
@@ -579,7 +579,7 @@ test("export BackgroundTransaction is working", t => {
     // Fail the test if a request is sent from the agent
     scout.on(types_1.ScoutEvent.RequestSent, listener);
     // The scout object should be created as sa result of doing the .run
-    lib_1.default.api.BackgroundTransaction
+    scoutExport.api.BackgroundTransaction
         .run("test-background-transaction-export", (done, { request }) => {
         t.pass("transaction was run");
         done();
@@ -596,7 +596,7 @@ test("export Config returns a populated special object", t => {
     });
     global_1.getOrCreateGlobalScoutInstance(config)
         .then(scout => {
-        const config = lib_1.default.api.Config;
+        const config = scoutExport.api.Config;
         if (!config) {
             throw new Error("config is undefined");
         }
@@ -621,10 +621,10 @@ test("export Context.add add context (provided scout instance)", t => {
     // Fail the test if a request is sent from the agent
     scout.on(types_1.ScoutEvent.RequestSent, listener);
     // The scout object should be created as sa result of doing the .run
-    lib_1.default.api.WebTransaction.run("test-web-transaction-export", (done, { request }) => {
+    scoutExport.api.WebTransaction.run("test-web-transaction-export", (done, { request }) => {
         t.pass("transaction was run");
         // Add context
-        return lib_1.default.api.Context
+        return scoutExport.api.Context
             .add("testKey", "testValue", scout)
             .then(() => done());
     }, scout)
@@ -650,10 +650,10 @@ test("export Context.add add context (global scout instance)", t => {
         // Fail the test if a request is sent from the agent
         scout.on(types_1.ScoutEvent.RequestSent, listener);
         // The scout object should be created as sa result of doing the .run
-        lib_1.default.api.WebTransaction.run("test-web-transaction-export", (done, { request }) => {
+        scoutExport.api.WebTransaction.run("test-web-transaction-export", (done, { request }) => {
             t.pass("transaction was run");
             // Add context
-            return lib_1.default.api.Context
+            return scoutExport.api.Context
                 .add("testKey", "testValue")
                 .then(() => done());
         });
@@ -669,10 +669,10 @@ test("export Context.addSync to add context (provided scout instance)", t => {
     // so we use any to force the runtime check
     let req;
     // The scout object should be created as sa result of doing the .run
-    lib_1.default.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+    scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
         t.pass("transaction was run");
         req = request;
-        lib_1.default.api.Context.addSync("testKey", "testValue", scout);
+        scoutExport.api.Context.addSync("testKey", "testValue", scout);
     }, scout);
     if (!req) {
         throw new Error("req not saved");
@@ -693,10 +693,10 @@ test("export Context.addSync to add context (global scout instance)", t => {
     global_1.getOrCreateGlobalScoutInstance(config)
         .then(scout => {
         // The scout object should be created as sa result of doing the .run
-        lib_1.default.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+        scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
             t.pass("transaction was run");
             req = request;
-            lib_1.default.api.Context.addSync("testKey", "testValue");
+            scoutExport.api.Context.addSync("testKey", "testValue");
         });
         if (!req) {
             return TestUtil.shutdownScout(t, scout, new Error("req not saved"));
@@ -722,9 +722,9 @@ test("export ignoreTransaction successfully ignores transaction (global scout in
         // Fail the test if a request is sent from the agent
         scout.on(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, listener);
         // The scout object should be created as sa result of doing the .run
-        lib_1.default.api.WebTransaction.run("test-web-transaction-export", (done) => {
+        scoutExport.api.WebTransaction.run("test-web-transaction-export", (done) => {
             // Ignore the transaction
-            return lib_1.default.api.ignoreTransaction()
+            return scoutExport.api.ignoreTransaction()
                 .then(() => t.pass("ignoreTransaction completed"))
                 .then(() => done());
         });
@@ -747,9 +747,9 @@ test("export ignoreTransaction successfully ignores transaction (provided scout 
     scout
         .setup()
         .then(scout => {
-        lib_1.default.api.WebTransaction.run("test-web-transaction-export", (done) => {
+        scoutExport.api.WebTransaction.run("test-web-transaction-export", (done) => {
             // Ignore the transaction
-            return lib_1.default.api.ignoreTransaction(scout)
+            return scoutExport.api.ignoreTransaction(scout)
                 .then(() => t.pass("ignoreTransaction completed"))
                 .then(() => done());
         }, scout);
@@ -769,11 +769,11 @@ test("export ignoreTransactionSync successfully ignores transaction (provided sc
         .setup()
         .then(scout => {
         // The scout object should be created as sa result of doing the .run
-        lib_1.default.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+        scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
             t.pass("transaction was run");
             req = request;
             // Ignore the current request
-            lib_1.default.api.ignoreTransactionSync(scout);
+            scoutExport.api.ignoreTransactionSync(scout);
         }, scout);
         t.assert(req.isIgnored(), "request is ignored");
         return TestUtil.shutdownScout(t, scout);
@@ -790,11 +790,11 @@ test("export ignoreTransactionSync successfully ignores transaction (global scou
     global_1.getOrCreateGlobalScoutInstance(config)
         .then(scout => {
         // The scout object should be created as sa result of doing the .run
-        lib_1.default.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+        scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
             t.pass("transaction was run");
             req = request;
             // ignore the current request
-            lib_1.default.api.ignoreTransactionSync();
+            scoutExport.api.ignoreTransactionSync();
         });
         t.assert(req.isIgnored(), "request is ignored");
         return TestUtil.shutdownScout(t, scout);

@@ -1,11 +1,13 @@
-export * from "./errors";
+import * as Errors from "./errors";
 import { scoutMiddleware as expressMiddleware } from "./express";
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
-import { ScoutConfiguration, buildScoutConfiguration, JSONValue } from "./types";
-export declare function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<ScoutConfiguration>): void;
-declare const _default: {
-    expressMiddleware: typeof expressMiddleware;
+import { ScoutConfiguration, JSONValue, buildScoutConfiguration } from "./types";
+declare function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<ScoutConfiguration>): void;
+declare const API: {
+    Errors: typeof Errors;
     buildScoutConfiguration: typeof buildScoutConfiguration;
+    expressMiddleware: typeof expressMiddleware;
+    setupRequireIntegrations: typeof setupRequireIntegrations;
     api: {
         WebTransaction: {
             run(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;
@@ -26,4 +28,4 @@ declare const _default: {
         ignoreTransactionSync(scout?: Scout | undefined): void | ScoutRequest;
     };
 };
-export default _default;
+export = API;
