@@ -46,6 +46,8 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
             });
             return app;
         };
+        // Add all the properties that express normally has on the express fn export
+        Object.assign(expressExport, originalFn);
         return expressExport;
     }
     /**
