@@ -252,11 +252,11 @@ class Scout extends events_1.EventEmitter {
                         // so we can clear the current span entry
                         this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
                     }
-                    this.log(`[scout] Stopped span with ID [${span.id}]`, types_1.LogLevel.Debug);
                     // If we never made the span object then don't do anything
                     if (!span) {
                         return Promise.resolve();
                     }
+                    this.log(`[scout] Stopped span with ID [${span.id}]`, types_1.LogLevel.Debug);
                     return span.stop();
                 };
                 // bind the callback
@@ -467,6 +467,10 @@ class Scout extends events_1.EventEmitter {
             let request;
             let ranCb = false;
             const doneFn = () => {
+                // Finish if the request itself is no longer present
+                if (!request) {
+                    return Promise.resolve();
+                }
                 this.log(`[scout] Finishing and sending request with ID [${request.id}]`, types_1.LogLevel.Debug);
                 this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
                 return request.finishAndSend();
