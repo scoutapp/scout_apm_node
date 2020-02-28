@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.6] - 2020-02-28
+
+### Changed
+- bugfix: Fix Template/Render span not being passed to core-agent ([#162](https://github.com/scoutapp/scout_apm_node/issues/162))
+- bugfix: Fix unreachable core agent exception ([#161](https://github.com/scoutapp/scout_apm_node/issues/161))
+
 ## [1.1.5] - 2020-02-25
 
 ### Changed
@@ -48,7 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v1.1.5...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v1.1.6...HEAD
+[0.1.6]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.2...v0.1.3
