@@ -4,6 +4,8 @@ import { Scout } from "../scout";
 import { LogFn } from "./util";
 import * as Errors from "../errors";
 
+import { getGlobalScoutInstance } from "../global";
+
 let SYMBOL: symbol;
 
 export function getIntegrationSymbol(): symbol {
@@ -57,6 +59,11 @@ export abstract class RequireIntegration {
             // Add the getIntegrationSymbol() to the mysql export itself to show the shim was run
             exports[sym] = this;
 
+            // Set the scout instsance to the global one if there is one
+            // this is needed in cases where require()s are run dynamically, long after scout.setup()
+            // we assume that scout.setup() will set *one* instance of scout to be the global one
+            this.setScoutInstance(getGlobalScoutInstance());
+
             // Return the modified exports
             return exports;
         });
@@ -85,6 +92,7 @@ export abstract class RequireIntegration {
      * @param {Scout} scout
      */
     public setScoutInstance(scout: Scout) {
+        if (!scout) { return; }
         this.scout = scout;
     }
 }

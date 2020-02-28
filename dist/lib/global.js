@@ -7,6 +7,10 @@ exports.EXPORT_BAG = {};
 // Global scout instance
 let SCOUT_INSTANCE;
 function setGlobalScoutInstance(scout) {
+    if (SCOUT_INSTANCE) {
+        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", types_1.LogLevel.Error);
+        return;
+    }
     SCOUT_INSTANCE = scout;
     // When the global scout instance is set ensure that it's integrations are set
     scout.setupIntegrations();

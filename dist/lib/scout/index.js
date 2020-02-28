@@ -110,6 +110,8 @@ class Scout extends events_1.EventEmitter {
             this.uncaughtExceptionListenerFn = (err) => this.onUncaughtExceptionListener(err);
             process.on("uncaughtException", this.uncaughtExceptionListenerFn);
         })
+            // Set up this scout instance as the global one, if there isn't already one
+            .then(() => global_1.setGlobalScoutInstance(this))
             .then(() => this);
     }
     shutdown() {

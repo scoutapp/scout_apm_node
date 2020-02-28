@@ -35,7 +35,7 @@ import {
     scrubRequestPath,
     scrubRequestPathParams,
 } from "../types";
-import { EXPORT_BAG } from "../global";
+import { setGlobalScoutInstance, EXPORT_BAG } from "../global";
 import { getIntegrationForPackage } from "../integrations";
 
 import WebAgentDownloader from "../agent-downloaders/web";
@@ -200,6 +200,8 @@ export class Scout extends EventEmitter {
                 this.uncaughtExceptionListenerFn = (err) => this.onUncaughtExceptionListener(err);
                 process.on("uncaughtException", this.uncaughtExceptionListenerFn);
             })
+        // Set up this scout instance as the global one, if there isn't already one
+            .then(() => setGlobalScoutInstance(this))
             .then(() => this);
     }
 

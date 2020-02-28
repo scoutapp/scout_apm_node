@@ -1,5 +1,5 @@
 import { Scout } from "./scout";
-import { ScoutConfiguration, buildScoutConfiguration } from "./types";
+import { ScoutConfiguration, buildScoutConfiguration, LogLevel } from "./types";
 import { ExportBag } from "./types/integrations";
 
 // Create an export bag which will contain exports modified by scout
@@ -9,6 +9,11 @@ export const EXPORT_BAG: ExportBag = {};
 let SCOUT_INSTANCE: Scout;
 
 export function setGlobalScoutInstance(scout: Scout) {
+    if (SCOUT_INSTANCE) {
+        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", LogLevel.Error);
+        return;
+    }
+
     SCOUT_INSTANCE = scout;
     // When the global scout instance is set ensure that it's integrations are set
     scout.setupIntegrations();
