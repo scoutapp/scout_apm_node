@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const Hook = require("require-in-the-middle");
+const global_1 = require("../global");
 let SYMBOL;
 function getIntegrationSymbol() {
     if (SYMBOL) {
@@ -47,6 +48,10 @@ class RequireIntegration {
             exportBag[this.getPackageName()] = exports;
             // Add the getIntegrationSymbol() to the mysql export itself to show the shim was run
             exports[sym] = this;
+            // Set the scout instsance to the global one if there is one
+            // this is needed in cases where require()s are run dynamically, long after scout.setup()
+            // we assume that scout.setup() will set *one* instance of scout to be the global one
+            this.setScoutInstance(global_1.getGlobalScoutInstance());
             // Return the modified exports
             return exports;
         });
@@ -65,6 +70,9 @@ class RequireIntegration {
      * @param {Scout} scout
      */
     setScoutInstance(scout) {
+        if (!scout) {
+            return;
+        }
         this.scout = scout;
     }
 }
