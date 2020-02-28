@@ -3,7 +3,7 @@ import * as Errors from "./errors";
 import { scoutMiddleware as expressMiddleware } from "./express";
 
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
-import { ScoutConfiguration, JSONValue, buildScoutConfiguration } from "./types";
+import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
 import { getIntegrationForPackage } from "./integrations";
 import { setGlobalScoutInstance, getGlobalScoutInstance, getOrCreateGlobalScoutInstance, EXPORT_BAG } from "./global";
 
@@ -42,10 +42,18 @@ setupRequireIntegrations([
 ]);
 
 const API = {
-    Errors,
+    // Configuration building
     buildScoutConfiguration,
-    expressMiddleware,
+
+    Errors,
+
+    // Ingetrations
     setupRequireIntegrations,
+    expressMiddleware,
+
+    // Logging
+    consoleLogFn,
+    buildWinstonLogFn,
 
     api: {
         WebTransaction: {

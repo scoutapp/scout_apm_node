@@ -1,13 +1,15 @@
 import * as Errors from "./errors";
 import { scoutMiddleware as expressMiddleware } from "./express";
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
-import { ScoutConfiguration, JSONValue, buildScoutConfiguration } from "./types";
+import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
 declare function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<ScoutConfiguration>): void;
 declare const API: {
-    Errors: typeof Errors;
     buildScoutConfiguration: typeof buildScoutConfiguration;
-    expressMiddleware: typeof expressMiddleware;
+    Errors: typeof Errors;
     setupRequireIntegrations: typeof setupRequireIntegrations;
+    expressMiddleware: typeof expressMiddleware;
+    consoleLogFn: typeof consoleLogFn;
+    buildWinstonLogFn: typeof buildWinstonLogFn;
     api: {
         WebTransaction: {
             run(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;

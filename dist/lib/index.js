@@ -33,10 +33,15 @@ setupRequireIntegrations([
     "http",
 ]);
 const API = {
-    Errors,
+    // Configuration building
     buildScoutConfiguration: types_1.buildScoutConfiguration,
-    expressMiddleware: express_1.scoutMiddleware,
+    Errors,
+    // Ingetrations
     setupRequireIntegrations,
+    expressMiddleware: express_1.scoutMiddleware,
+    // Logging
+    consoleLogFn: types_1.consoleLogFn,
+    buildWinstonLogFn: types_1.buildWinstonLogFn,
     api: {
         WebTransaction: {
             run(op, cb, scout) {
