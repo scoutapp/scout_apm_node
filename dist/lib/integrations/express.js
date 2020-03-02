@@ -77,7 +77,7 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
                 // If no scout instance is available when the handler is executed,
                 // then run original handler
                 if (!integration.scout) {
-                    return handler.apply(this, originalArgsArr);
+                    return handler.apply(this, arguments);
                 }
                 try {
                     return handler.apply(this, arguments);
