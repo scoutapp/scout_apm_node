@@ -92,7 +92,7 @@ export class ExpressIntegration extends RequireIntegration {
             originalArgs[handlerIdx] = function(this: any) {
                 // If no scout instance is available when the handler is executed,
                 // then run original handler
-                if (!integration.scout) { return handler.apply(this, originalArgsArr); }
+                if (!integration.scout) { return handler.apply(this, arguments); }
 
                 try {
                     return handler.apply(this, arguments);
