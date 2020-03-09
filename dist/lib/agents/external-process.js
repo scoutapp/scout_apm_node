@@ -264,6 +264,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                     })
                         .catch(err => {
                         this.logFn(`[scout/external-process] Socket response parse error:\n ${err}`, types_1.LogLevel.Error);
+                        this.pool.release(socket);
                         this.emit(types_1.AgentEvent.SocketResponseParseError, err);
                     });
                 });
@@ -271,11 +272,18 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             // When socket closes emit information regarding closure
             socket.on("close", () => {
                 this.logFn("[scout/external-process] Socket closed", types_1.LogLevel.Debug);
+                this.pool.release(socket);
+                this.emit(types_1.AgentEvent.SocketDisconnected);
+            });
+            socket.on("disconnect", () => {
+                this.logFn("[scout/external-process] Socket disconnected", types_1.LogLevel.Debug);
+                this.pool.release(socket);
                 this.emit(types_1.AgentEvent.SocketDisconnected);
             });
             socket.on("error", (err) => {
                 this.emit(types_1.AgentEvent.SocketError, err);
                 this.logFn(`[scout/external-process] Socket connection error:\n${err}`, types_1.LogLevel.Error);
+                this.pool.release(socket);
                 reject(err);
             });
         });
