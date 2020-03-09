@@ -79,7 +79,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
                         // Stop the span ASAP
                         stopSpan();
                         // Add context to indicate error (we assume this will run *before* the span is sent off)
-                        span.addContextSync({ name: "error", value: "true" });
+                        span.addContextSync(types_1.ScoutContextName.Error, "true");
                         integration.logFn("[scout/integrations/mysql] Query failed", types_1.LogLevel.Trace);
                         // Run the callback
                         cb(err, results);
@@ -96,7 +96,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
                 arguments[cbIdx] = wrappedCb;
                 span
                     // Add query to the context
-                    .addContext({ name: types_1.ScoutContextName.DBStatement, value: builtQuery.sql })
+                    .addContext(types_1.ScoutContextName.DBStatement, builtQuery.sql)
                     // Do the query
                     .then(() => {
                     ranFn = true;

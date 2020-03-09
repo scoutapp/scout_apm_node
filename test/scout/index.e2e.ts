@@ -995,3 +995,40 @@ test("export ignoreTransactionSync successfully ignores transaction (global scou
             return TestUtil.shutdownScout(t, scout);
         });
 });
+
+// https://github.com/scoutapp/scout_apm_node/issues/171
+test("Adding context does not cause socket close", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+
+    const scout = new Scout(config);
+
+    const listener = (data: ScoutEventRequestSentData) => {
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        const req = data.request;
+        const val = req.getContextValue("test");
+        t.equals(val, "test", "context value was saved");
+
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    // Fail the test if a request is sent from the agent
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    // Create scout instance
+    scout
+        .setup()
+        .then(() => {
+            // The scout object should be created as sa result of doing the .run
+            scout.transactionSync("test-web-transaction-export", (request) => {
+                t.pass("transaction was run");
+
+                // Add some context
+                request.addContext("test", "test");
+            });
+        });
+});

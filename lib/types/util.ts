@@ -183,10 +183,14 @@ export interface ScoutTag {
     value: JSONValue | JSONValue[];
 }
 
+export function isScoutTag(obj: any): obj is ScoutTag {
+    return obj && "name" in obj && "value" in obj;
+}
+
 export interface Taggable {
     // Add a single context
-    addContext(tag: ScoutTag): Promise<this>;
-    addContextSync(tag: ScoutTag): this;
+    addContext(name: string, value: JSONValue | JSONValue[]): Promise<this>;
+    addContextSync(name: string, value: JSONValue | JSONValue[]): this;
 
     // Add multiple pieces of context
     addContexts(tags: ScoutTag[]): Promise<this>;

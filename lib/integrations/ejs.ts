@@ -32,7 +32,7 @@ export class EJSIntegration extends RequireIntegration {
             if (!integration.scout) { return originalFn.apply(null, originalArgs); }
 
             return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync({name: ScoutContextName.Name, value: "<string>"});
+                span.addContextSync(ScoutContextName.Name, "<string>");
                 return originalFn.apply(null, originalArgs);
             });
         };
@@ -74,7 +74,7 @@ export class EJSIntegration extends RequireIntegration {
                 }
 
                 // Add context of the file path
-                span.addContextSync({name: ScoutContextName.Name, value: path});
+                span.addContextSync(ScoutContextName.Name, path);
 
                 // After making the wrapped cb, replace the argument in the originalArgs array
                 if (!cbProvided) {

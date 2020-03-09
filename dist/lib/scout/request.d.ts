@@ -37,9 +37,9 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     /** @see ChildSpannable */
     getChildSpansSync(): ScoutSpan[];
     /** @see Taggable */
-    addContext(tag: ScoutTag): Promise<this>;
+    addContext(name: string, value: JSONValue | JSONValue[]): Promise<this>;
     /** @see Taggable */
-    addContextSync(tag: ScoutTag): this;
+    addContextSync(name: string, value: JSONValue | JSONValue[]): this;
     /** @see Taggable */
     addContexts(tags: ScoutTag[]): Promise<this>;
     /** @see Taggable */

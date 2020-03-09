@@ -142,13 +142,8 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                         return;
                     }
 
-                    const pathTag: ScoutTag = {
-                        name: Constants.SCOUT_PATH_TAG,
-                        value: scout.filterRequestPath(reqPath),
-                    };
-
                     // Add the path context
-                    scoutReq.addContext(pathTag)
+                    scoutReq.addContext(ScoutContextName.Path, scout.filterRequestPath(reqPath))
                     // Perform the rest of the request tracing
                         .then(() => {
                             // Save the scout request onto the request object
@@ -162,7 +157,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                                     setTimeout(() => {
                                         // Add context to indicate request as timed out
                                         scoutReq
-                                            .addContext({name: ScoutContextName.Timeout, value: "true"})
+                                            .addContext(ScoutContextName.Timeout, "true")
                                             .then(() => finishTransaction())
                                             .catch(() => {
                                                 if (opts && opts.logFn) {

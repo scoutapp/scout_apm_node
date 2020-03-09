@@ -62,9 +62,10 @@ export interface ScoutTag {
     name: string;
     value: JSONValue | JSONValue[];
 }
+export declare function isScoutTag(obj: any): obj is ScoutTag;
 export interface Taggable {
-    addContext(tag: ScoutTag): Promise<this>;
-    addContextSync(tag: ScoutTag): this;
+    addContext(name: string, value: JSONValue | JSONValue[]): Promise<this>;
+    addContextSync(name: string, value: JSONValue | JSONValue[]): this;
     addContexts(tags: ScoutTag[]): Promise<this>;
     addContextsSync(tags: ScoutTag[]): this;
     getContextValue(name: string): JSONValue | JSONValue[] | undefined;

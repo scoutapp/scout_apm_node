@@ -47,12 +47,12 @@ class ScoutSpan {
         return new Date().getTime() - this.getTimestamp().getTime();
     }
     /** @see Taggable */
-    addContext(tag) {
-        return new Promise((resolve) => resolve(this.addContextSync(tag)));
+    addContext(name, value) {
+        return new Promise((resolve) => resolve(this.addContextSync(name, value)));
     }
     /** @see Taggable */
-    addContextSync(tag) {
-        this.tags[tag.name] = tag.value;
+    addContextSync(name, value) {
+        this.tags[name] = value;
         return this;
     }
     /** @see Taggable */
@@ -61,7 +61,7 @@ class ScoutSpan {
     }
     /** @see Taggable */
     addContextsSync(tags) {
-        tags.forEach(t => this.addContextSync(t));
+        tags.forEach(t => this.addContextSync(t.name, t.value));
         return this;
     }
     /** @see Taggable */
@@ -142,11 +142,7 @@ class ScoutSpan {
             // Add stack trace to the span
             return stacktrace_js_1.get()
                 .then(this.processStackFrames)
-                .then(scoutFrames => ({
-                name: enum_1.ScoutContextName.Traceback,
-                value: scoutFrames,
-            }))
-                .then(tracebackTag => this.addContext(tracebackTag))
+                .then(scoutFrames => this.addContext(enum_1.ScoutContextName.Traceback, scoutFrames))
                 .then(() => this);
         });
     }
@@ -165,8 +161,7 @@ class ScoutSpan {
         }
         // Process the frames and add the context
         const scoutFrames = this.processStackFrames(stacktrace_js_1.getSync());
-        const tracebackTag = { name: enum_1.ScoutContextName.Traceback, value: scoutFrames };
-        this.addContextSync(tracebackTag);
+        this.addContextSync(enum_1.ScoutContextName.Traceback, scoutFrames);
         return this;
     }
     isStarted() {

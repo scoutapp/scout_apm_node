@@ -322,7 +322,7 @@ class Scout extends events_1.EventEmitter {
      * @param {ScoutTag} tag
      * @returns {Promise<void>} a promsie that resolves to the result of the callback
      */
-    addContext(tag, parentOverride) {
+    addContext(name, value, parentOverride) {
         let parent = this.getCurrentSpan() || this.getCurrentRequest();
         // If we're not in an async context then attempt to use the sync parent span or request
         if (!parent) {
@@ -337,8 +337,8 @@ class Scout extends events_1.EventEmitter {
             this.log("[scout] Failed to add context, no current parent instrumentation", types_1.LogLevel.Error);
             return Promise.resolve();
         }
-        this.log(`[scout] Adding context (${tag}) to parent ${parent.id}`, types_1.LogLevel.Debug);
-        return parent.addContext(tag);
+        this.log(`[scout] Adding context (${name}, ${value}) to parent ${parent.id}`, types_1.LogLevel.Debug);
+        return parent.addContext(name, value);
     }
     /**
      * Retrieve the current request using the async hook/continuation local storage machinery
@@ -560,7 +560,7 @@ class Scout extends events_1.EventEmitter {
             return;
         }
         // Mark the curernt request as errored
-        currentRequest.addContext({ name: types_1.ScoutContextName.Error, value: "true" });
+        currentRequest.addContext(types_1.ScoutContextName.Error, "true");
     }
 }
 exports.Scout = Scout;

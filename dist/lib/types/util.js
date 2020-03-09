@@ -136,3 +136,7 @@ function scrubRequestPath(path) {
     return path.split("?")[0];
 }
 exports.scrubRequestPath = scrubRequestPath;
+function isScoutTag(obj) {
+    return obj && "name" in obj && "value" in obj;
+}
+exports.isScoutTag = isScoutTag;

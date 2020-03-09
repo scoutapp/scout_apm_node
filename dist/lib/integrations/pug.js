@@ -29,7 +29,7 @@ class PugIntegration extends integrations_1.RequireIntegration {
                 return originalFn(src, options, callback);
             }
             return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync({ name: types_1.ScoutContextName.Name, value: "<string>" });
+                span.addContextSync(types_1.ScoutContextName.Name, "<string>");
                 return originalFn(src, options, callback);
             });
         };
@@ -51,7 +51,7 @@ class PugIntegration extends integrations_1.RequireIntegration {
                 return originalFn(path, options, callback);
             }
             return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync({ name: types_1.ScoutContextName.Name, value: path });
+                span.addContextSync(types_1.ScoutContextName.Name, path);
                 return originalFn(path, options, callback);
             });
         };

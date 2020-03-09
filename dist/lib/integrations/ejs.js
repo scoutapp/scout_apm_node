@@ -30,7 +30,7 @@ class EJSIntegration extends integrations_1.RequireIntegration {
                 return originalFn.apply(null, originalArgs);
             }
             return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync({ name: types_1.ScoutContextName.Name, value: "<string>" });
+                span.addContextSync(types_1.ScoutContextName.Name, "<string>");
                 return originalFn.apply(null, originalArgs);
             });
         };
@@ -66,7 +66,7 @@ class EJSIntegration extends integrations_1.RequireIntegration {
                     return originalFn.apply(null, originalArgs);
                 }
                 // Add context of the file path
-                span.addContextSync({ name: types_1.ScoutContextName.Name, value: path });
+                span.addContextSync(types_1.ScoutContextName.Name, path);
                 // After making the wrapped cb, replace the argument in the originalArgs array
                 if (!cbProvided) {
                     // if a callback wasn't provided then promise mode is being used
