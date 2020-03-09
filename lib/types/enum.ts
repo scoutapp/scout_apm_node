@@ -136,6 +136,7 @@ export enum ScoutContextName {
     Error = "error",
     Name = "name",
     URL = "url",
+    Path = "path",
     Timeout = "timeout",
     IgnoreTransaction = "ignore_transaction",
 }

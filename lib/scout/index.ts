@@ -464,7 +464,8 @@ export class Scout extends EventEmitter {
      * @returns {Promise<void>} a promsie that resolves to the result of the callback
      */
     public addContext(
-        tag: ScoutTag,
+        name: string,
+        value: JSONValue | JSONValue[],
         parentOverride?: ScoutRequest | ScoutSpan,
     ): Promise<ScoutRequest | ScoutSpan | void> {
         let parent = this.getCurrentSpan() || this.getCurrentRequest();
@@ -481,9 +482,9 @@ export class Scout extends EventEmitter {
             return Promise.resolve();
         }
 
-        this.log(`[scout] Adding context (${tag}) to parent ${parent.id}`, LogLevel.Debug);
+        this.log(`[scout] Adding context (${name}, ${value}) to parent ${parent.id}`, LogLevel.Debug);
 
-        return parent.addContext(tag);
+        return parent.addContext(name, value);
     }
 
     /**
@@ -754,7 +755,7 @@ export class Scout extends EventEmitter {
         if (!currentRequest) { return; }
 
         // Mark the curernt request as errored
-        currentRequest.addContext({ name: ScoutContextName.Error, value: "true"});
+        currentRequest.addContext(ScoutContextName.Error, "true");
     }
 
 }

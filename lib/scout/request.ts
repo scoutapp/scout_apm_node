@@ -21,7 +21,7 @@ import {
     sendStopSpan,
 } from "./index";
 
-import { ScoutContextName, ScoutEvent } from "../types";
+import { ScoutContextName, ScoutEvent, isScoutTag } from "../types";
 import * as Constants from "../constants";
 import * as Errors from "../errors";
 
@@ -67,7 +67,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
             if (typeof opts.ignored === "boolean") { this.ignored = opts.ignored; }
         }
 
-        if (this.ignored) { this.addContext({name: ScoutContextName.IgnoreTransaction, value: true}); }
+        if (this.ignored) { this.addContext(ScoutContextName.IgnoreTransaction, true); }
     }
 
     public span(operation: string): Promise<ScoutSpan> {
@@ -89,7 +89,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
     // Set a request as ignored
     public ignore(): this {
-        this.addContextSync({name: ScoutContextName.IgnoreTransaction, value: true});
+        this.addContextSync(ScoutContextName.IgnoreTransaction, true);
         this.ignored = true;
         return this;
     }
@@ -141,13 +141,13 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     }
 
     /** @see Taggable */
-    public addContext(tag: ScoutTag): Promise<this> {
-        return new Promise((resolve) => resolve(this.addContextSync(tag)));
+    public addContext(name: string, value: JSONValue | JSONValue[]): Promise<this> {
+        return new Promise((resolve) => resolve(this.addContextSync(name, value)));
     }
 
     /** @see Taggable */
-    public addContextSync(tag: ScoutTag): this {
-        this.tags[tag.name] = tag.value;
+    public addContextSync(name: string, value: JSONValue | JSONValue[]): this {
+        this.tags[name] = value;
         return this;
     }
 
@@ -158,7 +158,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
     /** @see Taggable */
     public addContextsSync(tags: ScoutTag[]): this {
-        tags.forEach(t => this.addContextSync(t));
+        tags.forEach(t => this.addContextSync(t.name, t.value));
         return this;
     }
 

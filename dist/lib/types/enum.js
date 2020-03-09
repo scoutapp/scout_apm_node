@@ -126,6 +126,7 @@ var ScoutContextName;
     ScoutContextName["Error"] = "error";
     ScoutContextName["Name"] = "name";
     ScoutContextName["URL"] = "url";
+    ScoutContextName["Path"] = "path";
     ScoutContextName["Timeout"] = "timeout";
     ScoutContextName["IgnoreTransaction"] = "ignore_transaction";
 })(ScoutContextName = exports.ScoutContextName || (exports.ScoutContextName = {}));

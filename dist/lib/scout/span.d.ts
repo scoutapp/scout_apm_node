@@ -42,9 +42,9 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     getTimestamp(): Date;
     getDurationMs(): number;
     /** @see Taggable */
-    addContext(tag: ScoutTag): Promise<this>;
+    addContext(name: string, value: JSONValue | JSONValue[]): Promise<this>;
     /** @see Taggable */
-    addContextSync(tag: ScoutTag): this;
+    addContextSync(name: string, value: JSONValue | JSONValue[]): this;
     /** @see Taggable */
     addContexts(tags: ScoutTag[]): Promise<this>;
     /** @see Taggable */

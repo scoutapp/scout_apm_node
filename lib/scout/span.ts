@@ -101,13 +101,13 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     }
 
     /** @see Taggable */
-    public addContext(tag: ScoutTag): Promise<this> {
-        return new Promise((resolve) => resolve(this.addContextSync(tag)));
+    public addContext(name: string, value: JSONValue | JSONValue[]): Promise<this> {
+        return new Promise((resolve) => resolve(this.addContextSync(name, value)));
     }
 
     /** @see Taggable */
-    public addContextSync(tag: ScoutTag): this {
-        this.tags[tag.name] = tag.value;
+    public addContextSync(name: string, value: JSONValue | JSONValue[]): this {
+        this.tags[name] = value;
         return this;
     }
 
@@ -118,7 +118,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     /** @see Taggable */
     public addContextsSync(tags: ScoutTag[]): this {
-        tags.forEach(t => this.addContextSync(t));
+        tags.forEach(t => this.addContextSync(t.name, t.value));
         return this;
     }
 
@@ -218,11 +218,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
                 // Add stack trace to the span
                 return getStackTrace()
                     .then(this.processStackFrames)
-                    .then(scoutFrames => ({
-                        name: ScoutContextName.Traceback,
-                        value: scoutFrames,
-                    }))
-                    .then(tracebackTag => this.addContext(tracebackTag))
+                    .then(scoutFrames => this.addContext(ScoutContextName.Traceback, scoutFrames))
                     .then(() => this);
             });
     }
@@ -244,8 +240,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
         // Process the frames and add the context
         const scoutFrames = this.processStackFrames(getStackTraceSync());
-        const tracebackTag: ScoutTag = {name: ScoutContextName.Traceback, value: scoutFrames};
-        this.addContextSync(tracebackTag);
+        this.addContextSync(ScoutContextName.Traceback, scoutFrames);
 
         return this;
     }

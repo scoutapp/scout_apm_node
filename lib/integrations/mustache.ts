@@ -33,7 +33,7 @@ export class MustacheIntegration extends RequireIntegration {
             if (!integration.scout) { return originalFn.apply(this, originalArgs); }
 
             return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
-                span.addContextSync({name: ScoutContextName.Name, value: "<string>"});
+                span.addContextSync(ScoutContextName.Name, "<string>");
                 return originalFn.apply(this, originalArgs);
             });
         };

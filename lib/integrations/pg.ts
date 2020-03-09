@@ -111,7 +111,7 @@ export class PGIntegration extends RequireIntegration {
 
                 return span
                 // Update span context with the DB statement
-                    .addContext({name: ScoutContextName.DBStatement, value: (query as any).text})
+                    .addContext(ScoutContextName.DBStatement, (query as any).text)
                 // Run pg's query function, saving the result
                     .then(() => originalQueryFn.apply(this, originalArgs))
                     .then(r => queryResult = r)
@@ -128,7 +128,7 @@ export class PGIntegration extends RequireIntegration {
 
                         // Mark the span as errored, we assume that the span won't be sent before this line can run
                         // otherwise the context would miss it's window to be sent
-                        if (span) { span.addContext({name: "error", value: "true"}); }
+                        if (span) { span.addContext(ScoutContextName.Error, "true"); }
 
                         integration.logFn("[scout/integrations/pg] Query failed", LogLevel.Trace);
 

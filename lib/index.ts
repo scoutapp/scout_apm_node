@@ -126,7 +126,7 @@ const API = {
                         const req = scout.getCurrentRequest();
                         if (!req) { return; }
 
-                        return req.addContext({name, value});
+                        return req.addContext(name, value);
                     });
             },
 
@@ -137,7 +137,7 @@ const API = {
                 const req = scout.getCurrentRequest();
                 if (!req) { return; }
 
-                return req.addContextSync({name, value});
+                return req.addContextSync(name, value);
             },
         },
 

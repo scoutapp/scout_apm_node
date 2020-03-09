@@ -79,7 +79,7 @@ export class HttpIntegration extends RequireIntegration {
                 if (!span) { return; }
 
                 reqSpan = span;
-                reqSpan.addContext({name: ScoutContextName.URL, value: url});
+                reqSpan.addContext(ScoutContextName.URL, url);
             });
 
             // Start the actual request
@@ -87,7 +87,7 @@ export class HttpIntegration extends RequireIntegration {
 
             // If the request times out at any point add the context to the span
             request.once("timeout", () => {
-                reqSpan.addContext({name: ScoutContextName.Timeout, value: "true"});
+                reqSpan.addContext(ScoutContextName.Timeout, "true");
             });
 
             // After the request has started we'll finish the instrumentation
@@ -97,7 +97,7 @@ export class HttpIntegration extends RequireIntegration {
             });
 
             request.once("error", () => {
-                reqSpan.addContext({name: ScoutContextName.Error, value: "true"});
+                reqSpan.addContext(ScoutContextName.Error, "true");
             });
 
             request.once("close", () => {

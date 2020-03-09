@@ -37,7 +37,7 @@ class ScoutRequest {
             }
         }
         if (this.ignored) {
-            this.addContext({ name: types_2.ScoutContextName.IgnoreTransaction, value: true });
+            this.addContext(types_2.ScoutContextName.IgnoreTransaction, true);
         }
     }
     span(operation) {
@@ -55,7 +55,7 @@ class ScoutRequest {
     }
     // Set a request as ignored
     ignore() {
-        this.addContextSync({ name: types_2.ScoutContextName.IgnoreTransaction, value: true });
+        this.addContextSync(types_2.ScoutContextName.IgnoreTransaction, true);
         this.ignored = true;
         return this;
     }
@@ -96,12 +96,12 @@ class ScoutRequest {
         return this.childSpans.slice();
     }
     /** @see Taggable */
-    addContext(tag) {
-        return new Promise((resolve) => resolve(this.addContextSync(tag)));
+    addContext(name, value) {
+        return new Promise((resolve) => resolve(this.addContextSync(name, value)));
     }
     /** @see Taggable */
-    addContextSync(tag) {
-        this.tags[tag.name] = tag.value;
+    addContextSync(name, value) {
+        this.tags[name] = value;
         return this;
     }
     /** @see Taggable */
@@ -110,7 +110,7 @@ class ScoutRequest {
     }
     /** @see Taggable */
     addContextsSync(tags) {
-        tags.forEach(t => this.addContextSync(t));
+        tags.forEach(t => this.addContextSync(t.name, t.value));
         return this;
     }
     /** @see Taggable */

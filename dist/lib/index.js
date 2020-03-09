@@ -107,7 +107,7 @@ const API = {
                     if (!req) {
                         return;
                     }
-                    return req.addContext({ name, value });
+                    return req.addContext(name, value);
                 });
             },
             addSync(name, value, scout) {
@@ -119,7 +119,7 @@ const API = {
                 if (!req) {
                     return;
                 }
-                return req.addContextSync({ name, value });
+                return req.addContextSync(name, value);
             },
         },
         ignoreTransaction(scout) {
