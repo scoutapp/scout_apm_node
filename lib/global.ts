@@ -31,7 +31,7 @@ export function getOrCreateGlobalScoutInstance(
     if (SCOUT_INSTANCE) { return SCOUT_INSTANCE.setup(); }
     if (creating) { return creating; }
 
-    setGlobalScoutInstance(new Scout(config || buildScoutConfiguration(), opts));
+    setGlobalScoutInstance(new Scout(buildScoutConfiguration(config), opts));
 
     // Set creating to the currently executing promise to ensure that setup won't be triggered twice
     creating = getGlobalScoutInstance().setup();
