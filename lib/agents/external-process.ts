@@ -270,12 +270,16 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                     .then(s => socket = s)
                 // Once a socket is connected we must send the current registration & app metadata
                     .then(() => {
-                        socket.write(this.registrationMsg.toBinary());
-                        this.emit(AgentEvent.RequestSent, this.registrationMsg);
+                        if (this.registrationMsg) {
+                            socket.write(this.registrationMsg.toBinary());
+                            this.emit(AgentEvent.RequestSent, this.registrationMsg);
+                        }
                     })
                     .then(() => {
-                        socket.write(this.appMetadata.toBinary());
-                        this.emit(AgentEvent.RequestSent, this.appMetadata);
+                        if (this.appMetadata) {
+                            socket.write(this.appMetadata.toBinary());
+                            this.emit(AgentEvent.RequestSent, this.appMetadata);
+                        }
                     })
                 // Once we've sent the registration & app metadata the socket is ready to use
                     .then(() => socket);

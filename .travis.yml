@@ -7,9 +7,7 @@ cache:
   yarn: true
 
 script:
-  - make test-unit test-int
-  - make test-e2e
-  - make test-integrations
+  - make test
 
 services:
   - docker
