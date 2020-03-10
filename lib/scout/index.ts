@@ -199,9 +199,14 @@ export class Scout extends EventEmitter {
                 }
             })
         // Register the application
-            .then(() => this.sendRegistrationRequest())
-        // Send the application metadata
-            .then(() => this.sendAppMetadataEvent())
+            .then(() => this.agent.setRegistrationAndMetadata(
+                new Requests.V1Register(
+                    this.config.name || "",
+                    this.config.key || "",
+                    APIVersion.V1,
+                ),
+                this.buildAppMetadataEvent(),
+            ))
         // Set up integration(s)
             .then(() => this.setupIntegrations())
         // Set up process uncaught exception handler
@@ -735,29 +740,6 @@ export class Scout extends EventEmitter {
             this.applicationMetadata.serialize(),
             {timestamp: new Date()},
         );
-    }
-
-    // Helper for sending app metadata
-    private sendAppMetadataEvent(): Promise<void> {
-        return sendThroughAgent(this, this.buildAppMetadataEvent())
-            .then(() => undefined)
-            .catch(err => {
-                this.log("[scout] failed to send start request request", LogLevel.Error);
-            });
-    }
-
-    // Send the app registration request to the current agent
-    private sendRegistrationRequest(): Promise<void> {
-        this.log(`[scout] registering application [${this.config.name || ""}]`, LogLevel.Debug);
-        return sendThroughAgent(this, new Requests.V1Register(
-                this.config.name || "",
-                this.config.key || "",
-                APIVersion.V1,
-            ))
-            .then(() => undefined)
-            .catch(err => {
-                this.log("[scout] failed to send app registration request", LogLevel.Error);
-            });
     }
 
     // Helper function for setting up an agent to be part of the scout instance

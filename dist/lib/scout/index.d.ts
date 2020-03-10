@@ -150,8 +150,6 @@ export declare class Scout extends EventEmitter {
      */
     private startRequestSync;
     private buildAppMetadataEvent;
-    private sendAppMetadataEvent;
-    private sendRegistrationRequest;
     private setupAgent;
     private onUncaughtExceptionListener;
 }

@@ -140,3 +140,11 @@ function isScoutTag(obj) {
     return obj && "name" in obj && "value" in obj;
 }
 exports.isScoutTag = isScoutTag;
+function waitMs(ms) {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve();
+        }, ms);
+    });
+}
+exports.waitMs = waitMs;

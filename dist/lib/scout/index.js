@@ -101,9 +101,7 @@ class Scout extends events_1.EventEmitter {
             }
         })
             // Register the application
-            .then(() => this.sendRegistrationRequest())
-            // Send the application metadata
-            .then(() => this.sendAppMetadataEvent())
+            .then(() => this.agent.setRegistrationAndMetadata(new Requests.V1Register(this.config.name || "", this.config.key || "", types_1.APIVersion.V1), this.buildAppMetadataEvent()))
             // Set up integration(s)
             .then(() => this.setupIntegrations())
             // Set up process uncaught exception handler
@@ -541,23 +539,6 @@ class Scout extends events_1.EventEmitter {
     }
     buildAppMetadataEvent() {
         return new Requests.V1ApplicationEvent(`Pid: ${process.pid}`, types_1.ApplicationEventType.ScoutMetadata, this.applicationMetadata.serialize(), { timestamp: new Date() });
-    }
-    // Helper for sending app metadata
-    sendAppMetadataEvent() {
-        return sendThroughAgent(this, this.buildAppMetadataEvent())
-            .then(() => undefined)
-            .catch(err => {
-            this.log("[scout] failed to send start request request", types_1.LogLevel.Error);
-        });
-    }
-    // Send the app registration request to the current agent
-    sendRegistrationRequest() {
-        this.log(`[scout] registering application [${this.config.name || ""}]`, types_1.LogLevel.Debug);
-        return sendThroughAgent(this, new Requests.V1Register(this.config.name || "", this.config.key || "", types_1.APIVersion.V1))
-            .then(() => undefined)
-            .catch(err => {
-            this.log("[scout] failed to send app registration request", types_1.LogLevel.Error);
-        });
     }
     // Helper function for setting up an agent to be part of the scout instance
     setupAgent(agent) {

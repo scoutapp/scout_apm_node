@@ -10,6 +10,7 @@ const generic_pool_1 = require("generic-pool");
 const promise_timeout_1 = require("promise-timeout");
 const types_1 = require("../types");
 const responses_1 = require("../protocol/v1/responses");
+const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 5000;
 class ExternalProcessAgent extends events_1.EventEmitter {
     constructor(opts, logFn) {
         super();
@@ -87,7 +88,9 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 .then(socket => {
                 socket.write(msg.toBinary());
                 this.emit(types_1.AgentEvent.RequestSent, msg);
-                return this.pool.release(socket);
+                if (this.pool.isBorrowedResource(socket)) {
+                    this.pool.release(socket);
+                }
             }, err => { throw err; })
                 .then(() => resolve());
         });
@@ -124,10 +127,17 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                     // Resolve the encasing promise
                     resolve(resp);
                     // Release the socket back into the pool
-                    this.pool.release(socket);
+                    if (this.pool.isBorrowedResource(socket)) {
+                        this.pool.release(socket);
+                    }
                 };
                 // Set up a listener on our own event emitter for the parsed socket response
                 this.on(types_1.AgentEvent.SocketResponseReceived, listener);
+                // If the socket fails, we'll likely never get to remove the listener (by running it) above,
+                // so let's attach an onFailure to the socket that should be used if the socket fails elsewhere)
+                socket.onFailure = () => {
+                    this.removeListener(types_1.AgentEvent.SocketResponseReceived, listener);
+                };
                 // Send the message over the socket
                 const result = socket.write(msg.toBinary());
                 this.emit(types_1.AgentEvent.RequestSent, msg);
@@ -136,7 +146,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             // Socket acquisition failed
             err => { throw err; });
         });
-        return promise_timeout_1.timeout(sendPromise, 5000);
+        return promise_timeout_1.timeout(sendPromise, DOMAIN_SOCKET_CREATE_BACKOFF_MS * 2);
     }
     /**
      * Check if the process is present
@@ -166,6 +176,17 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         });
     }
     /**
+     * Set the registration and metadata that will be used by the agent
+     * as the first thing to send whenever a connection is established
+     *
+     * @param {V1Register} registerMsg - Registration message
+     * @param {V1ApplicationEvent} metadata - App metadata
+     */
+    setRegistrationAndMetadata(registerMsg, appMetadata) {
+        this.registrationMsg = registerMsg;
+        this.appMetadata = appMetadata;
+    }
+    /**
      * Initialize the socket pool
      *
      * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
@@ -181,7 +202,22 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                     return this.disconnect()
                         .then(() => Promise.reject(new Errors.ConnectionPoolDisabled()));
                 }
-                return this.createDomainSocket();
+                let socket;
+                // If there is at least one pool error, let's wait a bit between creating domain sockets
+                return types_1.waitMs(this.poolErrors.length > 0 ? DOMAIN_SOCKET_CREATE_BACKOFF_MS : 0)
+                    .then(() => this.createDomainSocket())
+                    .then(s => socket = s)
+                    // Once a socket is connected we must send the current registration & app metadata
+                    .then(() => {
+                    socket.write(this.registrationMsg.toBinary());
+                    this.emit(types_1.AgentEvent.RequestSent, this.registrationMsg);
+                })
+                    .then(() => {
+                    socket.write(this.appMetadata.toBinary());
+                    this.emit(types_1.AgentEvent.RequestSent, this.appMetadata);
+                })
+                    // Once we've sent the registration & app metadata the socket is ready to use
+                    .then(() => socket);
             },
             destroy: (socket) => Promise.resolve(socket.destroy()),
             validate: (socket) => Promise.resolve(!socket.destroyed),
@@ -192,19 +228,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             if (err.code === "ECONNREFUSED") {
                 const socketPath = this.getSocketPath();
                 this.logFn(`Socket connection failed, is core-agent running and listening at [${socketPath}]?`, types_1.LogLevel.Error);
-                // In the case that connection fails repeatedly we'll need to stop trying
-                if (this.poolErrors.length > this.maxPoolErrors) {
-                    this.logFn("maxPoolErrors reached on a refused connection error, disabling pool...", types_1.LogLevel.Error);
-                    this.poolDisabled = true;
-                    this.emit(types_1.AgentEvent.SocketError, err);
-                }
-            }
-            // If the agent is supposedly running, but connection fails too many times for any reason
-            if (!this.stopped && this.poolErrors.length > this.maxPoolErrors) {
-                const socketPath = this.getSocketPath();
-                const msg = `Connection attempt limit reached -- is core-agent is listening on [${socketPath}]?`;
-                this.emit("error", new Errors.ResourceAllocationFailureLimitExceeded(msg));
-                this.disconnect();
+                this.emit(types_1.AgentEvent.SocketError, err);
             }
         });
         return Promise.resolve(this.pool);
@@ -264,7 +288,9 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                     })
                         .catch(err => {
                         this.logFn(`[scout/external-process] Socket response parse error:\n ${err}`, types_1.LogLevel.Error);
-                        this.pool.release(socket);
+                        if (this.pool.isBorrowedResource(socket)) {
+                            this.pool.release(socket);
+                        }
                         this.emit(types_1.AgentEvent.SocketResponseParseError, err);
                     });
                 });
@@ -272,18 +298,39 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             // When socket closes emit information regarding closure
             socket.on("close", () => {
                 this.logFn("[scout/external-process] Socket closed", types_1.LogLevel.Debug);
-                this.pool.release(socket);
+                // Run cleanup method
+                if ("onFailure" in socket) {
+                    socket.onFailure();
+                }
+                // If the socket is closed, destroy the resource, removing it from the pool
+                if (this.pool.isBorrowedResource(socket)) {
+                    this.pool.destroy(socket);
+                }
                 this.emit(types_1.AgentEvent.SocketDisconnected);
             });
             socket.on("disconnect", () => {
                 this.logFn("[scout/external-process] Socket disconnected", types_1.LogLevel.Debug);
-                this.pool.release(socket);
+                // Run cleanup method
+                if ("onFailure" in socket) {
+                    socket.onFailure();
+                }
+                // If the socket has disconnected destroy & remove from pool
+                if (this.pool.isBorrowedResource(socket)) {
+                    this.pool.destroy(socket);
+                }
                 this.emit(types_1.AgentEvent.SocketDisconnected);
             });
             socket.on("error", (err) => {
                 this.emit(types_1.AgentEvent.SocketError, err);
                 this.logFn(`[scout/external-process] Socket connection error:\n${err}`, types_1.LogLevel.Error);
-                this.pool.release(socket);
+                // Run cleanup method
+                if ("onFailure" in socket) {
+                    socket.onFailure();
+                }
+                // If an error occurrs on the socket, destroy the socket
+                if (this.pool.isBorrowedResource(socket)) {
+                    this.pool.destroy(socket);
+                }
                 reject(err);
             });
         });

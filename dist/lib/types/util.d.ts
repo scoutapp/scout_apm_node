@@ -75,3 +75,4 @@ export interface ScoutStackFrame {
     file?: string;
     function?: string;
 }
+export declare function waitMs(ms: number): Promise<void>;

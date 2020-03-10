@@ -2,6 +2,7 @@
 import { EventEmitter } from "events";
 import { ChildProcess } from "child_process";
 import { Agent, BaseAgentRequest, BaseAgentResponse, AgentStatus, AgentType, ProcessOptions, LogFn } from "../types";
+import { V1Register, V1ApplicationEvent } from "../protocol/v1/requests";
 export default class ExternalProcessAgent extends EventEmitter implements Agent {
     private readonly agentType;
     private readonly opts;
@@ -14,6 +15,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private detachedProcess;
     private stopped;
     private logFn;
+    private registrationMsg;
+    private appMetadata;
     constructor(opts: ProcessOptions, logFn?: LogFn);
     /** @see Agent */
     type(): Readonly<AgentType>;
@@ -39,6 +42,14 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * Stop the process (if one is running)
      */
     stopProcess(): Promise<void>;
+    /**
+     * Set the registration and metadata that will be used by the agent
+     * as the first thing to send whenever a connection is established
+     *
+     * @param {V1Register} registerMsg - Registration message
+     * @param {V1ApplicationEvent} metadata - App metadata
+     */
+    setRegistrationAndMetadata(registerMsg: V1Register, appMetadata: V1ApplicationEvent): void;
     /**
      * Initialize the socket pool
      *
