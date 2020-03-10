@@ -75,6 +75,7 @@
     "@types/tape": "4.2.33",
     "@types/tmp": "0.0.34",
     "@types/uuid": "3.4.4",
+    "app-root-path": "^3.0.0",
     "continuation-local-storage": "^3.2.1",
     "detect-libc": "1.0.3",
     "download": "7.1.0",

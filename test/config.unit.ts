@@ -4,6 +4,7 @@ import * as path from "path";
 import * as test from "tape";
 import { Test } from "tape";
 import { version as processVersion } from "process";
+import { get as getRootDir } from "app-root-dir";
 
 import {
     ScoutConfiguration,
@@ -151,6 +152,18 @@ test("core agent dir matches python", (t: Test) => {
 
     t.equals(config.coreAgentDir, expectedCoreAgentDir, "core agent directory matches the expected value");
     t.equals(scout.getSocketPath(), `unix://${expectedSocketPath}`, "socket path matches expected value");
+
+    t.end();
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/169
+test("application root is present in default", (t: Test) => {
+    const config = buildScoutConfiguration();
+
+    // Application root is supposed to be the folder *above* the project's folder
+    const expectedApplicationRoot = path.dirname(getRootDir());
+
+    t.equals(config.applicationRoot, expectedApplicationRoot, `root dir matches expected [${expectedApplicationRoot}]`);
 
     t.end();
 });
