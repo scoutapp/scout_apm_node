@@ -1,3 +1,4 @@
+import { StackFrame } from "stacktrace-js";
 import { LogFn, Taggable, Stoppable, Startable, ScoutTag, JSONValue } from "../types";
 import ScoutRequest from "./request";
 import { Scout } from "./index";
@@ -38,7 +39,9 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private endTime;
     private childSpans;
     private tags;
+    private traceFrames?;
     constructor(opts: ScoutSpanOptions);
+    setTrace(frames: StackFrame[]): void;
     getTimestamp(): Date;
     getDurationMs(): number;
     /** @see Taggable */

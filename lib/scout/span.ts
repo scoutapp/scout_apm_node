@@ -1,5 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
-import { get as getStackTrace, getSync as getStackTraceSync, StackFrame } from "stacktrace-js";
+import { 
+    get as getStackTrace, 
+    getSync as getStackTraceSync, 
+    StackFrame,
+    deinstrument,
+} from "stacktrace-js";
 
 import {
     LogFn,
@@ -71,6 +76,8 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private childSpans: ScoutSpan[] = [];
     private tags: { [key: string]: JSONValue | JSONValue[] } = {};
 
+    private traceFrames?: StackFrame[];
+
     constructor(opts: ScoutSpanOptions) {
         this.request = opts.request;
         this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_SPAN_PREFIX}${uuidv4()}`;
@@ -88,6 +95,11 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             if (opts.parent)  { this.parent = opts.parent; }
         }
 
+    }
+
+    public setTrace(frames: StackFrame[]) {
+        console.log("\n SET TRACE:", frames);
+        this.traceFrames = frames; 
     }
 
     // Get the start of this span
@@ -217,7 +229,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
                 // Add stack trace to the span
                 return getStackTrace()
-                    .then(this.processStackFrames)
+                    .then(trace => this.processStackFrames(trace))
                     .then(scoutFrames => this.addContext(ScoutContextName.Traceback, scoutFrames))
                     .then(() => this);
             });

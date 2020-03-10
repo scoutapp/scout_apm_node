@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
+const stacktrace_js_1 = require("stacktrace-js");
 const SUPPORTED_HTTP_METHODS = [
     "GET",
     "PUT",
@@ -72,13 +73,19 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
                 return originalFn.apply(this, originalArgsArr);
             }
             const handler = originalArgsArr[handlerIdx];
+            // Capture the definition point of the endpoint
+            console.log("\nBEFORE< STACK TRACE:", stacktrace_js_1.getSync());
             // Shim the handler
             originalArgs[handlerIdx] = function () {
+                // Gather a stacktrace from *inside* the handler
+                console.log("\nAFTER STACK TRACE:", stacktrace_js_1.getSync());
                 // If no scout instance is available when the handler is executed,
                 // then run original handler
                 if (!integration.scout) {
                     return handler.apply(this, arguments);
                 }
+                // Gather a stacktrace from *inside* the handler
+                console.log("\nSTACK TRACE:", stacktrace_js_1.getSync());
                 try {
                     return handler.apply(this, arguments);
                 }

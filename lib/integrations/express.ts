@@ -6,6 +6,10 @@ import { Scout } from "../scout";
 import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation, ExpressFn } from "../types";
 import * as Constants from "../constants";
 
+import { 
+    getSync as getStackTraceSync, 
+} from "stacktrace-js";
+
 const SUPPORTED_HTTP_METHODS = [
     "GET",
     "PUT",
@@ -88,11 +92,20 @@ export class ExpressIntegration extends RequireIntegration {
 
             const handler = originalArgsArr[handlerIdx];
 
+            // Capture the definition point of the endpoint
+            console.log("\nBEFORE< STACK TRACE:", getStackTraceSync());
+
             // Shim the handler
             originalArgs[handlerIdx] = function(this: any) {
+                // Gather a stacktrace from *inside* the handler
+                console.log("\nAFTER STACK TRACE:", getStackTraceSync());
+
                 // If no scout instance is available when the handler is executed,
                 // then run original handler
                 if (!integration.scout) { return handler.apply(this, arguments); }
+
+                // Gather a stacktrace from *inside* the handler
+                console.log("\nSTACK TRACE:", getStackTraceSync());
 
                 try {
                     return handler.apply(this, arguments);

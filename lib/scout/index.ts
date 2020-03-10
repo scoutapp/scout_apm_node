@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import * as cls from "continuation-local-storage";
 import * as semver from "semver";
 import { pathExists } from "fs-extra";
+import { instrument as instrumentTrace } from "stacktrace-js";
 
 import {
     APIVersion,

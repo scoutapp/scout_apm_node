@@ -38,6 +38,10 @@ class ScoutSpan {
             }
         }
     }
+    setTrace(frames) {
+        console.log("\n SET TRACE:", frames);
+        this.traceFrames = frames;
+    }
     // Get the start of this span
     getTimestamp() {
         return new Date(this.timestamp);
@@ -141,7 +145,7 @@ class ScoutSpan {
             }
             // Add stack trace to the span
             return stacktrace_js_1.get()
-                .then(this.processStackFrames)
+                .then(trace => this.processStackFrames(trace))
                 .then(scoutFrames => this.addContext(enum_1.ScoutContextName.Traceback, scoutFrames))
                 .then(() => this);
         });
