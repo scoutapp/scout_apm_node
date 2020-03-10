@@ -177,7 +177,7 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     coreAgentLaunch: true,
     coreAgentLogLevel: LogLevel.Info,
     coreAgentPermissions: 700,
-    coreAgentVersion: "v1.2.7", // can be exact tag name, or 'latest'
+    coreAgentVersion: "v1.2.8", // can be exact tag name, or 'latest'
 
     disabledInstruments: [],
     downloadUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
@@ -342,8 +342,10 @@ function detectArch(): Architecture {
 
 // Retrieve the machine platform
 function detectPlatform(): Platform {
+    // Default to Musl Linux, even on glibc-enabled distros
+    // https://github.com/scoutapp/scout_apm_node/issues/174
     switch (getSystemPlatform()) {
-        case "linux": return isNonGlibcLinux ? Platform.LinuxMusl : Platform.LinuxGNU;
+        case "linux": return Platform.LinuxMusl;
         case "darwin": return Platform.Darwin;
         default:
             return Platform.Unknown;
