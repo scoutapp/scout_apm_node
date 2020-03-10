@@ -6,8 +6,8 @@ import { Scout } from "../scout";
 import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation, ExpressFn } from "../types";
 import * as Constants from "../constants";
 
-import { 
-    getSync as getStackTraceSync, 
+import {
+    getSync as getStackTraceSync,
 } from "stacktrace-js";
 
 const SUPPORTED_HTTP_METHODS = [
@@ -92,20 +92,26 @@ export class ExpressIntegration extends RequireIntegration {
 
             const handler = originalArgsArr[handlerIdx];
 
-            // Capture the definition point of the endpoint
-            console.log("\nBEFORE< STACK TRACE:", getStackTraceSync());
+            // Capture the stack frames @ definition of the endpoint
+            const framesAtHandlerCreation = getStackTraceSync();
 
             // Shim the handler
             originalArgs[handlerIdx] = function(this: any) {
-                // Gather a stacktrace from *inside* the handler
-                console.log("\nAFTER STACK TRACE:", getStackTraceSync());
+                // Gather a stacktrace from *inside* the handler, at execution time
+                const framesAtExecution = getStackTraceSync();
 
                 // If no scout instance is available when the handler is executed,
                 // then run original handler
                 if (!integration.scout) { return handler.apply(this, arguments); }
 
-                // Gather a stacktrace from *inside* the handler
-                console.log("\nSTACK TRACE:", getStackTraceSync());
+                // If we are inside a span, save the build frames to the span
+                // (they will be sent out if the operation takes too long)
+                const span = integration.scout.getCurrentSpan();
+                if (span) {
+                    // Traces from creation time go first since that's where the handler was defined
+                    span.pushTraceFrames(framesAtHandlerCreation);
+                    span.pushTraceFrames(framesAtExecution);
+                }
 
                 try {
                     return handler.apply(this, arguments);

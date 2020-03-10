@@ -39,9 +39,10 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private endTime;
     private childSpans;
     private tags;
-    private traceFrames?;
+    private traceFrames;
     constructor(opts: ScoutSpanOptions);
-    setTrace(frames: StackFrame[]): void;
+    pushTraceFrames(frames: StackFrame[]): void;
+    prependTraceFrames(frames: StackFrame[]): void;
     getTimestamp(): Date;
     getDurationMs(): number;
     /** @see Taggable */
