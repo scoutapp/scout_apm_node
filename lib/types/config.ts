@@ -2,6 +2,7 @@ import { hostname, arch as getSystemArch, platform as getSystemPlatform } from "
 import { version as processVersion } from "process";
 import * as os from "os";
 import * as path from "path";
+import { path as appRootPath } from "app-root-path";
 
 import {
     Architecture,
@@ -171,7 +172,6 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     key: "",
     name: "",
     appServer: "",
-    applicationRoot: "",
 
     coreAgentDownload: true,
     coreAgentLaunch: true,
@@ -192,6 +192,8 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     revisionSHA: process.env.HEROKU_SLUG_COMMIT || "",
     scmSubdirectory: "",
     uriReporting: URIReportingLevel.FilteredParams,
+
+    applicationRoot: appRootPath,
 };
 
 interface ConfigSource {

@@ -4,6 +4,7 @@ const os_1 = require("os");
 const process_1 = require("process");
 const os = require("os");
 const path = require("path");
+const app_root_path_1 = require("app-root-path");
 const enum_1 = require("./enum");
 const util_1 = require("./util");
 const enum_2 = require("./enum");
@@ -118,7 +119,6 @@ exports.DEFAULT_SCOUT_CONFIGURATION = {
     key: "",
     name: "",
     appServer: "",
-    applicationRoot: "",
     coreAgentDownload: true,
     coreAgentLaunch: true,
     coreAgentLogLevel: enum_1.LogLevel.Info,
@@ -133,6 +133,7 @@ exports.DEFAULT_SCOUT_CONFIGURATION = {
     revisionSHA: process.env.HEROKU_SLUG_COMMIT || "",
     scmSubdirectory: "",
     uriReporting: enum_1.URIReportingLevel.FilteredParams,
+    applicationRoot: app_root_path_1.path,
 };
 /**
  * DefaultConfigSource returns only default values

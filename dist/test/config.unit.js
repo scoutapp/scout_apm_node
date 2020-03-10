@@ -4,6 +4,7 @@ const os = require("os");
 const path = require("path");
 const test = require("tape");
 const process_1 = require("process");
+const app_root_dir_1 = require("app-root-dir");
 const types_1 = require("../lib/types");
 const scout_1 = require("../lib/scout");
 const util_1 = require("./util");
@@ -106,5 +107,12 @@ test("core agent dir matches python", (t) => {
     const expectedSocketPath = path.join(expectedCoreAgentDir, `scout_apm_core-v1.2.7-${types_1.generateTriple()}`, "core-agent.sock");
     t.equals(config.coreAgentDir, expectedCoreAgentDir, "core agent directory matches the expected value");
     t.equals(scout.getSocketPath(), `unix://${expectedSocketPath}`, "socket path matches expected value");
+    t.end();
+});
+// https://github.com/scoutapp/scout_apm_node/issues/169
+test("application root is present in default", (t) => {
+    const config = types_1.buildScoutConfiguration({ coreAgentVersion: "v1.2.7" });
+    const expectedRootDir = app_root_dir_1.get();
+    t.equals(config.applicationRoot, expectedRootDir, `root dir matches expected [${expectedRootDir}]`);
     t.end();
 });
