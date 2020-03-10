@@ -90,7 +90,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         }
 
         // Use scout instance already set on the application if present
-        Promise.resolve(req.app.scout || getGlobalScoutInstance())
+        Promise.resolve(opts && opts.scout ? opts.scout : req.app.scout || getGlobalScoutInstance())
         // Attempt to get the global scout instance
             .then(scout => {
                 // Build configuration overrides
