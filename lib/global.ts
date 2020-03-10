@@ -7,6 +7,7 @@ export const EXPORT_BAG: ExportBag = {};
 
 // Global scout instance
 let SCOUT_INSTANCE: Scout;
+let creating: Promise<Scout> | undefined = undefined;
 
 export function setGlobalScoutInstance(scout: Scout) {
     if (SCOUT_INSTANCE) {
@@ -28,8 +29,11 @@ export function getOrCreateGlobalScoutInstance(
     opts?: ScoutOptions,
 ): Promise<Scout> {
     if (SCOUT_INSTANCE) { return SCOUT_INSTANCE.setup(); }
+    if (creating) { return creating; }
 
     setGlobalScoutInstance(new Scout(config || buildScoutConfiguration(), opts));
 
-    return getGlobalScoutInstance().setup();
+    // Set creating to the currently executing promise to ensure that setup won't be triggered twice
+    creating = getGlobalScoutInstance().setup();
+    return creating;
 }
