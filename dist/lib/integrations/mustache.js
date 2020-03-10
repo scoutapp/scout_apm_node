@@ -31,7 +31,10 @@ class MustacheIntegration extends integrations_1.RequireIntegration {
             if (!integration.scout) {
                 return originalFn.apply(this, originalArgs);
             }
-            return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, (span) => {
+            return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, ({ span }) => {
+                if (!span) {
+                    return originalFn.apply(null, originalArgs);
+                }
                 span.addContextSync(types_1.ScoutContextName.Name, "<string>");
                 return originalFn.apply(this, originalArgs);
             });

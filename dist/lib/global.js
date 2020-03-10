@@ -20,11 +20,11 @@ function getGlobalScoutInstance() {
     return SCOUT_INSTANCE;
 }
 exports.getGlobalScoutInstance = getGlobalScoutInstance;
-function getOrCreateGlobalScoutInstance(config) {
+function getOrCreateGlobalScoutInstance(config, opts) {
     if (SCOUT_INSTANCE) {
         return SCOUT_INSTANCE.setup();
     }
-    setGlobalScoutInstance(new scout_1.Scout(config || types_1.buildScoutConfiguration()));
+    setGlobalScoutInstance(new scout_1.Scout(config || types_1.buildScoutConfiguration(), opts));
     return getGlobalScoutInstance().setup();
 }
 exports.getOrCreateGlobalScoutInstance = getOrCreateGlobalScoutInstance;

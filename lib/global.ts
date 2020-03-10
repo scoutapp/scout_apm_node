@@ -1,5 +1,5 @@
-import { Scout } from "./scout";
-import { ScoutConfiguration, buildScoutConfiguration, LogLevel } from "./types";
+import { Scout, ScoutOptions } from "./scout";
+import { buildScoutConfiguration, LogLevel, ScoutConfiguration } from "./types";
 import { ExportBag } from "./types/integrations";
 
 // Create an export bag which will contain exports modified by scout
@@ -23,10 +23,13 @@ export function getGlobalScoutInstance() {
     return SCOUT_INSTANCE;
 }
 
-export function getOrCreateGlobalScoutInstance(config?: Partial<ScoutConfiguration>): Promise<Scout> {
+export function getOrCreateGlobalScoutInstance(
+    config?: Partial<ScoutConfiguration>,
+    opts?: ScoutOptions,
+): Promise<Scout> {
     if (SCOUT_INSTANCE) { return SCOUT_INSTANCE.setup(); }
 
-    setGlobalScoutInstance(new Scout(config || buildScoutConfiguration()));
+    setGlobalScoutInstance(new Scout(config || buildScoutConfiguration(), opts));
 
     return getGlobalScoutInstance().setup();
 }

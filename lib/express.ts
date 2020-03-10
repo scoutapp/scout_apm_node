@@ -11,6 +11,7 @@ import {
 } from "./types";
 import * as Constants from "./constants";
 import { Scout, ScoutRequest, ScoutSpan, ScoutOptions } from "./scout";
+import { getGlobalScoutInstance, getOrCreateGlobalScoutInstance } from "./global";
 
 export interface ApplicationWithScout {
     scout?: Scout;
@@ -82,34 +83,38 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                 })[0];
         }
 
-        let getScout: () => Promise<Scout> = () => Promise.resolve(req.app.scout);
-
-        // Create the scout agent if not present on the app
-        if (!req.app.scout) {
-            getScout = () => {
-                // If a scout instance to use was given then let's use that
-                if (opts && opts.scout) { return opts.scout.setup(); }
-
-                // Use custom scout configuration if provided
-                const overrides = opts && opts.config ? opts.config : {};
-                const config: Partial<ScoutConfiguration> = buildScoutConfiguration(overrides);
-                const options: ScoutOptions = {
-                    logFn: opts && opts.logFn ? opts.logFn : undefined,
-                };
-
-                req.app.scout = new Scout(config, options);
-                return req.app.scout.setup();
-            };
-        }
-
         // Set default request timeout if not specified
         let requestTimeoutMs = Constants.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS;
         if (opts && "requestTimeoutMs" in opts) {
             requestTimeoutMs = opts.requestTimeoutMs!;
         }
 
-        // Get the scout instance
-        getScout()
+        // Use scout instance already set on the application if present
+        (req.app.scout ? req.app.scout : getGlobalScoutInstance())
+        // Attempt to get the global scout instance
+            .then(scout => {
+                // Build configuration overrides
+                const overrides = opts && opts.config ? opts.config : {};
+                const config: Partial<ScoutConfiguration> = buildScoutConfiguration(overrides);
+                const options: ScoutOptions = {
+                    logFn: opts && opts.logFn ? opts.logFn : undefined,
+                };
+
+                // If the app already has a scout instance or there is a global instance, then update the configuration
+                if (scout) {
+                    scout.updateConfiguration(config, options);
+                    req.app.scout = scout;
+                    return req.app.scout;
+                }
+
+                // If app doesn't have a scout instance *and* global is not present, create one
+                return getOrCreateGlobalScoutInstance(config, options);
+            })
+        // Set the scout instance on the application
+            .then(scout => req.app.scout = scout)
+        // Set up the scout instance (if necessary)
+            .then(scout => scout.setup())
+        // Start perofrming midleware duties
             .then(scout => {
                 // If no route matches then we don't need to record
                 if (!matchedRouteMiddleware) {

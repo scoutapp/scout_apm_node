@@ -18,6 +18,7 @@ exports.ScoutRequest = request_1.default;
 var span_1 = require("./span");
 exports.ScoutSpan = span_1.default;
 const request_2 = require("./request");
+;
 const DONE_NOTHING = () => undefined;
 const ASYNC_NS = "scout";
 const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
@@ -29,6 +30,17 @@ class Scout extends events_1.EventEmitter {
         this.slowRequestThresholdMs = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
         this.syncCurrentRequest = null;
         this.syncCurrentSpan = null;
+        this.updateConfiguration(config, opts);
+        // Create async namespace if it does not exist
+        this.createAsyncNamespace();
+    }
+    get socketPath() {
+        if (this.config.socketPath) {
+            return this.config.socketPath;
+        }
+        return path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
+    }
+    updateConfiguration(config, opts) {
         this.config = config || types_1.buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
         if (opts) {
@@ -47,18 +59,10 @@ class Scout extends events_1.EventEmitter {
         // Build expected bin & socket path based on current version
         const triple = types_1.generateTriple();
         this.binPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, `scout_apm_core-v${version}-${triple}`, Constants.CORE_AGENT_BIN_FILE_NAME);
-        // Create async namespace if it does not exist
-        this.createAsyncNamespace();
         // If the logFn that is provided has a 'logger' attempt to set the log level to the passed in logger's level
         if (this.logFn && this.logFn.logger && this.logFn.logger.level && types_1.isLogLevel(this.logFn.logger.level)) {
             this.config.logLevel = types_1.parseLogLevel(this.logFn.logger.level);
         }
-    }
-    get socketPath() {
-        if (this.config.socketPath) {
-            return this.config.socketPath;
-        }
-        return path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
     }
     getSocketFilePath() {
         return this.socketPath.slice();
@@ -207,7 +211,7 @@ class Scout extends events_1.EventEmitter {
         // Create & start the request synchronously
         const request = this.startRequestSync();
         this.syncCurrentRequest = request;
-        const result = fn(request);
+        const result = fn({ request });
         request.stopSync();
         // Reset the current request as sync
         this.syncCurrentRequest = null;
@@ -310,7 +314,11 @@ class Scout extends events_1.EventEmitter {
         const span = parent.startChildSpanSync(operation);
         this.syncCurrentSpan = span;
         span.startSync();
-        const result = fn(span);
+        const result = fn({
+            span,
+            parent: span.parent,
+            request: span.request,
+        });
         span.stopSync();
         // Clear out the current span for synchronous operations
         this.syncCurrentSpan = null;

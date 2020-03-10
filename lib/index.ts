@@ -55,6 +55,26 @@ const API = {
     consoleLogFn,
     buildWinstonLogFn,
 
+    // Install scout
+    install: getOrCreateGlobalScoutInstance,
+
+    // instrument
+    instrument(op: string, cb: DoneCallback, scout?: Scout): Promise<any> {
+        return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+            .then(scout => {
+                return scout.instrument(op, (finishSpan, info) => {
+                    return cb(finishSpan, info);
+                });
+            });
+    },
+
+    // instrument
+    instrumentSync(op: string, cb: SpanCallback, scout?: Scout): Promise<any> {
+        return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+            .then(scout => scout.instrumentSync(op, cb));
+    },
+
+    // API
     api: {
         WebTransaction: {
             run(op: string, cb: DoneCallback, scout?: Scout): Promise<any> {

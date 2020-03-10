@@ -62,22 +62,28 @@ export interface ScoutOptions {
     slowRequestThresholdMs?: number;
 }
 
+export interface CallbackInfo {
+    span?: ScoutSpan;
+    parent?: ScoutSpan | ScoutRequest;
+    request?: ScoutRequest;
+};
+
 export type DoneCallback = (
     done: () => void,
-    info: {span?: ScoutSpan, parent?: ScoutSpan | ScoutRequest, request?: ScoutRequest},
+    info: CallbackInfo,
 ) => any;
 
 const DONE_NOTHING = () => undefined;
 
-export type SpanCallback = (span: ScoutSpan) => any;
-export type RequestCallback = (request: ScoutRequest) => any;
+export type SpanCallback = (info: CallbackInfo) => any;
+export type RequestCallback = (info: CallbackInfo) => any;
 
 const ASYNC_NS = "scout";
 const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
 const ASYNC_NS_SPAN = `${ASYNC_NS}.span`;
 
 export class Scout extends EventEmitter {
-    private readonly config: Partial<ScoutConfiguration>;
+    private config: Partial<ScoutConfiguration>;
 
     private downloader: AgentDownloader;
     private downloaderOptions: AgentDownloadOptions = {};
@@ -99,6 +105,24 @@ export class Scout extends EventEmitter {
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         super();
 
+        this.updateConfiguration(config, opts);
+
+        // Create async namespace if it does not exist
+        this.createAsyncNamespace();
+    }
+
+    private get socketPath() {
+        if (this.config.socketPath) {
+            return this.config.socketPath;
+        }
+
+        return path.join(
+            path.dirname(this.binPath),
+            Constants.DEFAULT_SOCKET_FILE_NAME,
+        );
+    }
+
+    public updateConfiguration(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         this.config = config || buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
 
@@ -123,25 +147,12 @@ export class Scout extends EventEmitter {
             Constants.CORE_AGENT_BIN_FILE_NAME,
         );
 
-        // Create async namespace if it does not exist
-        this.createAsyncNamespace();
-
         // If the logFn that is provided has a 'logger' attempt to set the log level to the passed in logger's level
         if (this.logFn && this.logFn.logger && this.logFn.logger.level && isLogLevel(this.logFn.logger.level)) {
             this.config.logLevel = parseLogLevel(this.logFn.logger.level);
         }
     }
 
-    private get socketPath() {
-        if (this.config.socketPath) {
-            return this.config.socketPath;
-        }
-
-        return path.join(
-            path.dirname(this.binPath),
-            Constants.DEFAULT_SOCKET_FILE_NAME,
-        );
-    }
 
     public getSocketFilePath(): string {
         return this.socketPath.slice();
@@ -313,7 +324,7 @@ export class Scout extends EventEmitter {
         const request = this.startRequestSync();
         this.syncCurrentRequest = request;
 
-        const result = fn(request);
+        const result = fn({request});
         request.stopSync();
 
         // Reset the current request as sync
@@ -448,7 +459,11 @@ export class Scout extends EventEmitter {
         this.syncCurrentSpan = span;
 
         span.startSync();
-        const result = fn(span);
+        const result = fn({
+            span,
+            parent: span.parent,
+            request: span.request,
+        });
         span.stopSync();
 
         // Clear out the current span for synchronous operations

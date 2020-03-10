@@ -822,7 +822,10 @@ test("Adding context does not cause socket close", t => {
         .setup()
         .then(() => {
         // The scout object should be created as sa result of doing the .run
-        scout.transactionSync("test-web-transaction-export", (request) => {
+        scout.transactionSync("test-web-transaction-export", ({ request }) => {
+            if (!request) {
+                throw new Error("request is missing inside transactionSync");
+            }
             t.pass("transaction was run");
             // Add some context
             request.addContext("test", "test");
