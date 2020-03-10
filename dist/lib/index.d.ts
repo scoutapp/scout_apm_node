@@ -2,6 +2,7 @@ import * as Errors from "./errors";
 import { scoutMiddleware as expressMiddleware } from "./express";
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
+import { getOrCreateGlobalScoutInstance } from "./global";
 declare function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<ScoutConfiguration>): void;
 declare const API: {
     buildScoutConfiguration: typeof buildScoutConfiguration;
@@ -10,6 +11,9 @@ declare const API: {
     expressMiddleware: typeof expressMiddleware;
     consoleLogFn: typeof consoleLogFn;
     buildWinstonLogFn: typeof buildWinstonLogFn;
+    install: typeof getOrCreateGlobalScoutInstance;
+    instrument(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;
+    instrumentSync(op: string, cb: SpanCallback, scout?: Scout | undefined): Promise<any>;
     api: {
         WebTransaction: {
             run(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;

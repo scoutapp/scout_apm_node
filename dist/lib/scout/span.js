@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const uuid_1 = require("uuid");
-const stacktrace_js_1 = require("stacktrace-js");
 const types_1 = require("../types");
 const index_1 = require("./index");
 const enum_1 = require("../types/enum");
 const Constants = require("../constants");
 const Errors = require("../errors");
+const TRACE_LIMIT = 50;
 class ScoutSpan {
     constructor(opts) {
         this.started = false;
@@ -14,6 +14,7 @@ class ScoutSpan {
         this.sent = false;
         this.childSpans = [];
         this.tags = {};
+        this.traceFrames = [];
         this.logFn = () => undefined;
         this.request = opts.request;
         this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_SPAN_PREFIX}${uuid_1.v4()}`;
@@ -37,6 +38,12 @@ class ScoutSpan {
                 this.parent = opts.parent;
             }
         }
+    }
+    pushTraceFrames(frames) {
+        this.traceFrames = this.traceFrames.concat(this.processStackFrames(frames));
+    }
+    prependTraceFrames(frames) {
+        this.traceFrames = this.processStackFrames(frames).concat(this.traceFrames);
     }
     // Get the start of this span
     getTimestamp() {
@@ -140,9 +147,7 @@ class ScoutSpan {
                 return Promise.resolve(this);
             }
             // Add stack trace to the span
-            return stacktrace_js_1.get()
-                .then(this.processStackFrames)
-                .then(scoutFrames => this.addContext(enum_1.ScoutContextName.Traceback, scoutFrames))
+            return this.addContext(enum_1.ScoutContextName.Traceback, this.traceFrames.slice(0, TRACE_LIMIT))
                 .then(() => this);
         });
     }
@@ -159,9 +164,8 @@ class ScoutSpan {
         if (this.scoutInstance && this.scoutInstance.getSlowRequestThresholdMs() > this.getDurationMs()) {
             return this;
         }
-        // Process the frames and add the context
-        const scoutFrames = this.processStackFrames(stacktrace_js_1.getSync());
-        this.addContextSync(enum_1.ScoutContextName.Traceback, scoutFrames);
+        // Add the pre-processed list of stack frames to the context
+        this.addContextSync(enum_1.ScoutContextName.Traceback, this.traceFrames.slice(0, TRACE_LIMIT));
         return this;
     }
     isStarted() {
@@ -225,7 +229,9 @@ class ScoutSpan {
         }
         return frames
             // Filter out scout_apm_node related traces
-            .filter(f => !f.fileName || !f.fileName.includes("scout_apm_node"))
+            .filter(f => !f.fileName || !f.fileName.includes("node_modules/@scout_apm/scout-apm"))
+            // Filter out node internals
+            .filter(f => !f.fileName || !f.fileName.startsWith("internal/modules/"))
             // Simplify the traces
             .map(f => ({
             line: f.lineNumber,

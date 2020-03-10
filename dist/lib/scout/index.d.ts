@@ -15,13 +15,14 @@ export interface ScoutOptions {
     appMeta?: ApplicationMetadata;
     slowRequestThresholdMs?: number;
 }
-export declare type DoneCallback = (done: () => void, info: {
+export interface CallbackInfo {
     span?: ScoutSpan;
     parent?: ScoutSpan | ScoutRequest;
     request?: ScoutRequest;
-}) => any;
-export declare type SpanCallback = (span: ScoutSpan) => any;
-export declare type RequestCallback = (request: ScoutRequest) => any;
+}
+export declare type DoneCallback = (done: () => void, info: CallbackInfo) => any;
+export declare type SpanCallback = (info: CallbackInfo) => any;
+export declare type RequestCallback = (info: CallbackInfo) => any;
 export declare class Scout extends EventEmitter {
     private readonly config;
     private downloader;

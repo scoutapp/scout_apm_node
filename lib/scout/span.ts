@@ -1,5 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
-import { get as getStackTrace, getSync as getStackTraceSync, StackFrame } from "stacktrace-js";
+import {
+    get as getStackTrace,
+    getSync as getStackTraceSync,
+    StackFrame,
+    deinstrument,
+} from "stacktrace-js";
 
 import {
     LogFn,
@@ -53,6 +58,8 @@ export interface ScoutSpanOptions {
     request: ScoutRequest;
 }
 
+const TRACE_LIMIT = 50;
+
 export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, Startable {
     public readonly request: ScoutRequest;
     public readonly parent?: ScoutSpan;
@@ -71,6 +78,8 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private childSpans: ScoutSpan[] = [];
     private tags: { [key: string]: JSONValue | JSONValue[] } = {};
 
+    private traceFrames: ScoutStackFrame[] = [];
+
     constructor(opts: ScoutSpanOptions) {
         this.request = opts.request;
         this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_SPAN_PREFIX}${uuidv4()}`;
@@ -88,6 +97,14 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             if (opts.parent)  { this.parent = opts.parent; }
         }
 
+    }
+
+    public pushTraceFrames(frames: StackFrame[]) {
+        this.traceFrames = this.traceFrames.concat(this.processStackFrames(frames));
+    }
+
+    public prependTraceFrames(frames: StackFrame[]) {
+        this.traceFrames = this.processStackFrames(frames).concat(this.traceFrames);
     }
 
     // Get the start of this span
@@ -216,9 +233,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
                 }
 
                 // Add stack trace to the span
-                return getStackTrace()
-                    .then(this.processStackFrames)
-                    .then(scoutFrames => this.addContext(ScoutContextName.Traceback, scoutFrames))
+                return this.addContext(ScoutContextName.Traceback, this.traceFrames.slice(0, TRACE_LIMIT))
                     .then(() => this);
             });
     }
@@ -238,9 +253,8 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             return this;
         }
 
-        // Process the frames and add the context
-        const scoutFrames = this.processStackFrames(getStackTraceSync());
-        this.addContextSync(ScoutContextName.Traceback, scoutFrames);
+        // Add the pre-processed list of stack frames to the context
+        this.addContextSync(ScoutContextName.Traceback, this.traceFrames.slice(0, TRACE_LIMIT));
 
         return this;
     }
@@ -311,7 +325,9 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
         return frames
         // Filter out scout_apm_node related traces
-            .filter(f => !f.fileName || !f.fileName.includes("scout_apm_node"))
+            .filter(f => !f.fileName || !f.fileName.includes("node_modules/@scout_apm/scout-apm"))
+        // Filter out node internals
+            .filter(f => !f.fileName || !f.fileName.startsWith("internal/modules/"))
         // Simplify the traces
             .map(f => ({
                 line: f.lineNumber,

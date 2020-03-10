@@ -31,7 +31,9 @@ export class EJSIntegration extends RequireIntegration {
             // If no scout instance is available then run the function normally
             if (!integration.scout) { return originalFn.apply(null, originalArgs); }
 
-            return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, (span) => {
+            return integration.scout.instrumentSync(ScoutSpanOperation.TemplateRender, ({span}) => {
+                if (!span) { return originalFn.apply(null, originalArgs); }
+
                 span.addContextSync(ScoutContextName.Name, "<string>");
                 return originalFn.apply(null, originalArgs);
             });

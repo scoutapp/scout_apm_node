@@ -6,9 +6,10 @@ const types_1 = require("./types");
 exports.EXPORT_BAG = {};
 // Global scout instance
 let SCOUT_INSTANCE;
+let creating;
 function setGlobalScoutInstance(scout) {
     if (SCOUT_INSTANCE) {
-        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", types_1.LogLevel.Error);
+        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", types_1.LogLevel.Warn);
         return;
     }
     SCOUT_INSTANCE = scout;
@@ -20,11 +21,16 @@ function getGlobalScoutInstance() {
     return SCOUT_INSTANCE;
 }
 exports.getGlobalScoutInstance = getGlobalScoutInstance;
-function getOrCreateGlobalScoutInstance(config) {
+function getOrCreateGlobalScoutInstance(config, opts) {
     if (SCOUT_INSTANCE) {
         return SCOUT_INSTANCE.setup();
     }
-    setGlobalScoutInstance(new scout_1.Scout(config || types_1.buildScoutConfiguration()));
-    return getGlobalScoutInstance().setup();
+    if (creating) {
+        return creating;
+    }
+    setGlobalScoutInstance(new scout_1.Scout(types_1.buildScoutConfiguration(config), opts));
+    // Set creating to the currently executing promise to ensure that setup won't be triggered twice
+    creating = getGlobalScoutInstance().setup();
+    return creating;
 }
 exports.getOrCreateGlobalScoutInstance = getOrCreateGlobalScoutInstance;

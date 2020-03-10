@@ -825,7 +825,7 @@ test("export Context.addSync to add context (provided scout instance)", t => {
     let req: any;
 
     // The scout object should be created as sa result of doing the .run
-    scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+    scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({request}) => {
         t.pass("transaction was run");
         req = request;
         scoutExport.api.Context.addSync("testKey", "testValue", scout);
@@ -854,7 +854,7 @@ test("export Context.addSync to add context (global scout instance)", t => {
     getOrCreateGlobalScoutInstance(config)
         .then(scout => {
             // The scout object should be created as sa result of doing the .run
-            scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+            scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({request}) => {
                 t.pass("transaction was run");
                 req = request;
                 scoutExport.api.Context.addSync("testKey", "testValue");
@@ -954,7 +954,7 @@ test("export ignoreTransactionSync successfully ignores transaction (provided sc
         .setup()
         .then(scout => {
             // The scout object should be created as sa result of doing the .run
-            scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+            scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({request}) => {
                 t.pass("transaction was run");
                 req = request;
 
@@ -982,7 +982,7 @@ test("export ignoreTransactionSync successfully ignores transaction (global scou
     getOrCreateGlobalScoutInstance(config)
         .then(scout => {
             // The scout object should be created as sa result of doing the .run
-            scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+            scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({request}) => {
                 t.pass("transaction was run");
                 req = request;
 
@@ -1024,7 +1024,10 @@ test("Adding context does not cause socket close", t => {
         .setup()
         .then(() => {
             // The scout object should be created as sa result of doing the .run
-            scout.transactionSync("test-web-transaction-export", (request) => {
+            scout.transactionSync("test-web-transaction-export", ({request}) => {
+                if (!request) {
+                    throw new Error("request is missing inside transactionSync");
+                }
                 t.pass("transaction was run");
 
                 // Add some context

@@ -1,5 +1,5 @@
-import { Scout } from "./scout";
-import { ScoutConfiguration, buildScoutConfiguration, LogLevel } from "./types";
+import { Scout, ScoutOptions } from "./scout";
+import { buildScoutConfiguration, LogLevel, ScoutConfiguration } from "./types";
 import { ExportBag } from "./types/integrations";
 
 // Create an export bag which will contain exports modified by scout
@@ -7,10 +7,11 @@ export const EXPORT_BAG: ExportBag = {};
 
 // Global scout instance
 let SCOUT_INSTANCE: Scout;
+let creating: Promise<Scout>;
 
 export function setGlobalScoutInstance(scout: Scout) {
     if (SCOUT_INSTANCE) {
-        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", LogLevel.Error);
+        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", LogLevel.Warn);
         return;
     }
 
@@ -19,14 +20,20 @@ export function setGlobalScoutInstance(scout: Scout) {
     scout.setupIntegrations();
 }
 
-export function getGlobalScoutInstance() {
+export function getGlobalScoutInstance(): Scout {
     return SCOUT_INSTANCE;
 }
 
-export function getOrCreateGlobalScoutInstance(config?: Partial<ScoutConfiguration>): Promise<Scout> {
+export function getOrCreateGlobalScoutInstance(
+    config?: Partial<ScoutConfiguration>,
+    opts?: ScoutOptions,
+): Promise<Scout> {
     if (SCOUT_INSTANCE) { return SCOUT_INSTANCE.setup(); }
+    if (creating) { return creating; }
 
-    setGlobalScoutInstance(new Scout(config || buildScoutConfiguration()));
+    setGlobalScoutInstance(new Scout(buildScoutConfiguration(config), opts));
 
-    return getGlobalScoutInstance().setup();
+    // Set creating to the currently executing promise to ensure that setup won't be triggered twice
+    creating = getGlobalScoutInstance().setup();
+    return creating;
 }

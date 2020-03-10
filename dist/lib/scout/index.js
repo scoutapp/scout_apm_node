@@ -47,12 +47,12 @@ class Scout extends events_1.EventEmitter {
         // Build expected bin & socket path based on current version
         const triple = types_1.generateTriple();
         this.binPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, `scout_apm_core-v${version}-${triple}`, Constants.CORE_AGENT_BIN_FILE_NAME);
-        // Create async namespace if it does not exist
-        this.createAsyncNamespace();
         // If the logFn that is provided has a 'logger' attempt to set the log level to the passed in logger's level
         if (this.logFn && this.logFn.logger && this.logFn.logger.level && types_1.isLogLevel(this.logFn.logger.level)) {
             this.config.logLevel = types_1.parseLogLevel(this.logFn.logger.level);
         }
+        // Create async namespace if it does not exist
+        this.createAsyncNamespace();
     }
     get socketPath() {
         if (this.config.socketPath) {
@@ -86,6 +86,7 @@ class Scout extends events_1.EventEmitter {
         if (this.agent) {
             return Promise.resolve(this);
         }
+        this.log("[scout] setting up scout...", types_1.LogLevel.Debug);
         const shouldLaunch = this.config.coreAgentLaunch;
         // If the socket path exists then we may be able to skip downloading and launching
         return (shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket())
@@ -144,7 +145,7 @@ class Scout extends events_1.EventEmitter {
      * @returns {boolean} whether the path should be ignored
      */
     ignoresPath(path) {
-        this.log("[scout] checking path [${path}] against ignored paths", types_1.LogLevel.Trace);
+        this.log("[scout] checking path [${path}] against ignored paths", types_1.LogLevel.Debug);
         // If ignore isn't specified or if empty, then nothing is ignored
         if (!this.config.ignore || this.config.ignore.length === 0) {
             return false;
@@ -207,7 +208,7 @@ class Scout extends events_1.EventEmitter {
         // Create & start the request synchronously
         const request = this.startRequestSync();
         this.syncCurrentRequest = request;
-        const result = fn(request);
+        const result = fn({ request });
         request.stopSync();
         // Reset the current request as sync
         this.syncCurrentRequest = null;
@@ -310,7 +311,11 @@ class Scout extends events_1.EventEmitter {
         const span = parent.startChildSpanSync(operation);
         this.syncCurrentSpan = span;
         span.startSync();
-        const result = fn(span);
+        const result = fn({
+            span,
+            parent: span.parent,
+            request: span.request,
+        });
         span.stopSync();
         // Clear out the current span for synchronous operations
         this.syncCurrentSpan = null;
@@ -475,7 +480,16 @@ class Scout extends events_1.EventEmitter {
                 }
                 this.log(`[scout] Finishing and sending request with ID [${request.id}]`, types_1.LogLevel.Debug);
                 this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
-                return request.finishAndSend();
+                return request.finishAndSend()
+                    .then(res => {
+                    this.log(`[scout] Finished and sent request [${request.id}]`, types_1.LogLevel.Debug);
+                    return res;
+                })
+                    .catch(err => {
+                    this.log(`[scout] Failed to finish and send request [${request.id}]:\n ${err}`, types_1.LogLevel.Error);
+                    // rethrow the error
+                    throw err;
+                });
             };
             // Run in the async namespace
             this.asyncNamespace.run(() => {
@@ -538,6 +552,7 @@ class Scout extends events_1.EventEmitter {
     }
     // Send the app registration request to the current agent
     sendRegistrationRequest() {
+        this.log(`[scout] registering application [${this.config.name || ""}]`, types_1.LogLevel.Debug);
         return sendThroughAgent(this, new Requests.V1Register(this.config.name || "", this.config.key || "", types_1.APIVersion.V1))
             .then(() => undefined)
             .catch(err => {
