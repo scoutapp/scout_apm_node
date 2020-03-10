@@ -158,11 +158,12 @@ test("core agent dir matches python", (t: Test) => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/169
 test("application root is present in default", (t: Test) => {
-    const config = buildScoutConfiguration({coreAgentVersion: "v1.2.7"});
+    const config = buildScoutConfiguration();
 
-    const expectedRootDir = getRootDir();
+    // Application root is supposed to be the folder *above* the project's folder
+    const expectedApplicationRoot = path.dirname(getRootDir());
 
-    t.equals(config.applicationRoot, expectedRootDir, `root dir matches expected [${expectedRootDir}]`);
+    t.equals(config.applicationRoot, expectedApplicationRoot, `root dir matches expected [${expectedApplicationRoot}]`);
 
     t.end();
 });

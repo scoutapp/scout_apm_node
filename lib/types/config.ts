@@ -193,7 +193,9 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     scmSubdirectory: "",
     uriReporting: URIReportingLevel.FilteredParams,
 
-    applicationRoot: appRootPath,
+    // Application root should be the folder *containing* the node project
+    // https://github.com/scoutapp/scout_apm_node/issues/169
+    applicationRoot: path.dirname(appRootPath),
 };
 
 interface ConfigSource {

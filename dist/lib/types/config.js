@@ -133,7 +133,9 @@ exports.DEFAULT_SCOUT_CONFIGURATION = {
     revisionSHA: process.env.HEROKU_SLUG_COMMIT || "",
     scmSubdirectory: "",
     uriReporting: enum_1.URIReportingLevel.FilteredParams,
-    applicationRoot: app_root_path_1.path,
+    // Application root should be the folder *containing* the node project
+    // https://github.com/scoutapp/scout_apm_node/issues/169
+    applicationRoot: path.dirname(app_root_path_1.path),
 };
 /**
  * DefaultConfigSource returns only default values
