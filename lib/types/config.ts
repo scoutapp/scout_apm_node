@@ -342,8 +342,10 @@ function detectArch(): Architecture {
 
 // Retrieve the machine platform
 function detectPlatform(): Platform {
+    // Default to Musl Linux, even on glibc-enabled distros
+    // https://github.com/scoutapp/scout_apm_node/issues/174
     switch (getSystemPlatform()) {
-        case "linux": return isNonGlibcLinux ? Platform.LinuxMusl : Platform.LinuxGNU;
+        case "linux": return Platform.LinuxMusl;
         case "darwin": return Platform.Darwin;
         default:
             return Platform.Unknown;

@@ -8,7 +8,6 @@ const app_root_path_1 = require("app-root-path");
 const enum_1 = require("./enum");
 const util_1 = require("./util");
 const enum_2 = require("./enum");
-const detect_libc_1 = require("detect-libc");
 const Constants = require("../constants");
 const errors_1 = require("../errors");
 class ApplicationMetadata {
@@ -239,8 +238,10 @@ function detectArch() {
 }
 // Retrieve the machine platform
 function detectPlatform() {
+    // Default to Musl Linux, even on glibc-enabled distros
+    // https://github.com/scoutapp/scout_apm_node/issues/174
     switch (os_1.platform()) {
-        case "linux": return detect_libc_1.isNonGlibcLinux ? enum_1.Platform.LinuxMusl : enum_1.Platform.LinuxGNU;
+        case "linux": return enum_1.Platform.LinuxMusl;
         case "darwin": return enum_1.Platform.Darwin;
         default:
             return enum_1.Platform.Unknown;
