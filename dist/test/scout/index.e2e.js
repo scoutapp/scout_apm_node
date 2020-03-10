@@ -669,7 +669,7 @@ test("export Context.addSync to add context (provided scout instance)", t => {
     // so we use any to force the runtime check
     let req;
     // The scout object should be created as sa result of doing the .run
-    scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+    scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({ request }) => {
         t.pass("transaction was run");
         req = request;
         scoutExport.api.Context.addSync("testKey", "testValue", scout);
@@ -693,7 +693,7 @@ test("export Context.addSync to add context (global scout instance)", t => {
     global_1.getOrCreateGlobalScoutInstance(config)
         .then(scout => {
         // The scout object should be created as sa result of doing the .run
-        scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+        scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({ request }) => {
             t.pass("transaction was run");
             req = request;
             scoutExport.api.Context.addSync("testKey", "testValue");
@@ -769,7 +769,7 @@ test("export ignoreTransactionSync successfully ignores transaction (provided sc
         .setup()
         .then(scout => {
         // The scout object should be created as sa result of doing the .run
-        scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+        scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({ request }) => {
             t.pass("transaction was run");
             req = request;
             // Ignore the current request
@@ -790,7 +790,7 @@ test("export ignoreTransactionSync successfully ignores transaction (global scou
     global_1.getOrCreateGlobalScoutInstance(config)
         .then(scout => {
         // The scout object should be created as sa result of doing the .run
-        scoutExport.api.WebTransaction.runSync("test-web-transaction-export", (request) => {
+        scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({ request }) => {
             t.pass("transaction was run");
             req = request;
             // ignore the current request
