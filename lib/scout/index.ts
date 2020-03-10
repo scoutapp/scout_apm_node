@@ -66,7 +66,7 @@ export interface CallbackInfo {
     span?: ScoutSpan;
     parent?: ScoutSpan | ScoutRequest;
     request?: ScoutRequest;
-};
+}
 
 export type DoneCallback = (
     done: () => void,
@@ -152,7 +152,6 @@ export class Scout extends EventEmitter {
             this.config.logLevel = parseLogLevel(this.logFn.logger.level);
         }
     }
-
 
     public getSocketFilePath(): string {
         return this.socketPath.slice();

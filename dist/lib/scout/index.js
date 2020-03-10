@@ -18,7 +18,6 @@ exports.ScoutRequest = request_1.default;
 var span_1 = require("./span");
 exports.ScoutSpan = span_1.default;
 const request_2 = require("./request");
-;
 const DONE_NOTHING = () => undefined;
 const ASYNC_NS = "scout";
 const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;

@@ -7,7 +7,7 @@ export const EXPORT_BAG: ExportBag = {};
 
 // Global scout instance
 let SCOUT_INSTANCE: Scout;
-let creating: Promise<Scout> | undefined = undefined;
+let creating: Promise<Scout>;
 
 export function setGlobalScoutInstance(scout: Scout) {
     if (SCOUT_INSTANCE) {

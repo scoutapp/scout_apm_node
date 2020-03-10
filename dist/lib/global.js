@@ -6,7 +6,7 @@ const types_1 = require("./types");
 exports.EXPORT_BAG = {};
 // Global scout instance
 let SCOUT_INSTANCE;
-let creating = undefined;
+let creating;
 function setGlobalScoutInstance(scout) {
     if (SCOUT_INSTANCE) {
         SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", types_1.LogLevel.Error);
