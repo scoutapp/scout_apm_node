@@ -1,4 +1,4 @@
-export const DEFAULT_CORE_AGENT_VERSION = "v1.2.7";
+export const DEFAULT_CORE_AGENT_VERSION = "v1.2.8";
 export const DOMAIN_SOCKET_URI_SCHEME_RGX = /^(unix|file):\/\//;
 export const TMP_DIR_PREFIX = "core-agent-dl-";
 export const CORE_AGENT_BIN_FILE_NAME = "core-agent";

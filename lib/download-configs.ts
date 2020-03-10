@@ -7,6 +7,18 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "d56eee17ea63e7869c29488f1bc9528887644adf702e5134f889cde1d2551bd3",
+        "core_agent_version": "1.1.0",
+        "version": "1.1.0"
+      },
+      "platform": PlatformTriple.AppleDarwin64,
+      "rawVersion": "1.1.0",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.0-x86_64-apple-darwin.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
         "core_agent_binary_sha256": "6aa1bd5d290bbe2589d175f279f64fb0a2018eb58914c365bbc0ec422c634e2f",
         "core_agent_version": "1.1.0",
         "version": "1.1.0"
@@ -27,21 +39,21 @@ const configs: AgentDownloadConfigs = {
       "rawVersion": "1.1.0",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.0-x86_64-unknown-linux-gnu.tgz",
       "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "d56eee17ea63e7869c29488f1bc9528887644adf702e5134f889cde1d2551bd3",
-        "core_agent_version": "1.1.0",
-        "version": "1.1.0"
-      },
-      "platform": PlatformTriple.AppleDarwin64,
-      "rawVersion": "1.1.0",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.0-x86_64-apple-darwin.tgz",
-      "zipped": true
     }
   ],
   "1.1.1": [
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "3a778f8fe3e5e4b4e2c7ca0990fa658fe3ddb5b5a705716dddaf4a65b5102f75",
+        "core_agent_version": "1.1.1",
+        "version": "1.1.1"
+      },
+      "platform": PlatformTriple.AppleDarwin64,
+      "rawVersion": "1.1.1",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.1-x86_64-apple-darwin.tgz",
+      "zipped": true
+    },
     {
       "manifest": {
         "core_agent_binary": "core-agent",
@@ -65,18 +77,6 @@ const configs: AgentDownloadConfigs = {
       "rawVersion": "1.1.1",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.1-x86_64-unknown-linux-gnu.tgz",
       "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "3a778f8fe3e5e4b4e2c7ca0990fa658fe3ddb5b5a705716dddaf4a65b5102f75",
-        "core_agent_version": "1.1.1",
-        "version": "1.1.1"
-      },
-      "platform": PlatformTriple.AppleDarwin64,
-      "rawVersion": "1.1.1",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.1-x86_64-apple-darwin.tgz",
-      "zipped": true
     }
   ],
   "1.1.2": [
@@ -95,18 +95,6 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "7af3383b69e37fc4fc0aa36f95de567542ce8bad26443e3f2af6d96f03fc31e7",
-        "core_agent_version": "1.1.2",
-        "version": "1.1.2"
-      },
-      "platform": PlatformTriple.GNULinux64,
-      "rawVersion": "1.1.2",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.2-x86_64-unknown-linux-gnu.tgz",
-      "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
         "core_agent_binary_sha256": "159d80ab55621ea64aff3a718284f6ea3373262f0905a321edd7b427775cd4a2",
         "core_agent_version": "1.1.2",
         "version": "1.1.2"
@@ -114,6 +102,18 @@ const configs: AgentDownloadConfigs = {
       "platform": PlatformTriple.AppleDarwin64,
       "rawVersion": "1.1.2",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.2-x86_64-apple-darwin.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "7af3383b69e37fc4fc0aa36f95de567542ce8bad26443e3f2af6d96f03fc31e7",
+        "core_agent_version": "1.1.2",
+        "version": "1.1.2"
+      },
+      "platform": PlatformTriple.GNULinux64,
+      "rawVersion": "1.1.2",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.2-x86_64-unknown-linux-gnu.tgz",
       "zipped": true
     }
   ],
@@ -133,18 +133,6 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "952be3966cfdb6b905aa6f7ae448b13517f9c3ddfd3059b05d3b9fbbe89313ae",
-        "core_agent_version": "1.1.3",
-        "version": "1.1.3"
-      },
-      "platform": PlatformTriple.GNULinux64,
-      "rawVersion": "1.1.3",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.3-x86_64-unknown-linux-gnu.tgz",
-      "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
         "core_agent_binary_sha256": "243ab629b0ac4300cd2329eedff3098df83fe0247b7e1a781eb7b3c011eece82",
         "core_agent_version": "1.1.3",
         "version": "1.1.3"
@@ -152,6 +140,18 @@ const configs: AgentDownloadConfigs = {
       "platform": PlatformTriple.AppleDarwin64,
       "rawVersion": "1.1.3",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.3-x86_64-apple-darwin.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "952be3966cfdb6b905aa6f7ae448b13517f9c3ddfd3059b05d3b9fbbe89313ae",
+        "core_agent_version": "1.1.3",
+        "version": "1.1.3"
+      },
+      "platform": PlatformTriple.GNULinux64,
+      "rawVersion": "1.1.3",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.3-x86_64-unknown-linux-gnu.tgz",
       "zipped": true
     }
   ],
@@ -171,18 +171,6 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "7b856ed6f33b6a8cf475bcfea76cccd1820cfb84c444f200ad279f780831bcc8",
-        "core_agent_version": "1.1.4",
-        "version": "1.1.4"
-      },
-      "platform": PlatformTriple.GNULinux64,
-      "rawVersion": "1.1.4",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.4-x86_64-unknown-linux-gnu.tgz",
-      "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
         "core_agent_binary_sha256": "9ed79d8404f0b034451def7f7ed61b495e834cea96a12f9acebb0f32c9511067",
         "core_agent_version": "1.1.4",
         "version": "1.1.4"
@@ -191,9 +179,33 @@ const configs: AgentDownloadConfigs = {
       "rawVersion": "1.1.4",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.4-x86_64-apple-darwin.tgz",
       "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "7b856ed6f33b6a8cf475bcfea76cccd1820cfb84c444f200ad279f780831bcc8",
+        "core_agent_version": "1.1.4",
+        "version": "1.1.4"
+      },
+      "platform": PlatformTriple.GNULinux64,
+      "rawVersion": "1.1.4",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.4-x86_64-unknown-linux-gnu.tgz",
+      "zipped": true
     }
   ],
   "1.1.5": [
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "d49a33ff2fa2074fe4aeb320b01060ef39ddf159223ce03d84f11622ce112a73",
+        "core_agent_version": "1.1.5",
+        "version": "1.1.5"
+      },
+      "platform": PlatformTriple.AppleDarwin64,
+      "rawVersion": "1.1.5",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.5-x86_64-apple-darwin.tgz",
+      "zipped": true
+    },
     {
       "manifest": {
         "core_agent_binary": "core-agent",
@@ -217,18 +229,6 @@ const configs: AgentDownloadConfigs = {
       "rawVersion": "1.1.5",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.5-x86_64-unknown-linux-gnu.tgz",
       "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "d49a33ff2fa2074fe4aeb320b01060ef39ddf159223ce03d84f11622ce112a73",
-        "core_agent_version": "1.1.5",
-        "version": "1.1.5"
-      },
-      "platform": PlatformTriple.AppleDarwin64,
-      "rawVersion": "1.1.5",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.5-x86_64-apple-darwin.tgz",
-      "zipped": true
     }
   ],
   "1.1.5.1": [
@@ -242,6 +242,18 @@ const configs: AgentDownloadConfigs = {
       "platform": PlatformTriple.GNULinux32,
       "rawVersion": "1.1.5.1",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.5.1-i686-unknown-linux-gnu.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "52ba08a3572a3e3fdbc67173b8564339910cc803a3d6fbdda00793336a3c086a",
+        "core_agent_version": "1.1.5.1",
+        "version": "1.1.5.1"
+      },
+      "platform": PlatformTriple.AppleDarwin64,
+      "rawVersion": "1.1.5.1",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.5.1-x86_64-apple-darwin.tgz",
       "zipped": true
     },
     {
@@ -267,18 +279,6 @@ const configs: AgentDownloadConfigs = {
       "rawVersion": "1.1.5.1",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.5.1-x86_64-unknown-linux-musl.tgz",
       "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "52ba08a3572a3e3fdbc67173b8564339910cc803a3d6fbdda00793336a3c086a",
-        "core_agent_version": "1.1.5.1",
-        "version": "1.1.5.1"
-      },
-      "platform": PlatformTriple.AppleDarwin64,
-      "rawVersion": "1.1.5.1",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.5.1-x86_64-apple-darwin.tgz",
-      "zipped": true
     }
   ],
   "1.1.6": [
@@ -297,13 +297,13 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "a9eea8e78f36934dcfecbbe19512cb54b43783cc88beaab29f813fd7ded68a32",
+        "core_agent_binary_sha256": "502a741ccdbd57f3ce09983b602d4b87cfcfcb771cce7a6d417b9e9e271bdd4f",
         "core_agent_version": "1.1.6",
         "version": "1.1.6"
       },
-      "platform": PlatformTriple.GNULinux64,
+      "platform": PlatformTriple.AppleDarwin64,
       "rawVersion": "1.1.6",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.6-x86_64-unknown-linux-gnu.tgz",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.6-x86_64-apple-darwin.tgz",
       "zipped": true
     },
     {
@@ -321,13 +321,13 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "502a741ccdbd57f3ce09983b602d4b87cfcfcb771cce7a6d417b9e9e271bdd4f",
+        "core_agent_binary_sha256": "a9eea8e78f36934dcfecbbe19512cb54b43783cc88beaab29f813fd7ded68a32",
         "core_agent_version": "1.1.6",
         "version": "1.1.6"
       },
-      "platform": PlatformTriple.AppleDarwin64,
+      "platform": PlatformTriple.GNULinux64,
       "rawVersion": "1.1.6",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.6-x86_64-apple-darwin.tgz",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.6-x86_64-unknown-linux-gnu.tgz",
       "zipped": true
     }
   ],
@@ -397,6 +397,18 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "2896f584cb373c596164805510531a34b29e4eb34a13685edd4c6df364161414",
+        "core_agent_version": "1.1.8",
+        "version": "1.1.8"
+      },
+      "platform": PlatformTriple.AppleDarwin64,
+      "rawVersion": "1.1.8",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.8-x86_64-apple-darwin.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
         "core_agent_binary_sha256": "e2b93a7075a195755dc46fcee05096c27bcbfae92b8586b794541c529c16b1f2",
         "core_agent_version": "1.1.8",
         "version": "1.1.8"
@@ -417,21 +429,21 @@ const configs: AgentDownloadConfigs = {
       "rawVersion": "1.1.8",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.8-x86_64-unknown-linux-musl.tgz",
       "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "2896f584cb373c596164805510531a34b29e4eb34a13685edd4c6df364161414",
-        "core_agent_version": "1.1.8",
-        "version": "1.1.8"
-      },
-      "platform": PlatformTriple.AppleDarwin64,
-      "rawVersion": "1.1.8",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.8-x86_64-apple-darwin.tgz",
-      "zipped": true
     }
   ],
   "1.1.9": [
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "778a9966c12f3f14b39b25961eb155874f05f58c65576f4fd60a2242d8ae1f45",
+        "core_agent_version": "1.1.9",
+        "version": "1.1.9"
+      },
+      "platform": PlatformTriple.AppleDarwin64,
+      "rawVersion": "1.1.9",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.9-x86_64-apple-darwin.tgz",
+      "zipped": true
+    },
     {
       "manifest": {
         "core_agent_binary": "core-agent",
@@ -467,21 +479,21 @@ const configs: AgentDownloadConfigs = {
       "rawVersion": "1.1.9",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.9-x86_64-unknown-linux-musl.tgz",
       "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "778a9966c12f3f14b39b25961eb155874f05f58c65576f4fd60a2242d8ae1f45",
-        "core_agent_version": "1.1.9",
-        "version": "1.1.9"
-      },
-      "platform": PlatformTriple.AppleDarwin64,
-      "rawVersion": "1.1.9",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.9-x86_64-apple-darwin.tgz",
-      "zipped": true
     }
   ],
   "1.1.10": [
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "82109b579d35d7a34f355afc01a52346305b2c9e5db7560b934f9e6660252410",
+        "core_agent_version": "1.1.10",
+        "version": "1.1.10"
+      },
+      "platform": PlatformTriple.AppleDarwin64,
+      "rawVersion": "1.1.10",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.10-x86_64-apple-darwin.tgz",
+      "zipped": true
+    },
     {
       "manifest": {
         "core_agent_binary": "core-agent",
@@ -516,18 +528,6 @@ const configs: AgentDownloadConfigs = {
       "platform": PlatformTriple.MuslLinux64,
       "rawVersion": "1.1.10",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.10-x86_64-unknown-linux-musl.tgz",
-      "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "82109b579d35d7a34f355afc01a52346305b2c9e5db7560b934f9e6660252410",
-        "core_agent_version": "1.1.10",
-        "version": "1.1.10"
-      },
-      "platform": PlatformTriple.AppleDarwin64,
-      "rawVersion": "1.1.10",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.1.10-x86_64-apple-darwin.tgz",
       "zipped": true
     }
   ],
@@ -609,18 +609,6 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "346177d47d0d4caef06c2e48ebb4b9a3f47a83b6c6c651dd06feac65ae132ce0",
-        "core_agent_version": "1.2.0",
-        "version": "1.2.0"
-      },
-      "platform": PlatformTriple.MuslLinux64,
-      "rawVersion": "1.2.0",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.0-x86_64-unknown-linux-musl.tgz",
-      "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
         "core_agent_binary_sha256": "6cc9ad888597ec0b3b34b0064b21934bb896a75f9124f845b984eacd9a617f62",
         "core_agent_version": "1.2.0",
         "version": "1.2.0"
@@ -628,6 +616,18 @@ const configs: AgentDownloadConfigs = {
       "platform": PlatformTriple.AppleDarwin64,
       "rawVersion": "1.2.0",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.0-x86_64-apple-darwin.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "346177d47d0d4caef06c2e48ebb4b9a3f47a83b6c6c651dd06feac65ae132ce0",
+        "core_agent_version": "1.2.0",
+        "version": "1.2.0"
+      },
+      "platform": PlatformTriple.MuslLinux64,
+      "rawVersion": "1.2.0",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.0-x86_64-unknown-linux-musl.tgz",
       "zipped": true
     }
   ],
@@ -642,6 +642,18 @@ const configs: AgentDownloadConfigs = {
       "platform": PlatformTriple.GNULinux32,
       "rawVersion": "1.2.1",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.1-i686-unknown-linux-gnu.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "45c9997448fcaac5ba9cbba43e82e3885340c9aa398aef5d8f78fbaadf2dd727",
+        "core_agent_version": "1.2.1",
+        "version": "1.2.1"
+      },
+      "platform": PlatformTriple.AppleDarwin64,
+      "rawVersion": "1.2.1",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.1-x86_64-apple-darwin.tgz",
       "zipped": true
     },
     {
@@ -667,18 +679,6 @@ const configs: AgentDownloadConfigs = {
       "rawVersion": "1.2.1",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.1-x86_64-unknown-linux-musl.tgz",
       "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "45c9997448fcaac5ba9cbba43e82e3885340c9aa398aef5d8f78fbaadf2dd727",
-        "core_agent_version": "1.2.1",
-        "version": "1.2.1"
-      },
-      "platform": PlatformTriple.AppleDarwin64,
-      "rawVersion": "1.2.1",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.1-x86_64-apple-darwin.tgz",
-      "zipped": true
     }
   ],
   "1.2.2": [
@@ -692,6 +692,18 @@ const configs: AgentDownloadConfigs = {
       "platform": PlatformTriple.GNULinux32,
       "rawVersion": "1.2.2",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.2-i686-unknown-linux-gnu.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "1374914b5f661010fb706cbf24aa7edb1b1a01e33455fdd5678531c2622b2e5d",
+        "core_agent_version": "1.2.2",
+        "version": "1.2.2"
+      },
+      "platform": PlatformTriple.AppleDarwin64,
+      "rawVersion": "1.2.2",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.2-x86_64-apple-darwin.tgz",
       "zipped": true
     },
     {
@@ -717,18 +729,6 @@ const configs: AgentDownloadConfigs = {
       "rawVersion": "1.2.2",
       "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.2-x86_64-unknown-linux-musl.tgz",
       "zipped": true
-    },
-    {
-      "manifest": {
-        "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "1374914b5f661010fb706cbf24aa7edb1b1a01e33455fdd5678531c2622b2e5d",
-        "core_agent_version": "1.2.2",
-        "version": "1.2.2"
-      },
-      "platform": PlatformTriple.AppleDarwin64,
-      "rawVersion": "1.2.2",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.2-x86_64-apple-darwin.tgz",
-      "zipped": true
     }
   ],
   "1.2.3": [],
@@ -736,13 +736,13 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "7abd5cd53249347916c30fcf02d223b900282e443523989f140100613948c9f6",
+        "core_agent_binary_sha256": "2c357b0c0fb4156c935ae07e131a9076fd1e5dd203ca4a7eff65428e59ca7eb4",
         "core_agent_version": "1.2.4",
         "version": "1.2.4"
       },
-      "platform": PlatformTriple.GNULinux32,
+      "platform": PlatformTriple.MuslLinux64,
       "rawVersion": "1.2.4",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.4-i686-unknown-linux-gnu.tgz",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.4-x86_64-unknown-linux-musl.tgz",
       "zipped": true
     },
     {
@@ -760,13 +760,13 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "2c357b0c0fb4156c935ae07e131a9076fd1e5dd203ca4a7eff65428e59ca7eb4",
+        "core_agent_binary_sha256": "7abd5cd53249347916c30fcf02d223b900282e443523989f140100613948c9f6",
         "core_agent_version": "1.2.4",
         "version": "1.2.4"
       },
-      "platform": PlatformTriple.MuslLinux64,
+      "platform": PlatformTriple.GNULinux32,
       "rawVersion": "1.2.4",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.4-x86_64-unknown-linux-musl.tgz",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.4-i686-unknown-linux-gnu.tgz",
       "zipped": true
     },
     {
@@ -798,13 +798,13 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "bb237f4c4cec8addb83ce0fca7997f2fb507f3418f1499c2a8f98b0d97fce267",
+        "core_agent_binary_sha256": "d579d394118857447e4c0b867bf25e51c39a97bbfa30d03f5558a7cb7cd3d442",
         "core_agent_version": "1.2.5",
         "version": "1.2.5"
       },
-      "platform": PlatformTriple.GNULinux64,
+      "platform": PlatformTriple.AppleDarwin64,
       "rawVersion": "1.2.5",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.5-x86_64-unknown-linux-gnu.tgz",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.5-x86_64-apple-darwin.tgz",
       "zipped": true
     },
     {
@@ -822,13 +822,13 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "d579d394118857447e4c0b867bf25e51c39a97bbfa30d03f5558a7cb7cd3d442",
+        "core_agent_binary_sha256": "bb237f4c4cec8addb83ce0fca7997f2fb507f3418f1499c2a8f98b0d97fce267",
         "core_agent_version": "1.2.5",
         "version": "1.2.5"
       },
-      "platform": PlatformTriple.AppleDarwin64,
+      "platform": PlatformTriple.GNULinux64,
       "rawVersion": "1.2.5",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.5-x86_64-apple-darwin.tgz",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.5-x86_64-unknown-linux-gnu.tgz",
       "zipped": true
     }
   ],
@@ -848,13 +848,13 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "ce647a696c4e0520db0c574522be795314b153c638b486d49ca13705756a0098",
+        "core_agent_binary_sha256": "2dd148e7e3cc4e1703ab2a5adbd485e818de6814502e413cbc0ef368800d46d7",
         "core_agent_version": "1.2.6",
         "version": "1.2.6"
       },
-      "platform": PlatformTriple.GNULinux64,
+      "platform": PlatformTriple.AppleDarwin64,
       "rawVersion": "1.2.6",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.6-x86_64-unknown-linux-gnu.tgz",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.6-x86_64-apple-darwin.tgz",
       "zipped": true
     },
     {
@@ -872,13 +872,13 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "2dd148e7e3cc4e1703ab2a5adbd485e818de6814502e413cbc0ef368800d46d7",
+        "core_agent_binary_sha256": "ce647a696c4e0520db0c574522be795314b153c638b486d49ca13705756a0098",
         "core_agent_version": "1.2.6",
         "version": "1.2.6"
       },
-      "platform": PlatformTriple.AppleDarwin64,
+      "platform": PlatformTriple.GNULinux64,
       "rawVersion": "1.2.6",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.6-x86_64-apple-darwin.tgz",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.6-x86_64-unknown-linux-gnu.tgz",
       "zipped": true
     }
   ],
@@ -898,13 +898,13 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "e51bb6c765ce8413951d6cdf93beea81cd093a551afa8d1e2133b1608b877084",
+        "core_agent_binary_sha256": "9d926367d02707ab655baa2a398aa41b7e859d90462425ec5bf1e3a6fa4de82b",
         "core_agent_version": "1.2.7",
         "version": "1.2.7"
       },
-      "platform": PlatformTriple.GNULinux64,
+      "platform": PlatformTriple.AppleDarwin64,
       "rawVersion": "1.2.7",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.7-x86_64-unknown-linux-gnu.tgz",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.7-x86_64-apple-darwin.tgz",
       "zipped": true
     },
     {
@@ -922,13 +922,63 @@ const configs: AgentDownloadConfigs = {
     {
       "manifest": {
         "core_agent_binary": "core-agent",
-        "core_agent_binary_sha256": "9d926367d02707ab655baa2a398aa41b7e859d90462425ec5bf1e3a6fa4de82b",
+        "core_agent_binary_sha256": "e51bb6c765ce8413951d6cdf93beea81cd093a551afa8d1e2133b1608b877084",
         "core_agent_version": "1.2.7",
         "version": "1.2.7"
       },
-      "platform": PlatformTriple.AppleDarwin64,
+      "platform": PlatformTriple.GNULinux64,
       "rawVersion": "1.2.7",
-      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.7-x86_64-apple-darwin.tgz",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.7-x86_64-unknown-linux-gnu.tgz",
+      "zipped": true
+    }
+  ],
+  "1.2.8": [
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "d6305e37ed399909287d12f241b806e6194d5d6aaa8169af86adab0c02f2ccab",
+        "core_agent_version": "1.2.8",
+        "version": "1.2.8"
+      },
+      "platform": PlatformTriple.GNULinux32,
+      "rawVersion": "1.2.8",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.8-i686-unknown-linux-gnu.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "5b015ece60f7ec482262ba1871fdd08df8b71c0b888f27366422520b8590ba13",
+        "core_agent_version": "1.2.8",
+        "version": "1.2.8"
+      },
+      "platform": PlatformTriple.GNULinux64,
+      "rawVersion": "1.2.8",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.8-x86_64-unknown-linux-gnu.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "6930be95a4c4e9b0a438266155dfbfaa6faf19da6023efe16e2a93e0b5dd646c",
+        "core_agent_version": "1.2.8",
+        "version": "1.2.8"
+      },
+      "platform": PlatformTriple.AppleDarwin64,
+      "rawVersion": "1.2.8",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.8-x86_64-apple-darwin.tgz",
+      "zipped": true
+    },
+    {
+      "manifest": {
+        "core_agent_binary": "core-agent",
+        "core_agent_binary_sha256": "dd9a1393dc341287d744fc0ea5b44b32426979c90744ea2c7217331ee3988800",
+        "core_agent_version": "1.2.8",
+        "version": "1.2.8"
+      },
+      "platform": PlatformTriple.MuslLinux64,
+      "rawVersion": "1.2.8",
+      "url": "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release/scout_apm_core-v1.2.8-x86_64-unknown-linux-musl.tgz",
       "zipped": true
     }
   ]

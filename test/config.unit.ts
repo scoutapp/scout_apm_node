@@ -136,7 +136,7 @@ test("application metadata is correctly generated", (t: Test) => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/124
 test("core agent dir matches python", (t: Test) => {
-    const config = buildScoutConfiguration({coreAgentVersion: "v1.2.7"});
+    const config = buildScoutConfiguration({coreAgentVersion: "v1.2.8"});
     const scout = new Scout(config);
 
     const expectedCoreAgentDir = path.join(
@@ -146,7 +146,7 @@ test("core agent dir matches python", (t: Test) => {
 
     const expectedSocketPath = path.join(
         expectedCoreAgentDir,
-        `scout_apm_core-v1.2.7-${generateTriple()}`,
+        `scout_apm_core-v1.2.8-${generateTriple()}`,
         "core-agent.sock",
     );
 
