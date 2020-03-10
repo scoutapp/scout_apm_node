@@ -9,7 +9,7 @@ let SCOUT_INSTANCE;
 let creating;
 function setGlobalScoutInstance(scout) {
     if (SCOUT_INSTANCE) {
-        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", types_1.LogLevel.Error);
+        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", types_1.LogLevel.Warn);
         return;
     }
     SCOUT_INSTANCE = scout;

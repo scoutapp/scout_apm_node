@@ -24,7 +24,7 @@ export declare type DoneCallback = (done: () => void, info: CallbackInfo) => any
 export declare type SpanCallback = (info: CallbackInfo) => any;
 export declare type RequestCallback = (info: CallbackInfo) => any;
 export declare class Scout extends EventEmitter {
-    private config;
+    private readonly config;
     private downloader;
     private downloaderOptions;
     private binPath;
@@ -40,7 +40,6 @@ export declare class Scout extends EventEmitter {
     private uncaughtExceptionListenerFn;
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions);
     private get socketPath();
-    updateConfiguration(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions): void;
     getSocketFilePath(): string;
     getCoreAgentVersion(): CoreAgentVersion;
     getApplicationMetadata(): ApplicationMetadata;

@@ -11,7 +11,7 @@ let creating: Promise<Scout>;
 
 export function setGlobalScoutInstance(scout: Scout) {
     if (SCOUT_INSTANCE) {
-        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", LogLevel.Error);
+        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", LogLevel.Warn);
         return;
     }
 

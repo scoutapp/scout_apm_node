@@ -29,17 +29,6 @@ class Scout extends events_1.EventEmitter {
         this.slowRequestThresholdMs = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
         this.syncCurrentRequest = null;
         this.syncCurrentSpan = null;
-        this.updateConfiguration(config, opts);
-        // Create async namespace if it does not exist
-        this.createAsyncNamespace();
-    }
-    get socketPath() {
-        if (this.config.socketPath) {
-            return this.config.socketPath;
-        }
-        return path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
-    }
-    updateConfiguration(config, opts) {
         this.config = config || types_1.buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
         if (opts) {
@@ -62,6 +51,14 @@ class Scout extends events_1.EventEmitter {
         if (this.logFn && this.logFn.logger && this.logFn.logger.level && types_1.isLogLevel(this.logFn.logger.level)) {
             this.config.logLevel = types_1.parseLogLevel(this.logFn.logger.level);
         }
+        // Create async namespace if it does not exist
+        this.createAsyncNamespace();
+    }
+    get socketPath() {
+        if (this.config.socketPath) {
+            return this.config.socketPath;
+        }
+        return path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
     }
     getSocketFilePath() {
         return this.socketPath.slice();
@@ -89,6 +86,7 @@ class Scout extends events_1.EventEmitter {
         if (this.agent) {
             return Promise.resolve(this);
         }
+        this.log("[scout] setting up scout...", types_1.LogLevel.Debug);
         const shouldLaunch = this.config.coreAgentLaunch;
         // If the socket path exists then we may be able to skip downloading and launching
         return (shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket())
@@ -147,7 +145,7 @@ class Scout extends events_1.EventEmitter {
      * @returns {boolean} whether the path should be ignored
      */
     ignoresPath(path) {
-        this.log("[scout] checking path [${path}] against ignored paths", types_1.LogLevel.Trace);
+        this.log("[scout] checking path [${path}] against ignored paths", types_1.LogLevel.Debug);
         // If ignore isn't specified or if empty, then nothing is ignored
         if (!this.config.ignore || this.config.ignore.length === 0) {
             return false;
@@ -482,7 +480,16 @@ class Scout extends events_1.EventEmitter {
                 }
                 this.log(`[scout] Finishing and sending request with ID [${request.id}]`, types_1.LogLevel.Debug);
                 this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
-                return request.finishAndSend();
+                return request.finishAndSend()
+                    .then(res => {
+                    this.log(`[scout] Finished and sent request [${request.id}]`, types_1.LogLevel.Debug);
+                    return res;
+                })
+                    .catch(err => {
+                    this.log(`[scout] Failed to finish and send request [${request.id}]:\n ${err}`, types_1.LogLevel.Error);
+                    // rethrow the error
+                    throw err;
+                });
             };
             // Run in the async namespace
             this.asyncNamespace.run(() => {
@@ -545,6 +552,7 @@ class Scout extends events_1.EventEmitter {
     }
     // Send the app registration request to the current agent
     sendRegistrationRequest() {
+        this.log(`[scout] registering application [${this.config.name || ""}]`, types_1.LogLevel.Debug);
         return sendThroughAgent(this, new Requests.V1Register(this.config.name || "", this.config.key || "", types_1.APIVersion.V1))
             .then(() => undefined)
             .catch(err => {

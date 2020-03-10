@@ -102,7 +102,6 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
                 // If the app already has a scout instance or there is a global instance, then update the configuration
                 if (scout) {
-                    scout.updateConfiguration(config, options);
                     req.app.scout = scout;
                     return req.app.scout;
                 }

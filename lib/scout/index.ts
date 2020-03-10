@@ -83,7 +83,7 @@ const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
 const ASYNC_NS_SPAN = `${ASYNC_NS}.span`;
 
 export class Scout extends EventEmitter {
-    private config: Partial<ScoutConfiguration>;
+    private readonly config: Partial<ScoutConfiguration>;
 
     private downloader: AgentDownloader;
     private downloaderOptions: AgentDownloadOptions = {};
@@ -105,24 +105,6 @@ export class Scout extends EventEmitter {
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         super();
 
-        this.updateConfiguration(config, opts);
-
-        // Create async namespace if it does not exist
-        this.createAsyncNamespace();
-    }
-
-    private get socketPath() {
-        if (this.config.socketPath) {
-            return this.config.socketPath;
-        }
-
-        return path.join(
-            path.dirname(this.binPath),
-            Constants.DEFAULT_SOCKET_FILE_NAME,
-        );
-    }
-
-    public updateConfiguration(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         this.config = config || buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
 
@@ -151,6 +133,20 @@ export class Scout extends EventEmitter {
         if (this.logFn && this.logFn.logger && this.logFn.logger.level && isLogLevel(this.logFn.logger.level)) {
             this.config.logLevel = parseLogLevel(this.logFn.logger.level);
         }
+
+        // Create async namespace if it does not exist
+        this.createAsyncNamespace();
+    }
+
+    private get socketPath() {
+        if (this.config.socketPath) {
+            return this.config.socketPath;
+        }
+
+        return path.join(
+            path.dirname(this.binPath),
+            Constants.DEFAULT_SOCKET_FILE_NAME,
+        );
     }
 
     public getSocketFilePath(): string {
@@ -184,6 +180,8 @@ export class Scout extends EventEmitter {
     public setup(): Promise<this> {
         // Return early if agent has already been set up
         if (this.agent) { return Promise.resolve(this); }
+
+        this.log("[scout] setting up scout...", LogLevel.Debug);
 
         const shouldLaunch = this.config.coreAgentLaunch;
 
@@ -249,7 +247,7 @@ export class Scout extends EventEmitter {
      * @returns {boolean} whether the path should be ignored
      */
     public ignoresPath(path: string): boolean {
-        this.log("[scout] checking path [${path}] against ignored paths", LogLevel.Trace);
+        this.log("[scout] checking path [${path}] against ignored paths", LogLevel.Debug);
 
         // If ignore isn't specified or if empty, then nothing is ignored
         if (!this.config.ignore || this.config.ignore.length === 0) {
@@ -664,7 +662,16 @@ export class Scout extends EventEmitter {
                 this.log(`[scout] Finishing and sending request with ID [${request.id}]`, LogLevel.Debug);
                 this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
 
-                return request.finishAndSend();
+                return request.finishAndSend()
+                    .then(res => {
+                        this.log(`[scout] Finished and sent request [${request.id}]`, LogLevel.Debug);
+                        return res;
+                    })
+                    .catch(err => {
+                        this.log(`[scout] Failed to finish and send request [${request.id}]:\n ${err}`, LogLevel.Error);
+                        // rethrow the error
+                        throw err;
+                    });
             };
 
             // Run in the async namespace
@@ -740,6 +747,7 @@ export class Scout extends EventEmitter {
 
     // Send the app registration request to the current agent
     private sendRegistrationRequest(): Promise<void> {
+        this.log(`[scout] registering application [${this.config.name || ""}]`, LogLevel.Debug);
         return sendThroughAgent(this, new Requests.V1Register(
                 this.config.name || "",
                 this.config.key || "",
