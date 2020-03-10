@@ -20,7 +20,7 @@ export function setGlobalScoutInstance(scout: Scout) {
     scout.setupIntegrations();
 }
 
-export function getGlobalScoutInstance() {
+export function getGlobalScoutInstance(): Scout {
     return SCOUT_INSTANCE;
 }
 

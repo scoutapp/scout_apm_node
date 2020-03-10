@@ -225,7 +225,7 @@ class ScoutSpan {
         }
         return frames
             // Filter out scout_apm_node related traces
-            .filter(f => !f.fileName || !f.fileName.includes("scout_apm_node"))
+            .filter(f => !f.fileName || !f.fileName.includes("node_modules/@scout_apm/scout-apm"))
             // Simplify the traces
             .map(f => ({
             line: f.lineNumber,

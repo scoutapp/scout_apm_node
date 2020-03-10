@@ -55,7 +55,7 @@ function scoutMiddleware(opts) {
             requestTimeoutMs = opts.requestTimeoutMs;
         }
         // Use scout instance already set on the application if present
-        (req.app.scout ? req.app.scout : global_1.getGlobalScoutInstance())
+        Promise.resolve(req.app.scout || global_1.getGlobalScoutInstance())
             // Attempt to get the global scout instance
             .then(scout => {
             // Build configuration overrides
