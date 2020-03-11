@@ -130,7 +130,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                         this.pool.release(socket);
                     }
                     if (!socket.registrationResp) {
-                        return Promise.reject(new Errors.UnexpectedError("Missing registration response on socket"));
+                        return Promise.reject(new Errors.UnexpectedError("Missing registration resp on socket"));
                     }
                     return Promise.resolve(socket.registrationResp);
                 }
@@ -144,11 +144,10 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                         this.pool.release(socket);
                     }
                     if (!socket.appMetadataResp) {
-                        return Promise.reject(new Errors.UnexpectedError("Missing app metadta response on socket"));
+                        return Promise.reject(new Errors.UnexpectedError("Missing app metadata resp on socket"));
                     }
                     return Promise.resolve(socket.appMetadataResp);
                 }
-                console.log("SENDING MSG: ", requestType);
                 // Set up a temporary listener to catch socket responses
                 const listener = (resp, socket) => {
                     // Ensure we only capture messages that were received on the socket we're holding
@@ -257,7 +256,6 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                         return;
                     }
                     this.logFn("Sending registration message for newly (re?)connected socket...", types_1.LogLevel.Debug);
-                    console.log("SENDING REGISTRATION");
                     return this.send(this.registrationMsg, socket)
                         .then(resp => {
                         socket.registrationSent = true;
@@ -271,7 +269,6 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                         return;
                     }
                     this.logFn("Sending appMetadata for newly (re?)connected socket...", types_1.LogLevel.Debug);
-                    console.log("SENDING APP META");
                     return this.send(this.appMetadata, socket)
                         .then(resp => {
                         socket.appMetadataSent = true;
@@ -304,7 +301,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      */
     createDomainSocket() {
         return new Promise((resolve) => {
-            let chunks = Buffer.from([]);
+            const chunks = Buffer.from([]);
             // Connect the socket
             const socket = net_1.createConnection(this.getSocketPath(), () => {
                 this.emit(types_1.AgentEvent.SocketConnected);

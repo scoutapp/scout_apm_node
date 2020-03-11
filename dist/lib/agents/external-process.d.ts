@@ -5,13 +5,13 @@ import { ChildProcess } from "child_process";
 import { Agent, AgentStatus, AgentType, BaseAgentRequest, BaseAgentResponse, LogFn, ProcessOptions } from "../types";
 import { V1ApplicationEventResponse, V1RegisterResponse } from "../protocol/v1/responses";
 import { V1Register, V1ApplicationEvent } from "../protocol/v1/requests";
-export declare type ExtraSocketInfo = {
+export interface ExtraSocketInfo {
     registrationSent?: boolean;
     registrationResp?: V1RegisterResponse;
     appMetadataSent?: boolean;
     appMetadataResp?: V1ApplicationEventResponse;
     onFailure?: () => void;
-};
+}
 export declare type ScoutSocket = Socket & ExtraSocketInfo;
 export default class ExternalProcessAgent extends EventEmitter implements Agent {
     private readonly agentType;

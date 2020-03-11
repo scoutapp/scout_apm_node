@@ -31,7 +31,7 @@ const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
 const DOMAIN_SOCKET_CONNECT_TIMEOUT_MS = 5000;
 const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 50;
 
-export type ExtraSocketInfo = {
+export interface ExtraSocketInfo {
     registrationSent?: boolean;
     registrationResp?: V1RegisterResponse;
 
@@ -39,7 +39,7 @@ export type ExtraSocketInfo = {
     appMetadataResp?: V1ApplicationEventResponse;
 
     onFailure?: () => void;
-};
+}
 
 export type ScoutSocket = Socket & ExtraSocketInfo;
 
@@ -183,7 +183,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         // Release the socket back into the pool
                         if (this.pool.isBorrowedResource(socket)) { this.pool.release(socket); }
                         if (!socket.registrationResp) {
-                            return Promise.reject(new Errors.UnexpectedError("Missing registration response on socket"));
+                            return Promise.reject(new Errors.UnexpectedError("Missing registration resp on socket"));
                         }
 
                         return Promise.resolve(socket.registrationResp);
@@ -198,12 +198,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         if (this.pool.isBorrowedResource(socket)) { this.pool.release(socket); }
 
                         if (!socket.appMetadataResp) {
-                            return Promise.reject(new Errors.UnexpectedError("Missing app metadta response on socket"));
+                            return Promise.reject(new Errors.UnexpectedError("Missing app metadata resp on socket"));
                         }
                         return Promise.resolve(socket.appMetadataResp);
                     }
-
-                    console.log("SENDING MSG: ", requestType);
 
                     // Set up a temporary listener to catch socket responses
                     const listener = (resp: any, socket?: ScoutSocket) => {
@@ -330,7 +328,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         if (registrationSent || !this.registrationMsg) { return; }
 
                         this.logFn("Sending registration message for newly (re?)connected socket...", LogLevel.Debug);
-                        console.log("SENDING REGISTRATION");
                         return this.send(this.registrationMsg, socket)
                             .then(resp => {
                                 socket.registrationSent = true;
@@ -342,8 +339,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         // or there is no registration message registered yet
                         if (appMetadataSent || !this.appMetadata) { return; }
 
-                        this.logFn("Sending appMetadata for newly (re?)connected socket...", LogLevel.Debug)
-                        console.log("SENDING APP META");
+                        this.logFn("Sending appMetadata for newly (re?)connected socket...", LogLevel.Debug);
                         return this.send(this.appMetadata, socket)
                             .then(resp => {
                                 socket.appMetadataSent = true;
@@ -385,7 +381,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      */
     private createDomainSocket(): Promise<Socket> {
         return new Promise((resolve) => {
-            let chunks: Buffer = Buffer.from([]);
+            const chunks: Buffer = Buffer.from([]);
 
             // Connect the socket
             const socket = createConnection(this.getSocketPath(), () => {
