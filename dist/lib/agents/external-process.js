@@ -96,7 +96,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         });
     }
     /** @see Agent */
-    send(msg) {
+    send(msg, socket) {
         if (!this.pool) {
             return Promise.reject(new Errors.Disconnected());
         }
@@ -108,13 +108,40 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         }
         const requestType = msg.type;
         this.logFn(`[scout/external-process] sending message:\n ${JSON.stringify(msg.json)}`, types_1.LogLevel.Debug);
+        // If provided with a socket use it, otherwise acquire one from the pool
+        let getSocket = () => Promise.reject();
+        if (socket) {
+            getSocket = () => Promise.resolve(socket);
+        }
+        else {
+            getSocket = () => new Promise((resolve, reject) => this.pool.acquire().then(resolve, reject));
+        }
+        // Build a promise to encapsulate the send
         const sendPromise = new Promise((resolve, reject) => {
-            // Get a socket from the pool
-            this.pool
-                .acquire()
-                .then(
-            // Socket acquisition succeeded
-            (socket) => {
+            // Retrieve the socket (either direct or from pool)
+            getSocket()
+                .then((socket) => {
+                // Avoiding sending registration messages on a socket which has already registered
+                if (socket.registrationSent && requestType === types_1.AgentRequestType.V1Register) {
+                    console.log("AVOIDING RESEND OF V1REGISTER");
+                    // Release the socket back into the pool
+                    if (this.pool.isBorrowedResource(socket)) {
+                        this.pool.release(socket);
+                    }
+                    return Promise.resolve(socket.registrationResp);
+                }
+                // Avoiding sending appMetadata messages on a socket which has already sent it
+                if (socket.appMetadataSent
+                    && requestType === types_1.AgentRequestType.V1ApplicationEvent
+                    && "eventType" in msg
+                    && msg["eventType"] === types_1.ApplicationEventType.ScoutMetadata) {
+                    console.log("AVOIDING RESEND OF APPMETA");
+                    // Release the socket back into the pool
+                    if (this.pool.isBorrowedResource(socket)) {
+                        this.pool.release(socket);
+                    }
+                    return Promise.resolve(socket.appMetadataResp);
+                }
                 // Set up a temporary listener to catch socket responses
                 const listener = (resp, socket) => {
                     // Ensure we only capture messages that were received on the socket we're holding
@@ -142,9 +169,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 const result = socket.write(msg.toBinary());
                 this.emit(types_1.AgentEvent.RequestSent, msg);
                 return result;
-            }, 
-            // Socket acquisition failed
-            err => { throw err; });
+            });
         });
         return promise_timeout_1.timeout(sendPromise, DOMAIN_SOCKET_CREATE_BACKOFF_MS * 2);
     }
@@ -187,6 +212,16 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         this.appMetadata = appMetadata;
     }
     /**
+     * Send a single message over a given connected socket
+     *
+     * @param {Socket} socket - The connected socket over which to send the message
+     * @param {BaseAgentRequest} msg - The message to send
+     * @returns {Promise<R extends BaseAgentResponse>} A promise that evalua
+     */
+    sendSingle(socket, msg) {
+        return Promise.reject();
+    }
+    /**
      * Initialize the socket pool
      *
      * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
@@ -203,23 +238,46 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                         .then(() => Promise.reject(new Errors.ConnectionPoolDisabled()));
                 }
                 let socket;
+                let registrationSent = false;
+                let appMetadataSent = false;
                 // If there is at least one pool error, let's wait a bit between creating domain sockets
                 return types_1.waitMs(this.poolErrors.length > 0 ? DOMAIN_SOCKET_CREATE_BACKOFF_MS : 0)
                     .then(() => this.createDomainSocket())
-                    .then(s => socket = s)
+                    // Save the socket, look for some metadata
+                    .then(s => {
+                    socket = s;
+                    registrationSent = socket.registrationSent === true;
+                    appMetadataSent = socket.appMetadataSent === true;
+                })
                     // Once a socket is connected we must send the current registration & app metadata
                     .then(() => {
-                    if (this.registrationMsg) {
-                        socket.write(this.registrationMsg.toBinary());
-                        this.emit(types_1.AgentEvent.RequestSent, this.registrationMsg);
+                    // Skip sending registration data if it's already been sent
+                    // or there is no registration message registered yet
+                    if (registrationSent || !this.registrationMsg) {
+                        return;
                     }
+                    this.logFn("Sending registration message for newly (re?)connected socket...", types_1.LogLevel.Debug);
+                    return this.send(this.registrationMsg, socket)
+                        .then(resp => {
+                        socket.registrationSent = true;
+                        socket.registrationResp = resp;
+                    });
                 })
+                    .then(() => socket.registered = true)
                     .then(() => {
-                    if (this.appMetadata) {
-                        socket.write(this.appMetadata.toBinary());
-                        this.emit(types_1.AgentEvent.RequestSent, this.appMetadata);
+                    // Skip sending registration data if it's already been sent
+                    // or there is no registration message registered yet
+                    if (appMetadataSent || !this.appMetadata) {
+                        return;
                     }
+                    this.logFn("Sending appMetadata for newly (re?)connected socket...", types_1.LogLevel.Debug);
+                    return this.send(this.appMetadata, socket)
+                        .then(resp => {
+                        socket.appMetadataSent = true;
+                        socket.appMetadataResp = resp;
+                    });
                 })
+                    .then(() => socket.registered = true)
                     // Once we've sent the registration & app metadata the socket is ready to use
                     .then(() => socket);
             },
@@ -245,97 +303,123 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      * @returns {Promise<Socket>} A socket for use in  the socket pool
      */
     createDomainSocket() {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             let chunks = Buffer.from([]);
+            // Connect the socket
             const socket = net_1.createConnection(this.getSocketPath(), () => {
                 this.emit(types_1.AgentEvent.SocketConnected);
                 resolve(socket);
             });
-            // When the socket receives data, parse it and emit socket response received
-            socket.on("data", (data) => {
-                let framed = [];
-                // Parse the buffer to return zero or more well-framed agent responses
-                const { framed: newFramed, remaining: newRemaining } = types_1.splitAgentResponses(data);
-                framed = framed.concat(newFramed);
-                // Add the remaining to the partial response buffer we're keeping
-                chunks = Buffer.concat([chunks, newRemaining]);
-                // Attempt to extract any *just* completed messages
-                // Update the partial response for any remaining
-                const { framed: chunkFramed, remaining: chunkRemaining } = types_1.splitAgentResponses(chunks);
-                framed = framed.concat(chunkFramed);
-                chunks = chunkRemaining;
-                // Read all (likely) fully formed, correctly framed messages
-                framed
-                    .forEach(data => {
-                    // Attempt to parse an agent response
-                    responses_1.V1AgentResponse
-                        .fromBinary(data)
-                        .then(msg => {
-                        this.emit(types_1.AgentEvent.SocketResponseReceived, msg, socket);
-                        switch (msg.type) {
-                            case types_1.AgentResponseType.V1StartRequest:
-                                this.emit(types_1.AgentEvent.RequestStarted);
-                                break;
-                            case types_1.AgentResponseType.V1FinishRequest:
-                                this.emit(types_1.AgentEvent.RequestFinished);
-                                break;
-                            case types_1.AgentResponseType.V1StartSpan:
-                                this.emit(types_1.AgentEvent.SpanStarted);
-                                break;
-                            case types_1.AgentResponseType.V1StopSpan:
-                                this.emit(types_1.AgentEvent.SpanStopped);
-                                break;
-                            case types_1.AgentResponseType.V1ApplicationEvent:
-                                this.emit(types_1.AgentEvent.ApplicationEventReported);
-                                break;
-                        }
-                    })
-                        .catch(err => {
-                        this.logFn(`[scout/external-process] Socket response parse error:\n ${err}`, types_1.LogLevel.Error);
-                        if (this.pool.isBorrowedResource(socket)) {
-                            this.pool.release(socket);
-                        }
-                        this.emit(types_1.AgentEvent.SocketResponseParseError, err);
-                    });
-                });
-            });
-            // When socket closes emit information regarding closure
-            socket.on("close", () => {
-                this.logFn("[scout/external-process] Socket closed", types_1.LogLevel.Debug);
-                // Run cleanup method
-                if ("onFailure" in socket) {
-                    socket.onFailure();
+            // Add handlers for socket management
+            socket.on("data", (data) => this.handleSocketData(socket, data, chunks));
+            socket.on("close", () => this.handleSocketClose(socket));
+            socket.on("disconnect", () => this.handleSocketDisconnect(socket));
+            socket.on("error", (err) => this.handleSocketError(socket, err));
+        });
+    }
+    /**
+     * Handle socket error
+     *
+     * @param {Socket} socket
+     * @param {Error} err - the error that occurred
+     */
+    handleSocketError(socket, err) {
+        this.emit(types_1.AgentEvent.SocketError, err);
+        this.logFn(`[scout/external-process] Socket connection error:\n${err}`, types_1.LogLevel.Error);
+        // Run cleanup method
+        if ("onFailure" in socket) {
+            socket.onFailure();
+        }
+        // If an error occurrs on the socket, destroy the socket
+        if (this.pool.isBorrowedResource(socket)) {
+            this.pool.destroy(socket);
+        }
+    }
+    /**
+     * Handle a socket closure
+     *
+     * @param {Socket} socket
+     */
+    handleSocketClose(socket) {
+        this.logFn("[scout/external-process] Socket closed", types_1.LogLevel.Debug);
+        // Run cleanup method
+        if ("onFailure" in socket) {
+            socket.onFailure();
+        }
+        // If the socket is closed, destroy the resource, removing it from the pool
+        if (this.pool.isBorrowedResource(socket)) {
+            this.pool.destroy(socket);
+        }
+        this.emit(types_1.AgentEvent.SocketDisconnected);
+    }
+    /**
+     * Handle a socket disconnect
+     *
+     * @param {Socket} socket
+     */
+    handleSocketDisconnect(socket) {
+        this.logFn("[scout/external-process] Socket disconnected", types_1.LogLevel.Debug);
+        // Run cleanup method
+        if ("onFailure" in socket) {
+            socket.onFailure();
+        }
+        // If the socket has disconnected destroy & remove from pool
+        if (this.pool.isBorrowedResource(socket)) {
+            this.pool.destroy(socket);
+        }
+        this.emit(types_1.AgentEvent.SocketDisconnected);
+    }
+    /**
+     * Process received socket data
+     *
+     * @param {Socket} socket - The socket the data was received over
+     * @param {Buffer} data - data received over a socket
+     * @param {Buffer} chunks - data left over from the previous reads of the socket
+     */
+    handleSocketData(socket, data, chunks) {
+        let framed = [];
+        // Parse the buffer to return zero or more well-framed agent responses
+        const { framed: newFramed, remaining: newRemaining } = types_1.splitAgentResponses(data);
+        framed = framed.concat(newFramed);
+        // Add the remaining to the partial response buffer we're keeping
+        chunks = Buffer.concat([chunks, newRemaining]);
+        // Attempt to extract any *just* completed messages
+        // Update the partial response for any remaining
+        const { framed: chunkFramed, remaining: chunkRemaining } = types_1.splitAgentResponses(chunks);
+        framed = framed.concat(chunkFramed);
+        chunks = chunkRemaining;
+        // Read all (likely) fully formed, correctly framed messages
+        framed
+            .forEach(data => {
+            // Attempt to parse an agent response
+            responses_1.V1AgentResponse
+                .fromBinary(data)
+                .then(msg => {
+                this.emit(types_1.AgentEvent.SocketResponseReceived, msg, socket);
+                switch (msg.type) {
+                    case types_1.AgentResponseType.V1StartRequest:
+                        this.emit(types_1.AgentEvent.RequestStarted);
+                        break;
+                    case types_1.AgentResponseType.V1FinishRequest:
+                        this.emit(types_1.AgentEvent.RequestFinished);
+                        break;
+                    case types_1.AgentResponseType.V1StartSpan:
+                        this.emit(types_1.AgentEvent.SpanStarted);
+                        break;
+                    case types_1.AgentResponseType.V1StopSpan:
+                        this.emit(types_1.AgentEvent.SpanStopped);
+                        break;
+                    case types_1.AgentResponseType.V1ApplicationEvent:
+                        this.emit(types_1.AgentEvent.ApplicationEventReported);
+                        break;
                 }
-                // If the socket is closed, destroy the resource, removing it from the pool
+            })
+                .catch(err => {
+                this.logFn(`[scout/external-process] Socket response parse error:\n ${err}`, types_1.LogLevel.Error);
                 if (this.pool.isBorrowedResource(socket)) {
-                    this.pool.destroy(socket);
+                    this.pool.release(socket);
                 }
-                this.emit(types_1.AgentEvent.SocketDisconnected);
-            });
-            socket.on("disconnect", () => {
-                this.logFn("[scout/external-process] Socket disconnected", types_1.LogLevel.Debug);
-                // Run cleanup method
-                if ("onFailure" in socket) {
-                    socket.onFailure();
-                }
-                // If the socket has disconnected destroy & remove from pool
-                if (this.pool.isBorrowedResource(socket)) {
-                    this.pool.destroy(socket);
-                }
-                this.emit(types_1.AgentEvent.SocketDisconnected);
-            });
-            socket.on("error", (err) => {
-                this.emit(types_1.AgentEvent.SocketError, err);
-                this.logFn(`[scout/external-process] Socket connection error:\n${err}`, types_1.LogLevel.Error);
-                // Run cleanup method
-                if ("onFailure" in socket) {
-                    socket.onFailure();
-                }
-                // If an error occurrs on the socket, destroy the socket
-                if (this.pool.isBorrowedResource(socket)) {
-                    this.pool.destroy(socket);
-                }
-                reject(err);
+                this.emit(types_1.AgentEvent.SocketResponseParseError, err);
             });
         });
     }
