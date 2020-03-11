@@ -218,6 +218,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 this.emit(types_1.AgentEvent.RequestSent, msg);
             });
         });
+        this.logFn(`[scout/external-process] sending with timeout [${this.opts.sendTimeoutMs}ms]`, types_1.LogLevel.Debug);
         return promise_timeout_1.timeout(sendPromise, this.opts.sendTimeoutMs);
     }
     /**

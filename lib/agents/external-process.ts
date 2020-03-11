@@ -281,6 +281,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                 });
         });
 
+        this.logFn(`[scout/external-process] sending with timeout [${this.opts.sendTimeoutMs}ms]`, LogLevel.Debug);
         return timeout(sendPromise, this.opts.sendTimeoutMs);
     }
 
