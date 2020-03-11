@@ -161,9 +161,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 if (!socket.appMetadataSent && isAppMetadataMsg) {
                     return socket;
                 }
-                // If we've already sent rewe're already *not* already registered and this message is *not* a registration msg,
-                // we need to send registration msg first
-                // or there is no registration message registered yet
+                // Force sending of app metadata message first
                 this.logFn("Sending app metadata message for newly (re?)connected socket...", types_1.LogLevel.Debug);
                 return this.send(this.appMetadataMsg, socket)
                     .then(resp => {
@@ -172,6 +170,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                     return socket;
                 });
             })
+                // Send whatever message has made it this far
                 .then((socket) => {
                 // Set up a temporary listener to catch socket responses
                 const listener = (resp, socket) => {
@@ -265,15 +264,12 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                     return this.disconnect()
                         .then(() => Promise.reject(new Errors.ConnectionPoolDisabled()));
                 }
-                let socket;
-                let registrationSent = false;
-                let appMetadataSent = false;
                 // If there is at least one pool error, let's wait a bit between creating domain sockets
-                // let maybeWait = () => Promise.resolve();
-                // if (this.poolErrors.length > DOMAIN_SOCKET_CREATE_ERR_THRESHOLD) {
-                //     maybeWait = () => waitMs(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
-                // }
-                return this.createDomainSocket();
+                let maybeWait = () => Promise.resolve();
+                if (this.poolErrors.length > DOMAIN_SOCKET_CREATE_ERR_THRESHOLD) {
+                    maybeWait = () => types_1.waitMs(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
+                }
+                return maybeWait().then(() => this.createDomainSocket());
             },
             destroy: (socket) => Promise.resolve(socket.destroy()),
             validate: (socket) => Promise.resolve(!socket.destroyed),
@@ -424,6 +420,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         }
         return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
     }
+    // Helper for retrieving generic-pool stats
     getPoolStats() {
         if (!this.pool) {
             return {};
