@@ -341,8 +341,10 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      */
     handleSocketClose(socket) {
         this.logFn("[scout/external-process] Socket closed", types_1.LogLevel.Debug);
-        // // Run cleanup method
-        // if (socket.onFailure) { (socket as any).onFailure(); }
+        // Run cleanup method
+        if (socket.onFailure) {
+            socket.onFailure();
+        }
         // Ensure the socket is not used again in a direct context (ex. `send(msg, socket)`)
         socket.doNotUse = true;
         // If the socket is closed, destroy the resource, removing it from the pool
@@ -387,6 +389,8 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         const { framed: chunkFramed, remaining: chunkRemaining } = types_1.splitAgentResponses(chunks);
         framed = framed.concat(chunkFramed);
         chunks = chunkRemaining;
+        this.logFn(`framed: [${framed.toString()}]`, types_1.LogLevel.Debug);
+        this.logFn(`chunks: [${chunks.toString()}]`, types_1.LogLevel.Debug);
         // Read all (likely) fully formed, correctly framed messages
         framed
             .forEach(data => {

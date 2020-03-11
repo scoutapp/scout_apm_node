@@ -428,8 +428,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private handleSocketClose(socket: ScoutSocket) {
         this.logFn("[scout/external-process] Socket closed", LogLevel.Debug);
 
-        // // Run cleanup method
-        // if (socket.onFailure) { (socket as any).onFailure(); }
+        // Run cleanup method
+        if (socket.onFailure) { (socket as any).onFailure(); }
 
         // Ensure the socket is not used again in a direct context (ex. `send(msg, socket)`)
         socket.doNotUse = true;
@@ -488,6 +488,9 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         const {framed: chunkFramed, remaining: chunkRemaining} = splitAgentResponses(chunks);
         framed = framed.concat(chunkFramed);
         chunks = chunkRemaining;
+
+        this.logFn(`framed: [${framed.toString()}]`, LogLevel.Debug);
+        this.logFn(`chunks: [${chunks.toString()}]`, LogLevel.Debug);
 
         // Read all (likely) fully formed, correctly framed messages
         framed
