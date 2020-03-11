@@ -60,7 +60,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private logFn: LogFn;
 
     private registrationMsg: V1Register;
-    private appMetadata: V1ApplicationEvent;
+    private appMetadataMsg: V1ApplicationEvent;
 
     constructor(opts: ProcessOptions, logFn?: LogFn) {
         super();
@@ -161,7 +161,12 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (!this.pool) { return Promise.reject(new Errors.Disconnected()); }
         if (this.stopped) { return Promise.reject(new Errors.Disconnected()); }
         if (!msg) { return Promise.reject(new Errors.UnexpectedError("No message provided to send()")); }
+
         const requestType = msg.type;
+        const isRegistrationMsg = requestType === AgentRequestType.V1Register;
+        const isAppMetadataMsg = requestType === AgentRequestType.V1ApplicationEvent
+            && "eventType" in msg
+            && (msg as any).eventType === ApplicationEventType.ScoutMetadata;
 
         this.logFn(`[scout/external-process] sending message:\n ${JSON.stringify(msg.json)}`, LogLevel.Debug);
 
@@ -177,32 +182,48 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         const sendPromise = new Promise((resolve, reject) => {
             // Retrieve the socket (either direct or from pool)
             getSocket()
+            // If the socket has not had registration message sent yet, force sending of it
                 .then((socket: ScoutSocket) => {
-                    // Avoiding sending registration messages on a socket which has already registered
-                    if (socket.registrationSent && requestType === AgentRequestType.V1Register) {
-                        // Release the socket back into the pool
-                        if (this.pool.isBorrowedResource(socket)) { this.pool.release(socket); }
-                        if (!socket.registrationResp) {
-                            return Promise.reject(new Errors.UnexpectedError("Missing registration resp on socket"));
-                        }
+                    // If the registration has already been sent, don't do anything
+                    if (socket.registrationSent) { return socket; }
 
-                        return Promise.resolve(socket.registrationResp);
-                    }
+                    // If the registration has not been sent but the message is a registration message, do nothing
+                    if (!socket.registrationSent && isRegistrationMsg) { return socket; }
 
-                    // Avoiding sending appMetadata messages on a socket which has already sent it
-                    if (socket.appMetadataSent
-                        && requestType === AgentRequestType.V1ApplicationEvent
-                        && "eventType" in msg
-                        && (msg as any).eventType === ApplicationEventType.ScoutMetadata) {
-                        // Release the socket back into the pool
-                        if (this.pool.isBorrowedResource(socket)) { this.pool.release(socket); }
+                    // If we're already *not* already registered and this message is *not* a registration msg,
+                    // we need to send registration msg first
+                    // or there is no registration message registered yet
+                    this.logFn("Sending registration message for newly (re?)connected socket...", LogLevel.Debug);
+                    return this.send(this.registrationMsg, socket)
+                        .then(resp => {
+                            socket.registrationSent = true;
+                            socket.registrationResp = resp;
+                            return socket;
+                        });
+                })
+            // If the socket has not had the app metadata mesage sent yet, force sending of it
+                .then((socket: ScoutSocket) => {
+                    // We might end up here if registration hasn't been sent yet
+                    if (!socket.registrationSent && isRegistrationMsg) { return socket; }
 
-                        if (!socket.appMetadataResp) {
-                            return Promise.reject(new Errors.UnexpectedError("Missing app metadata resp on socket"));
-                        }
-                        return Promise.resolve(socket.appMetadataResp);
-                    }
+                    // If the app metadata has already been sent, don't do anything
+                    if (socket.appMetadataSent) { return socket; }
 
+                    // If the app metadata has not been sent but the message is an app metadata message, do nothing
+                    if (!socket.appMetadataSent && isAppMetadataMsg) { return socket; }
+
+                    // If we've already sent rewe're already *not* already registered and this message is *not* a registration msg,
+                    // we need to send registration msg first
+                    // or there is no registration message registered yet
+                    this.logFn("Sending app metadata message for newly (re?)connected socket...", LogLevel.Debug);
+                    return this.send(this.appMetadataMsg, socket)
+                        .then(resp => {
+                            socket.appMetadataSent = true;
+                            socket.appMetadataResp = resp;
+                            return socket;
+                        });
+                })
+                .then((socket: ScoutSocket) => {
                     // Set up a temporary listener to catch socket responses
                     const listener = (resp: any, socket?: ScoutSocket) => {
                         // Ensure we only capture messages that were received on the socket we're holding
@@ -216,11 +237,23 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         // Remove this temporary listener
                         this.removeListener(AgentEvent.SocketResponseReceived, listener);
 
+                        // Release the socket back into the pool
+                        if (this.pool.isBorrowedResource(socket)) {
+                            if (isRegistrationMsg) {
+                                socket.registrationSent = true;
+                                socket.registrationResp = resp;
+                            }
+
+                            if (isAppMetadataMsg) {
+                                socket.appMetadataSent = true;
+                                socket.appMetadataResp = resp;
+                            }
+
+                            this.pool.release(socket);
+                        }
+
                         // Resolve the encasing promise
                         resolve(resp);
-
-                        // Release the socket back into the pool
-                        if (this.pool.isBorrowedResource(socket)) { this.pool.release(socket); }
                     };
 
                     // Set up a listener on our own event emitter for the parsed socket response
@@ -280,9 +313,9 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * @param {V1Register} registerMsg - Registration message
      * @param {V1ApplicationEvent} metadata - App metadata
      */
-    public setRegistrationAndMetadata(registerMsg: V1Register, appMetadata: V1ApplicationEvent) {
+    public setRegistrationAndMetadata(registerMsg: V1Register, appMetadataMsg: V1ApplicationEvent) {
         this.registrationMsg = registerMsg;
-        this.appMetadata = appMetadata;
+        this.appMetadataMsg = appMetadataMsg;
     }
 
     /**
@@ -308,47 +341,12 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                 let appMetadataSent = false;
 
                 // If there is at least one pool error, let's wait a bit between creating domain sockets
-                let maybeWait = () => Promise.resolve();
-                if (this.poolErrors.length > DOMAIN_SOCKET_CREATE_ERR_THRESHOLD) {
-                    maybeWait = () => waitMs(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
-                }
+                // let maybeWait = () => Promise.resolve();
+                // if (this.poolErrors.length > DOMAIN_SOCKET_CREATE_ERR_THRESHOLD) {
+                //     maybeWait = () => waitMs(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
+                // }
 
-                return maybeWait()
-                    .then(() => this.createDomainSocket())
-                // Save the socket, look for some metadata
-                    .then(s => {
-                        socket = s;
-                        registrationSent = socket.registrationSent === true;
-                        appMetadataSent = socket.appMetadataSent === true;
-                    })
-                // Once a socket is connected we must send the current registration & app metadata
-                    .then(() => {
-                        // Skip sending registration data if it's already been sent
-                        // or there is no registration message registered yet
-                        if (registrationSent || !this.registrationMsg) { return; }
-
-                        this.logFn("Sending registration message for newly (re?)connected socket...", LogLevel.Debug);
-                        return this.send(this.registrationMsg, socket)
-                            .then(resp => {
-                                socket.registrationSent = true;
-                                socket.registrationResp = resp;
-                            });
-                    })
-                    .then(() => {
-                        // Skip sending registration data if it's already been sent
-                        // or there is no registration message registered yet
-                        if (appMetadataSent || !this.appMetadata) { return; }
-
-                        this.logFn("Sending appMetadata for newly (re?)connected socket...", LogLevel.Debug);
-                        return this.send(this.appMetadata, socket)
-                            .then(resp => {
-                                socket.appMetadataSent = true;
-                                socket.appMetadataResp = resp;
-                            });
-                    })
-                // Once we've sent the registration & app metadata the socket is ready to use
-                    .then(() => socket);
-
+                return this.createDomainSocket();
             },
             destroy: (socket) => Promise.resolve(socket.destroy()),
             validate: (socket) => Promise.resolve(!socket.destroyed),
@@ -517,6 +515,15 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         }
 
         return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
+    }
+
+    private getPoolStats(): object{
+        if (!this.pool) { return {}; }
+        return {
+            pending: this.pool.pending,
+            max: this.pool.max,
+            min: this.pool.min,
+        };
     }
 
      // Start a detached process with the configured scout-agent binary

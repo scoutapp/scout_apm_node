@@ -26,7 +26,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private stopped;
     private logFn;
     private registrationMsg;
-    private appMetadata;
+    private appMetadataMsg;
     constructor(opts: ProcessOptions, logFn?: LogFn);
     /** @see Agent */
     type(): Readonly<AgentType>;
@@ -59,7 +59,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * @param {V1Register} registerMsg - Registration message
      * @param {V1ApplicationEvent} metadata - App metadata
      */
-    setRegistrationAndMetadata(registerMsg: V1Register, appMetadata: V1ApplicationEvent): void;
+    setRegistrationAndMetadata(registerMsg: V1Register, appMetadataMsg: V1ApplicationEvent): void;
     /**
      * Initialize the socket pool
      *
@@ -102,5 +102,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      */
     private handleSocketData;
     private getSocketPath;
+    private getPoolStats;
     private startProcess;
 }
