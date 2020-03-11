@@ -11,7 +11,6 @@ const promise_timeout_1 = require("promise-timeout");
 const types_1 = require("../types");
 const responses_1 = require("../protocol/v1/responses");
 const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
-const DOMAIN_SOCKET_CONNECT_TIMEOUT_MS = 5000;
 const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
 class ExternalProcessAgent extends events_1.EventEmitter {
     constructor(opts, logFn) {
@@ -219,7 +218,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 this.emit(types_1.AgentEvent.RequestSent, msg);
             });
         });
-        return promise_timeout_1.timeout(sendPromise, DOMAIN_SOCKET_CONNECT_TIMEOUT_MS);
+        return promise_timeout_1.timeout(sendPromise, this.opts.sendTimeoutMs);
     }
     /**
      * Check if the process is present

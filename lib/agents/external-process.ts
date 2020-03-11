@@ -28,7 +28,6 @@ import { V1AgentResponse, V1ApplicationEventResponse, V1RegisterResponse } from 
 import { V1Register, V1ApplicationEvent } from "../protocol/v1/requests";
 
 const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
-const DOMAIN_SOCKET_CONNECT_TIMEOUT_MS = 5000;
 const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
 
 export interface ExtraSocketInfo {
@@ -282,7 +281,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                 });
         });
 
-        return timeout(sendPromise, DOMAIN_SOCKET_CONNECT_TIMEOUT_MS);
+        return timeout(sendPromise, this.opts.sendTimeoutMs);
     }
 
     /**
