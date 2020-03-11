@@ -5,7 +5,7 @@ import { ChildProcess } from "child_process";
 import { Client } from "pg";
 import { Connection } from "mysql";
 import ExternalProcessAgent from "../lib/agents/external-process";
-import { APIVersion, Agent, CoreAgentVersion, ProcessOptions, ScoutConfiguration, ExpressFn } from "../lib/types";
+import { APIVersion, Agent, CoreAgentVersion, ProcessOptions, ScoutConfiguration, ExpressFn, LogFn } from "../lib/types";
 import { ScoutOptions, Scout, ScoutRequest, ScoutSpan } from "../lib/scout";
 import { Test } from "tape";
 export declare const EXPRESS_TEST_TIMEOUT_MS = 3000;
@@ -14,6 +14,7 @@ export declare const MYSQL_TEST_TIMEOUT_MS = 10000;
 export declare const DASHBOARD_SEND_TIMEOUT_MS: number;
 export declare function bootstrapExternalProcessAgent(t: Test, rawVersion: string, opts?: {
     buildProcOpts?: (bp: string, uri: string) => ProcessOptions;
+    logFn?: LogFn;
 }): Promise<ExternalProcessAgent>;
 export declare function initializeAgent(t: Test, agent: Agent, appName: string, agentKey: string, appVersion: CoreAgentVersion, apiVersion?: APIVersion): Promise<Agent>;
 export declare function waitMs(ms: number, t?: Test): Promise<void>;
