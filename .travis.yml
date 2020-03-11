@@ -7,7 +7,10 @@ cache:
   yarn: true
 
 script:
-  - make test
+  - ensure-pg-docker-image
+  - ensure-mysql-docker-image
+  - make test-unit test-int
+  - make test-e2e
 
 services:
   - docker
