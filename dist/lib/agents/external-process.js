@@ -326,10 +326,6 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     handleSocketError(socket, err) {
         this.emit(types_1.AgentEvent.SocketError, err);
         this.logFn(`[scout/external-process] Socket connection error:\n${err}`, types_1.LogLevel.Error);
-        // Run cleanup method
-        if (socket.onFailure) {
-            socket.onFailure();
-        }
         // Ensure the socket is not used again
         socket.doNotUse = true;
         // If an error occurrs on the socket, destroy the socket
@@ -346,7 +342,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     handleSocketClose(socket) {
         this.logFn("[scout/external-process] Socket closed", types_1.LogLevel.Debug);
         // Run cleanup method
-        if ("onFailure" in socket) {
+        if (socket.onFailure) {
             socket.onFailure();
         }
         // Ensure the socket is not used again in a direct context (ex. `send(msg, socket)`)
@@ -365,10 +361,6 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      */
     handleSocketDisconnect(socket) {
         this.logFn("[scout/external-process] Socket disconnected", types_1.LogLevel.Debug);
-        // Run cleanup method
-        if ("onFailure" in socket) {
-            socket.onFailure();
-        }
         // Ensure the socket is not used again
         socket.doNotUse = true;
         // If the socket has disconnected destroy & remove from pool

@@ -410,9 +410,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         this.emit(AgentEvent.SocketError, err);
         this.logFn(`[scout/external-process] Socket connection error:\n${err}`, LogLevel.Error);
 
-        // Run cleanup method
-        if (socket.onFailure) { socket.onFailure(); }
-
         // Ensure the socket is not used again
         socket.doNotUse = true;
 
@@ -432,7 +429,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         this.logFn("[scout/external-process] Socket closed", LogLevel.Debug);
 
         // Run cleanup method
-        if ("onFailure" in socket) { (socket as any).onFailure(); }
+        if (socket.onFailure) { (socket as any).onFailure(); }
 
         // Ensure the socket is not used again in a direct context (ex. `send(msg, socket)`)
         socket.doNotUse = true;
@@ -454,9 +451,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      */
     private handleSocketDisconnect(socket: ScoutSocket) {
         this.logFn("[scout/external-process] Socket disconnected", LogLevel.Debug);
-
-        // Run cleanup method
-        if ("onFailure" in socket) { (socket as any).onFailure(); }
 
         // Ensure the socket is not used again
         socket.doNotUse = true;
