@@ -30,6 +30,7 @@ export enum AgentEvent {
     SocketResponseReceived = "agent-event-socket-response-received",
     SocketResponseParseError = "agent-event-socket-response-parse-error",
     SocketDisconnected = "agent-event-socket-disconnected",
+    SocketClosed = "agent-event-socket-closed",
     SocketError = "agent-event-socket-error",
     SocketConnected = "agent-event-socket-connected",
 

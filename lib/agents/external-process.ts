@@ -441,7 +441,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         this.pool.clear();
 
-        this.emit(AgentEvent.SocketDisconnected);
+        this.emit(AgentEvent.SocketClosed);
     }
 
     /**

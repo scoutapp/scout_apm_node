@@ -352,7 +352,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             this.pool.destroy(socket);
         }
         this.pool.clear();
-        this.emit(types_1.AgentEvent.SocketDisconnected);
+        this.emit(types_1.AgentEvent.SocketClosed);
     }
     /**
      * Handle a socket disconnect
