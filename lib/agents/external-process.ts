@@ -469,6 +469,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * @param {Buffer} chunks - data left over from the previous reads of the socket
      */
     private handleSocketData(socket: ScoutSocket, data: Buffer, chunks: Buffer) {
+        this.logFn(
+            `[scout/external-process] received DATA: ${data.toString()}`,
+            LogLevel.Debug,
+        );
+
         let framed: Buffer[] = [];
 
         // Parse the buffer to return zero or more well-framed agent responses

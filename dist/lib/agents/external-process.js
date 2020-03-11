@@ -377,6 +377,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      * @param {Buffer} chunks - data left over from the previous reads of the socket
      */
     handleSocketData(socket, data, chunks) {
+        this.logFn(`[scout/external-process] received DATA: ${data.toString()}`, types_1.LogLevel.Debug);
         let framed = [];
         // Parse the buffer to return zero or more well-framed agent responses
         const { framed: newFramed, remaining: newRemaining } = types_1.splitAgentResponses(data);
