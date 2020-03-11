@@ -428,8 +428,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private handleSocketClose(socket: ScoutSocket) {
         this.logFn("[scout/external-process] Socket closed", LogLevel.Debug);
 
-        // Run cleanup method
-        if (socket.onFailure) { (socket as any).onFailure(); }
+        // // Run cleanup method
+        // if (socket.onFailure) { (socket as any).onFailure(); }
 
         // Ensure the socket is not used again in a direct context (ex. `send(msg, socket)`)
         socket.doNotUse = true;

@@ -341,10 +341,8 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      */
     handleSocketClose(socket) {
         this.logFn("[scout/external-process] Socket closed", types_1.LogLevel.Debug);
-        // Run cleanup method
-        if (socket.onFailure) {
-            socket.onFailure();
-        }
+        // // Run cleanup method
+        // if (socket.onFailure) { (socket as any).onFailure(); }
         // Ensure the socket is not used again in a direct context (ex. `send(msg, socket)`)
         socket.doNotUse = true;
         // If the socket is closed, destroy the resource, removing it from the pool
