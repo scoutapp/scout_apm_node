@@ -6,28 +6,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.7] - 2020-03-02
+## [0.1.8] - 2020-03-11
+
+### Added
+- feature/174 bump core agent versiont 1.2.8 ([#174](https://github.com/scoutapp/scout_apm_node/issues/174))
+- feature/169 detect application root ([#169](https://github.com/scoutapp/scout_apm_node/issues/169))
+
+### Changed
+- bugfix/171 Ensure addContext takes name + value everywhere ([#171](https://github.com/scoutapp/scout_apm_node/issues/171))
+- bugfix/172 backtraces do not contain useful frames ([#172](https://github.com/scoutapp/scout_apm_node/issues/172))
+- bugfix/170 agent does not reconnect ([#170](https://github.com/scoutapp/scout_apm_node/issues/170))
+
+## [0.1.7] - 2020-03-02
 
 ### Changed
 - bugfix: Fix incorrect argument to handler in express integration ([#166](https://github.com/scoutapp/scout_apm_node/issues/166))
 
-## [1.1.6] - 2020-02-28
+## [0.1.6] - 2020-02-28
 
 ### Changed
 - bugfix: Fix Template/Render span not being passed to core-agent ([#162](https://github.com/scoutapp/scout_apm_node/issues/162))
 - bugfix: Fix unreachable core agent exception ([#161](https://github.com/scoutapp/scout_apm_node/issues/161))
 
-## [1.1.5] - 2020-02-25
+## [0.1.5] - 2020-02-25
 
 ### Changed
 - bugfix: Fix missing express properties ([#157](https://github.com/scoutapp/scout_apm_node/issues/157))
 
-## [1.1.4] - 2020-02-25
+## [0.1.4] - 2020-02-25
 
 ### Changed
 - bugfix: export expressMiddleware in scout bundle
 
-## [1.1.3] - 2020-02-25
+## [0.1.3] - 2020-02-25
 
 ### Added
 - feature: directly ignore transaction ([#148](https://github.com/scoutapp/scout_apm_node/issues/148))
@@ -37,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - bugfix: trim library export ([#149](https://github.com/scoutapp/scout_apm_node/issues/149))
 - bugfix: dont send traces for unknown routes ([#151](https://github.com/scoutapp/scout_apm_node/issues/151))
 
-## [1.1.2] - 2020-02-21
+## [0.1.2] - 2020-02-21
 
 ### Added
 - feature: Use addContext for single tags, top level scout.addContext method ([#138](https://github.com/scoutapp/scout_apm_node/issues/138))
@@ -59,7 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v1.1.7...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.4...v0.1.5

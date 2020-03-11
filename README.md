@@ -27,22 +27,26 @@ $ npm install @scout_apm/scout-apm
 Scout supports use with `express`-based applications by using app-wide middleware:
 
 ```javascript
+const scout = require("@scout_apm/scout-apm");
 const process = require("process");
 const express = require("express");
-const scout = require("@scout_apm/scout-apm");
 
-// Initialize the express application
-const app = express();
-
-// Enable the app-wide scout middleware
-app.use(scout.expressMiddleware({
-  config: {
+// Set up scout (this returns a Promise you may wait on if desired)
+scout.install(
+  {
     allowShutdown: true, // allow shutting down spawned scout-agent processes from this program
     monitor: true, // enable monitoring
     name: "<application name>",
     key: "<scout key>",
   },
-}));
+);
+
+
+// Initialize the express application
+const app = express();
+
+// Enable the app-wide scout middleware
+app.use(scout.expressMiddleware());
 
 // Set up the routes for the application
 app.get('/', function (req, res) {
@@ -71,29 +75,29 @@ For more information on configuration, see `docs/configuration.md`
 Scout supports use with any other frameworks through it's `Promise` based API:
 
 ```javascript
-const Scout = require("@scout_apm/scout-apm").Scout;
+const scout = require("@scout_apm/scout-apm");
 
-// Generate configuration for scout with some overrides
-const scoutConfiguration = buildScoutConfiguration({
-    monitor: true, // monitoring is *off* by default
+// Set up scout (this returns a Promise you may wait on if desired)
+scout.install(
+  {
+    allowShutdown: true, // allow shutting down spawned scout-agent processes from this program
+    monitor: true, // enable monitoring
     name: "<application name>",
     key: "<scout key>",
+  },
+);
+
+// Run a WebTransaction
+scout.api.WebTransaction.run("GET /users", (finishTransaction) => { .
+   return yourHandler
+     .run()
+     .then(() => finishTransaction());
 });
 
-// Create a scout instance
-const scout = new Scout(config);
-
-// Set up the scout instance
-scout.setup()
-    .then(scout => {
-        // Start a request trace with Scout
-        return scout.startRequest()
-            .then(scoutRequest => {
-                // Run the procedure to be monitored
-                return bigHeavyTaskThatReturnsAPromise()
-                    .then(() => scoutRequest.finishAndSend());
-            });
-    });
+// Run a BackgroundTransaction
+scout.api.BackgroundTransaction.run("your-large-transaction", (finishTransaction) => {
+  return bigHeavyTaskThatReturnsAPromise()
+      .then(() => finishTransaction());
 });
 ```
 
