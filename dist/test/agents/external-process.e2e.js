@@ -6,7 +6,6 @@ const path = require("path");
 const Errors = require("../../lib/errors");
 const TestUtil = require("../util");
 const Fixtures = require("../fixtures");
-const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
 const Requests = require("../../lib/protocol/v1/requests");
 const TestConstants = require("../constants");
@@ -186,7 +185,7 @@ test("StartSpan message works for leaf span (v1.2.8)", t => {
         return t.end(new Error("TEST_AGENT_KEY ENV variable"));
     }
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION, { logFn: lib_1.consoleLogFn })
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
         // Start the agent & connect to the local socket
         .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
@@ -341,7 +340,7 @@ test("Nested spans work (v1.2.8)", t => {
         return t.end(new Error("TEST_AGENT_KEY ENV variable"));
     }
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION, { logFn: lib_1.consoleLogFn })
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
         // Start the agent & connect to the local socket
         .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))

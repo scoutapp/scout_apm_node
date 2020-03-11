@@ -240,11 +240,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                         // Ensure we only capture messages that were received on the socket we're holding
                         if (!socket || socket !== socket) { return; }
 
-                        this.logFn(
-                            `[scout/external-process] received response: ${JSON.stringify(resp)}`,
-                            LogLevel.Debug,
-                        );
-
                         // Remove this temporary listener
                         this.removeListener(AgentEvent.SocketResponseReceived, listener);
 
@@ -283,7 +278,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                 });
         });
 
-        this.logFn(`[scout/external-process] sending with timeout [${this.opts.sendTimeoutMs}ms]`, LogLevel.Debug);
         return timeout(sendPromise, this.opts.sendTimeoutMs);
     }
 
@@ -469,19 +463,9 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * @param {Buffer} data - data received over a socket
      */
     private handleSocketData(socket: ScoutSocket, data: Buffer) {
-        this.logFn(
-            `[scout/external-process] received DATA: ${data.toString()}`,
-            LogLevel.Debug,
-        );
-
-        if (!socket.chunks) {
-            socket.chunks = Buffer.from([]);
-        }
+        if (!socket.chunks) { socket.chunks = Buffer.from([]); }
 
         let framed: Buffer[] = [];
-
-        this.logFn(`START: framed: [${framed.toString()}]`, LogLevel.Debug);
-        this.logFn(`START: chunks: [${socket.chunks.toString()}]`, LogLevel.Debug);
 
         // Parse the buffer to return zero or more well-framed agent responses
         const {framed: newFramed, remaining: newRemaining} = splitAgentResponses(data);
@@ -495,9 +479,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         const {framed: chunkFramed, remaining: chunkRemaining} = splitAgentResponses(socket.chunks);
         framed = framed.concat(chunkFramed);
         socket.chunks = chunkRemaining;
-
-        this.logFn(`END: framed: [${framed.toString()}]`, LogLevel.Debug);
-        this.logFn(`END: chunks: [${socket.chunks.toString()}]`, LogLevel.Debug);
 
         // Read all (likely) fully formed, correctly framed messages
         framed

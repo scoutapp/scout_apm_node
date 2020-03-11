@@ -225,7 +225,7 @@ test("StartSpan message works for leaf span (v1.2.8)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION, {logFn: consoleLogFn})
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
         .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
@@ -408,7 +408,7 @@ test("Nested spans work (v1.2.8)", t => {
     if (!TEST_AGENT_KEY) { return t.end(new Error("TEST_AGENT_KEY ENV variable")); }
 
     // Create the external process agent, with special function for building the proc opts with
-    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION, {logFn: consoleLogFn})
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
     // Start the agent & connect to the local socket
         .then(() => TestUtil.initializeAgent(t, agent, TestConstants.TEST_SCOUT_NAME, TEST_AGENT_KEY, appVersion))
