@@ -8,8 +8,7 @@ cache:
 
 script:
   - make ensure-docker-images
-  - make test-unit test-int
-  - make test-e2e
+  - make test
 
 services:
   - docker
