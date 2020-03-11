@@ -29,6 +29,7 @@ import {
     buildScoutConfiguration,
     convertCamelCaseToEnvVar,
     ExpressFn,
+    LogFn,
 } from "../lib/types";
 import { ScoutOptions, Scout, ScoutRequest, ScoutSpan } from "../lib/scout";
 import { DEFAULT_SCOUT_CONFIGURATION } from "../lib/types/config";
@@ -59,6 +60,7 @@ export function bootstrapExternalProcessAgent(
     rawVersion: string,
     opts?: {
         buildProcOpts?: (bp: string, uri: string) => ProcessOptions,
+        logFn?: LogFn,
     },
 ): Promise<ExternalProcessAgent> {
     const downloadOpts: AgentDownloadOptions = {
@@ -89,7 +91,7 @@ export function bootstrapExternalProcessAgent(
             }
 
             t.comment(`creating external process agent @ [${uri}]...`);
-            return new ExternalProcessAgent(procOpts);
+            return new ExternalProcessAgent(procOpts, opts && opts.logFn ? opts.logFn : undefined );
         });
 }
 

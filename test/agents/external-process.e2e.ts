@@ -10,6 +10,8 @@ import WebAgentDownloader from "../../lib/agent-downloaders/web";
 import * as TestUtil from "../util";
 import * as Fixtures from "../fixtures";
 
+import { consoleLogFn } from "../../lib";
+
 import {
     AgentEvent,
     BaseAgentResponse,
@@ -57,7 +59,11 @@ test("manual async GetVersion message works (v1.2.8)", t => {
                 if (resp.type !== AgentResponseType.V1GetVersion) { return; }
 
                 // Ensure the version we got back is what we expect
-                t.equals(resp.version.raw, TestConstants.TEST_APP_VERSION, "parsed response version matches (1.2.8)");
+                t.equals(
+                  resp.version.raw,
+                    TestConstants.TEST_APP_VERSION,
+                    "parsed response version matches (1.2.8)",
+                  );
 
                 // Remove listener
                 agent.removeListener(AgentEvent.SocketResponseReceived, listener);

@@ -15,6 +15,7 @@ const request = require("supertest");
 const randomstring_1 = require("randomstring");
 const types_1 = require("../lib/types");
 const lib_1 = require("../lib");
+lib_1.setupRequireIntegrations(["pg", "ejs", "pug"]);
 const scout_1 = require("../lib/scout");
 const express_1 = require("../lib/express");
 const TestUtil = require("./util");
@@ -24,7 +25,7 @@ let PG_CONTAINER_AND_OPTS = null;
 let MYSQL_CONTAINER_AND_OPTS = null;
 const SCOUT_INSTANCES = [];
 // Set up the pug integration for the pug dashboard sends
-lib_1.setupRequireIntegrations(["pug"]);
+const ejs = require("ejs");
 const pug = require("pug");
 // https://github.com/scoutapp/scout_apm_node/issues/82
 test("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
@@ -176,6 +177,86 @@ test("transaction with with postgres DB query to dashboard", { timeout: TestUtil
         if (client) {
             client.end();
         }
+    });
+});
+// https://github.com/scoutapp/scout_apm_node/issues/140
+test("Many select statments and a render are in the right order", { timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000 }, t => {
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    const appMeta = new types_1.ApplicationMetadata(config, { frameworkVersion: "test" });
+    const scout = new scout_1.Scout(config, { appMeta });
+    SCOUT_INSTANCES.push(scout);
+    // Setup a PG Client that we'll use later
+    let client;
+    // Set up a listener for the scout request that will be sent for the endpoint being hit
+    const listener = (data) => {
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        // Look up the database span from the request
+        const requestSpans = data.request.getChildSpansSync();
+        const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
+        if (!controllerSpan) {
+            t.fail("no ControllerSpan span");
+            throw new Error("No DB Span");
+        }
+        const innerSpans = controllerSpan.getChildSpansSync();
+        // Check for the inner SQL query spans
+        const dbSpans = innerSpans.filter(s => s.operation === types_1.ScoutSpanOperation.SQLQuery);
+        t.assert(dbSpans, `db spans [${dbSpans.length}] were present on request`);
+        if (!dbSpans || dbSpans.length === 0) {
+            t.fail("no DB spans present on request");
+            throw new Error("No DB spans");
+        }
+        // All the DB spans should have the controllerSpan as parent
+        t.assert(dbSpans.every(s => s.parent && s.parent.id === controllerSpan.id), "db spans have controller as parent");
+        // Check for the inner render spans
+        const renderSpans = innerSpans.filter(s => s.operation === types_1.ScoutSpanOperation.TemplateRender);
+        t.assert(renderSpans, `render spans [${renderSpans.length}] were present on request`);
+        t.equals(renderSpans.length, 1, "only one render span is present");
+        const renderSpan = renderSpans[0];
+        if (!renderSpan) {
+            t.fail("no render span present on request");
+            throw new Error("No Render span");
+        }
+        // Ensure controller span has controller as parent
+        t.assert(renderSpan.parent && renderSpan.parent.id === controllerSpan.id, "render span has controller as parent");
+        // Check that none of the SQL query spans overlap with the render span
+        t.assert(dbSpans.every(dbSpan => dbSpan.getEndTime() <= renderSpan.getTimestamp()), "All DB spans end before the render span starts");
+        // Close the PG client & shutdown
+        client.end()
+            .then(() => t.end());
+    };
+    let app;
+    // Activate the listener
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
+    scout
+        .setup()
+        // Connect to the postgres
+        .then(() => TestUtil.makeConnectedPGClient(() => PG_CONTAINER_AND_OPTS))
+        .then(c => client = c)
+        // Build the app with the postgres client
+        .then(() => {
+        // Create an application will do many queries and render something using ejs
+        app = TestUtil.queryAndRenderRandomNumbers(express_1.scoutMiddleware({
+            scout,
+            requestTimeoutMs: 0,
+        }), "ejs", client);
+    })
+        // Perform the request to trigger the queries & render
+        .then(() => {
+        return request(app)
+            .get("/")
+            .expect("Content-Type", /text/)
+            .expect(200)
+            .then(res => {
+            t.assert(res.text.includes("Random numbers (generated)"), "html contains title");
+            t.assert(res.text.includes("<li>"), "html contains at least one <li> tag");
+        });
+    })
+        .catch(err => {
+        client.end()
+            .then(() => t.end(err));
     });
 });
 // Pseudo test that will stop a containerized postgres instance that was started

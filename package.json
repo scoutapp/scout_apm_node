@@ -27,7 +27,7 @@
     "test-unit": "./node_modules/.bin/tape 'dist/test/**/*.unit.js'",
     "test-int": "./node_modules/.bin/tape 'dist/test/**/*.int.js'",
     "test-e2e": "./node_modules/.bin/tape 'dist/test/**/*.e2e.js'",
-    "test-dashboard-send": "./node_modules/.bin/tape 'dist/test/dashboard-send.js'",
+    "test-dashboard-send": "./node_modules/.bin/tape 'dist/test/dashboard-send.e2e.js'",
     "test-integration-pg": "./node_modules/.bin/tape 'dist/test/integrations/pg.e2e.js'",
     "test-integration-mysql": "./node_modules/.bin/tape 'dist/test/integrations/mysql.e2e.js'",
     "test-integration-mysql2": "./node_modules/.bin/tape 'dist/test/integrations/mysql2.e2e.js'",

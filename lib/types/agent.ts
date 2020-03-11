@@ -173,7 +173,7 @@ export type AgentOptions = ProcessOptions;
 
 export type ConnectionPoolOptions = Partial<GenericPoolOptions>;
 
-const DEFAULT_AGENT_SEND_TIMEOUT_MS = 5000;
+const DEFAULT_AGENT_SEND_TIMEOUT_MS = 10000;
 
 /**
  * Options for agents that are in a separate process not managed by this one

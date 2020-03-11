@@ -101,8 +101,9 @@ class Scout extends events_1.EventEmitter {
             }
         })
             // Register the application
+            .then(() => this.agent.setRegistrationAndMetadata(new Requests.V1Register(this.config.name || "", this.config.key || "", types_1.APIVersion.V1), this.buildAppMetadataEvent()))
+            // Send the registration and app metadata
             .then(() => this.sendRegistrationRequest())
-            // Send the application metadata
             .then(() => this.sendAppMetadataEvent())
             // Set up integration(s)
             .then(() => this.setupIntegrations())

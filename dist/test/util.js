@@ -56,7 +56,7 @@ function bootstrapExternalProcessAgent(t, rawVersion, opts) {
             procOpts = opts.buildProcOpts(binPath, uri);
         }
         t.comment(`creating external process agent @ [${uri}]...`);
-        return new external_process_1.default(procOpts);
+        return new external_process_1.default(procOpts, opts && opts.logFn ? opts.logFn : undefined);
     });
 }
 exports.bootstrapExternalProcessAgent = bootstrapExternalProcessAgent;

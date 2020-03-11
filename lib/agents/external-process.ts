@@ -10,19 +10,41 @@ import { timeout, TimeoutError } from "promise-timeout";
 import {
     Agent,
     AgentEvent,
-    BaseAgentRequest,
     AgentRequestType,
-    BaseAgentResponse,
     AgentResponseType,
     AgentStatus,
     AgentType,
-    ProcessOptions,
+    ApplicationEventType,
+    BaseAgentRequest,
+    BaseAgentResponse,
     LogFn,
     LogLevel,
+    ProcessOptions,
     splitAgentResponses,
+    waitMs,
 } from "../types";
 
-import { V1AgentResponse } from "../protocol/v1/responses";
+import { V1AgentResponse, V1ApplicationEventResponse, V1RegisterResponse } from "../protocol/v1/responses";
+import { V1Register, V1ApplicationEvent } from "../protocol/v1/requests";
+
+const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
+const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
+
+export interface ExtraSocketInfo {
+    registrationSent?: boolean;
+    registrationResp?: V1RegisterResponse;
+
+    appMetadataSent?: boolean;
+    appMetadataResp?: V1ApplicationEventResponse;
+
+    doNotUse?: boolean;
+
+    chunks?: Buffer;
+
+    onFailure?: () => void;
+}
+
+export type ScoutSocket = Socket & ExtraSocketInfo;
 
 export default class ExternalProcessAgent extends EventEmitter implements Agent {
     private readonly agentType: AgentType = AgentType.Process;
@@ -31,7 +53,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private pool: Pool<Socket>;
     private poolErrors: Error[] = [];
     private maxPoolErrors: number = 5;
-    private poolDisabled: boolean = false;
 
     private socketConnected: boolean = false;
     private socketConnectionAttempts: number = 0;
@@ -39,6 +60,9 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private detachedProcess: ChildProcess;
     private stopped: boolean = true;
     private logFn: LogFn;
+
+    private registrationMsg: V1Register;
+    private appMetadataMsg: V1ApplicationEvent;
 
     constructor(opts: ProcessOptions, logFn?: LogFn) {
         super();
@@ -126,7 +150,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                     socket => {
                         socket.write(msg.toBinary());
                         this.emit(AgentEvent.RequestSent, msg);
-                        return this.pool.release(socket);
+                        if (this.pool.isBorrowedResource(socket)) { this.pool.release(socket); }
                     },
                     err => { throw err; },
                 )
@@ -135,57 +159,126 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     }
 
     /** @see Agent */
-    public send<T extends BaseAgentRequest, R extends BaseAgentResponse>(msg: T): Promise<R> {
+    public send<T extends BaseAgentRequest, R extends BaseAgentResponse>(msg: T, socket?: ScoutSocket): Promise<R> {
         if (!this.pool) { return Promise.reject(new Errors.Disconnected()); }
         if (this.stopped) { return Promise.reject(new Errors.Disconnected()); }
         if (!msg) { return Promise.reject(new Errors.UnexpectedError("No message provided to send()")); }
+
         const requestType = msg.type;
+        const isRegistrationMsg = requestType === AgentRequestType.V1Register;
+        const isAppMetadataMsg = requestType === AgentRequestType.V1ApplicationEvent
+            && "eventType" in msg
+            && (msg as any).eventType === ApplicationEventType.ScoutMetadata;
 
         this.logFn(`[scout/external-process] sending message:\n ${JSON.stringify(msg.json)}`, LogLevel.Debug);
 
+        // If provided with a socket use it, otherwise acquire one from the pool
+        let getSocket: () => Promise<ScoutSocket> = () => Promise.reject();
+        if (!socket || socket.doNotUse) {
+            getSocket = () => new Promise((resolve, reject) => this.pool.acquire().then(resolve, reject));
+        } else {
+            getSocket = () => Promise.resolve(socket);
+        }
+
+        // Build a promise to encapsulate the send
         const sendPromise = new Promise((resolve, reject) => {
-            // Get a socket from the pool
-            this.pool
-                .acquire()
-                .then(
-                    // Socket acquisition succeeded
-                    (socket: Socket) => {
-                        // Set up a temporary listener to catch socket responses
-                        const listener = (resp: any, socket?: Socket) => {
-                            // Ensure we only capture messages that were received on the socket we're holding
-                            if (!socket || socket !== socket) { return; }
+            // Retrieve the socket (either direct or from pool)
+            getSocket()
+            // If the socket has not had registration message sent yet, force sending of it
+                .then((socket: ScoutSocket) => {
+                    // If the registration has already been sent, don't do anything
+                    if (socket.registrationSent) { return socket; }
 
-                            this.logFn(
-                                `[scout/external-process] received response: ${JSON.stringify(resp)}`,
-                                LogLevel.Debug,
-                            );
+                    // If the registration has not been sent but the message is a registration message, do nothing
+                    if (!socket.registrationSent && isRegistrationMsg) { return socket; }
 
-                            // Remove this temporary listener
-                            this.removeListener(AgentEvent.SocketResponseReceived, listener);
+                    // If we don't have an appMetadataMsg (though we want to send it)
+                    // we can't ensure it's sent first even if we want to -- hopefully
+                    // the user knows what they're doing
+                    if (!this.registrationMsg) { return socket; }
 
-                            // Resolve the encasing promise
-                            resolve(resp);
+                    // If we're already *not* already registered and this message is *not* a registration msg,
+                    // we need to send registration msg first
+                    // or there is no registration message registered yet
+                    this.logFn("Sending registration message for newly (re?)connected socket...", LogLevel.Debug);
+                    return this.send(this.registrationMsg, socket)
+                        .then(resp => {
+                            socket.registrationSent = true;
+                            socket.registrationResp = resp;
+                            return socket;
+                        });
+                })
+            // If the socket has not had the app metadata mesage sent yet, force sending of it
+                .then((socket: ScoutSocket) => {
+                    // We might end up here if registration hasn't been sent yet
+                    if (!socket.registrationSent && isRegistrationMsg) { return socket; }
 
-                            // Release the socket back into the pool
+                    // If the app metadata has already been sent, don't do anything
+                    if (socket.appMetadataSent) { return socket; }
+
+                    // If the app metadata has not been sent but the message is an app metadata message, do nothing
+                    if (!socket.appMetadataSent && isAppMetadataMsg) { return socket; }
+
+                    // If we don't have an appMetadataMsg (though we want to send it)
+                    // we can't ensure it's sent first even if we want to -- hopefully
+                    // the user knows what they're doing
+                    if (!this.appMetadataMsg) { return socket; }
+
+                    // Force sending of app metadata message first
+                    this.logFn("Sending app metadata message for newly (re?)connected socket...", LogLevel.Debug);
+                    return this.send(this.appMetadataMsg, socket)
+                        .then(resp => {
+                            socket.appMetadataSent = true;
+                            socket.appMetadataResp = resp;
+                            return socket;
+                        });
+                })
+            // Send whatever message has made it this far
+                .then((socket: ScoutSocket) => {
+                    // Set up a temporary listener to catch socket responses
+                    const listener = (resp: any, socket?: ScoutSocket) => {
+                        // Ensure we only capture messages that were received on the socket we're holding
+                        if (!socket || socket !== socket) { return; }
+
+                        // Remove this temporary listener
+                        this.removeListener(AgentEvent.SocketResponseReceived, listener);
+
+                        // Release the socket back into the pool
+                        if (this.pool.isBorrowedResource(socket)) {
+                            if (isRegistrationMsg) {
+                                socket.registrationSent = true;
+                                socket.registrationResp = resp;
+                            }
+
+                            if (isAppMetadataMsg) {
+                                socket.appMetadataSent = true;
+                                socket.appMetadataResp = resp;
+                            }
+
                             this.pool.release(socket);
-                        };
+                        }
 
-                        // Set up a listener on our own event emitter for the parsed socket response
-                        this.on(AgentEvent.SocketResponseReceived, listener);
+                        // Resolve the encasing promise
+                        resolve(resp);
+                    };
 
-                        // Send the message over the socket
-                        const result = socket.write(msg.toBinary());
+                    // Set up a listener on our own event emitter for the parsed socket response
+                    this.on(AgentEvent.SocketResponseReceived, listener);
 
-                        this.emit(AgentEvent.RequestSent, msg);
-                        return result;
-                    },
+                    // If the socket fails, we'll likely never get to remove the listener (by running it) above,
+                    // so let's attach an onFailure to the socket that should be used if the socket fails elsewhere)
+                    socket.onFailure = () => {
+                        this.removeListener(AgentEvent.SocketResponseReceived, listener);
+                    };
 
-                    // Socket acquisition failed
-                    err => { throw err; },
-                );
+                    // Send the message over the socket
+                    const result = socket.write(msg.toBinary());
+
+                    this.emit(AgentEvent.RequestSent, msg);
+                });
         });
 
-        return timeout(sendPromise, 5000);
+        return timeout(sendPromise, this.opts.sendTimeoutMs);
     }
 
     /**
@@ -220,6 +313,18 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     }
 
     /**
+     * Set the registration and metadata that will be used by the agent
+     * as the first thing to send whenever a connection is established
+     *
+     * @param {V1Register} registerMsg - Registration message
+     * @param {V1ApplicationEvent} metadata - App metadata
+     */
+    public setRegistrationAndMetadata(registerMsg: V1Register, appMetadataMsg: V1ApplicationEvent) {
+        this.registrationMsg = registerMsg;
+        this.appMetadataMsg = appMetadataMsg;
+    }
+
+    /**
      * Initialize the socket pool
      *
      * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
@@ -231,15 +336,20 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         this.pool = createPool({
             create: () => {
-                // If the pool is disabled we need to disconnect it and
-                if (this.poolDisabled) {
-                    return this.disconnect()
-                        .then(() => Promise.reject(new Errors.ConnectionPoolDisabled()));
+                // If there is at least one pool error, let's wait a bit between creating domain sockets
+                let maybeWait = () => Promise.resolve();
+                if (this.poolErrors.length > DOMAIN_SOCKET_CREATE_ERR_THRESHOLD) {
+                    maybeWait = () => waitMs(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
                 }
 
-                return this.createDomainSocket();
+                return maybeWait().then(() => this.createDomainSocket());
             },
-            destroy: (socket) => Promise.resolve(socket.destroy()),
+            destroy: (socket: ScoutSocket) => {
+                // Ensure the socket is not used again
+                socket.doNotUse = true;
+
+                return Promise.resolve(socket.destroy());
+            },
             validate: (socket) => Promise.resolve(!socket.destroyed),
         });
 
@@ -254,23 +364,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                     LogLevel.Error,
                 );
 
-                // In the case that connection fails repeatedly we'll need to stop trying
-                if (this.poolErrors.length > this.maxPoolErrors) {
-                    this.logFn(
-                        "maxPoolErrors reached on a refused connection error, disabling pool...",
-                        LogLevel.Error,
-                    );
-                    this.poolDisabled = true;
-                    this.emit(AgentEvent.SocketError, err);
-                }
-            }
-
-            // If the agent is supposedly running, but connection fails too many times for any reason
-            if (!this.stopped && this.poolErrors.length > this.maxPoolErrors) {
-                const socketPath = this.getSocketPath();
-                const msg = `Connection attempt limit reached -- is core-agent is listening on [${socketPath}]?`;
-                this.emit("error", new Errors.ResourceAllocationFailureLimitExceeded(msg));
-                this.disconnect();
+                this.emit(AgentEvent.SocketError, err);
             }
         });
 
@@ -285,80 +379,144 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * @returns {Promise<Socket>} A socket for use in  the socket pool
      */
     private createDomainSocket(): Promise<Socket> {
-        return new Promise((resolve, reject) => {
-            let chunks: Buffer = Buffer.from([]);
-
+        return new Promise((resolve) => {
+            // Connect the socket
             const socket = createConnection(this.getSocketPath(), () => {
                 this.emit(AgentEvent.SocketConnected);
                 resolve(socket);
             });
 
-            // When the socket receives data, parse it and emit socket response received
-            socket.on("data", (data: Buffer) => {
-                let framed: Buffer[] = [];
+            // Add handlers for socket management
+            socket.on("data", (data: Buffer) => this.handleSocketData(socket, data));
+            socket.on("close", () => this.handleSocketClose(socket));
+            socket.on("disconnect", () => this.handleSocketDisconnect(socket));
+            socket.on("error", (err: Error) => this.handleSocketError(socket, err));
+        });
+    }
 
-                // Parse the buffer to return zero or more well-framed agent responses
-                const {framed: newFramed, remaining: newRemaining} = splitAgentResponses(data);
-                framed = framed.concat(newFramed);
+    /**
+     * Handle socket error
+     *
+     * @param {ScoutSocket} socket - socket enhanced with extra scout-related information
+     * @param {Error} err - the error that occurred
+     */
+    private handleSocketError(socket: ScoutSocket, err: Error) {
+        this.emit(AgentEvent.SocketError, err);
+        this.logFn(`[scout/external-process] Socket connection error:\n${err}`, LogLevel.Error);
 
-                // Add the remaining to the partial response buffer we're keeping
-                chunks = Buffer.concat([chunks, newRemaining]);
+        // Ensure the socket is not used again
+        socket.doNotUse = true;
 
-                // Attempt to extract any *just* completed messages
-                // Update the partial response for any remaining
-                const {framed: chunkFramed, remaining: chunkRemaining} = splitAgentResponses(chunks);
-                framed = framed.concat(chunkFramed);
-                chunks = chunkRemaining;
+        // If an error occurrs on the socket, destroy the socket
+        if (this.pool.isBorrowedResource(socket)) {
+            this.pool.destroy(socket);
+            this.pool.clear();
+        }
+    }
 
-                // Read all (likely) fully formed, correctly framed messages
-                framed
-                    .forEach(data => {
-                        // Attempt to parse an agent response
-                        V1AgentResponse
-                            .fromBinary(data)
-                            .then(msg => {
-                                this.emit(AgentEvent.SocketResponseReceived, msg, socket);
+    /**
+     * Handle a socket closure
+     *
+     * @param {ScoutSocket} socket - socket enhanced with extra scout-related information
+     */
+    private handleSocketClose(socket: ScoutSocket) {
+        this.logFn("[scout/external-process] Socket closed", LogLevel.Debug);
 
-                                switch (msg.type) {
-                                    case AgentResponseType.V1StartRequest:
-                                        this.emit(AgentEvent.RequestStarted);
-                                        break;
-                                    case AgentResponseType.V1FinishRequest:
-                                        this.emit(AgentEvent.RequestFinished);
-                                        break;
-                                    case AgentResponseType.V1StartSpan:
-                                        this.emit(AgentEvent.SpanStarted);
-                                        break;
-                                    case AgentResponseType.V1StopSpan:
-                                        this.emit(AgentEvent.SpanStopped);
-                                        break;
-                                    case AgentResponseType.V1ApplicationEvent:
-                                        this.emit(AgentEvent.ApplicationEventReported);
-                                        break;
-                                }
-                            })
-                            .catch(err => {
-                                this.logFn(
-                                    `[scout/external-process] Socket response parse error:\n ${err}`,
-                                    LogLevel.Error,
-                                );
-                                this.emit(AgentEvent.SocketResponseParseError, err);
-                            });
+        // Run cleanup method
+        if (socket.onFailure) { (socket as any).onFailure(); }
+
+        // Ensure the socket is not used again in a direct context (ex. `send(msg, socket)`)
+        socket.doNotUse = true;
+
+        // If the socket is closed, destroy the resource, removing it from the pool
+        if (this.pool.isBorrowedResource(socket)) {
+            this.pool.destroy(socket);
+        }
+
+        this.pool.clear();
+
+        this.emit(AgentEvent.SocketClosed);
+    }
+
+    /**
+     * Handle a socket disconnect
+     *
+     * @param {Socket} socket
+     */
+    private handleSocketDisconnect(socket: ScoutSocket) {
+        this.logFn("[scout/external-process] Socket disconnected", LogLevel.Debug);
+
+        // Ensure the socket is not used again
+        socket.doNotUse = true;
+
+        // If the socket has disconnected destroy & remove from pool
+        if (this.pool.isBorrowedResource(socket)) { this.pool.destroy(socket); }
+
+        this.emit(AgentEvent.SocketDisconnected);
+    }
+
+    /**
+     * Process received socket data
+     *
+     * @param {ScoutSocket} socket - socket enhanced with extra scout-related information
+     * @param {Buffer} [socket.chunks] - data left over from the previous reads of the socket
+     * @param {Buffer} data - data received over a socket
+     */
+    private handleSocketData(socket: ScoutSocket, data: Buffer) {
+        if (!socket.chunks) { socket.chunks = Buffer.from([]); }
+
+        let framed: Buffer[] = [];
+
+        // Parse the buffer to return zero or more well-framed agent responses
+        const {framed: newFramed, remaining: newRemaining} = splitAgentResponses(data);
+        framed = framed.concat(newFramed);
+
+        // Add the remaining to the partial response buffer we're keeping
+        socket.chunks = Buffer.concat([socket.chunks, newRemaining]);
+
+        // Attempt to extract any *just* completed messages
+        // Update the partial response for any remaining
+        const {framed: chunkFramed, remaining: chunkRemaining} = splitAgentResponses(socket.chunks);
+        framed = framed.concat(chunkFramed);
+        socket.chunks = chunkRemaining;
+
+        // Read all (likely) fully formed, correctly framed messages
+        framed
+            .forEach(data => {
+                // Attempt to parse an agent response
+                V1AgentResponse
+                    .fromBinary(data)
+                    .then(msg => {
+                        this.emit(AgentEvent.SocketResponseReceived, msg, socket);
+
+                        switch (msg.type) {
+                            case AgentResponseType.V1StartRequest:
+                                this.emit(AgentEvent.RequestStarted);
+                                break;
+                            case AgentResponseType.V1FinishRequest:
+                                this.emit(AgentEvent.RequestFinished);
+                                break;
+                            case AgentResponseType.V1StartSpan:
+                                this.emit(AgentEvent.SpanStarted);
+                                break;
+                            case AgentResponseType.V1StopSpan:
+                                this.emit(AgentEvent.SpanStopped);
+                                break;
+                            case AgentResponseType.V1ApplicationEvent:
+                                this.emit(AgentEvent.ApplicationEventReported);
+                                break;
+                        }
+                    })
+                    .catch(err => {
+                        this.logFn(
+                            `[scout/external-process] Socket response parse error:\n ${err}`,
+                            LogLevel.Error,
+                        );
+
+                        if (this.pool.isBorrowedResource(socket)) { this.pool.release(socket); }
+                        this.emit(AgentEvent.SocketResponseParseError, err);
                     });
             });
-
-            // When socket closes emit information regarding closure
-            socket.on("close", () => {
-                this.logFn("[scout/external-process] Socket closed", LogLevel.Debug);
-                this.emit(AgentEvent.SocketDisconnected);
-            });
-
-            socket.on("error", (err: Error) => {
-                this.emit(AgentEvent.SocketError, err);
-                this.logFn(`[scout/external-process] Socket connection error:\n${err}`, LogLevel.Error);
-                reject(err);
-            });
-        });
     }
 
     // Get the path for the socket
@@ -368,6 +526,16 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         }
 
         return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
+    }
+
+    // Helper for retrieving generic-pool stats
+    private getPoolStats(): object {
+        if (!this.pool) { return {}; }
+        return {
+            pending: this.pool.pending,
+            max: this.pool.max,
+            min: this.pool.min,
+        };
     }
 
      // Start a detached process with the configured scout-agent binary

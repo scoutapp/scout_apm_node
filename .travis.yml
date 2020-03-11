@@ -7,6 +7,7 @@ cache:
   yarn: true
 
 script:
+  - make ensure-docker-images
   - make test
 
 services:

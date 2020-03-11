@@ -199,8 +199,16 @@ export class Scout extends EventEmitter {
                 }
             })
         // Register the application
+            .then(() => this.agent.setRegistrationAndMetadata(
+                new Requests.V1Register(
+                    this.config.name || "",
+                    this.config.key || "",
+                    APIVersion.V1,
+                ),
+                this.buildAppMetadataEvent(),
+            ))
+        // Send the registration and app metadata
             .then(() => this.sendRegistrationRequest())
-        // Send the application metadata
             .then(() => this.sendAppMetadataEvent())
         // Set up integration(s)
             .then(() => this.setupIntegrations())
@@ -750,10 +758,10 @@ export class Scout extends EventEmitter {
     private sendRegistrationRequest(): Promise<void> {
         this.log(`[scout] registering application [${this.config.name || ""}]`, LogLevel.Debug);
         return sendThroughAgent(this, new Requests.V1Register(
-                this.config.name || "",
-                this.config.key || "",
-                APIVersion.V1,
-            ))
+            this.config.name || "",
+            this.config.key || "",
+            APIVersion.V1,
+        ))
             .then(() => undefined)
             .catch(err => {
                 this.log("[scout] failed to send app registration request", LogLevel.Error);

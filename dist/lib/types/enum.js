@@ -32,6 +32,7 @@ var AgentEvent;
     AgentEvent["SocketResponseReceived"] = "agent-event-socket-response-received";
     AgentEvent["SocketResponseParseError"] = "agent-event-socket-response-parse-error";
     AgentEvent["SocketDisconnected"] = "agent-event-socket-disconnected";
+    AgentEvent["SocketClosed"] = "agent-event-socket-closed";
     AgentEvent["SocketError"] = "agent-event-socket-error";
     AgentEvent["SocketConnected"] = "agent-event-socket-connected";
     AgentEvent["RequestSent"] = "agent-event-request-sent";
