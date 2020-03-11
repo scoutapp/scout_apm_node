@@ -11,6 +11,7 @@ export interface ExtraSocketInfo {
     appMetadataSent?: boolean;
     appMetadataResp?: V1ApplicationEventResponse;
     doNotUse?: boolean;
+    chunks?: Buffer;
     onFailure?: () => void;
 }
 export declare type ScoutSocket = Socket & ExtraSocketInfo;
@@ -97,8 +98,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * Process received socket data
      *
      * @param {ScoutSocket} socket - socket enhanced with extra scout-related information
+     * @param {Buffer} [socket.chunks] - data left over from the previous reads of the socket
      * @param {Buffer} data - data received over a socket
-     * @param {Buffer} chunks - data left over from the previous reads of the socket
      */
     private handleSocketData;
     private getSocketPath;

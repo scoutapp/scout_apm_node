@@ -39,6 +39,8 @@ export interface ExtraSocketInfo {
 
     doNotUse?: boolean;
 
+    chunks?: Buffer;
+
     onFailure?: () => void;
 }
 
@@ -384,8 +386,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      */
     private createDomainSocket(): Promise<Socket> {
         return new Promise((resolve) => {
-            const chunks: Buffer = Buffer.from([]);
-
             // Connect the socket
             const socket = createConnection(this.getSocketPath(), () => {
                 this.emit(AgentEvent.SocketConnected);
@@ -393,7 +393,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             });
 
             // Add handlers for socket management
-            socket.on("data", (data: Buffer) => this.handleSocketData(socket, data, chunks));
+            socket.on("data", (data: Buffer) => this.handleSocketData(socket, data));
             socket.on("close", () => this.handleSocketClose(socket));
             socket.on("disconnect", () => this.handleSocketDisconnect(socket));
             socket.on("error", (err: Error) => this.handleSocketError(socket, err));
@@ -465,32 +465,39 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * Process received socket data
      *
      * @param {ScoutSocket} socket - socket enhanced with extra scout-related information
+     * @param {Buffer} [socket.chunks] - data left over from the previous reads of the socket
      * @param {Buffer} data - data received over a socket
-     * @param {Buffer} chunks - data left over from the previous reads of the socket
      */
-    private handleSocketData(socket: ScoutSocket, data: Buffer, chunks: Buffer) {
+    private handleSocketData(socket: ScoutSocket, data: Buffer) {
         this.logFn(
             `[scout/external-process] received DATA: ${data.toString()}`,
             LogLevel.Debug,
         );
 
+        if (!socket.chunks) {
+            socket.chunks = Buffer.from([]);
+        }
+
         let framed: Buffer[] = [];
+
+        this.logFn(`START: framed: [${framed.toString()}]`, LogLevel.Debug);
+        this.logFn(`START: chunks: [${socket.chunks.toString()}]`, LogLevel.Debug);
 
         // Parse the buffer to return zero or more well-framed agent responses
         const {framed: newFramed, remaining: newRemaining} = splitAgentResponses(data);
         framed = framed.concat(newFramed);
 
         // Add the remaining to the partial response buffer we're keeping
-        chunks = Buffer.concat([chunks, newRemaining]);
+        socket.chunks = Buffer.concat([socket.chunks, newRemaining]);
 
         // Attempt to extract any *just* completed messages
         // Update the partial response for any remaining
-        const {framed: chunkFramed, remaining: chunkRemaining} = splitAgentResponses(chunks);
+        const {framed: chunkFramed, remaining: chunkRemaining} = splitAgentResponses(socket.chunks);
         framed = framed.concat(chunkFramed);
-        chunks = chunkRemaining;
+        socket.chunks = chunkRemaining;
 
-        this.logFn(`framed: [${framed.toString()}]`, LogLevel.Debug);
-        this.logFn(`chunks: [${chunks.toString()}]`, LogLevel.Debug);
+        this.logFn(`END: framed: [${framed.toString()}]`, LogLevel.Debug);
+        this.logFn(`END: chunks: [${socket.chunks.toString()}]`, LogLevel.Debug);
 
         // Read all (likely) fully formed, correctly framed messages
         framed

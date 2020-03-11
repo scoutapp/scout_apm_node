@@ -304,14 +304,13 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      */
     createDomainSocket() {
         return new Promise((resolve) => {
-            const chunks = Buffer.from([]);
             // Connect the socket
             const socket = net_1.createConnection(this.getSocketPath(), () => {
                 this.emit(types_1.AgentEvent.SocketConnected);
                 resolve(socket);
             });
             // Add handlers for socket management
-            socket.on("data", (data) => this.handleSocketData(socket, data, chunks));
+            socket.on("data", (data) => this.handleSocketData(socket, data));
             socket.on("close", () => this.handleSocketClose(socket));
             socket.on("disconnect", () => this.handleSocketDisconnect(socket));
             socket.on("error", (err) => this.handleSocketError(socket, err));
@@ -373,24 +372,29 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      * Process received socket data
      *
      * @param {ScoutSocket} socket - socket enhanced with extra scout-related information
+     * @param {Buffer} [socket.chunks] - data left over from the previous reads of the socket
      * @param {Buffer} data - data received over a socket
-     * @param {Buffer} chunks - data left over from the previous reads of the socket
      */
-    handleSocketData(socket, data, chunks) {
+    handleSocketData(socket, data) {
         this.logFn(`[scout/external-process] received DATA: ${data.toString()}`, types_1.LogLevel.Debug);
+        if (!socket.chunks) {
+            socket.chunks = Buffer.from([]);
+        }
         let framed = [];
+        this.logFn(`START: framed: [${framed.toString()}]`, types_1.LogLevel.Debug);
+        this.logFn(`START: chunks: [${socket.chunks.toString()}]`, types_1.LogLevel.Debug);
         // Parse the buffer to return zero or more well-framed agent responses
         const { framed: newFramed, remaining: newRemaining } = types_1.splitAgentResponses(data);
         framed = framed.concat(newFramed);
         // Add the remaining to the partial response buffer we're keeping
-        chunks = Buffer.concat([chunks, newRemaining]);
+        socket.chunks = Buffer.concat([socket.chunks, newRemaining]);
         // Attempt to extract any *just* completed messages
         // Update the partial response for any remaining
-        const { framed: chunkFramed, remaining: chunkRemaining } = types_1.splitAgentResponses(chunks);
+        const { framed: chunkFramed, remaining: chunkRemaining } = types_1.splitAgentResponses(socket.chunks);
         framed = framed.concat(chunkFramed);
-        chunks = chunkRemaining;
-        this.logFn(`framed: [${framed.toString()}]`, types_1.LogLevel.Debug);
-        this.logFn(`chunks: [${chunks.toString()}]`, types_1.LogLevel.Debug);
+        socket.chunks = chunkRemaining;
+        this.logFn(`END: framed: [${framed.toString()}]`, types_1.LogLevel.Debug);
+        this.logFn(`END: chunks: [${socket.chunks.toString()}]`, types_1.LogLevel.Debug);
         // Read all (likely) fully formed, correctly framed messages
         framed
             .forEach(data => {
