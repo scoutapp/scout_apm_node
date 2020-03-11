@@ -10,6 +10,7 @@ export interface ExtraSocketInfo {
     registrationResp?: V1RegisterResponse;
     appMetadataSent?: boolean;
     appMetadataResp?: V1ApplicationEventResponse;
+    doNotUse?: boolean;
     onFailure?: () => void;
 }
 export declare type ScoutSocket = Socket & ExtraSocketInfo;
@@ -19,7 +20,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private pool;
     private poolErrors;
     private maxPoolErrors;
-    private poolDisabled;
     private socketConnected;
     private socketConnectionAttempts;
     private detachedProcess;

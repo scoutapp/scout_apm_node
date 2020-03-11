@@ -12,14 +12,13 @@ const types_1 = require("../types");
 const responses_1 = require("../protocol/v1/responses");
 const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
 const DOMAIN_SOCKET_CONNECT_TIMEOUT_MS = 5000;
-const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 50;
+const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
 class ExternalProcessAgent extends events_1.EventEmitter {
     constructor(opts, logFn) {
         super();
         this.agentType = types_1.AgentType.Process;
         this.poolErrors = [];
         this.maxPoolErrors = 5;
-        this.poolDisabled = false;
         this.socketConnected = false;
         this.socketConnectionAttempts = 0;
         this.stopped = true;
@@ -116,11 +115,11 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         this.logFn(`[scout/external-process] sending message:\n ${JSON.stringify(msg.json)}`, types_1.LogLevel.Debug);
         // If provided with a socket use it, otherwise acquire one from the pool
         let getSocket = () => Promise.reject();
-        if (socket) {
-            getSocket = () => Promise.resolve(socket);
+        if (!socket || socket.doNotUse) {
+            getSocket = () => new Promise((resolve, reject) => this.pool.acquire().then(resolve, reject));
         }
         else {
-            getSocket = () => new Promise((resolve, reject) => this.pool.acquire().then(resolve, reject));
+            getSocket = () => Promise.resolve(socket);
         }
         // Build a promise to encapsulate the send
         const sendPromise = new Promise((resolve, reject) => {
@@ -259,11 +258,6 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         }
         this.pool = generic_pool_1.createPool({
             create: () => {
-                // If the pool is disabled we need to disconnect it and
-                if (this.poolDisabled) {
-                    return this.disconnect()
-                        .then(() => Promise.reject(new Errors.ConnectionPoolDisabled()));
-                }
                 // If there is at least one pool error, let's wait a bit between creating domain sockets
                 let maybeWait = () => Promise.resolve();
                 if (this.poolErrors.length > DOMAIN_SOCKET_CREATE_ERR_THRESHOLD) {
@@ -271,7 +265,11 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 }
                 return maybeWait().then(() => this.createDomainSocket());
             },
-            destroy: (socket) => Promise.resolve(socket.destroy()),
+            destroy: (socket) => {
+                // Ensure the socket is not used again
+                socket.doNotUse = true;
+                return Promise.resolve(socket.destroy());
+            },
             validate: (socket) => Promise.resolve(!socket.destroyed),
         });
         this.pool.on("factoryCreateError", err => {
@@ -320,9 +318,12 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if (socket.onFailure) {
             socket.onFailure();
         }
+        // Ensure the socket is not used again
+        socket.doNotUse = true;
         // If an error occurrs on the socket, destroy the socket
         if (this.pool.isBorrowedResource(socket)) {
             this.pool.destroy(socket);
+            this.pool.clear();
         }
     }
     /**
@@ -336,10 +337,13 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if ("onFailure" in socket) {
             socket.onFailure();
         }
+        // Ensure the socket is not used again in a direct context (ex. `send(msg, socket)`)
+        socket.doNotUse = true;
         // If the socket is closed, destroy the resource, removing it from the pool
         if (this.pool.isBorrowedResource(socket)) {
             this.pool.destroy(socket);
         }
+        this.pool.clear();
         this.emit(types_1.AgentEvent.SocketDisconnected);
     }
     /**
@@ -353,6 +357,8 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if ("onFailure" in socket) {
             socket.onFailure();
         }
+        // Ensure the socket is not used again
+        socket.doNotUse = true;
         // If the socket has disconnected destroy & remove from pool
         if (this.pool.isBorrowedResource(socket)) {
             this.pool.destroy(socket);
