@@ -135,6 +135,12 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 if (!socket.registrationSent && isRegistrationMsg) {
                     return socket;
                 }
+                // If we don't have an appMetadataMsg (though we want to send it)
+                // we can't ensure it's sent first even if we want to -- hopefully
+                // the user knows what they're doing
+                if (!this.registrationMsg) {
+                    return socket;
+                }
                 // If we're already *not* already registered and this message is *not* a registration msg,
                 // we need to send registration msg first
                 // or there is no registration message registered yet
@@ -158,6 +164,12 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 }
                 // If the app metadata has not been sent but the message is an app metadata message, do nothing
                 if (!socket.appMetadataSent && isAppMetadataMsg) {
+                    return socket;
+                }
+                // If we don't have an appMetadataMsg (though we want to send it)
+                // we can't ensure it's sent first even if we want to -- hopefully
+                // the user knows what they're doing
+                if (!this.appMetadataMsg) {
                     return socket;
                 }
                 // Force sending of app metadata message first
