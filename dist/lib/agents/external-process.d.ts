@@ -3,7 +3,16 @@ import { EventEmitter } from "events";
 import { Socket } from "net";
 import { ChildProcess } from "child_process";
 import { Agent, AgentStatus, AgentType, BaseAgentRequest, BaseAgentResponse, LogFn, ProcessOptions } from "../types";
+import { V1ApplicationEventResponse, V1RegisterResponse } from "../protocol/v1/responses";
 import { V1Register, V1ApplicationEvent } from "../protocol/v1/requests";
+export declare type ExtraSocketInfo = {
+    registrationSent?: boolean;
+    registrationResp?: V1RegisterResponse;
+    appMetadataSent?: boolean;
+    appMetadataResp?: V1ApplicationEventResponse;
+    onFailure?: () => void;
+};
+export declare type ScoutSocket = Socket & ExtraSocketInfo;
 export default class ExternalProcessAgent extends EventEmitter implements Agent {
     private readonly agentType;
     private readonly opts;
@@ -34,7 +43,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     /** @see Agent */
     sendAsync<T extends BaseAgentRequest>(msg: T): Promise<void>;
     /** @see Agent */
-    send<T extends BaseAgentRequest, R extends BaseAgentResponse>(msg: T, socket?: Socket): Promise<R>;
+    send<T extends BaseAgentRequest, R extends BaseAgentResponse>(msg: T, socket?: ScoutSocket): Promise<R>;
     /**
      * Check if the process is present
      */
@@ -52,17 +61,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      */
     setRegistrationAndMetadata(registerMsg: V1Register, appMetadata: V1ApplicationEvent): void;
     /**
-     * Send a single message over a given connected socket
-     *
-     * @param {Socket} socket - The connected socket over which to send the message
-     * @param {BaseAgentRequest} msg - The message to send
-     * @returns {Promise<R extends BaseAgentResponse>} A promise that evalua
-     */
-    sendSingle<T extends BaseAgentRequest, R extends BaseAgentResponse>(socket: Socket, msg: T): Promise<{
-        socket: Socket;
-        response: R;
-    }>;
-    /**
      * Initialize the socket pool
      *
      * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
@@ -79,14 +77,14 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     /**
      * Handle socket error
      *
-     * @param {Socket} socket
+     * @param {ScoutSocket} socket - socket enhanced with extra scout-related information
      * @param {Error} err - the error that occurred
      */
     private handleSocketError;
     /**
      * Handle a socket closure
      *
-     * @param {Socket} socket
+     * @param {ScoutSocket} socket - socket enhanced with extra scout-related information
      */
     private handleSocketClose;
     /**
@@ -98,7 +96,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     /**
      * Process received socket data
      *
-     * @param {Socket} socket - The socket the data was received over
+     * @param {ScoutSocket} socket - socket enhanced with extra scout-related information
      * @param {Buffer} data - data received over a socket
      * @param {Buffer} chunks - data left over from the previous reads of the socket
      */
