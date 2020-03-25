@@ -552,6 +552,60 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
         });
 });
 
+// https://github.com/scoutapp/scout_apm_node/issues/170
+test("agent reconnects to intermittently connected core-agent", {timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000}, t => {
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
+    const scout = new Scout(config, {appMeta});
+    SCOUT_INSTANCES.push(scout);
+
+    const successfulRequests: ScoutRequest[] = [];
+    const agentWasDisconnected = false;
+    const agentWasReconnected = false;
+
+    // Set up a listener for sent scout requests
+    // We expect this to run *before* disconnections and after
+    const listener = (data: ScoutEventRequestSentData) => {
+        // If the agent hasn't been disconnected/reconnected yet, then simply record success
+        if (!agentWasDisconnected && !agentWasReconnected) {
+            successfulRequests.push(data.request);
+            return;
+        }
+
+        // If we've disconnected the agent but haven't reconnected it yet
+        // we don't expect requests to be sent successfully
+        if (agentWasDisconnected && !agentWasReconnected) {
+            scout.removeListener(ScoutEvent.RequestSent, listener);
+            throw new Error("Successful request was sent after agent disconnected");
+        }
+
+        // If we're in the case where both the agent was disconnected and reconnected
+        // and a request was successfully sent, then we must have reconnected and successfully sent a request through
+        t.equals(successfulRequests.length, 1, "one successful request was sent prior to now");
+        t.assert(successfulRequests[0].id !== data.request.id, "a new request was sent previous");
+        t.pass("request sent after disconnection & reconnection");
+
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+        t.end();
+    };
+
+    // Activate the listener
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    scout
+        .setup()
+    // TODO: send a transaction through
+    // TODO: get access to the process spawned by the agent
+    // TODO: kill the process spawned by the agent
+    // TODO: wait a little (5s?)
+    // TODO: restart the process spawned by the agent
+    // TODO: send another transaction
+        .catch(t.end);
+});
+
 // Shutdown all the scout instances after waiting what we expect should be enough time to send the tests
 test("wait for all scout instances to send", t => {
     // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
