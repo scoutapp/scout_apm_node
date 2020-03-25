@@ -12,7 +12,6 @@
 import * as test from "tape";
 import * as request from "supertest";
 import { generate as generateRandomString } from "randomstring";
-import { ChildProcess } from "child_process";
 
 import {
     ApplicationMetadata,
@@ -28,7 +27,6 @@ import {
 } from "../lib/types";
 
 import { setupRequireIntegrations } from "../lib";
-import ExternalProcessAgent from "../lib/agents/external-process";
 
 setupRequireIntegrations(["pg", "ejs", "pug"]);
 
@@ -552,88 +550,6 @@ test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND
         .then(res => {
             t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
         });
-});
-
-// https://github.com/scoutapp/scout_apm_node/issues/170
-test("agent reconnects to intermittently connected core-agent", {timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000}, t => {
-    const config = buildScoutConfiguration({
-        allowShutdown: true,
-        monitor: true,
-    });
-    const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
-    const scout = new Scout(config, {appMeta});
-    SCOUT_INSTANCES.push(scout);
-
-    const successfulRequests: ScoutRequest[] = [];
-    let agentKilled = false;
-    let agentRestarted = false;
-
-    // Set up a listener for sent scout requests
-    // We expect this to run *before* disconnections and after
-    const listener = (data: ScoutEventRequestSentData) => {
-        // If the agent hasn't been disconnected/reconnected yet, then simply record success
-        if (!agentKilled && !agentRestarted) {
-            successfulRequests.push(data.request);
-            return;
-        }
-
-        // If we've disconnected the agent but haven't reconnected it yet
-        // we don't expect requests to be sent successfully
-        if (agentKilled && !agentRestarted) {
-            scout.removeListener(ScoutEvent.RequestSent, listener);
-            throw new Error("Successful request was sent after agent disconnected");
-        }
-
-        // If we're in the case where both the agent was disconnected and reconnected
-        // and a request was successfully sent, then we must have reconnected and successfully sent a request through
-        t.equals(successfulRequests.length, 1, "one successful request was sent prior to now");
-        t.assert(successfulRequests[0].id !== data.request.id, "a new request was sent previous");
-        t.pass("request sent after disconnection & reconnection");
-
-        scout.removeListener(ScoutEvent.RequestSent, listener);
-        t.end();
-    };
-
-    // Activate the listener
-    scout.on(ScoutEvent.RequestSent, listener);
-
-    let process: ChildProcess;
-    let agent: ExternalProcessAgent;
-
-    scout
-        .setup()
-    // Send a transaction through, wait some time for recording to happen
-        .then(() => TestUtil.doNothingTransaction(t, scout, "Controller/automated-reconnection-test", 200))
-        .then(() => TestUtil.waitMs(500))
-    // Get access to the child core-agent process spawned by the NodeJS agent
-        .then(() => scout.getAgent())
-        .then(a => agent = a)
-        .then(() => agent.getProcess())
-    // Kill the child process core-agent
-        .then(p => {
-            process = p;
-            agentKilled = true;
-
-            return new Promise((resolve) => {
-                // Add handler that resolves this promise if the process is successfully killed
-                process.on("close", (code, signal) => {
-                    t.comment(`process terminated w/ signal [${signal}] (code: ${code})`);
-                    resolve();
-                });
-
-                process.kill();
-            });
-        })
-    // Wait a little (5s?)
-        .then(() => TestUtil.waitMs(5000))
-    // Restart the process spawned by the agent
-        .then(() => agent.start())
-        .then(() => agentRestarted = true)
-    // Wait a bit for core-agent to fully start
-        .then(() => TestUtil.waitMs(500))
-    // Send another transaction through
-        .then(() => TestUtil.doNothingTransaction(t, scout, "Controller/automated-reconnection-test", 200))
-        .catch(t.end);
 });
 
 // Shutdown all the scout instances after waiting what we expect should be enough time to send the tests

@@ -930,8 +930,10 @@ export function doNothingTransaction(
 ): Promise<void> {
     return scoutInstance.transaction(name, (transactionDone) => {
         return scoutInstance.instrument(name, (spanDone) => {
-            t.comment("waiting [${waitTimeMs}] and finishing transaction [${name}] ...");
-            waitMs(waitTimeMs).then(() => transactionDone());
+            t.comment(`waiting [${waitTimeMs}ms] and finishing transaction [${name}] ...`);
+            return waitMs(waitTimeMs)
+                .then(() => transactionDone())
+                .then(() => t.comment(`finished transaction [${name}]`));
         });
     });
 }
