@@ -32,7 +32,10 @@ test("spans should have traces attached", t => {
             allowShutdown: true,
             monitor: true,
         }),
-        {slowRequestThresholdMs: 50}, // reduce the threshold to ensure that trace gets generated
+        {
+            slowRequestThresholdMs: 50,
+            logFn: consoleLogFn,
+        }, // reduce the threshold to ensure that trace gets generated
     );
 
     // Set up a listener for the scout request that gets sent
@@ -73,10 +76,11 @@ test("spans should have traces attached", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/107
 test("spans within the threshold should not have traces attached", t => {
-    const scout = new Scout(buildScoutConfiguration({
+    const config = buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
-    }));
+    });
+    const scout = new Scout(config, {logFn: consoleLogFn});
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
