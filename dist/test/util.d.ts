@@ -92,4 +92,5 @@ export declare function stopContainerizedMySQLTest(test: any, provider: () => Co
 export declare function makeConnectedMySQLConnection(provider: () => ContainerAndOpts | null): Promise<Connection>;
 export declare function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts | null): Promise<Connection>;
 export declare function minimal(reqOrSpan: ScoutRequest | ScoutSpan): object;
+export declare function doNothingTransaction(t: Test, scoutInstance: Scout, name: string, waitTimeMs: number): Promise<void>;
 export {};

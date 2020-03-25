@@ -920,3 +920,18 @@ export function minimal(reqOrSpan: ScoutRequest | ScoutSpan): object {
 
     throw new Error("Invalid object, neither ScoutReqOrRequest nor ScoutSpan");
 }
+
+// Helper function for running transactions that do no actual work
+export function doNothingTransaction(
+    t: Test,
+    scoutInstance: Scout,
+    name: string,
+    waitTimeMs: number,
+): Promise<void> {
+    return scoutInstance.transaction(name, (transactionDone) => {
+        return scoutInstance.instrument(name, (spanDone) => {
+            t.comment("waiting [${waitTimeMs}] and finishing transaction [${name}] ...");
+            waitMs(waitTimeMs).then(() => transactionDone());
+        });
+    });
+}
