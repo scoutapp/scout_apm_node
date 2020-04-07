@@ -352,13 +352,13 @@ function detectPlatform(): Platform {
     }
 }
 
-export function detectPlatformTriple(): PlatformTriple {
+export function detectPlatformTriple(): Promise<PlatformTriple> {
     const triple = generateTriple();
     if (!(Object.values(PlatformTriple).includes(triple as PlatformTriple))) {
-        throw new Error("Invalid platform triple");
+        return Promise.reject(new Error("Invalid platform triple"));
     }
 
-    return triple as PlatformTriple;
+    return Promise.resolve(triple as PlatformTriple);
 }
 
 // Generate the architecture/platform triple

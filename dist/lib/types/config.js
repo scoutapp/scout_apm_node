@@ -250,9 +250,9 @@ function detectPlatform() {
 function detectPlatformTriple() {
     const triple = generateTriple();
     if (!(Object.values(enum_2.PlatformTriple).includes(triple))) {
-        throw new Error("Invalid platform triple");
+        return Promise.reject(new Error("Invalid platform triple"));
     }
-    return triple;
+    return Promise.resolve(triple);
 }
 exports.detectPlatformTriple = detectPlatformTriple;
 // Generate the architecture/platform triple

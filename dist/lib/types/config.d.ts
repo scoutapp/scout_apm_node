@@ -61,7 +61,7 @@ export interface ScoutConfiguration {
     coreAgentFullName: string;
 }
 export declare const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration>;
-export declare function detectPlatformTriple(): PlatformTriple;
+export declare function detectPlatformTriple(): Promise<PlatformTriple>;
 export declare function generateTriple(): string;
 interface ScoutConfigurationProxyOptions {
     env?: any;
