@@ -24,12 +24,16 @@ test("cache is updated by download (v1.1.8)", t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     let subdir = `scout_apm_core-v${version.raw}`;
-    // The cache should have created a versioned path to the binary
-    const expectedDirPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, subdir);
-    const expectedBinPath = path.join(expectedDirPath, Constants.CORE_AGENT_BIN_FILE_NAME);
+    let expectedDirPath;
+    let expectedBinPath;
     types_1.detectPlatformTriple()
         .then(platform => subdir = `${subdir}-${platform}`)
         .then(() => downloader.download(version, opts))
+        .then(() => {
+        // The cache should have created a versioned path to the binary
+        expectedDirPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, subdir);
+        expectedBinPath = path.join(expectedDirPath, Constants.CORE_AGENT_BIN_FILE_NAME);
+    })
         .then(() => Promise.all([
         fs.pathExists(expectedDirPath),
         fs.pathExists(expectedBinPath),
