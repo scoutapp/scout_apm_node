@@ -6,7 +6,6 @@ const types_1 = require("../types");
 const fs = require("fs-extra");
 // tslint:disable-next-line no-var-requires
 const hasha = require("hasha");
-const PLATFORM = types_1.detectPlatformTriple();
 const types_2 = require("../types");
 const Errors = require("../errors");
 const Constants = require("../constants");
@@ -104,14 +103,17 @@ class WebAgentDownloader {
      * @returns {Promise<string>} A promise that resolves to a valid cached binary (if found)
      */
     getCachedBinaryPath(baseDir, v, adc) {
-        const subdir = `scout_apm_core-v${v.raw}-${PLATFORM}`;
-        const versionedPath = path.join(baseDir, subdir, Constants.CORE_AGENT_BIN_FILE_NAME);
-        return fs.pathExists(versionedPath)
-            .then((versionedPathExists) => {
-            if (!versionedPathExists) {
-                throw new Errors.UnexpectedError("Failed to find cached download");
-            }
-            return this.ensureBinary(versionedPath, adc);
+        return types_1.detectPlatformTriple()
+            .then(platform => {
+            const subdir = `scout_apm_core-v${v.raw}-${platform}`;
+            const versionedPath = path.join(baseDir, subdir, Constants.CORE_AGENT_BIN_FILE_NAME);
+            return fs.pathExists(versionedPath)
+                .then((versionedPathExists) => {
+                if (!versionedPathExists) {
+                    throw new Errors.UnexpectedError("Failed to find cached download");
+                }
+                return this.ensureBinary(versionedPath, adc);
+            });
         });
     }
     /**
@@ -125,16 +127,19 @@ class WebAgentDownloader {
         let expectedBinPath;
         let downloadDir;
         let adc;
+        let platform;
         // Retrieve the hard-coded download config for the given version
-        return this.getDownloadConfigs(v)
+        return types_1.detectPlatformTriple()
+            .then(p => platform = p)
+            .then(() => this.getDownloadConfigs(v))
             .then(configs => {
             if (!configs || !configs.length) {
                 throw new Errors.UnexpectedError(`No available download configurations for version [${v.raw}]`);
             }
             // Find the configuration that matches the detected platform triple
-            const foundConfig = configs.find(c => c.platform === PLATFORM);
+            const foundConfig = configs.find(c => c.platform === platform);
             if (!foundConfig) {
-                throw new Errors.InvalidAgentDownloadConfig(`no config for detected platform [${PLATFORM}]`);
+                throw new Errors.InvalidAgentDownloadConfig(`no config for detected platform [${platform}]`);
             }
             adc = foundConfig;
             if (!adc.url) {
@@ -143,7 +148,7 @@ class WebAgentDownloader {
         })
             // Create a temporary directory & download the agent
             .then(() => {
-            const subdir = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+            const subdir = `scout_apm_core-v${v.raw}-${platform}`;
             // Build the expected download directory path
             downloadDir = path.join(opts && opts.cacheDir ? opts.cacheDir : Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, opts && opts.coreAgentFullName ? opts.coreAgentFullName : subdir);
             // Build the expected path for the binary

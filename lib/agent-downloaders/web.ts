@@ -9,8 +9,6 @@ import * as fs from "fs-extra";
 // tslint:disable-next-line no-var-requires
 const hasha = require("hasha");
 
-const PLATFORM: PlatformTriple = detectPlatformTriple();
-
 import {
     AgentDownloadConfig,
     AgentDownloadOptions,
@@ -129,16 +127,19 @@ export class WebAgentDownloader implements AgentDownloader {
      * @returns {Promise<string>} A promise that resolves to a valid cached binary (if found)
      */
     private getCachedBinaryPath(baseDir: string, v: CoreAgentVersion, adc?: AgentDownloadConfig): Promise<string> {
-        const subdir = `scout_apm_core-v${v.raw}-${PLATFORM}`;
-        const versionedPath = path.join(baseDir, subdir, Constants.CORE_AGENT_BIN_FILE_NAME);
+        return detectPlatformTriple()
+            .then(platform => {
+                const subdir = `scout_apm_core-v${v.raw}-${platform}`;
+                const versionedPath = path.join(baseDir, subdir, Constants.CORE_AGENT_BIN_FILE_NAME);
 
-        return fs.pathExists(versionedPath)
-            .then((versionedPathExists: boolean) => {
-                if (!versionedPathExists) {
-                    throw new Errors.UnexpectedError("Failed to find cached download");
-                }
+                return fs.pathExists(versionedPath)
+                    .then((versionedPathExists: boolean) => {
+                        if (!versionedPathExists) {
+                            throw new Errors.UnexpectedError("Failed to find cached download");
+                        }
 
-                return this.ensureBinary(versionedPath, adc);
+                        return this.ensureBinary(versionedPath, adc);
+                    });
             });
     }
 
@@ -153,18 +154,21 @@ export class WebAgentDownloader implements AgentDownloader {
         let expectedBinPath: string;
         let downloadDir: string;
         let adc: AgentDownloadConfig;
+        let platform: string;
 
         // Retrieve the hard-coded download config for the given version
-        return this.getDownloadConfigs(v)
+        return detectPlatformTriple()
+            .then(p => platform = p)
+            .then(() => this.getDownloadConfigs(v))
             .then(configs => {
                 if (!configs || !configs.length) {
                     throw new Errors.UnexpectedError(`No available download configurations for version [${v.raw}]`);
                 }
 
                 // Find the configuration that matches the detected platform triple
-                const foundConfig = configs.find(c => c.platform === PLATFORM);
+                const foundConfig = configs.find(c => c.platform === platform);
                 if (!foundConfig) {
-                    throw new Errors.InvalidAgentDownloadConfig(`no config for detected platform [${PLATFORM}]`);
+                    throw new Errors.InvalidAgentDownloadConfig(`no config for detected platform [${platform}]`);
                 }
                 adc = foundConfig;
 
@@ -174,7 +178,7 @@ export class WebAgentDownloader implements AgentDownloader {
             })
         // Create a temporary directory & download the agent
             .then(() => {
-                const subdir = `scout_apm_core-v${v.raw}-${PLATFORM}`;
+                const subdir = `scout_apm_core-v${v.raw}-${platform}`;
 
                 // Build the expected download directory path
                 downloadDir = path.join (

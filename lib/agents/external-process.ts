@@ -274,6 +274,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                     // Send the message over the socket
                     const result = socket.write(msg.toBinary());
 
+                    this.logFn(
+                        `[scout/external-process] successfully sent message:\n ${JSON.stringify(msg.json)}`,
+                        LogLevel.Debug,
+                    );
+
                     this.emit(AgentEvent.RequestSent, msg);
                 });
         });

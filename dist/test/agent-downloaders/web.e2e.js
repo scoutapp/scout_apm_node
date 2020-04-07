@@ -7,7 +7,6 @@ const tmp = require("tmp-promise");
 const Constants = require("../../lib/constants");
 const types_1 = require("../../lib/types");
 const web_1 = require("../../lib/agent-downloaders/web");
-const PLATFORM = types_1.detectPlatformTriple();
 test("download works (v1.1.8)", t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
@@ -24,12 +23,17 @@ test("cache is updated by download (v1.1.8)", t => {
     };
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
-    const subdir = `scout_apm_core-v${version.raw}-${PLATFORM}`;
-    // The cache should have created a versioned path to the binary
-    const expectedDirPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, subdir);
-    const expectedBinPath = path.join(expectedDirPath, Constants.CORE_AGENT_BIN_FILE_NAME);
-    downloader
-        .download(version, opts)
+    let subdir = `scout_apm_core-v${version.raw}`;
+    let expectedDirPath;
+    let expectedBinPath;
+    types_1.detectPlatformTriple()
+        .then(platform => subdir = `${subdir}-${platform}`)
+        .then(() => downloader.download(version, opts))
+        .then(() => {
+        // The cache should have created a versioned path to the binary
+        expectedDirPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, subdir);
+        expectedBinPath = path.join(expectedDirPath, Constants.CORE_AGENT_BIN_FILE_NAME);
+    })
         .then(() => Promise.all([
         fs.pathExists(expectedDirPath),
         fs.pathExists(expectedBinPath),

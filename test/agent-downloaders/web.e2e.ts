@@ -8,8 +8,6 @@ import * as Constants from "../../lib/constants";
 import { CoreAgentVersion, AgentDownloadOptions, PlatformTriple, detectPlatformTriple } from "../../lib/types";
 import { WebAgentDownloader } from "../../lib/agent-downloaders/web";
 
-const PLATFORM: PlatformTriple = detectPlatformTriple();
-
 test("download works (v1.1.8)", t => {
     const downloader = new WebAgentDownloader();
     const version = new CoreAgentVersion("1.1.8");
@@ -28,25 +26,31 @@ test("cache is updated by download (v1.1.8)", t => {
     };
     const downloader = new WebAgentDownloader();
     const version = new CoreAgentVersion("1.1.8");
-    const subdir = `scout_apm_core-v${version.raw}-${PLATFORM}`;
+    let subdir = `scout_apm_core-v${version.raw}`;
 
-    // The cache should have created a versioned path to the binary
-    const expectedDirPath = path.join(
-        Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
-        subdir,
-    );
-    const expectedBinPath = path.join(
-        expectedDirPath,
-        Constants.CORE_AGENT_BIN_FILE_NAME,
-    );
+    let expectedDirPath: string;
+    let expectedBinPath: string;
 
-    downloader
-        .download(version, opts)
+    detectPlatformTriple()
+        .then(platform => subdir = `${subdir}-${platform}`)
+        .then(() => downloader.download(version, opts))
+        .then(() => {
+            // The cache should have created a versioned path to the binary
+            expectedDirPath = path.join(
+                Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
+                subdir,
+            );
+            expectedBinPath = path.join(
+                expectedDirPath,
+                Constants.CORE_AGENT_BIN_FILE_NAME,
+            );
+        })
         .then(() => Promise.all([
             fs.pathExists(expectedDirPath),
             fs.pathExists(expectedBinPath),
         ]))
         .then(([dirExists, binExists]: boolean[]) => {
+
             t.assert(dirExists, `expected cache dir [${expectedDirPath}] was populated`);
             t.assert(binExists, `expected cache binary path [${expectedBinPath}] was populated`);
         })
