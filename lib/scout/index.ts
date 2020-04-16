@@ -343,21 +343,29 @@ export class Scout extends EventEmitter {
     }
 
     /**
-     * Start an instrumentation, withing a given transaction
+     * Start an instrumentation, within a given transaction
      *
      * @param {string} operation
      * @param {Function} cb
      * @returns {Promise<any>} a promsie that resolves to the result of the callback
      */
     public instrument(operation: string, cb: DoneCallback): Promise<any> {
-        const parent = this.getCurrentSpan() || this.getCurrentRequest();
-        const request = this.getCurrentRequest();
+        let parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
+        let request = this.getCurrentRequest() || undefined;
+        let autoCreatedRequest = false;
         const parentIsSpan = parent !== request;
 
         this.log(
             `[scout] Instrumenting operation [${operation}], parent? [${parent ? parent.id : "NONE"}]`,
             LogLevel.Debug,
         );
+
+        // Create a request if instrument was called without an encapsulating request
+        if (!parent && !request) {
+            this.log("[scout] Creating request for instrumentation", LogLevel.Warn);
+            request = parent = this.startRequestSync();
+            autoCreatedRequest = true;
+        }
 
         // Both parent and request must be present -- no span can start
         // without a parent request (and that would be the parent)
@@ -401,11 +409,26 @@ export class Scout extends EventEmitter {
 
                     this.log(`[scout] Stopped span with ID [${span.id}]`, LogLevel.Debug);
 
-                    return span.stop();
+                    return span.stop()
+                        .then(res => {
+                            // If the enveloping request was auto-generated finish & send as soon as
+                            // the single internal span completes
+                            if (request && autoCreatedRequest) {
+                                return request.finishAndSend().then(() => res);
+                            }
+
+                            return res;
+                        });
                 };
 
                 // bind the callback
                 cb = this.asyncNamespace.bind(cb);
+
+                // If parent has become invalidated, then run the callback and exit
+                if (!parent) {
+                    resolve(cb(DONE_NOTHING, {}));
+                    return;
+                }
 
                 // Create & start a child span on the current parent (request/span)
                 parent

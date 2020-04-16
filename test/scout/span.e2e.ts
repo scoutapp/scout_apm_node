@@ -110,3 +110,42 @@ test("spans within the threshold should not have traces attached", t => {
     // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
+
+// https://github.com/scoutapp/scout_apm_node/issues/186
+test("transactions created automatically if not present", t => {
+    const scout = new Scout(buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+
+    // Set up a listener for the scout request that gets sent
+    const listener = (data: ScoutEventRequestSentData) => {
+        const request = data.request;
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        // A request (transaction) should have been sent
+        t.pass("a request was sent");
+
+        // Ensure that only one span was present
+        data.request
+            .getChildSpans()
+            .then(spans => t.equals(spans.length, 1, "one span was present"))
+            .then(() => TestUtil.shutdownScout(t, scout))
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+
+    // Set up listener on the agent
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    scout
+        .setup()
+    // Create the first & second request
+        .then(() => {
+            return scout.instrument("test-span-trace", stopSpan => {
+                t.pass("span ran (without delay)");
+                stopSpan();
+            });
+        })
+    // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});

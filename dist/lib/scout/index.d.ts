@@ -79,7 +79,7 @@ export declare class Scout extends EventEmitter {
      */
     transactionSync(name: string, fn: RequestCallback): any;
     /**
-     * Start an instrumentation, withing a given transaction
+     * Start an instrumentation, within a given transaction
      *
      * @param {string} operation
      * @param {Function} cb
