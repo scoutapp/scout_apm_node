@@ -192,14 +192,17 @@ test("Many select statments and a render are in the right order", { timeout: Tes
     let client;
     // Set up a listener for the scout request that will be sent for the endpoint being hit
     const listener = (data) => {
-        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         // Look up the database span from the request
         const requestSpans = data.request.getChildSpansSync();
         const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
+        // If we do not see the controller span we might be seeing another request
+        // (ex. the HTTP/GET that supertest itself does)
         if (!controllerSpan) {
-            t.fail("no ControllerSpan span");
-            throw new Error("No DB Span");
+            t.comment("skipping request without Controller/ span...");
+            return;
         }
+        // Since we've found the request we were looking for we can remove the listener
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         const innerSpans = controllerSpan.getChildSpansSync();
         // Check for the inner SQL query spans
         const dbSpans = innerSpans.filter(s => s.operation === types_1.ScoutSpanOperation.SQLQuery);
@@ -420,18 +423,19 @@ test("Express pug integration dashboard send", { timeout: TestUtil.DASHBOARD_SEN
     }), "pug");
     // Set up a listener that should fire when the request is finished
     const listener = (data, another) => {
-        // Remove listener since this should fire once
-        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         // Look up the template render span from the request
         const requestSpans = data.request.getChildSpansSync();
         t.equals(requestSpans.length, 1, "There's one span on the request (the Controller/)");
         // The top level controller should be present
         const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
-        t.assert(controllerSpan, "template controller span was present on request");
+        // If we don't find a controller span, we are not looking at the right request
+        // (ex. HTTP/GET that superagent library fires)
         if (!controllerSpan) {
-            t.fail("no controller span present on request");
-            throw new Error("No controller span");
+            t.comment("skipping unrelated request...");
+            return;
         }
+        // Remove listener since this should fire once
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         // The inner spans for the controller should contain a template rendering span
         const innerSpans = controllerSpan.getChildSpansSync();
         const renderSpan = innerSpans.find(s => s.operation === types_1.ScoutSpanOperation.TemplateRender);

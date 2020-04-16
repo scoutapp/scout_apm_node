@@ -409,16 +409,13 @@ export class Scout extends EventEmitter {
 
                     this.log(`[scout] Stopped span with ID [${span.id}]`, LogLevel.Debug);
 
-                    return span.stop()
-                        .then(res => {
-                            // If the enveloping request was auto-generated finish & send as soon as
-                            // the single internal span completes
-                            if (request && autoCreatedRequest) {
-                                return request.finishAndSend().then(() => res);
-                            }
+                    // If the request wrapping this transaction was auto-generated
+                    // we must close it to avoid polluting other transactions
+                    if (request && autoCreatedRequest) {
+                        return request.finishAndSend().then(() => span.stop());
+                    }
 
-                            return res;
-                        });
+                    return span.stop();
                 };
 
                 // bind the callback
