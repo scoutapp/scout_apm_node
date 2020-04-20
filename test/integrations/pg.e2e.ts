@@ -136,8 +136,15 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_
                     throw new Error("span for insert not found");
                 }
             })
+        // Reset the database by removing the kv table
+            .then(() => {
+                t.comment("removing kv table for next test...");
+                return client.query(SQL_QUERIES.DROP_STRING_KV_TABLE);
+            })
+        // If everything went well, close the client and shutdown scout
             .then(() => client.end())
             .then(() => TestUtil.shutdownScout(t, scout))
+        // If an error occurred, close & shutdown anyway
             .catch(err => {
                 client.end()
                     .then(() => TestUtil.shutdownScout(t, scout, err));
@@ -160,11 +167,8 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_
             return client
                 .query(SQL_QUERIES.CREATE_STRING_KV_TABLE)
             // Insert a value into the string KV
-                .then(() => {
-                    const query = SQL_QUERIES.INSERT_STRING_KV_TABLE;
-                    const result = client.query(query, ["testKey", "testValue"]);
-                    return result;
-                })
+                .then(() => client.query(SQL_QUERIES.INSERT_STRING_KV_TABLE, ["testKey", "testValue"]))
+            // Check the results
                 .then(results => {
                     t.equals(results.rowCount, 1, "one row was inserted");
                     done();
@@ -199,7 +203,7 @@ test("sequelize basic authenticate works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS
             .getChildSpans()
             .then(spans => {
                 const dbSpans = spans.filter(s => s.operation === "SQL/Query");
-                t.equal(dbSpans.length, 1, "one db span was present");
+                t.assert(dbSpans.length > 1, "at least one db span was present (sequelize makes many)");
 
                 // Sequelize happens to do 'SELECT 1+1 AS result' as a test, find that span
                 const selectSpan = dbSpans.find(s => {
@@ -265,8 +269,6 @@ test("sequelize library works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
                 const dbSpans = spans.filter(s => s.operation === "SQL/Query");
                 t.assert(dbSpans.length > 1, "at least one db span was present (sequelize makes many)");
 
-                console.log("dbSpans:", dbSpans);
-
                 // Ensure span for CREATE TABLE is present
                 // NOTE: we can't use the exact query as we sent it here because
                 // it gets changed a little while being processed by sequelize
@@ -289,6 +291,12 @@ test("sequelize library works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
                     throw new Error("span for insert not found");
                 }
             })
+        // Reset the database by removing the kv table
+            .then(() => {
+                t.comment("removing kv table for next test...");
+                return sequelize.query(SQL_QUERIES.DROP_STRING_KV_TABLE);
+            })
+        // Finish test
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
@@ -297,6 +305,7 @@ test("sequelize library works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
     scout.on(ScoutEvent.RequestSent, listener);
 
     let connString: string;
+    let sequelize: Sequelize;
 
     scout
         .setup()
@@ -305,8 +314,8 @@ test("sequelize library works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
         .then(s => connString = s)
     // Start an instrumentation (which auto creates a request)
         .then(() => scout.instrument("Controller/create-and-insert-test", done => {
-            // Create sequelize client (this could fail if PG_CONTAINER_AND_OPTS is invalid
-            const sequelize = new Sequelize(connString);
+        // Create sequelize client (this could fail if PG_CONTAINER_AND_OPTS is invalid
+            sequelize = new Sequelize(connString);
 
             // Create a string KV table (using a sequelize raw query)
             return sequelize
