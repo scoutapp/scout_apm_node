@@ -55,6 +55,7 @@
     "pg": "^7.17.0",
     "pug": "^2.0.4",
     "randomstring": "^1.1.5",
+    "sequelize": "^5.21.6",
     "sha256-file": "^1.0.0",
     "supertest": "^4.0.2",
     "tape": "^4.12.1",

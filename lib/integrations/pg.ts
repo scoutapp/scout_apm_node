@@ -96,7 +96,7 @@ export class PGIntegration extends RequireIntegration {
 
             // Detect what kind of query is being used
             // https://github.com/brianc/node-postgres/blob/master/packages/pg/lib/client.js
-            const  query: Query = typeof config.submit === "function" ? config : new Query(...originalArgs);
+            const query: Query = typeof config.submit === "function" ? config : new Query(...originalArgs);
 
             return integration.scout.instrument(ScoutSpanOperation.SQLQuery, done => {
                 const span = integration.scout.getCurrentSpan();

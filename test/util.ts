@@ -717,6 +717,15 @@ export function makeConnectedPGClient(provider: () => ContainerAndOpts | null): 
     return client.connect().then(() => client);
 }
 
+// Utility function to create a connection string
+export function makePGConnectionString(provider: () => ContainerAndOpts | null): Promise<string> {
+    const cao = provider();
+    if (!cao) { return Promise.reject(new Error("no CAO in provider")); }
+
+    const port: number = cao.opts.portBinding[5432];
+    return Promise.resolve(`postgres://postgres:postgres@localhost:${port}/postgres`);
+}
+
 type ServerShutdownFn = () => void;
 
 // A server that does nothing but collect the clients that connect to it
