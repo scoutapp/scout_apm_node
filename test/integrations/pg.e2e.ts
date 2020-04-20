@@ -24,7 +24,6 @@ import { ScoutContextName, ScoutSpanOperation } from "../../lib/types";
 
 import { SQL_QUERIES } from "../fixtures";
 
-
 let PG_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
@@ -207,7 +206,7 @@ test("sequelize basic authenticate works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS
 
                 // Sequelize happens to do 'SELECT 1+1 AS result' as a test, find that span
                 const selectSpan = dbSpans.find(s => {
-                    let v = s.getContextValue(ScoutContextName.DBStatement);
+                    const v = s.getContextValue(ScoutContextName.DBStatement);
                     return v && typeof v === "string" && v.includes("SELECT 1+1");
                 });
                 if (!selectSpan) {
@@ -223,7 +222,6 @@ test("sequelize basic authenticate works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS
     // Activate the listener
     scout.on(ScoutEvent.RequestSent, listener);
 
-    let client: Client;
     let connString: string;
 
     scout
@@ -273,7 +271,7 @@ test("sequelize library works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
                 // NOTE: we can't use the exact query as we sent it here because
                 // it gets changed a little while being processed by sequelize
                 const createTableSpan = dbSpans.find(s => {
-                     let v = s.getContextValue(ScoutContextName.DBStatement);
+                     const v = s.getContextValue(ScoutContextName.DBStatement);
                      return v && typeof v === "string" && v.includes("CREATE TABLE kv");
                 });
                 if (!createTableSpan) {
@@ -283,7 +281,7 @@ test("sequelize library works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
 
                 // Ensure span for INSERT is present
                 const insertSpan = dbSpans.find(s => {
-                     let v = s.getContextValue(ScoutContextName.DBStatement);
+                     const v = s.getContextValue(ScoutContextName.DBStatement);
                      return v && typeof v === "string" && v.includes(SQL_QUERIES.INSERT_STRING_KV_TABLE);
                 });
                 if (!insertSpan) {

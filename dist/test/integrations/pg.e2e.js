@@ -171,7 +171,7 @@ test("sequelize basic authenticate works", { timeout: TestUtil.PG_TEST_TIMEOUT_M
             t.assert(dbSpans.length > 1, "at least one db span was present (sequelize makes many)");
             // Sequelize happens to do 'SELECT 1+1 AS result' as a test, find that span
             const selectSpan = dbSpans.find(s => {
-                let v = s.getContextValue(types_2.ScoutContextName.DBStatement);
+                const v = s.getContextValue(types_2.ScoutContextName.DBStatement);
                 return v && typeof v === "string" && v.includes("SELECT 1+1");
             });
             if (!selectSpan) {
@@ -185,7 +185,6 @@ test("sequelize basic authenticate works", { timeout: TestUtil.PG_TEST_TIMEOUT_M
     };
     // Activate the listener
     scout.on(types_1.ScoutEvent.RequestSent, listener);
-    let client;
     let connString;
     scout
         .setup()
@@ -230,7 +229,7 @@ test("sequelize library works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
             // NOTE: we can't use the exact query as we sent it here because
             // it gets changed a little while being processed by sequelize
             const createTableSpan = dbSpans.find(s => {
-                let v = s.getContextValue(types_2.ScoutContextName.DBStatement);
+                const v = s.getContextValue(types_2.ScoutContextName.DBStatement);
                 return v && typeof v === "string" && v.includes("CREATE TABLE kv");
             });
             if (!createTableSpan) {
@@ -239,7 +238,7 @@ test("sequelize library works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
             }
             // Ensure span for INSERT is present
             const insertSpan = dbSpans.find(s => {
-                let v = s.getContextValue(types_2.ScoutContextName.DBStatement);
+                const v = s.getContextValue(types_2.ScoutContextName.DBStatement);
                 return v && typeof v === "string" && v.includes(fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE);
             });
             if (!insertSpan) {
