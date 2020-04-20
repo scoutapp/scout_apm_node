@@ -250,7 +250,7 @@ class Scout extends events_1.EventEmitter {
             // Create a new async namespace for the instrumentation
             this.asyncNamespace.run(() => {
                 // Create a done function that will clear the entry and stop the span
-                const doneFn = () => {
+                let doneFn = () => {
                     // Set the parent for other sibling/same-level spans
                     if (parentIsSpan) {
                         // If the parent of this span is a span, then we want other spans in this namespace
@@ -275,8 +275,9 @@ class Scout extends events_1.EventEmitter {
                     }
                     return span.stop();
                 };
-                // bind the callback
+                // Bind the callback and the doneFn to the same namespace
                 cb = this.asyncNamespace.bind(cb);
+                doneFn = this.asyncNamespace.bind(doneFn);
                 // If parent has become invalidated, then run the callback and exit
                 if (!parent) {
                     resolve(cb(DONE_NOTHING, {}));
@@ -298,6 +299,10 @@ class Scout extends events_1.EventEmitter {
                 })
                     // Return the result
                     .catch(err => {
+                    // NOTE: it is possible for span to be missing here if startChildSpan() fails
+                    if (!span) {
+                        this.log("[scout] error during instrument(), startChildSpan likely failed\n ERROR: ${err}", types_1.LogLevel.Error);
+                    }
                     // It's possible that an error happened *before* the callback could be run
                     if (!ranCb) {
                         result = cb(doneFn, { span, request, parent });
