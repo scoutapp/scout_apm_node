@@ -37,6 +37,9 @@ class ScoutSpan {
             if (opts.parent) {
                 this.parent = opts.parent;
             }
+            if (opts.onStop) {
+                this.onStop = opts.onStop;
+            }
         }
     }
     pushTraceFrames(frames) {
@@ -129,6 +132,9 @@ class ScoutSpan {
     getEndTime() {
         return new Date(this.endTime);
     }
+    setOnStop(fn) {
+        this.onStop = fn;
+    }
     stop() {
         if (this.stopped) {
             return Promise.resolve(this);
@@ -147,9 +153,15 @@ class ScoutSpan {
                 return Promise.resolve(this);
             }
             // Add stack trace to the span
-            return this.addContext(enum_1.ScoutContextName.Traceback, this.traceFrames.slice(0, TRACE_LIMIT))
-                .then(() => this);
-        });
+            return this.addContext(enum_1.ScoutContextName.Traceback, this.traceFrames.slice(0, TRACE_LIMIT));
+        })
+            // Call the async stop function if there is one
+            .then(() => {
+            if (this.onStop) {
+                return this.onStop();
+            }
+        })
+            .then(() => this);
     }
     stopSync() {
         if (this.stopped) {

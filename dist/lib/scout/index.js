@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const path = require("path");
 const process = require("process");
-const cls = require("continuation-local-storage");
+const cls = require("cls-hooked");
 const fs_extra_1 = require("fs-extra");
 const types_1 = require("../types");
 const global_1 = require("../global");
@@ -225,16 +225,22 @@ class Scout extends events_1.EventEmitter {
      * @returns {Promise<any>} a promsie that resolves to the result of the callback
      */
     instrument(operation, cb) {
-        let parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
-        let request = this.getCurrentRequest() || undefined;
-        let autoCreatedRequest = false;
+        const parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
+        const request = this.getCurrentRequest() || undefined;
         const parentIsSpan = parent !== request;
         this.log(`[scout] Instrumenting operation [${operation}], parent? [${parent ? parent.id : "NONE"}]`, types_1.LogLevel.Debug);
-        // Create a request if instrument was called without an encapsulating request
+        // Create a transaction if instrument was called without an encapsulating request
         if (!parent && !request) {
             this.log("[scout] Creating request for instrumentation", types_1.LogLevel.Warn);
-            request = parent = this.startRequestSync();
-            autoCreatedRequest = true;
+            return this.transaction(operation, transactionDone => {
+                // Create a modified callback which finishes the transaction after first instrumentation
+                const modifiedCb = (spanDone, info) => {
+                    // Call the original callback, but give it a done function that finished the span
+                    // *and* the request, and pass along the info
+                    return cb(() => spanDone().then(() => transactionDone()), info);
+                };
+                return this.instrument(operation, modifiedCb);
+            });
         }
         // Both parent and request must be present -- no span can start
         // without a parent request (and that would be the parent)
@@ -247,10 +253,10 @@ class Scout extends events_1.EventEmitter {
         this.log(`[scout] Starting child span for operation [${operation}], parent id [${parent.id}]`, types_1.LogLevel.Debug);
         let span;
         return new Promise((resolve, reject) => {
-            // Create a new async namespace for the instrumentation
+            // Create a new async context for the instrumentation
             this.asyncNamespace.run(() => {
                 // Create a done function that will clear the entry and stop the span
-                let doneFn = () => {
+                const doneFn = () => {
                     // Set the parent for other sibling/same-level spans
                     if (parentIsSpan) {
                         // If the parent of this span is a span, then we want other spans in this namespace
@@ -267,17 +273,10 @@ class Scout extends events_1.EventEmitter {
                     if (!span) {
                         return Promise.resolve();
                     }
+                    // If we did create the span, note that it was stopped successfully
                     this.log(`[scout] Stopped span with ID [${span.id}]`, types_1.LogLevel.Debug);
-                    // If the request wrapping this transaction was auto-generated
-                    // we must close it to avoid polluting other transactions
-                    if (request && autoCreatedRequest) {
-                        return request.finishAndSend().then(() => span.stop());
-                    }
-                    return span.stop();
+                    return Promise.resolve();
                 };
-                // Bind the callback and the doneFn to the same namespace
-                cb = this.asyncNamespace.bind(cb);
-                doneFn = this.asyncNamespace.bind(doneFn);
                 // If parent has become invalidated, then run the callback and exit
                 if (!parent) {
                     resolve(cb(DONE_NOTHING, {}));
@@ -291,9 +290,11 @@ class Scout extends events_1.EventEmitter {
                     // Set the span & request on the namespace
                     this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
                     this.asyncNamespace.set(ASYNC_NS_SPAN, span);
+                    // Set function to call on finish
+                    span.setOnStop(doneFn);
                     // Set that the cb has been run, in the case of error so we don't run twice
                     ranCb = true;
-                    const result = cb(doneFn, { span, request, parent });
+                    const result = cb(() => span.stop(), { span, request, parent });
                     // Ensure that the result is a promise
                     resolve(result);
                 })
@@ -305,7 +306,7 @@ class Scout extends events_1.EventEmitter {
                     }
                     // It's possible that an error happened *before* the callback could be run
                     if (!ranCb) {
-                        result = cb(doneFn, { span, request, parent });
+                        result = cb(() => span.stop(), { span, request, parent });
                     }
                     this.log("[scout] failed to send start span", types_1.LogLevel.Error);
                     // Ensure that the result is a promise
@@ -320,15 +321,16 @@ class Scout extends events_1.EventEmitter {
      * @param {string} operation - operation name for the span
      * @param {SpanCallback} fn - function to execute
      * @param {ScoutRequest} [requestOverride] - The request on which to start the span to execute
-     * @throws {NoActiveRequest} If there is no request in scoep (via async context or override param)
+     * @throws {NoActiveRequest} If there is no request in scope (via async context or override param)
      */
     instrumentSync(operation, fn, requestOverride) {
         let parent = requestOverride || this.syncCurrentSpan || this.syncCurrentRequest;
         // Check the async sources in case we're in a async context but not a sync one
         parent = parent || this.getCurrentSpan() || this.getCurrentRequest();
+        // If there isn't a current parent for instrumentSync, auto create one
         if (!parent) {
             this.log("[scout] parent context missing for synchronous instrumentation (via async context or passed in)", types_1.LogLevel.Warn);
-            throw new Errors.NoActiveParentContext();
+            return this.transactionSync(operation, () => this.instrumentSync(operation, fn));
         }
         // Start a child span of the parent synchronously
         const span = parent.startChildSpanSync(operation);
@@ -496,38 +498,39 @@ class Scout extends events_1.EventEmitter {
             let result;
             let request;
             let ranCb = false;
-            const doneFn = () => {
-                // Finish if the request itself is no longer present
-                if (!request) {
-                    return Promise.resolve();
-                }
-                this.log(`[scout] Finishing and sending request with ID [${request.id}]`, types_1.LogLevel.Debug);
-                this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
-                return request.finishAndSend()
-                    .then(res => {
-                    this.log(`[scout] Finished and sent request [${request.id}]`, types_1.LogLevel.Debug);
-                    return res;
-                })
-                    .catch(err => {
-                    this.log(`[scout] Failed to finish and send request [${request.id}]:\n ${err}`, types_1.LogLevel.Error);
-                    // rethrow the error
-                    throw err;
-                });
-            };
             // Run in the async namespace
             this.asyncNamespace.run(() => {
+                // Make done function that will run after
+                const doneFn = () => {
+                    // Finish if the request itself is no longer present
+                    if (!request) {
+                        return Promise.resolve();
+                    }
+                    this.log(`[scout] Finishing and sending request with ID [${request.id}]`, types_1.LogLevel.Debug);
+                    this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
+                    // Finish and send
+                    return request.finishAndSend()
+                        .then(() => {
+                        this.log(`[scout] Finished and sent request [${request.id}]`, types_1.LogLevel.Debug);
+                    })
+                        .catch(err => {
+                        this.log(`[scout] Failed to finish and send request [${request.id}]:\n ${err}`, types_1.LogLevel.Error);
+                    });
+                };
                 this.log(`[scout] Starting request in async namespace...`, types_1.LogLevel.Debug);
                 // Bind the cb to this namespace
                 cb = this.asyncNamespace.bind(cb);
-                // Star the request
+                // Start the request
                 this.startRequest()
                     .then(r => request = r)
                     // Update async namespace, run function
                     .then(() => {
                     this.log(`[scout] Request started w/ ID [${request.id}]`, types_1.LogLevel.Debug);
                     this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
+                    // Set function to call on finish
+                    request.setOnStop(doneFn);
                     ranCb = true;
-                    result = cb(doneFn, { request });
+                    result = cb(() => request.stop(), { request });
                     // Ensure that the result is a promise
                     resolve(result);
                 })
@@ -535,7 +538,7 @@ class Scout extends events_1.EventEmitter {
                     .catch(err => {
                     // In the case that an error occurs before the request gets made we can't run doneFn
                     if (!ranCb) {
-                        result = request ? cb(doneFn, { request }) : cb(() => undefined, { request });
+                        result = request ? cb(() => request.stop(), { request }) : cb(() => undefined, { request });
                     }
                     resolve(result);
                     this.log(`[scout] failed to send start request: ${err}`, types_1.LogLevel.Error);

@@ -92,7 +92,7 @@ export declare class Scout extends EventEmitter {
      * @param {string} operation - operation name for the span
      * @param {SpanCallback} fn - function to execute
      * @param {ScoutRequest} [requestOverride] - The request on which to start the span to execute
-     * @throws {NoActiveRequest} If there is no request in scoep (via async context or override param)
+     * @throws {NoActiveRequest} If there is no request in scope (via async context or override param)
      */
     instrumentSync(operation: string, fn: SpanCallback, requestOverride?: ScoutRequest): any;
     /**

@@ -9,6 +9,7 @@ export interface ScoutRequestOptions {
     timestamp?: Date;
     started?: boolean;
     ignored?: boolean;
+    onStop?: () => Promise<void>;
 }
 export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable, Startable {
     readonly id: string;
@@ -22,6 +23,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     private childSpans;
     private tags;
     private ignored;
+    private onStop;
     constructor(opts?: ScoutRequestOptions);
     span(operation: string): Promise<ScoutSpan>;
     getTimestamp(): Date;
@@ -51,6 +53,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     finishAndSend(): Promise<this>;
     isStopped(): boolean;
     getEndTime(): Date;
+    setOnStop(fn: () => Promise<void>): void;
     stop(): Promise<this>;
     stopSync(): this;
     isStarted(): boolean;

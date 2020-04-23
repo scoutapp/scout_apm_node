@@ -1035,3 +1035,47 @@ test("Adding context does not cause socket close", t => {
             });
         });
 });
+
+// https://github.com/scoutapp/scout_apm_node/pull/186
+test("instrumentSync should automatically create a transaction", t => {
+    // We'll need to create a config to use with the global scout instance
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+
+    const scout = new Scout(config);
+
+    const listener = (data: ScoutEventRequestSentData) => {
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+
+        const req = data.request;
+        t.assert(req, "request was present");
+
+        const childSpans = req.getChildSpansSync();
+        t.equals(childSpans.length, 1, "one child span was present");
+        t.equals(
+            childSpans[0].operation,
+            "test-instrument-sync-auto-create-transaction",
+            "sync child span had expected name",
+        );
+
+        TestUtil.shutdownScout(t, scout);
+    };
+
+    // Fail the test if a request is sent from the agent
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    // Create scout instance
+    scout
+        .setup()
+        .then(() => {
+            // The scout object should be created as sa result of doing the .run
+            scout.instrumentSync("test-instrument-sync-auto-create-transaction", ({request}) => {
+                if (!request) {
+                    throw new Error("request is missing inside transactionSync");
+                }
+                t.pass("instrument was run");
+            });
+        });
+});

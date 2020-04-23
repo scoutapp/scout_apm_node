@@ -35,6 +35,9 @@ class ScoutRequest {
             if (typeof opts.ignored === "boolean") {
                 this.ignored = opts.ignored;
             }
+            if (opts.onStop) {
+                this.onStop = opts.onStop;
+            }
         }
         if (this.ignored) {
             this.addContext(types_2.ScoutContextName.IgnoreTransaction, true);
@@ -136,6 +139,9 @@ class ScoutRequest {
     getEndTime() {
         return new Date(this.endTime);
     }
+    setOnStop(fn) {
+        this.onStop = fn;
+    }
     stop() {
         if (this.finished) {
             return Promise.resolve(this);
@@ -144,8 +150,14 @@ class ScoutRequest {
         return Promise.all(this.childSpans.map(s => s.stop())).then(() => {
             this.endTime = new Date(this.timestamp.getTime() + this.getDurationMs());
             this.finished = true;
-            return this;
-        });
+        })
+            // Call the stop function if there is one
+            .then(() => {
+            if (this.onStop) {
+                return this.onStop();
+            }
+        })
+            .then(() => this);
     }
     stopSync() {
         if (this.finished) {
