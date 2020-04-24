@@ -21,6 +21,8 @@ import { setupRequireIntegrations } from "../lib";
 import { V1StartSpan } from "../lib/protocol/v1/requests";
 import { FILE_PATHS } from "./fixtures";
 
+import { getGlobalScoutInstance } from "../lib/global";
+
 // Set up the pug integration
 setupRequireIntegrations(["pug", "ejs", "mustache"]);
 
@@ -400,61 +402,61 @@ test("URI filtered down to path", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-// https://github.com/scoutapp/scout_apm_node/issues/82
-test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
-    const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
-        monitor: true,
-    }));
+// // https://github.com/scoutapp/scout_apm_node/issues/82
+// test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
+//     const scout = new Scout(buildScoutConfiguration({
+//         allowShutdown: true,
+//         monitor: true,
+//     }));
 
-    // Create an application that's set up to use pug templating
-    const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
-        scout,
-        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
-    }), "pug");
+//     // Create an application that's set up to use pug templating
+//     const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
+//         scout,
+//         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+//     }), "pug");
 
-    // Set up a listener that should fire when the request is finished
-    const listener = (data: ScoutEventRequestSentData) => {
-        // Remove listener since this should fire once
-        scout.removeListener(ScoutEvent.RequestSent, listener);
+//     // Set up a listener that should fire when the request is finished
+//     const listener = (data: ScoutEventRequestSentData) => {
+//         // Remove listener since this should fire once
+//         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        // Look up the template render span from the request
-        const requestSpans = data.request.getChildSpansSync();
+//         // Look up the template render span from the request
+//         const requestSpans = data.request.getChildSpansSync();
 
-        // The top level controller should be present
-        const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
-        t.assert(controllerSpan, "template controller span was present on request");
-        if (!controllerSpan) {
-            t.fail("no controller span present on request");
-            throw new Error("No controller span");
-        }
+//         // The top level controller should be present
+//         const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
+//         t.assert(controllerSpan, "template controller span was present on request");
+//         if (!controllerSpan) {
+//             t.fail("no controller span present on request");
+//             throw new Error("No controller span");
+//         }
 
-        // The inner spans for the controller should contain a template rendering span
-        const innerSpans = controllerSpan.getChildSpansSync();
-        const renderSpan = innerSpans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
-        t.assert(renderSpan, "template render span was present on request");
-        if (!renderSpan) {
-            t.fail("no render span present on request");
-            throw new Error("No render span");
-        }
+//         // The inner spans for the controller should contain a template rendering span
+//         const innerSpans = controllerSpan.getChildSpansSync();
+//         const renderSpan = innerSpans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
+//         t.assert(renderSpan, "template render span was present on request");
+//         if (!renderSpan) {
+//             t.fail("no render span present on request");
+//             throw new Error("No render span");
+//         }
 
-        t.assert(renderSpan.getContextValue(ScoutContextName.Name), "template name context is present");
+//         t.assert(renderSpan.getContextValue(ScoutContextName.Name), "template name context is present");
 
-        // Shutdown and close scout
-        TestUtil.shutdownScout(t, scout);
-    };
+//         // Shutdown and close scout
+//         TestUtil.shutdownScout(t, scout);
+//     };
 
-    scout.on(ScoutEvent.RequestSent, listener);
+//     scout.on(ScoutEvent.RequestSent, listener);
 
-    return request(app)
-        .get("/")
-        .expect("Content-Type", /html/)
-        .expect(200)
-        .then(res => {
-            t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
-        })
-        .catch(err => TestUtil.shutdownScout(t, scout, err));
-});
+//     return request(app)
+//         .get("/")
+//         .expect("Content-Type", /html/)
+//         .expect(200)
+//         .then(res => {
+//             t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
+//         })
+//         .catch(err => TestUtil.shutdownScout(t, scout, err));
+// });
 
 // https://github.com/scoutapp/scout_apm_node/issues/82
 test("ejs integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
