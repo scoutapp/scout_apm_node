@@ -659,7 +659,7 @@ test("Unknown routes should not be recorded", t => {
                 .get("/nope")
                 .expect("Content-Type", /html/)
                 .expect(404)
-                .then(() => t.pass("unknown route was visited"))
-                .catch(err => TestUtil.shutdownScout(t, scout, err));
-        });
+                .then(() => t.pass("unknown route was visited"));
+        })
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });

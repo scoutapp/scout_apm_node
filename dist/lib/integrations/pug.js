@@ -47,7 +47,13 @@ class PugIntegration extends integrations_1.RequireIntegration {
     shimPugRenderFile(pugExport) {
         const originalFn = pugExport.renderFile;
         const integration = this;
-        const renderFile = (path, options, callback) => {
+        const renderFile = function (path, options, callback) {
+            // Pug does something weird -- if the callback is specified, it recursively calls renderFile
+            // to avoid that, we need to do a similar check to know when to actually do the instrumentation versus not
+            // we only want to do the instrumentation on the actual run (when callback is not defined)
+            if (callback) {
+                return originalFn(path, options, callback);
+            }
             integration.logFn(`[scout/integrations/pug] rendering file [${path}]...`, types_1.LogLevel.Debug);
             // If no scout instance is available then run the function normally
             if (!integration.scout) {
