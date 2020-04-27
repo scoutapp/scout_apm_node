@@ -237,9 +237,9 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      */
     stopProcess() {
         return this.getProcess()
-            .then(process => {
+            .then(p => {
             this.stopped = true;
-            process.kill();
+            p.kill();
         })
             // Remove the socket path
             .then(() => fs_extra_1.remove(this.getSocketPath()))

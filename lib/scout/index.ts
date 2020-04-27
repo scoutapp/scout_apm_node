@@ -224,7 +224,7 @@ export class Scout extends EventEmitter {
     }
 
     public shutdown(): Promise<void> {
-        if (!this.agent) {
+        if (!this.agent || this.wasShutdown) {
             this.log("[scout] shutdown called but no agent to shutdown is present", LogLevel.Error);
             return Promise.reject(new Errors.NoAgentPresent());
         }
@@ -242,7 +242,6 @@ export class Scout extends EventEmitter {
                 }
             })
             .then(() => {
-                delete this.agent;
                 this.wasShutdown = true;
             });
     }

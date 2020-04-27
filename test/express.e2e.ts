@@ -443,8 +443,7 @@ test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
 
         t.assert(renderSpan.getContextValue(ScoutContextName.Name), "template name context is present");
 
-        // Shutdown and close (the now global scout instance, due to middleware usage)
-        // (see global.ts)
+        // Shutdown the scout instance
         TestUtil.shutdownScout(t, scout);
     };
 
@@ -493,7 +492,7 @@ test("ejs integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
         const innerSpans = controllerSpan.getChildSpansSync();
         const renderSpan = innerSpans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
 
-        t.assert(renderSpan, "template render span was present on request");
+        t.assert(renderSpan, "ejs template render span was present on request");
         if (!renderSpan) {
             t.fail("no render span present on request");
             throw new Error("No render span");

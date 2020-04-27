@@ -306,9 +306,9 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      */
     public stopProcess(): Promise<void> {
         return this.getProcess()
-            .then(process => {
+            .then(p => {
                 this.stopped = true;
-                process.kill();
+                p.kill();
             })
         // Remove the socket path
             .then(() => remove(this.getSocketPath()))
