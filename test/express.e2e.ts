@@ -77,7 +77,7 @@ test("Simple operation", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
+test("Dynamic segment routes (uses global instance)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     // Create an application and setup scout middleware
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(
         scoutMiddleware({
@@ -138,7 +138,8 @@ test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t =>
                 .get("/dynamic/1234")
                 .expect("Content-Type", /json/)
                 .expect(200)
-                .then(() => t.comment("sent first request"));
+                .then(() => t.comment("sent second request"))
+                .catch(err => TestUtil.shutdownScout(t, scout, err));
         })
         .catch(t.end);
 });

@@ -142,8 +142,11 @@ class Scout extends events_1.EventEmitter {
                 return this.agent.stopProcess();
             }
         })
-            // Remove the agent
-            .then(() => { this.agent = null; });
+            // Remove the agent, emit the shutdown event
+            .then(() => {
+            this.agent = null;
+            this.emit(types_1.ScoutEvent.Shutdown);
+        });
     }
     hasAgent() {
         return typeof this.agent !== "undefined" && this.agent !== null;

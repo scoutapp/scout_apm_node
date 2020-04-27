@@ -246,8 +246,11 @@ export class Scout extends EventEmitter {
                     return this.agent.stopProcess();
                 }
             })
-        // Remove the agent
-            .then(() => { this.agent = null; });
+        // Remove the agent, emit the shutdown event
+            .then(() => {
+                this.agent = null;
+                this.emit(ScoutEvent.Shutdown);
+            });
     }
 
     public hasAgent(): boolean {

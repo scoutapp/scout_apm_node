@@ -93,7 +93,8 @@ export declare enum ScoutEvent {
     IgnoredPathDetected = "scout-event-ignored-path-detected",
     RequestSent = "scout-event-request-sent",
     IgnoredRequestProcessingSkipped = "ignored-request-processing-skipped",
-    UnknownRequestPathSkipped = "unknown-request-path-skipped"
+    UnknownRequestPathSkipped = "unknown-request-path-skipped",
+    Shutdown = "scout-event-shutdown"
 }
 export declare enum ScoutContextName {
     Traceback = "stack",

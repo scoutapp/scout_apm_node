@@ -129,6 +129,7 @@ export enum ScoutEvent {
     RequestSent = "scout-event-request-sent",
     IgnoredRequestProcessingSkipped = "ignored-request-processing-skipped",
     UnknownRequestPathSkipped = "unknown-request-path-skipped",
+    Shutdown = "scout-event-shutdown",
 }
 
 export enum ScoutContextName {

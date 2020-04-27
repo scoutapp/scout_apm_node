@@ -7,6 +7,11 @@ exports.EXPORT_BAG = {};
 // Global scout instance
 let SCOUT_INSTANCE;
 let creating;
+/**
+ * Set the active global scout instance
+ *
+ * @param {Scout} scout
+ */
 function setActiveGlobalScoutInstance(scout) {
     if (SCOUT_INSTANCE && !SCOUT_INSTANCE.isShutdown()) {
         SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", types_1.LogLevel.Warn);
@@ -17,6 +22,11 @@ function setActiveGlobalScoutInstance(scout) {
     SCOUT_INSTANCE.setupIntegrations();
 }
 exports.setActiveGlobalScoutInstance = setActiveGlobalScoutInstance;
+/**
+ * Get the current active global scout instance
+ *
+ * @returns {Scout | null} the active global scout instance if there is one
+ */
 function getActiveGlobalScoutInstance() {
     if (SCOUT_INSTANCE && SCOUT_INSTANCE.isShutdown()) {
         return null;
@@ -24,6 +34,13 @@ function getActiveGlobalScoutInstance() {
     return SCOUT_INSTANCE;
 }
 exports.getActiveGlobalScoutInstance = getActiveGlobalScoutInstance;
+/**
+ * Get or create the current active global scout instance
+ *
+ * @param {ScoutConfiguration} [config] - Scout configuration to use to create (if necessary)
+ * @param {ScoutOptions} [opts] - options
+ * @returns {Promise<Scout>} created or retrieved Scout instance
+ */
 function getOrCreateActiveGlobalScoutInstance(config, opts) {
     if (SCOUT_INSTANCE && !SCOUT_INSTANCE.isShutdown()) {
         return SCOUT_INSTANCE.setup();
@@ -33,19 +50,35 @@ function getOrCreateActiveGlobalScoutInstance(config, opts) {
     }
     const instance = new scout_1.Scout(types_1.buildScoutConfiguration(config), opts);
     setActiveGlobalScoutInstance(instance);
+    // Set up a listener if the global instance is ever shut down
+    instance.on(types_1.ScoutEvent.Shutdown, () => {
+        instance.log("[scout/global] The global instance has shut down, clearing global singleton", types_1.LogLevel.Warn);
+        SCOUT_INSTANCE = null;
+        creating = null;
+    });
     // Set creating to the currently executing promise to ensure that setup won't be triggered twice
     creating = instance.setup();
     return creating;
 }
 exports.getOrCreateActiveGlobalScoutInstance = getOrCreateActiveGlobalScoutInstance;
+/**
+ * Shutdown the active global scout instance if there is one
+ *
+ * @returns {Promise<void>} A promise that resolves when the shutdown has completed
+ */
 function shutdownActiveGlobalScoutInstance() {
-    if (SCOUT_INSTANCE) {
-        SCOUT_INSTANCE.shutdown()
-            .then(() => SCOUT_INSTANCE = null);
+    if (SCOUT_INSTANCE && !SCOUT_INSTANCE.isShutdown) {
+        return SCOUT_INSTANCE.shutdown();
     }
     return Promise.resolve();
 }
 exports.shutdownActiveGlobalScoutInstance = shutdownActiveGlobalScoutInstance;
+/**
+ * Check if a given scout instance is the active global scout instance
+ *
+ * @param {Scout} scout
+ * @returns {boolean} whether the scout is same instance
+ */
 function isActiveGlobalScoutInstance(scout) {
     return scout === SCOUT_INSTANCE;
 }
