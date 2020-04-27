@@ -1,6 +1,6 @@
 {
   "name": "@scout_apm/scout-apm",
-  "version": "0.1.8",
+  "version": "0.1.9-rc.0",
   "description": "Scout APM Node Agent",
   "main": "dist/lib/index.js",
   "repository": "git@github.com:scoutapp/scout_apm_node.git",
