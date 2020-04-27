@@ -60,7 +60,6 @@ test("Simple operation", t => {
                 // Remove listener
                 scout.removeListener(AgentEvent.RequestFinished, listener);
 
-                // Wait a little while for request to finish up, then shutdown
                 TestUtil.shutdownScout(t, scout)
                     .catch(err => TestUtil.shutdownScout(t, scout, err));
             };
@@ -73,7 +72,7 @@ test("Simple operation", t => {
                 .get("/")
                 .expect("Content-Type", /json/)
                 .expect(200)
-                .then(() => t.comment("sent second request"));
+                .then(() => t.comment("sent first request"));
         })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
@@ -139,7 +138,7 @@ test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t =>
                 .get("/dynamic/1234")
                 .expect("Content-Type", /json/)
                 .expect(200)
-                .then(() => t.comment("sent second request"));
+                .then(() => t.comment("sent first request"));
         })
         .catch(t.end);
 });

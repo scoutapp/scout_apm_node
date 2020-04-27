@@ -30,7 +30,6 @@ export declare class Scout extends EventEmitter {
     private binPath;
     private logFn;
     private slowRequestThresholdMs;
-    private wasShutdown;
     private coreAgentVersion;
     private agent;
     private processOptions;
@@ -45,7 +44,7 @@ export declare class Scout extends EventEmitter {
     getCoreAgentVersion(): CoreAgentVersion;
     getApplicationMetadata(): ApplicationMetadata;
     getConfig(): Partial<ScoutConfiguration>;
-    getAgent(): ExternalProcessAgent;
+    getAgent(): ExternalProcessAgent | null;
     getSlowRequestThresholdMs(): number;
     log(msg: string, lvl: LogLevel): void;
     setup(): Promise<this>;

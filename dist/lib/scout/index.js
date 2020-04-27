@@ -27,7 +27,6 @@ class Scout extends events_1.EventEmitter {
         super();
         this.downloaderOptions = {};
         this.slowRequestThresholdMs = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
-        this.wasShutdown = false;
         this.syncCurrentRequest = null;
         this.syncCurrentSpan = null;
         this.config = config || types_1.buildScoutConfiguration();
@@ -91,7 +90,12 @@ class Scout extends events_1.EventEmitter {
         const shouldLaunch = this.config.coreAgentLaunch;
         // If the socket path exists then we may be able to skip downloading and launching
         return (shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket())
-            .then(() => this.agent.connect())
+            .then(() => {
+            if (!this.agent) {
+                throw new Errors.NoAgentPresent();
+            }
+            return this.agent.connect();
+        })
             .then(() => this.log("[scout] successfully connected to agent", types_1.LogLevel.Debug))
             .then(() => {
             if (!this.config.name) {
@@ -102,7 +106,12 @@ class Scout extends events_1.EventEmitter {
             }
         })
             // Register the application
-            .then(() => this.agent.setRegistrationAndMetadata(new Requests.V1Register(this.config.name || "", this.config.key || "", types_1.APIVersion.V1), this.buildAppMetadataEvent()))
+            .then(() => {
+            if (!this.agent) {
+                throw new Errors.NoAgentPresent();
+            }
+            return this.agent.setRegistrationAndMetadata(new Requests.V1Register(this.config.name || "", this.config.key || "", types_1.APIVersion.V1), this.buildAppMetadataEvent());
+        })
             // Send the registration and app metadata
             .then(() => this.sendRegistrationRequest())
             .then(() => this.sendAppMetadataEvent())
@@ -118,7 +127,7 @@ class Scout extends events_1.EventEmitter {
             .then(() => this);
     }
     shutdown() {
-        if (!this.agent || this.wasShutdown) {
+        if (!this.agent) {
             this.log("[scout] shutdown called but no agent to shutdown is present", types_1.LogLevel.Error);
             return Promise.reject(new Errors.NoAgentPresent());
         }
@@ -129,19 +138,18 @@ class Scout extends events_1.EventEmitter {
         return this.agent
             .disconnect()
             .then(() => {
-            if (this.config.allowShutdown) {
+            if (this.config.allowShutdown && this.agent) {
                 return this.agent.stopProcess();
             }
         })
-            .then(() => {
-            this.wasShutdown = true;
-        });
+            // Remove the agent
+            .then(() => { this.agent = null; });
     }
     hasAgent() {
         return typeof this.agent !== "undefined" && this.agent !== null;
     }
     isShutdown() {
-        return this.wasShutdown;
+        return this.agent === null;
     }
     /**
      * Function for checking whether a given path (URL) is ignored by scout
@@ -471,16 +479,27 @@ class Scout extends events_1.EventEmitter {
             .then(() => {
             this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
             const agent = new external_process_1.default(this.processOptions, this.logFn);
+            if (!agent) {
+                throw new Errors.NoAgentPresent();
+            }
             return this.setupAgent(agent);
         })
             // Once we have an agent (this.agent is also set), then start, connect, and register
             .then(() => {
             this.log(`[scout] starting process w/ bin @ path [${this.binPath}]`, types_1.LogLevel.Debug);
             this.log(`[scout] process options:\n${JSON.stringify(this.processOptions)}`, types_1.LogLevel.Debug);
+            if (!this.agent) {
+                throw new Errors.NoAgentPresent();
+            }
             return this.agent.start();
         })
             .then(() => this.log("[scout] agent successfully started", types_1.LogLevel.Debug))
-            .then(() => this.agent);
+            .then(() => {
+            if (!this.agent) {
+                throw new Errors.NoAgentPresent();
+            }
+            return this.agent;
+        });
     }
     /**
      * Create an async namespace internally for use with tracking if not already present
@@ -594,7 +613,9 @@ class Scout extends events_1.EventEmitter {
         this.agent = agent;
         // Setup forwarding of all events of the agent through the scout instance
         Object.values(types_1.AgentEvent).forEach(evt => {
-            this.agent.on(evt, msg => this.emit(evt, msg));
+            if (this.agent) {
+                this.agent.on(evt, msg => this.emit(evt, msg));
+            }
         });
         return Promise.resolve(this.agent);
     }
@@ -772,6 +793,10 @@ function sendThroughAgent(scout, msg, opts) {
     }
     const agent = scout.getAgent();
     const config = scout.getConfig();
+    if (!agent) {
+        scout.log("[scout] agent is missing, cannot send", types_1.LogLevel.Warn);
+        return Promise.reject(new Errors.NoAgentPresent());
+    }
     if (!config.monitor) {
         scout.log("[scout] monitoring disabled, not sending tag request", types_1.LogLevel.Warn);
         return Promise.reject(new Errors.MonitoringDisabled());
