@@ -352,7 +352,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             destroy: (socket: ScoutSocket) => {
                 // Ensure the socket is not used again
                 socket.doNotUse = true;
-
+                socket.end();
                 return Promise.resolve(socket.destroy());
             },
             validate: (socket) => Promise.resolve(!socket.destroyed),

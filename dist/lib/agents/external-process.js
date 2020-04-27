@@ -279,6 +279,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             destroy: (socket) => {
                 // Ensure the socket is not used again
                 socket.doNotUse = true;
+                socket.end();
                 return Promise.resolve(socket.destroy());
             },
             validate: (socket) => Promise.resolve(!socket.destroyed),
