@@ -24,6 +24,7 @@ CREATE TABLE kv(
   value text NOT NULL
 );`,
     INSERT_STRING_KV_TABLE: "INSERT INTO kv (key, value) VALUES ($1, $2)",
+    DROP_STRING_KV_TABLE: "DROP TABLE kv",
 };
 exports.MUSTACHE_TEMPLATES = {
     HELLO_WORLD: {

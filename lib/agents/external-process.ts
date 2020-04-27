@@ -306,9 +306,13 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      */
     public stopProcess(): Promise<void> {
         return this.getProcess()
-            .then(process => {
+            .then(p => {
                 this.stopped = true;
-                process.kill();
+                // The process tree itself must be killed
+                // otherwise instances of core-agent may be leaked.
+                if (process.platform === "linux") { process.kill(-1 * p.pid); }
+
+                p.kill();
             })
         // Remove the socket path
             .then(() => remove(this.getSocketPath()))
@@ -352,7 +356,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             destroy: (socket: ScoutSocket) => {
                 // Ensure the socket is not used again
                 socket.doNotUse = true;
-
+                socket.end();
                 return Promise.resolve(socket.destroy());
             },
             validate: (socket) => Promise.resolve(!socket.destroyed),
@@ -389,6 +393,14 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             const socket = createConnection(this.getSocketPath(), () => {
                 this.emit(AgentEvent.SocketConnected);
                 resolve(socket);
+            });
+
+            // Set timeout for socket to half a second
+            // on timeouts, we will close the socket close the socket because otherwise nodejs will hang
+            socket.setTimeout(this.opts.socketTimeoutMs);
+            socket.on("timeout", () => {
+                socket.end();
+                this.handleSocketClose(socket);
             });
 
             // Add handlers for socket management
@@ -487,10 +499,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         // Read all (likely) fully formed, correctly framed messages
         framed
-            .forEach(data => {
+            .forEach(framedData => {
                 // Attempt to parse an agent response
                 V1AgentResponse
-                    .fromBinary(data)
+                    .fromBinary(framedData)
                     .then(msg => {
                         this.emit(AgentEvent.SocketResponseReceived, msg, socket);
 

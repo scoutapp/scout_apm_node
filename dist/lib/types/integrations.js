@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const Hook = require("require-in-the-middle");
+const enum_1 = require("../types/enum");
 const global_1 = require("../global");
 let SYMBOL;
 function getIntegrationSymbol() {
@@ -30,6 +31,18 @@ class RequireIntegration {
      */
     ritmHook(exportBag) {
         Hook([this.getPackageName()], (exports, name, basedir) => {
+            // Set the scout instsance to the global one if there is one
+            // this is needed in cases where require()s are run dynamically, long after scout.setup()
+            // we assume that scout.setup() will set *one* instance of scout to be the global one
+            const globalScoutInstance = global_1.getActiveGlobalScoutInstance();
+            if (globalScoutInstance) {
+                this.setScoutInstance(globalScoutInstance);
+            }
+            else {
+                if (this.logFn) {
+                    this.logFn(`global scout instance not found while setting up integration for package [${name}]`, enum_1.LogLevel.Warn);
+                }
+            }
             // If the shim has already been run, then finish
             if (!exports || getIntegrationSymbol() in exports) {
                 return exports;
@@ -48,10 +61,6 @@ class RequireIntegration {
             exportBag[this.getPackageName()] = exports;
             // Add the getIntegrationSymbol() to the mysql export itself to show the shim was run
             exports[sym] = this;
-            // Set the scout instsance to the global one if there is one
-            // this is needed in cases where require()s are run dynamically, long after scout.setup()
-            // we assume that scout.setup() will set *one* instance of scout to be the global one
-            this.setScoutInstance(global_1.getGlobalScoutInstance());
             // Return the modified exports
             return exports;
         });
@@ -65,7 +74,7 @@ class RequireIntegration {
         this.logFn = logFn;
     }
     /**
-     * Set the scout instance for the integration
+     * Set a *custom*, specific scout instance for the integration
      *
      * @param {Scout} scout
      */
@@ -73,7 +82,19 @@ class RequireIntegration {
         if (!scout) {
             return;
         }
-        this.scout = scout;
+        this.scoutInstance = scout;
+    }
+    /**
+     * Custom getter for scout property
+     * if a custom specific scout instance is provided, use that, if not use the default
+     *
+     * @returns {Scout | null}
+     */
+    get scout() {
+        if (this.scoutInstance) {
+            return this.scoutInstance;
+        }
+        return global_1.getActiveGlobalScoutInstance();
     }
 }
 exports.RequireIntegration = RequireIntegration;

@@ -90,7 +90,7 @@ function splitAgentResponses(buf) {
         // If we have more in the whole buffer than expected, save the first chunk then remainder
         if (buf.length > expected) {
             // Split the buffer into payload & remaining
-            const [m, remainder] = [buf.slice(expected), buf.slice(expected, buf.length)];
+            const [m, remainder] = [buf.slice(0, expected), buf.slice(expected, buf.length)];
             framed.push(m);
             buf = remainder;
             continue;

@@ -6,7 +6,7 @@ export interface ExportBag {
 }
 export declare abstract class RequireIntegration {
     protected readonly packageName: string;
-    protected scout: Scout;
+    protected scoutInstance: Scout;
     protected logFn: LogFn;
     /**
      * Retrieve the name of the require integration
@@ -34,11 +34,18 @@ export declare abstract class RequireIntegration {
      */
     setLogFn(logFn: LogFn): void;
     /**
-     * Set the scout instance for the integration
+     * Set a *custom*, specific scout instance for the integration
      *
      * @param {Scout} scout
      */
     setScoutInstance(scout: Scout): void;
+    /**
+     * Custom getter for scout property
+     * if a custom specific scout instance is provided, use that, if not use the default
+     *
+     * @returns {Scout | null}
+     */
+    get scout(): Scout | null;
 }
 declare class NullIntegration extends RequireIntegration {
     protected readonly packageName: string;

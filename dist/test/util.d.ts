@@ -81,6 +81,7 @@ export declare function startContainerizedPostgresTest(test: any, cb: (cao: Cont
 export declare function stopContainerizedInstanceTest(test: any, provider: () => ContainerAndOpts | null, name: string): void;
 export declare function stopContainerizedPostgresTest(test: any, provider: () => ContainerAndOpts | null): void;
 export declare function makeConnectedPGClient(provider: () => ContainerAndOpts | null): Promise<Client>;
+export declare function makePGConnectionString(provider: () => ContainerAndOpts | null): Promise<string>;
 declare type ServerShutdownFn = () => void;
 export declare function createClientCollectingServer(): [net.Server, ServerShutdownFn];
 export declare function startContainerizedMySQLTest(test: any, cb: (cao: ContainerAndOpts) => void, opts?: {

@@ -229,7 +229,12 @@ export function simpleHTML5BoilerplateApp(
     app.set("view engine", templateEngine);
 
     app.get("/", (req: Request, res: Response) => {
-        res.render("html5-boilerplate", {title: "dynamic"});
+
+        // if (templateEngine === "pug") {
+        //     res.send("<!DOCTYPE html><html><head><title>dynamic</title></head></html><body><h1>Body</h1></body>");
+        // } else {
+            res.render("html5-boilerplate", {title: "dynamic"});
+        // }
     });
 
     return app;
@@ -715,6 +720,15 @@ export function makeConnectedPGClient(provider: () => ContainerAndOpts | null): 
     });
 
     return client.connect().then(() => client);
+}
+
+// Utility function to create a connection string
+export function makePGConnectionString(provider: () => ContainerAndOpts | null): Promise<string> {
+    const cao = provider();
+    if (!cao) { return Promise.reject(new Error("no CAO in provider")); }
+
+    const port: number = cao.opts.portBinding[5432];
+    return Promise.resolve(`postgres://postgres:postgres@localhost:${port}/postgres`);
 }
 
 type ServerShutdownFn = () => void;

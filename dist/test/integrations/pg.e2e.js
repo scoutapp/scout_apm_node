@@ -1,17 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const test = require("tape");
-const TestUtil = require("../util");
-const integrations_1 = require("../../lib/types/integrations");
-const types_1 = require("../../lib/types");
 const lib_1 = require("../../lib");
-const scout_1 = require("../../lib/scout");
-const types_2 = require("../../lib/types");
-const fixtures_1 = require("../fixtures");
 // The hook for PG has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
 lib_1.setupRequireIntegrations(["pg"]);
 const pg_1 = require("pg");
+const sequelize_1 = require("sequelize");
+const test = require("tape");
+const TestUtil = require("../util");
+const integrations_1 = require("../../lib/types/integrations");
+const types_1 = require("../../lib/types");
+const scout_1 = require("../../lib/scout");
+const types_2 = require("../../lib/types");
+const fixtures_1 = require("../fixtures");
 let PG_CONTAINER_AND_OPTS = null;
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // it may break if import order is changed (require hook would not have taken place)
@@ -105,8 +106,15 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
                 throw new Error("span for insert not found");
             }
         })
+            // Reset the database by removing the kv table
+            .then(() => {
+            t.comment("removing kv table for next test...");
+            return client.query(fixtures_1.SQL_QUERIES.DROP_STRING_KV_TABLE);
+        })
+            // If everything went well, close the client and shutdown scout
             .then(() => client.end())
             .then(() => TestUtil.shutdownScout(t, scout))
+            // If an error occurred, close & shutdown anyway
             .catch(err => {
             client.end()
                 .then(() => TestUtil.shutdownScout(t, scout, err));
@@ -126,11 +134,8 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
         return client
             .query(fixtures_1.SQL_QUERIES.CREATE_STRING_KV_TABLE)
             // Insert a value into the string KV
-            .then(() => {
-            const query = fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE;
-            const result = client.query(query, ["testKey", "testValue"]);
-            return result;
-        })
+            .then(() => client.query(fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE, ["testKey", "testValue"]))
+            // Check the results
             .then(results => {
             t.equals(results.rowCount, 1, "one row was inserted");
             done();
@@ -141,6 +146,143 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
         (client ? client.end() : Promise.resolve())
             .then(() => TestUtil.shutdownScout(t, scout, err));
     });
+});
+// https://github.com/scoutapp/scout_apm_node/issues/191
+test("sequelize basic authenticate works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+    // Set up a listener for the scout request that will contain the DB record
+    const listener = (data) => {
+        // Ensure that we have the span we expect as top level
+        const spans = data.request.getChildSpansSync();
+        const mainSpan = spans.find(s => s.operation === "Controller/create-and-insert-test");
+        // If we haven't found a request w/ our top level span then exit (and continue listening)
+        if (!mainSpan) {
+            return;
+        }
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        // Look up the database span from the request
+        mainSpan
+            .getChildSpans()
+            .then(spans => {
+            const dbSpans = spans.filter(s => s.operation === "SQL/Query");
+            t.assert(dbSpans.length > 1, "at least one db span was present (sequelize makes many)");
+            // Sequelize happens to do 'SELECT 1+1 AS result' as a test, find that span
+            const selectSpan = dbSpans.find(s => {
+                const v = s.getContextValue(types_2.ScoutContextName.DBStatement);
+                return v && typeof v === "string" && v.includes("SELECT 1+1");
+            });
+            if (!selectSpan) {
+                t.fail("span for SELECT not found");
+                throw new Error("span for SELECT not found");
+            }
+            t.assert(selectSpan, "span for SELECT was found");
+        })
+            .then(() => TestUtil.shutdownScout(t, scout))
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+    // Activate the listener
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
+    let connString;
+    scout
+        .setup()
+        // Create the connection string for sequelize to use
+        .then(() => TestUtil.makePGConnectionString(() => PG_CONTAINER_AND_OPTS))
+        .then(s => connString = s)
+        // Start an instrumentation (which auto creates a request)
+        .then(() => scout.instrument("Controller/create-and-insert-test", done => {
+        // Create sequelize client (this could fail if PG_CONTAINER_AND_OPTS is invalid
+        const sequelize = new sequelize_1.Sequelize(connString);
+        // Test connection
+        return sequelize.authenticate()
+            .then(() => t.pass("sequelize authenticate call succeeded"))
+            .then(() => done());
+    }))
+        // Finish & Send the request
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+// https://github.com/scoutapp/scout_apm_node/issues/191
+test("sequelize library works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+    // Set up a listener for the scout request that will contain the DB record
+    const listener = (data) => {
+        // Ensure that we have the span we expect as top level
+        const spans = data.request.getChildSpansSync();
+        const mainSpan = spans.find(s => s.operation === "Controller/create-and-insert-test");
+        // If we haven't found a request w/ our top level span then exit (and continue listening)
+        if (!mainSpan) {
+            return;
+        }
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        // Look up the database span from the request
+        mainSpan
+            .getChildSpans()
+            .then(spans => {
+            const dbSpans = spans.filter(s => s.operation === "SQL/Query");
+            t.assert(dbSpans.length > 1, "at least one db span was present (sequelize makes many)");
+            // Ensure span for CREATE TABLE is present
+            // NOTE: we can't use the exact query as we sent it here because
+            // it gets changed a little while being processed by sequelize
+            const createTableSpan = dbSpans.find(s => {
+                const v = s.getContextValue(types_2.ScoutContextName.DBStatement);
+                return v && typeof v === "string" && v.includes("CREATE TABLE kv");
+            });
+            if (!createTableSpan) {
+                t.fail("span for CREATE TABLE not found");
+                throw new Error("span for create table not found");
+            }
+            // Ensure span for INSERT is present
+            const insertSpan = dbSpans.find(s => {
+                const v = s.getContextValue(types_2.ScoutContextName.DBStatement);
+                return v && typeof v === "string" && v.includes(fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE);
+            });
+            if (!insertSpan) {
+                t.fail("span for INSERT not found");
+                throw new Error("span for insert not found");
+            }
+        })
+            // Reset the database by removing the kv table
+            .then(() => {
+            t.comment("removing kv table for next test...");
+            return sequelize.query(fixtures_1.SQL_QUERIES.DROP_STRING_KV_TABLE);
+        })
+            // Finish test
+            .then(() => TestUtil.shutdownScout(t, scout))
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+    // Activate the listener
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
+    let connString;
+    let sequelize;
+    scout
+        .setup()
+        // Create the connection string for sequelize to use
+        .then(() => TestUtil.makePGConnectionString(() => PG_CONTAINER_AND_OPTS))
+        .then(s => connString = s)
+        // Start an instrumentation (which auto creates a request)
+        .then(() => scout.instrument("Controller/create-and-insert-test", done => {
+        // Create sequelize client (this could fail if PG_CONTAINER_AND_OPTS is invalid
+        sequelize = new sequelize_1.Sequelize(connString);
+        // Create a string KV table (using a sequelize raw query)
+        return sequelize
+            .query(fixtures_1.SQL_QUERIES.CREATE_STRING_KV_TABLE)
+            // Insert a value into the string KV
+            .then(() => sequelize.query(fixtures_1.SQL_QUERIES.INSERT_STRING_KV_TABLE, {
+            type: sequelize_1.QueryTypes.INSERT,
+            bind: ["testKey", "testValue"],
+        }))
+            .then(([rows, rowCount]) => {
+            t.equals(rowCount, 1, "one row was inserted");
+            done();
+        });
+    }))
+        // Finish & Send the request
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // Pseudo test that will stop a containerized postgres instance that was started
 TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);

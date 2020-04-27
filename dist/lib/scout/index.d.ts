@@ -44,12 +44,13 @@ export declare class Scout extends EventEmitter {
     getCoreAgentVersion(): CoreAgentVersion;
     getApplicationMetadata(): ApplicationMetadata;
     getConfig(): Partial<ScoutConfiguration>;
-    getAgent(): ExternalProcessAgent;
+    getAgent(): ExternalProcessAgent | null;
     getSlowRequestThresholdMs(): number;
     log(msg: string, lvl: LogLevel): void;
     setup(): Promise<this>;
     shutdown(): Promise<void>;
     hasAgent(): boolean;
+    isShutdown(): boolean;
     /**
      * Function for checking whether a given path (URL) is ignored by scout
      *
@@ -92,7 +93,7 @@ export declare class Scout extends EventEmitter {
      * @param {string} operation - operation name for the span
      * @param {SpanCallback} fn - function to execute
      * @param {ScoutRequest} [requestOverride] - The request on which to start the span to execute
-     * @throws {NoActiveRequest} If there is no request in scoep (via async context or override param)
+     * @throws {NoActiveRequest} If there is no request in scope (via async context or override param)
      */
     instrumentSync(operation: string, fn: SpanCallback, requestOverride?: ScoutRequest): any;
     /**

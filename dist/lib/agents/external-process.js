@@ -237,9 +237,14 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      */
     stopProcess() {
         return this.getProcess()
-            .then(process => {
+            .then(p => {
             this.stopped = true;
-            process.kill();
+            // The process tree itself must be killed
+            // otherwise instances of core-agent may be leaked.
+            if (process.platform === "linux") {
+                process.kill(-1 * p.pid);
+            }
+            p.kill();
         })
             // Remove the socket path
             .then(() => fs_extra_1.remove(this.getSocketPath()))
@@ -279,6 +284,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             destroy: (socket) => {
                 // Ensure the socket is not used again
                 socket.doNotUse = true;
+                socket.end();
                 return Promise.resolve(socket.destroy());
             },
             validate: (socket) => Promise.resolve(!socket.destroyed),
@@ -307,6 +313,13 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             const socket = net_1.createConnection(this.getSocketPath(), () => {
                 this.emit(types_1.AgentEvent.SocketConnected);
                 resolve(socket);
+            });
+            // Set timeout for socket to half a second
+            // on timeouts, we will close the socket close the socket because otherwise nodejs will hang
+            socket.setTimeout(this.opts.socketTimeoutMs);
+            socket.on("timeout", () => {
+                socket.end();
+                this.handleSocketClose(socket);
             });
             // Add handlers for socket management
             socket.on("data", (data) => this.handleSocketData(socket, data));
@@ -391,10 +404,10 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         socket.chunks = chunkRemaining;
         // Read all (likely) fully formed, correctly framed messages
         framed
-            .forEach(data => {
+            .forEach(framedData => {
             // Attempt to parse an agent response
             responses_1.V1AgentResponse
-                .fromBinary(data)
+                .fromBinary(framedData)
                 .then(msg => {
                 this.emit(types_1.AgentEvent.SocketResponseReceived, msg, socket);
                 switch (msg.type) {

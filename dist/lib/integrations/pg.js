@@ -76,6 +76,12 @@ class PGIntegration extends integrations_1.RequireIntegration {
             // https://github.com/brianc/node-postgres/blob/master/packages/pg/lib/client.js
             const query = typeof config.submit === "function" ? config : new Query(...originalArgs);
             return integration.scout.instrument(types_1.ScoutSpanOperation.SQLQuery, done => {
+                // If integration.scout is missing by the time this runs, exit
+                if (!integration.scout) {
+                    integration.logFn("[scout/integrations/pg] Failed to find integration's scout instance", types_1.LogLevel.Warn);
+                    return originalQueryFn.apply(this, [config, values, userCallback])
+                        .then(() => done());
+                }
                 const span = integration.scout.getCurrentSpan();
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {

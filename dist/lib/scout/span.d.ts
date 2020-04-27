@@ -24,6 +24,7 @@ export interface ScoutSpanOptions {
     started?: boolean;
     operation: string;
     request: ScoutRequest;
+    onStop?: () => Promise<void>;
 }
 export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, Startable {
     readonly request: ScoutRequest;
@@ -40,6 +41,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private childSpans;
     private tags;
     private traceFrames;
+    private onStop;
     constructor(opts: ScoutSpanOptions);
     pushTraceFrames(frames: StackFrame[]): void;
     prependTraceFrames(frames: StackFrame[]): void;
@@ -68,6 +70,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     finishAndSend(): Promise<this>;
     isStopped(): boolean;
     getEndTime(): Date;
+    setOnStop(fn: () => Promise<void>): void;
     stop(): Promise<this>;
     stopSync(): this;
     isStarted(): boolean;

@@ -173,8 +173,6 @@ export type AgentOptions = ProcessOptions;
 
 export type ConnectionPoolOptions = Partial<GenericPoolOptions>;
 
-const DEFAULT_AGENT_SEND_TIMEOUT_MS = 10000;
-
 /**
  * Options for agents that are in a separate process not managed by this one
  */
@@ -203,7 +201,10 @@ export class ProcessOptions {
     public readonly disallowLaunch?: boolean;
 
     // Amount of time to wait before timing out messages
-    public readonly sendTimeoutMs?: number = DEFAULT_AGENT_SEND_TIMEOUT_MS;
+    public readonly sendTimeoutMs: number = Constants.DEFAULT_AGENT_SEND_TIMEOUT_MS;
+
+    // Amount of time to wait before timing out existing sockets
+    public readonly socketTimeoutMs: number = Constants.DEFAULT_SOCKET_TIMEOUT_MS;
 
     // Customize conection pool
     public readonly connPoolOpts?: ConnectionPoolOptions = Constants.DEFAULT_CONNECTION_POOL_OPTS;
@@ -219,6 +220,7 @@ export class ProcessOptions {
             if (opts.connPoolOpts) { this.connPoolOpts = opts.connPoolOpts; }
             if (opts.disallowLaunch) { this.disallowLaunch = opts.disallowLaunch; }
             if (opts.sendTimeoutMs) { this.sendTimeoutMs = opts.sendTimeoutMs; }
+            if (opts.socketTimeoutMs) { this.socketTimeoutMs = opts.socketTimeoutMs; }
         }
     }
 

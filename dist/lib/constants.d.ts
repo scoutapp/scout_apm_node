@@ -45,3 +45,5 @@ export declare const DEFAULT_PARAM_FILTER_LOOKUP: {
 };
 export declare const DEFAULT_PARAM_SCRUB_REPLACEMENT = "[FILTERED]";
 export declare const DEFAULT_SLOW_REQUEST_THRESHOLD_MS: number;
+export declare const DEFAULT_SOCKET_TIMEOUT_MS: number;
+export declare const DEFAULT_AGENT_SEND_TIMEOUT_MS = 10000;

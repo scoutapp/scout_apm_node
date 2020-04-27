@@ -15,6 +15,7 @@ export declare const SQL_QUERIES: {
     SELECT_TIME: string;
     CREATE_STRING_KV_TABLE: string;
     INSERT_STRING_KV_TABLE: string;
+    DROP_STRING_KV_TABLE: string;
 };
 export declare const MUSTACHE_TEMPLATES: {
     HELLO_WORLD: {

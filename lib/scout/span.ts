@@ -56,6 +56,9 @@ export interface ScoutSpanOptions {
     started?: boolean;
     operation: string;
     request: ScoutRequest;
+
+    // Callback to run when the span is finished
+    onStop?: () => Promise<void>;
 }
 
 const TRACE_LIMIT = 50;
@@ -80,6 +83,8 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     private traceFrames: ScoutStackFrame[] = [];
 
+    private onStop: () => Promise<void>;
+
     constructor(opts: ScoutSpanOptions) {
         this.request = opts.request;
         this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_SPAN_PREFIX}${uuidv4()}`;
@@ -95,6 +100,8 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             if (opts.started) { this.started = opts.started; }
 
             if (opts.parent)  { this.parent = opts.parent; }
+
+            if (opts.onStop)  { this.onStop = opts.onStop; }
         }
 
     }
@@ -213,6 +220,10 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         return new Date(this.endTime);
     }
 
+    public setOnStop(fn: () => Promise<void>) {
+        this.onStop = fn;
+    }
+
     public stop(): Promise<this> {
         if (this.stopped) { return Promise.resolve(this); }
 
@@ -233,9 +244,13 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
                 }
 
                 // Add stack trace to the span
-                return this.addContext(ScoutContextName.Traceback, this.traceFrames.slice(0, TRACE_LIMIT))
-                    .then(() => this);
-            });
+                return this.addContext(ScoutContextName.Traceback, this.traceFrames.slice(0, TRACE_LIMIT));
+            })
+        // Call the async stop function if there is one
+            .then(() => {
+                if (this.onStop) { return this.onStop(); }
+            })
+            .then(() => this);
     }
 
     public stopSync(): this {

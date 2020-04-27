@@ -32,6 +32,8 @@ export interface ScoutRequestOptions {
     timestamp?: Date;
     started?: boolean;
     ignored?: boolean;
+
+    onStop?: () => Promise<void>;
 }
 
 export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable, Startable {
@@ -52,6 +54,8 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
     private ignored: boolean = false;
 
+    private onStop: () => Promise<void>;
+
     constructor(opts?: ScoutRequestOptions) {
         this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_REQUEST_PREFIX}${uuidv4()}`;
 
@@ -65,6 +69,9 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
             if (opts.started) { this.started = opts.started; }
 
             if (typeof opts.ignored === "boolean") { this.ignored = opts.ignored; }
+
+            if (opts.onStop) { this.onStop = opts.onStop; }
+
         }
 
         if (this.ignored) { this.addContext(ScoutContextName.IgnoreTransaction, true); }
@@ -191,6 +198,10 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         return new Date(this.endTime);
     }
 
+    public setOnStop(fn: () => Promise<void>) {
+        this.onStop = fn;
+    }
+
     public stop(): Promise<this> {
         if (this.finished) { return Promise.resolve(this); }
 
@@ -200,8 +211,12 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         ).then(() => {
             this.endTime = new Date(this.timestamp.getTime() + this.getDurationMs());
             this.finished = true;
-            return this;
-        });
+        })
+        // Call the stop function if there is one
+            .then(() => {
+                if (this.onStop) { return this.onStop(); }
+            })
+            .then(() => this);
     }
 
     public stopSync(): this {

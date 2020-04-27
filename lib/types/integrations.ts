@@ -3,8 +3,9 @@ import * as Hook from "require-in-the-middle";
 import { Scout } from "../scout";
 import { LogFn } from "./util";
 import * as Errors from "../errors";
+import { LogLevel } from "../types/enum";
 
-import { getGlobalScoutInstance } from "../global";
+import { getActiveGlobalScoutInstance } from "../global";
 
 let SYMBOL: symbol;
 
@@ -20,7 +21,7 @@ export interface ExportBag {
 
 export abstract class RequireIntegration {
     protected readonly packageName: string;
-    protected scout: Scout;
+    protected scoutInstance: Scout;
     protected logFn: LogFn = () => undefined;
 
     /**
@@ -39,6 +40,21 @@ export abstract class RequireIntegration {
      */
     public ritmHook(exportBag: ExportBag): void {
         Hook([this.getPackageName()], (exports, name, basedir) => {
+            // Set the scout instsance to the global one if there is one
+            // this is needed in cases where require()s are run dynamically, long after scout.setup()
+            // we assume that scout.setup() will set *one* instance of scout to be the global one
+            const globalScoutInstance = getActiveGlobalScoutInstance();
+            if (globalScoutInstance) {
+                this.setScoutInstance(globalScoutInstance);
+            } else {
+                if (this.logFn) {
+                    this.logFn(
+                        `global scout instance not found while setting up integration for package [${name}]`,
+                        LogLevel.Warn,
+                    );
+                }
+            }
+
             // If the shim has already been run, then finish
             if (!exports || getIntegrationSymbol() in exports) {
                 return exports;
@@ -58,11 +74,6 @@ export abstract class RequireIntegration {
 
             // Add the getIntegrationSymbol() to the mysql export itself to show the shim was run
             exports[sym] = this;
-
-            // Set the scout instsance to the global one if there is one
-            // this is needed in cases where require()s are run dynamically, long after scout.setup()
-            // we assume that scout.setup() will set *one* instance of scout to be the global one
-            this.setScoutInstance(getGlobalScoutInstance());
 
             // Return the modified exports
             return exports;
@@ -87,13 +98,24 @@ export abstract class RequireIntegration {
     }
 
     /**
-     * Set the scout instance for the integration
+     * Set a *custom*, specific scout instance for the integration
      *
      * @param {Scout} scout
      */
     public setScoutInstance(scout: Scout) {
         if (!scout) { return; }
-        this.scout = scout;
+        this.scoutInstance = scout;
+    }
+
+    /**
+     * Custom getter for scout property
+     * if a custom specific scout instance is provided, use that, if not use the default
+     *
+     * @returns {Scout | null}
+     */
+    public get scout() {
+        if (this.scoutInstance) { return this.scoutInstance; }
+        return getActiveGlobalScoutInstance();
     }
 }
 

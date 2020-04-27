@@ -86,7 +86,7 @@ class EJSIntegration extends integrations_1.RequireIntegration {
                 };
                 // If a callback *was* provided we need to use a wrapped version
                 originalArgs[cbIdx] = wrappedCb;
-                // Run the rendering function
+                // Run the rendering function (it is callback based)
                 originalFn.apply(null, originalArgs);
             });
         };

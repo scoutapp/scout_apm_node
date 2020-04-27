@@ -119,6 +119,7 @@ var ScoutEvent;
     ScoutEvent["RequestSent"] = "scout-event-request-sent";
     ScoutEvent["IgnoredRequestProcessingSkipped"] = "ignored-request-processing-skipped";
     ScoutEvent["UnknownRequestPathSkipped"] = "unknown-request-path-skipped";
+    ScoutEvent["Shutdown"] = "scout-event-shutdown";
 })(ScoutEvent = exports.ScoutEvent || (exports.ScoutEvent = {}));
 var ScoutContextName;
 (function (ScoutContextName) {

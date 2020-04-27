@@ -21,7 +21,10 @@ import { setupRequireIntegrations } from "../lib";
 import { V1StartSpan } from "../lib/protocol/v1/requests";
 import { FILE_PATHS } from "./fixtures";
 
-// Set up the pug integration
+import { getActiveGlobalScoutInstance, shutdownActiveGlobalScoutInstance } from "../lib/global";
+
+const TEST_OPTS = {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS};
+
 setupRequireIntegrations(["pug", "ejs", "mustache"]);
 
 test("Simple operation", t => {
@@ -57,7 +60,6 @@ test("Simple operation", t => {
                 // Remove listener
                 scout.removeListener(AgentEvent.RequestFinished, listener);
 
-                // Wait a little while for request to finish up, then shutdown
                 TestUtil.shutdownScout(t, scout)
                     .catch(err => TestUtil.shutdownScout(t, scout, err));
             };
@@ -70,12 +72,12 @@ test("Simple operation", t => {
                 .get("/")
                 .expect("Content-Type", /json/)
                 .expect(200)
-                .then(() => t.comment("sent second request"));
+                .then(() => t.comment("sent first request"));
         })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
+test("Dynamic segment routes (uses global instance)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     // Create an application and setup scout middleware
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(
         scoutMiddleware({
@@ -136,12 +138,13 @@ test("Dynamic segment routes", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t =>
                 .get("/dynamic/1234")
                 .expect("Content-Type", /json/)
                 .expect(200)
-                .then(() => t.comment("sent second request"));
+                .then(() => t.comment("sent second request"))
+                .catch(err => TestUtil.shutdownScout(t, scout, err));
         })
         .catch(t.end);
 });
 
-test("Application which errors", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
+test("Application which errors (uses global scout instance)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     // Create an application and setup scout middleware
     const app: Application & ApplicationWithScout = TestUtil.simpleErrorApp(scoutMiddleware({
         config: buildScoutConfiguration({
@@ -168,7 +171,7 @@ test("Application which errors", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t 
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-test("express ignores a path (exact path, with dynamic segments)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
+test("express ignores a path (exact path, with dynamic segments)", TEST_OPTS, t => {
     const path = "/dynamic/:segment";
     const scout = new Scout(buildScoutConfiguration({
         allowShutdown: true,
@@ -423,7 +426,7 @@ test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
 
         // The top level controller should be present
         const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
-        t.assert(controllerSpan, "template controller span was present on request");
+        t.assert(controllerSpan, "controller span was present on request");
         if (!controllerSpan) {
             t.fail("no controller span present on request");
             throw new Error("No controller span");
@@ -440,7 +443,7 @@ test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
 
         t.assert(renderSpan.getContextValue(ScoutContextName.Name), "template name context is present");
 
-        // Shutdown and close scout
+        // Shutdown the scout instance
         TestUtil.shutdownScout(t, scout);
     };
 
@@ -479,7 +482,7 @@ test("ejs integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
 
         // The top level controller should be present
         const controllerSpan = requestSpans.find(s => s.operation.includes("Controller/"));
-        t.assert(controllerSpan, "template controller span was present on request");
+        t.assert(controllerSpan, "controller span was present on request");
         if (!controllerSpan) {
             t.fail("no controller span present on request");
             throw new Error("No controller span");
@@ -488,7 +491,8 @@ test("ejs integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
         // The inner spans for the controller should contain a template rendering span
         const innerSpans = controllerSpan.getChildSpansSync();
         const renderSpan = innerSpans.find(s => s.operation === ScoutSpanOperation.TemplateRender);
-        t.assert(renderSpan, "template render span was present on request");
+
+        t.assert(renderSpan, "ejs template render span was present on request");
         if (!renderSpan) {
             t.fail("no render span present on request");
             throw new Error("No render span");
@@ -507,7 +511,7 @@ test("ejs integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
         .expect("Content-Type", /html/)
         .expect(200)
         .then(res => {
-            t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
+            t.assert(res.text.includes("<title>dynamic</title>"), "ejs template was rendered by express");
         })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
@@ -563,7 +567,7 @@ test("mustache integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, 
         .expect("Content-Type", /html/)
         .expect(200)
         .then(res => {
-            t.assert(res.text.includes("<title>dynamic</title>"), "dynamic template was rendered by express");
+            t.assert(res.text.includes("<title>dynamic</title>"), "mustache template was rendered by express");
         })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
@@ -610,7 +614,11 @@ test("Nested spans on the top level controller have parent ID specified", t => {
         }
 
         // the internalOpSpan should have the correct parent
-        t.equals(internalOpSpan.parent.id, controllerSpan.id, "the internal op span's parent is the controller span");
+        t.equals(
+          internalOpSpan.parent.id,
+          controllerSpan.id,
+          "the internal op span's parent is the controller span",
+          );
 
         // Shutdown and close scout
         TestUtil.shutdownScout(t, scout);
@@ -659,7 +667,14 @@ test("Unknown routes should not be recorded", t => {
                 .get("/nope")
                 .expect("Content-Type", /html/)
                 .expect(404)
-                .then(() => t.pass("unknown route was visited"))
-                .catch(err => TestUtil.shutdownScout(t, scout, err));
-        });
+                .then(() => t.pass("unknown route was visited"));
+        })
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+// Cleanup the global isntance(s) that get created
+test("Shutdown the global instance", t => {
+    const inst = getActiveGlobalScoutInstance();
+    if (inst) { return TestUtil.shutdownScout(t, inst); }
+    t.end();
 });
