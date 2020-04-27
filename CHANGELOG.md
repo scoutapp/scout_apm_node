@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9-rc.0] - 2020-04-28
+
+### Changed
+- bugfix/187 Avoid failing on windows ([#187](https://github.com/scoutapp/scout_apm_node/issues/187))
+- bugfix/186 Create transaction if one does not exist ([#186](https://github.com/scoutapp/scout_apm_node/issues/186))
+- bugfix/191 Sequelize integration failure due to postgres integration ([#191](https://github.com/scoutapp/scout_apm_node/issues/191))
+- bugfix/190 dependabot Update js-yaml from 3.12.2 to 3.13.1 ([#190](https://github.com/scoutapp/scout_apm_node/issues/190))
+
 ## [0.1.8] - 2020-03-11
 
 ### Added
@@ -70,7 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.9-rc.0...HEAD
+[0.1.9-rc.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.8...v0.1.9-rc.0
 [0.1.8]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.5...v0.1.6
