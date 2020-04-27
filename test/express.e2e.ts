@@ -670,3 +670,10 @@ test("Unknown routes should not be recorded", t => {
         })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
+
+// Cleanup the global isntance(s) that get created
+test("Shutdown the global instance", t => {
+    const inst = getActiveGlobalScoutInstance();
+    if (inst) { return TestUtil.shutdownScout(t, inst); }
+    t.end();
+});

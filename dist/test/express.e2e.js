@@ -8,6 +8,7 @@ const express_1 = require("../lib/express");
 const types_1 = require("../lib/types");
 const scout_1 = require("../lib/scout");
 const lib_1 = require("../lib");
+const global_1 = require("../lib/global");
 const TEST_OPTS = { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS };
 lib_1.setupRequireIntegrations(["pug", "ejs", "mustache"]);
 test("Simple operation", t => {
@@ -534,4 +535,12 @@ test("Unknown routes should not be recorded", t => {
             .then(() => t.pass("unknown route was visited"));
     })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+// Cleanup the global isntance(s) that get created
+test("Shutdown the global instance", t => {
+    const inst = global_1.getActiveGlobalScoutInstance();
+    if (inst) {
+        return TestUtil.shutdownScout(t, inst);
+    }
+    t.end();
 });
