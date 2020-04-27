@@ -239,6 +239,11 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         return this.getProcess()
             .then(p => {
             this.stopped = true;
+            // The process tree itself must be killed
+            // otherwise instances of core-agent may be leaked.
+            if (process.platform === "linux") {
+                process.kill(-1 * p.pid);
+            }
             p.kill();
         })
             // Remove the socket path
