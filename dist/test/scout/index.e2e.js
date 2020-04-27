@@ -594,7 +594,7 @@ test("export Config returns a populated special object", t => {
         allowShutdown: true,
         monitor: true,
     });
-    global_1.getOrCreateGlobalScoutInstance(config)
+    global_1.getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
         const config = scoutExport.api.Config;
         if (!config) {
@@ -638,7 +638,7 @@ test("export Context.add add context (global scout instance)", t => {
         allowShutdown: true,
         monitor: true,
     });
-    global_1.getOrCreateGlobalScoutInstance(config)
+    global_1.getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
         const listener = (data) => {
             scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
@@ -690,7 +690,7 @@ test("export Context.addSync to add context (global scout instance)", t => {
     // TS cannot know that runSync will modify this synchronously
     // so we use any to force the runtime check
     let req;
-    global_1.getOrCreateGlobalScoutInstance(config)
+    global_1.getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
         // The scout object should be created as sa result of doing the .run
         scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({ request }) => {
@@ -712,7 +712,7 @@ test("export ignoreTransaction successfully ignores transaction (global scout in
         allowShutdown: true,
         monitor: true,
     });
-    global_1.getOrCreateGlobalScoutInstance(config)
+    global_1.getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
         const listener = () => {
             scout.removeListener(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, listener);
@@ -787,7 +787,7 @@ test("export ignoreTransactionSync successfully ignores transaction (global scou
         monitor: true,
     });
     let req;
-    global_1.getOrCreateGlobalScoutInstance(config)
+    global_1.getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
         // The scout object should be created as sa result of doing the .run
         scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({ request }) => {

@@ -57,6 +57,7 @@ class PugIntegration extends integrations_1.RequireIntegration {
             integration.logFn(`[scout/integrations/pug] rendering file [${path}]...`, types_1.LogLevel.Debug);
             // If no scout instance is available then run the function normally
             if (!integration.scout) {
+                integration.logFn("[scout/integrations/pug] Failed to find integration's scout instance", types_1.LogLevel.Warn);
                 return originalFn(path, options, callback);
             }
             return integration.scout.instrumentSync(types_1.ScoutSpanOperation.TemplateRender, ({ span }) => {

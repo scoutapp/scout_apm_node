@@ -36,7 +36,7 @@ import {
     scrubRequestPath,
     scrubRequestPathParams,
 } from "../types";
-import { setGlobalScoutInstance, EXPORT_BAG } from "../global";
+import { setActiveGlobalScoutInstance, EXPORT_BAG } from "../global";
 import { getIntegrationForPackage } from "../integrations";
 
 import WebAgentDownloader from "../agent-downloaders/web";
@@ -91,6 +91,7 @@ export class Scout extends EventEmitter {
     private binPath: string;
     private logFn: LogFn;
     private slowRequestThresholdMs: number = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
+    private wasShutdown: boolean = false;
 
     private coreAgentVersion: CoreAgentVersion;
     private agent: ExternalProcessAgent;
@@ -218,7 +219,7 @@ export class Scout extends EventEmitter {
                 process.on("uncaughtException", this.uncaughtExceptionListenerFn);
             })
         // Set up this scout instance as the global one, if there isn't already one
-            .then(() => setGlobalScoutInstance(this))
+            .then(() => setActiveGlobalScoutInstance(this))
             .then(() => this);
     }
 
@@ -242,11 +243,16 @@ export class Scout extends EventEmitter {
             })
             .then(() => {
                 delete this.agent;
+                this.wasShutdown = true;
             });
     }
 
     public hasAgent(): boolean {
         return typeof this.agent !== "undefined" && this.agent !== null;
+    }
+
+    public isShutdown(): boolean {
+        return this.wasShutdown;
     }
 
     /**

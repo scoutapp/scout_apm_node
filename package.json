@@ -20,8 +20,8 @@
   },
   "homepage": "https://github.com/scoutapp/scout_apm_node#readme",
   "scripts": {
-    "build": "./node_modules/.bin/tsc",
-    "build-watch": "./node_modules/.bin/tsc --watch",
+    "build": "./node_modules/.bin/tsc -p tsconfig.json",
+    "build-watch": "./node_modules/.bin/tsc --watch -p tsconfig.json",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json",
     "test": "yarn lint && yarn test-unit && yarn test-int && yarn test-e2e && yarn test-integration-pg && yarn test-integration-mysql",
     "test-unit": "./node_modules/.bin/tape 'dist/test/**/*.unit.js'",

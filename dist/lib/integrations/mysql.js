@@ -60,6 +60,13 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
             let ranFn = false;
             // Start the instrumentation
             integration.scout.instrument(types_1.ScoutSpanOperation.SQLQuery, stopSpan => {
+                // If integration.scout is missing by the time this runs, exit
+                if (!integration.scout) {
+                    integration.logFn("[scout/integrations/mysql2] Failed to find integration's scout instance", types_1.LogLevel.Warn);
+                    ranFn = true;
+                    originalFn.apply(this, originalArgs);
+                    return;
+                }
                 // Get span, exit early if there was an issue getting the current span
                 const span = integration.scout.getCurrentSpan();
                 if (!span) {

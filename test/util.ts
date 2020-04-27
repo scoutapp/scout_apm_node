@@ -229,7 +229,12 @@ export function simpleHTML5BoilerplateApp(
     app.set("view engine", templateEngine);
 
     app.get("/", (req: Request, res: Response) => {
-        res.render("html5-boilerplate", {title: "dynamic"});
+
+        // if (templateEngine === "pug") {
+        //     res.send("<!DOCTYPE html><html><head><title>dynamic</title></head></html><body><h1>Body</h1></body>");
+        // } else {
+            res.render("html5-boilerplate", {title: "dynamic"});
+        // }
     });
 
     return app;

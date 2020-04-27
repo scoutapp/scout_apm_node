@@ -121,7 +121,8 @@ export declare class ProcessOptions {
     readonly logFilePath?: string;
     readonly configFilePath?: string;
     readonly disallowLaunch?: boolean;
-    readonly sendTimeoutMs?: number;
+    readonly sendTimeoutMs: number;
+    readonly socketTimeoutMs: number;
     readonly connPoolOpts?: ConnectionPoolOptions;
     constructor(binPath: string, uri: string, opts?: Partial<ProcessOptions>);
     /**

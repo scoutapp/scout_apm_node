@@ -308,6 +308,13 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 this.emit(types_1.AgentEvent.SocketConnected);
                 resolve(socket);
             });
+            // Set timeout for socket to half a second
+            // on timeouts, we will close the socket close the socket because otherwise nodejs will hang
+            socket.setTimeout(this.opts.socketTimeoutMs);
+            socket.on("timeout", () => {
+                socket.end();
+                this.handleSocketClose(socket);
+            });
             // Add handlers for socket management
             socket.on("data", (data) => this.handleSocketData(socket, data));
             socket.on("close", () => this.handleSocketClose(socket));

@@ -65,14 +65,15 @@ class CoreAgentVersion {
     }
 }
 exports.CoreAgentVersion = CoreAgentVersion;
-const DEFAULT_AGENT_SEND_TIMEOUT_MS = 10000;
 /**
  * Options for agents that are in a separate process not managed by this one
  */
 class ProcessOptions {
     constructor(binPath, uri, opts) {
         // Amount of time to wait before timing out messages
-        this.sendTimeoutMs = DEFAULT_AGENT_SEND_TIMEOUT_MS;
+        this.sendTimeoutMs = Constants.DEFAULT_AGENT_SEND_TIMEOUT_MS;
+        // Amount of time to wait before timing out existing sockets
+        this.socketTimeoutMs = Constants.DEFAULT_SOCKET_TIMEOUT_MS;
         // Customize conection pool
         this.connPoolOpts = Constants.DEFAULT_CONNECTION_POOL_OPTS;
         this.binPath = binPath;
@@ -95,6 +96,9 @@ class ProcessOptions {
             }
             if (opts.sendTimeoutMs) {
                 this.sendTimeoutMs = opts.sendTimeoutMs;
+            }
+            if (opts.socketTimeoutMs) {
+                this.socketTimeoutMs = opts.socketTimeoutMs;
             }
         }
     }

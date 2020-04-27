@@ -27,6 +27,7 @@ class Scout extends events_1.EventEmitter {
         super();
         this.downloaderOptions = {};
         this.slowRequestThresholdMs = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
+        this.wasShutdown = false;
         this.syncCurrentRequest = null;
         this.syncCurrentSpan = null;
         this.config = config || types_1.buildScoutConfiguration();
@@ -113,7 +114,7 @@ class Scout extends events_1.EventEmitter {
             process.on("uncaughtException", this.uncaughtExceptionListenerFn);
         })
             // Set up this scout instance as the global one, if there isn't already one
-            .then(() => global_1.setGlobalScoutInstance(this))
+            .then(() => global_1.setActiveGlobalScoutInstance(this))
             .then(() => this);
     }
     shutdown() {
@@ -134,10 +135,14 @@ class Scout extends events_1.EventEmitter {
         })
             .then(() => {
             delete this.agent;
+            this.wasShutdown = true;
         });
     }
     hasAgent() {
         return typeof this.agent !== "undefined" && this.agent !== null;
+    }
+    isShutdown() {
+        return this.wasShutdown;
     }
     /**
      * Function for checking whether a given path (URL) is ignored by scout

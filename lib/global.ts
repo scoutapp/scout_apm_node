@@ -6,34 +6,52 @@ import { ExportBag } from "./types/integrations";
 export const EXPORT_BAG: ExportBag = {};
 
 // Global scout instance
-let SCOUT_INSTANCE: Scout;
+let SCOUT_INSTANCE: Scout | null;
 let creating: Promise<Scout>;
 
-export function setGlobalScoutInstance(scout: Scout) {
-    if (SCOUT_INSTANCE) {
+export function setActiveGlobalScoutInstance(scout: Scout) {
+    if (SCOUT_INSTANCE && !SCOUT_INSTANCE.isShutdown()) {
         SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", LogLevel.Warn);
         return;
     }
 
     SCOUT_INSTANCE = scout;
-    // When the global scout instance is set ensure that it's integrations are set
-    scout.setupIntegrations();
+
+    // When the global scout instance is set ensure that it's integrations are setup
+    SCOUT_INSTANCE.setupIntegrations();
 }
 
-export function getGlobalScoutInstance(): Scout {
+export function getActiveGlobalScoutInstance(): Scout | null {
+    if (SCOUT_INSTANCE && SCOUT_INSTANCE.isShutdown()) {
+        return null;
+    }
     return SCOUT_INSTANCE;
 }
 
-export function getOrCreateGlobalScoutInstance(
+export function getOrCreateActiveGlobalScoutInstance(
     config?: Partial<ScoutConfiguration>,
     opts?: ScoutOptions,
 ): Promise<Scout> {
-    if (SCOUT_INSTANCE) { return SCOUT_INSTANCE.setup(); }
+    if (SCOUT_INSTANCE && !SCOUT_INSTANCE.isShutdown()) { return SCOUT_INSTANCE.setup(); }
     if (creating) { return creating; }
 
-    setGlobalScoutInstance(new Scout(buildScoutConfiguration(config), opts));
+    const instance = new Scout(buildScoutConfiguration(config), opts);
+    setActiveGlobalScoutInstance(instance);
 
     // Set creating to the currently executing promise to ensure that setup won't be triggered twice
-    creating = getGlobalScoutInstance().setup();
+    creating = instance.setup();
     return creating;
+}
+
+export function shutdownActiveGlobalScoutInstance(): Promise<void> {
+    if (SCOUT_INSTANCE) {
+        SCOUT_INSTANCE.shutdown()
+            .then(() => SCOUT_INSTANCE = null);
+    }
+
+    return Promise.resolve();
+}
+
+export function isActiveGlobalScoutInstance(scout: Scout): boolean {
+    return scout === SCOUT_INSTANCE;
 }

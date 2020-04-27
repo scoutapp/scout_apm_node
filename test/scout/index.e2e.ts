@@ -24,7 +24,7 @@ import {
     AgentEvent as ScoutAgentEvent,
 } from "../../lib/types";
 
-import { getOrCreateGlobalScoutInstance } from "../../lib/global";
+import { getOrCreateActiveGlobalScoutInstance } from "../../lib/global";
 
 import {
     AgentLaunchDisabled,
@@ -728,7 +728,7 @@ test("export Config returns a populated special object", t => {
         monitor: true,
     });
 
-    getOrCreateGlobalScoutInstance(config)
+    getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
             const config = scoutExport.api.Config;
             if (!config) { throw new Error("config is undefined"); }
@@ -784,7 +784,7 @@ test("export Context.add add context (global scout instance)", t => {
         monitor: true,
     });
 
-    getOrCreateGlobalScoutInstance(config)
+    getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
             const listener = (data: ScoutEventRequestSentData) => {
                 scout.removeListener(ScoutEvent.RequestSent, listener);
@@ -851,7 +851,7 @@ test("export Context.addSync to add context (global scout instance)", t => {
     // so we use any to force the runtime check
     let req: any;
 
-    getOrCreateGlobalScoutInstance(config)
+    getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
             // The scout object should be created as sa result of doing the .run
             scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({request}) => {
@@ -878,7 +878,7 @@ test("export ignoreTransaction successfully ignores transaction (global scout in
         monitor: true,
     });
 
-    getOrCreateGlobalScoutInstance(config)
+    getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
             const listener = () => {
                 scout.removeListener(ScoutEvent.IgnoredRequestProcessingSkipped, listener);
@@ -979,7 +979,7 @@ test("export ignoreTransactionSync successfully ignores transaction (global scou
 
     let req: ScoutRequest;
 
-    getOrCreateGlobalScoutInstance(config)
+    getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
             // The scout object should be created as sa result of doing the .run
             scoutExport.api.WebTransaction.runSync("test-web-transaction-export", ({request}) => {

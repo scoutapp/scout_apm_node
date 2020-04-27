@@ -99,6 +99,16 @@ export class PGIntegration extends RequireIntegration {
             const query: Query = typeof config.submit === "function" ? config : new Query(...originalArgs);
 
             return integration.scout.instrument(ScoutSpanOperation.SQLQuery, done => {
+                // If integration.scout is missing by the time this runs, exit
+                if (!integration.scout) {
+                    integration.logFn(
+                        "[scout/integrations/pg] Failed to find integration's scout instance",
+                        LogLevel.Warn,
+                    );
+                    return originalQueryFn.apply(this, [config, values, userCallback])
+                        .then(() => done());
+                }
+
                 const span = integration.scout.getCurrentSpan();
                 // If we weren't able to get the span we just started, something is wrong, do the regular call
                 if (!span) {

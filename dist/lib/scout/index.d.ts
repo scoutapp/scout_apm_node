@@ -30,6 +30,7 @@ export declare class Scout extends EventEmitter {
     private binPath;
     private logFn;
     private slowRequestThresholdMs;
+    private wasShutdown;
     private coreAgentVersion;
     private agent;
     private processOptions;
@@ -50,6 +51,7 @@ export declare class Scout extends EventEmitter {
     setup(): Promise<this>;
     shutdown(): Promise<void>;
     hasAgent(): boolean;
+    isShutdown(): boolean;
     /**
      * Function for checking whether a given path (URL) is ignored by scout
      *

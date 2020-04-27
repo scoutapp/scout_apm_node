@@ -5,7 +5,7 @@ import { scoutMiddleware as expressMiddleware } from "./express";
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
 import { getIntegrationForPackage } from "./integrations";
-import { setGlobalScoutInstance, getGlobalScoutInstance, getOrCreateGlobalScoutInstance, EXPORT_BAG } from "./global";
+import { getActiveGlobalScoutInstance, getOrCreateActiveGlobalScoutInstance, EXPORT_BAG } from "./global";
 
 // Set up PG integration
 // This is needed for use in Typescript projects since `import` will not
@@ -17,7 +17,6 @@ function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<Scou
         const integration = getIntegrationForPackage(name);
         if (integration) {
             integration.ritmHook(EXPORT_BAG);
-            integration.setScoutInstance(getGlobalScoutInstance());
         }
     });
 }
@@ -56,11 +55,11 @@ const API = {
     buildWinstonLogFn,
 
     // Install scout
-    install: getOrCreateGlobalScoutInstance,
+    install: getOrCreateActiveGlobalScoutInstance,
 
     // instrument
     instrument(op: string, cb: DoneCallback, scout?: Scout): Promise<any> {
-        return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+        return (scout ? Promise.resolve(scout.setup()) : getOrCreateActiveGlobalScoutInstance())
             .then(scout => {
                 return scout.instrument(op, (finishSpan, info) => {
                     return cb(finishSpan, info);
@@ -70,7 +69,7 @@ const API = {
 
     // instrument
     instrumentSync(op: string, cb: SpanCallback, scout?: Scout): Promise<any> {
-        return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+        return (scout ? Promise.resolve(scout.setup()) : getOrCreateActiveGlobalScoutInstance())
             .then(scout => scout.instrumentSync(op, cb));
     },
 
@@ -79,7 +78,7 @@ const API = {
         WebTransaction: {
             run(op: string, cb: DoneCallback, scout?: Scout): Promise<any> {
                 const name = `Controller/${op}`;
-                return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+                return (scout ? Promise.resolve(scout.setup()) : getOrCreateActiveGlobalScoutInstance())
                     .then(scout => scout.transaction(name, (finishRequest, other) => {
                         return scout.instrument(name, (finishSpan, info) => {
                             return cb(finishRequest, info);
@@ -90,7 +89,7 @@ const API = {
             runSync(op: string, cb: RequestCallback, scout?: Scout): any {
                 const name = `Controller/${op}`;
 
-                scout = scout || getGlobalScoutInstance();
+                scout = scout || getActiveGlobalScoutInstance() || undefined;
                 if (!scout) { return; }
 
                 return scout.transactionSync(name, (request) => {
@@ -102,7 +101,7 @@ const API = {
         BackgroundTransaction: {
             run(op: string, cb: DoneCallback, scout?: Scout): Promise<any> {
                 const name = `Job/${op}`;
-                return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+                return (scout ? Promise.resolve(scout.setup()) : getOrCreateActiveGlobalScoutInstance())
                     .then(scout => scout.transaction(name, (finishRequest, other) => {
                         return scout.instrument(name, (finishSpan, info) => {
                             return cb(finishRequest, info);
@@ -113,7 +112,7 @@ const API = {
             runSync(op: string, cb: SpanCallback, scout?: Scout): any {
                 const name = `Job/${op}`;
 
-                scout = scout || getGlobalScoutInstance();
+                scout = scout || getActiveGlobalScoutInstance() || undefined;
                 if (!scout) { return; }
 
                 return scout.instrumentSync(name, (span) => {
@@ -123,25 +122,25 @@ const API = {
         },
 
         instrument(op: string, cb: DoneCallback, scout?: Scout): Promise<any> {
-            return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+            return (scout ? Promise.resolve(scout.setup()) : getOrCreateActiveGlobalScoutInstance())
                 .then(scout => scout.instrument(op, (finishSpan, info) => {
                     return cb(finishSpan, info);
                 }));
         },
 
         instrumentSync(operation: string, fn: SpanCallback, scout?: Scout) {
-            return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+            return (scout ? Promise.resolve(scout.setup()) : getOrCreateActiveGlobalScoutInstance())
                 .then(scout => scout.instrumentSync(operation, fn));
         },
 
         get Config() {
-            const scout = getGlobalScoutInstance();
+            const scout = getActiveGlobalScoutInstance();
             return scout ? scout.getConfig() : undefined;
         },
 
         Context: {
             add(name: string, value: JSONValue, scout?: Scout): Promise<ScoutRequest | void> {
-                return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+                return (scout ? Promise.resolve(scout.setup()) : getOrCreateActiveGlobalScoutInstance())
                     .then(scout => {
                         const req = scout.getCurrentRequest();
                         if (!req) { return; }
@@ -151,7 +150,7 @@ const API = {
             },
 
             addSync(name: string, value: JSONValue, scout?: Scout): ScoutRequest | undefined {
-                scout = scout || getGlobalScoutInstance();
+                scout = scout || getActiveGlobalScoutInstance() || undefined;
                 if (!scout) { return; }
 
                 const req = scout.getCurrentRequest();
@@ -162,7 +161,7 @@ const API = {
         },
 
         ignoreTransaction(scout?: Scout): Promise<ScoutRequest | void> {
-            return (scout ? Promise.resolve(scout.setup()) : getOrCreateGlobalScoutInstance())
+            return (scout ? Promise.resolve(scout.setup()) : getOrCreateActiveGlobalScoutInstance())
                 .then(scout => {
                     const req = scout.getCurrentRequest();
                     if (!req) { return; }
@@ -172,7 +171,7 @@ const API = {
         },
 
         ignoreTransactionSync(scout?: Scout): ScoutRequest | void {
-            scout = scout || getGlobalScoutInstance();
+            scout = scout || getActiveGlobalScoutInstance() || undefined;
             if (!scout) { return; }
 
             const req = scout.getCurrentRequest();
