@@ -499,10 +499,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         // Read all (likely) fully formed, correctly framed messages
         framed
-            .forEach(data => {
+            .forEach(framedData => {
                 // Attempt to parse an agent response
                 V1AgentResponse
-                    .fromBinary(data)
+                    .fromBinary(framedData)
                     .then(msg => {
                         this.emit(AgentEvent.SocketResponseReceived, msg, socket);
 

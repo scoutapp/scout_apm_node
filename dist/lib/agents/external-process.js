@@ -404,10 +404,10 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         socket.chunks = chunkRemaining;
         // Read all (likely) fully formed, correctly framed messages
         framed
-            .forEach(data => {
+            .forEach(framedData => {
             // Attempt to parse an agent response
             responses_1.V1AgentResponse
-                .fromBinary(data)
+                .fromBinary(framedData)
                 .then(msg => {
                 this.emit(types_1.AgentEvent.SocketResponseReceived, msg, socket);
                 switch (msg.type) {
