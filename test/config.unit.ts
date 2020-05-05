@@ -13,6 +13,8 @@ import {
     LogLevel,
     CoreAgentVersion,
     generateTriple,
+    isLogLevel,
+    parseLogLevel,
 } from "../lib/types";
 
 import { Scout } from "../lib/scout";
@@ -164,6 +166,27 @@ test("application root is present in default", (t: Test) => {
     const expectedApplicationRoot = path.dirname(getRootDir());
 
     t.equals(config.applicationRoot, expectedApplicationRoot, `root dir matches expected [${expectedApplicationRoot}]`);
+
+    t.end();
+});
+
+test("log level accepts both upper and lower case", (t: Test) => {
+    // Upper, lower, weird cases
+    t.equals(parseLogLevel("DEBUG"), LogLevel.Debug);
+    t.equals(parseLogLevel("debug"), LogLevel.Debug);
+    t.equals(parseLogLevel("DEbUG"), LogLevel.Debug);
+
+    t.equals(parseLogLevel("INFO"), LogLevel.Info);
+    t.equals(parseLogLevel("info"), LogLevel.Info);
+    t.equals(parseLogLevel("InfO"), LogLevel.Info);
+
+    t.equals(parseLogLevel("WARN"), LogLevel.Warn);
+    t.equals(parseLogLevel("warn"), LogLevel.Warn);
+    t.equals(parseLogLevel("wARn"), LogLevel.Warn);
+
+    t.equals(parseLogLevel("ERROR"), LogLevel.Error);
+    t.equals(parseLogLevel("error"), LogLevel.Error);
+    t.equals(parseLogLevel("Error"), LogLevel.Error);
 
     t.end();
 });

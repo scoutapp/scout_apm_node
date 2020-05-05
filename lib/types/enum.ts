@@ -90,6 +90,7 @@ export function isLogLevel(lvl: string): lvl is LogLevel {
  * @returns {LogLevel}
  */
 export function parseLogLevel(lvl: string): LogLevel {
+    lvl = lvl.toLowerCase();
     if (!isLogLevel(lvl)) {
         throw new Error(`Invalid log level [${lvl}]`);
     }

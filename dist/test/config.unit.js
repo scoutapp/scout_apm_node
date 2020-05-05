@@ -117,3 +117,19 @@ test("application root is present in default", (t) => {
     t.equals(config.applicationRoot, expectedApplicationRoot, `root dir matches expected [${expectedApplicationRoot}]`);
     t.end();
 });
+test("log level accepts both upper and lower case", (t) => {
+    // Upper, lower, weird cases
+    t.equals(types_1.parseLogLevel("DEBUG"), types_1.LogLevel.Debug);
+    t.equals(types_1.parseLogLevel("debug"), types_1.LogLevel.Debug);
+    t.equals(types_1.parseLogLevel("DEbUG"), types_1.LogLevel.Debug);
+    t.equals(types_1.parseLogLevel("INFO"), types_1.LogLevel.Info);
+    t.equals(types_1.parseLogLevel("info"), types_1.LogLevel.Info);
+    t.equals(types_1.parseLogLevel("InfO"), types_1.LogLevel.Info);
+    t.equals(types_1.parseLogLevel("WARN"), types_1.LogLevel.Warn);
+    t.equals(types_1.parseLogLevel("warn"), types_1.LogLevel.Warn);
+    t.equals(types_1.parseLogLevel("wARn"), types_1.LogLevel.Warn);
+    t.equals(types_1.parseLogLevel("ERROR"), types_1.LogLevel.Error);
+    t.equals(types_1.parseLogLevel("error"), types_1.LogLevel.Error);
+    t.equals(types_1.parseLogLevel("Error"), types_1.LogLevel.Error);
+    t.end();
+});

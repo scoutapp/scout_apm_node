@@ -80,6 +80,7 @@ exports.isLogLevel = isLogLevel;
  * @returns {LogLevel}
  */
 function parseLogLevel(lvl) {
+    lvl = lvl.toLowerCase();
     if (!isLogLevel(lvl)) {
         throw new Error(`Invalid log level [${lvl}]`);
     }
