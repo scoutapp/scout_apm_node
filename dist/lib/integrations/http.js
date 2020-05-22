@@ -63,7 +63,7 @@ class HttpIntegration extends integrations_1.RequireIntegration {
             // Start a scout instrumentation and pull out the stopSpan
             const opName = `HTTP/${method.toUpperCase()}`;
             // Start an asynchronous instrumentation and pull particulars from it
-            let stopSpan;
+            let stopSpan = () => undefined;
             let reqSpan;
             integration.scout.instrument(opName, (stop, { span }) => {
                 stopSpan = stop;
