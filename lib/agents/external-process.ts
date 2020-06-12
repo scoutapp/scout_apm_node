@@ -506,6 +506,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                     .then(msg => {
                         this.emit(AgentEvent.SocketResponseReceived, msg, socket);
 
+                        this.logFn(
+                            `[scout/external-process] Received & parsed response of type:\n ${msg.type}`,
+                            LogLevel.Debug,
+                        );
+
                         switch (msg.type) {
                             case AgentResponseType.V1StartRequest:
                                 this.emit(AgentEvent.RequestStarted);
