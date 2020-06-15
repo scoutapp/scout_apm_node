@@ -51,12 +51,17 @@ class HttpIntegration extends integrations_1.RequireIntegration {
                 method = "GET";
                 url = originalArgsArr[0];
             }
+            else if ("href" in urlOrObject) {
+                method = "GET";
+                url = urlOrObject.href;
+            }
             else {
                 method = urlOrObject.method || "Unknown";
                 url = [
+                    urlOrObject.protocol,
+                    "//",
                     urlOrObject.hostname || "localhost",
-                    ":",
-                    urlOrObject.port,
+                    urlOrObject.port ? `:${urlOrObject.port}` : "",
                     urlOrObject.path,
                 ].join("") || "Unknown";
             }
