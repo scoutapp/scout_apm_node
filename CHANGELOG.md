@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.10-rc.0] - 2020-06-15
+
+### Added
+- bugfix/200 investigate nuxt failure (adds preliminary nuxt support) ([#200](https://github.com/scoutapp/scout_apm_node/issues/200))
+
 ## [0.1.9] - 2020-05-31
 
 ### Changed
