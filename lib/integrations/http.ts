@@ -52,16 +52,20 @@ export class HttpIntegration extends RequireIntegration {
             // Detect whether we're dealing with a url
             let method: string;
             let url: string;
-            const urlOrObject: string | RequestOptions = originalArgsArr[0];
+            const urlOrObject: string | URL | RequestOptions = originalArgsArr[0];
             if (typeof urlOrObject === "string") {
                 method = "GET";
                 url = originalArgsArr[0];
+            } else if ("href" in urlOrObject) {
+                method = "GET";
+                url = urlOrObject.href;
             } else {
                 method = urlOrObject.method || "Unknown";
                 url = [
+                    urlOrObject.protocol,
+                    "//",
                     urlOrObject.hostname || "localhost",
-                    ":",
-                    urlOrObject.port,
+                    urlOrObject.port ? `:${urlOrObject.port}` : "",
                     urlOrObject.path,
                 ].join("") || "Unknown";
             }
