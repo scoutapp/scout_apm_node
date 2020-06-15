@@ -1,4 +1,4 @@
-.PHONY: all dev-setup git-hook-install clean \
+.PHONY: all print-version dev-setup git-hook-install clean \
 				check-tool-docker check-tool-yarn check-tool-entr \
 				lint lint-watch build build-watch \
 				test test-unit test-int test-e2e \
@@ -7,7 +7,8 @@
 				ensure-mysql-docker-image test-integration-mysql test-integration-mysql2 \
 				test-integration-pug test-integration-mustache test-integration-ejs \
 				generate-agent-configs \
-				target-dir package print-package-filename publish
+				target-dir package print-package-filename \
+				publish publish-prerelease
 
 all: install build
 
@@ -48,6 +49,9 @@ dist:
 ###############
 # Development #
 ###############
+
+print-version:
+	@echo -n "$(VERSION)"
 
 dev-setup: dist install git-hook-install
 
@@ -142,4 +146,13 @@ package: clean build target-dir
 	mv $(PACKAGE_FILENAME) $(TARGET_DIR)/
 
 publish: clean build
-	$(YARN) publish $(PACKAGE_PATH)
+	$(YARN) publish \
+		--tag latest \
+		--new-version $(VERSION) \
+		$(PACKAGE_PATH)
+
+publish-prerelease: clean build
+	$(YARN) publish \
+		--tag pre \
+		--new-version $(VERSION) \
+		$(PACKAGE_PATH)
