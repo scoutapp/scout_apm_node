@@ -410,6 +410,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 .fromBinary(framedData)
                 .then(msg => {
                 this.emit(types_1.AgentEvent.SocketResponseReceived, msg, socket);
+                this.logFn(`[scout/external-process] Received & parsed response of type:\n ${msg.type}`, types_1.LogLevel.Debug);
                 switch (msg.type) {
                     case types_1.AgentResponseType.V1StartRequest:
                         this.emit(types_1.AgentEvent.RequestStarted);

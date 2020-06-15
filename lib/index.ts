@@ -35,6 +35,7 @@ setupRequireIntegrations([
 
     // Web frameworks
     "express",
+    "nuxt",
 
     // NodeJS internals
     "http",
