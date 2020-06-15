@@ -6,6 +6,7 @@ import mustacheIntegration from "./mustache";
 import ejsIntegration from "./ejs";
 import httpIntegration from "./http";
 import expressIntegration from "./express";
+import nuxtIntegration from "./nuxt";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
 
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
@@ -18,6 +19,7 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case ejsIntegration.getPackageName(): return ejsIntegration;
         case httpIntegration.getPackageName(): return httpIntegration;
         case expressIntegration.getPackageName(): return expressIntegration;
+        case nuxtIntegration.getPackageName(): return nuxtIntegration;
         default: return doNothingRequireIntegration;
     }
 }
