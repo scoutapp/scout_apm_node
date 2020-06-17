@@ -145,13 +145,13 @@ package: clean build target-dir
 	$(YARN) pack
 	mv $(PACKAGE_FILENAME) $(TARGET_DIR)/
 
-publish: clean build
+publish: package
 	$(YARN) publish \
 		--tag latest \
 		--new-version $(VERSION) \
 		$(PACKAGE_PATH)
 
-publish-prerelease: clean build
+publish-prerelease: package
 	$(YARN) publish \
 		--tag pre \
 		--new-version $(VERSION) \
