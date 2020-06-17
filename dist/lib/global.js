@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const scout_1 = require("./scout");
 const types_1 = require("./types");
+const Errors = require("./errors");
 // Create an export bag which will contain exports modified by scout
 exports.EXPORT_BAG = {};
 // Global scout instance
@@ -61,6 +62,20 @@ function getOrCreateActiveGlobalScoutInstance(config, opts) {
     return creating;
 }
 exports.getOrCreateActiveGlobalScoutInstance = getOrCreateActiveGlobalScoutInstance;
+/**
+ * Lazily get or create the current active global scout instance
+ *
+ * @param {ScoutConfiguration} [config] - Scout configuration to use to create (if necessary)
+ * @param {ScoutOptions} [opts] - options
+ * @returns {Promise<Scout>} created or retrieved Scout instance
+ */
+function getOrCreateActiveGlobalScoutInstanceNonBlocking(config, opts) {
+    const p = getOrCreateActiveGlobalScoutInstance(config, opts);
+    // If the promise isn't yet resolved, then let's not wait on it and *fail* immediately
+    // eventually, the promise will be resolved, and when called again, we'll pass back the instance
+    return Promise.race([p, Promise.reject(new Errors.InstanceNotReady())]);
+}
+exports.getOrCreateActiveGlobalScoutInstanceNonBlocking = getOrCreateActiveGlobalScoutInstanceNonBlocking;
 /**
  * Shutdown the active global scout instance if there is one
  *

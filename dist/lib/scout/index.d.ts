@@ -38,6 +38,7 @@ export declare class Scout extends EventEmitter {
     private syncCurrentRequest;
     private syncCurrentSpan;
     private uncaughtExceptionListenerFn;
+    private settingUp;
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions);
     private get socketPath();
     getSocketFilePath(): string;
@@ -47,6 +48,12 @@ export declare class Scout extends EventEmitter {
     getAgent(): ExternalProcessAgent | null;
     getSlowRequestThresholdMs(): number;
     log(msg: string, lvl: LogLevel): void;
+    /**
+     * Helper to facilitate non-blocking setup
+     *
+     * @throws ScoutSettingUp if the scout instance is still setting up (rather than waiting)
+     */
+    setupNonBlocking(): Promise<this>;
     setup(): Promise<this>;
     shutdown(): Promise<void>;
     hasAgent(): boolean;

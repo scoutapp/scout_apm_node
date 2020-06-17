@@ -23,6 +23,14 @@ export declare function getActiveGlobalScoutInstance(): Scout | null;
  */
 export declare function getOrCreateActiveGlobalScoutInstance(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions): Promise<Scout>;
 /**
+ * Lazily get or create the current active global scout instance
+ *
+ * @param {ScoutConfiguration} [config] - Scout configuration to use to create (if necessary)
+ * @param {ScoutOptions} [opts] - options
+ * @returns {Promise<Scout>} created or retrieved Scout instance
+ */
+export declare function getOrCreateActiveGlobalScoutInstanceNonBlocking(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions): Promise<Scout>;
+/**
  * Shutdown the active global scout instance if there is one
  *
  * @returns {Promise<void>} A promise that resolves when the shutdown has completed

@@ -16,6 +16,24 @@ function scoutMiddleware(opts) {
     // A cache for frequently hit middlewares (which are often routes like  sorts for
     const commonRouteMiddlewares = [];
     return (req, res, next) => {
+        // If there is no global scout instance yet and no scout instance just go to next middleware immediately
+        const scout = opts && opts.scout ? opts.scout : req.app.scout || global_1.getActiveGlobalScoutInstance();
+        if (!scout) {
+            // Get or create the active global scout instance, in the background
+            setImmediate(() => {
+                // Build configuration overrides
+                const overrides = opts && opts.config ? opts.config : {};
+                const config = types_1.buildScoutConfiguration(overrides);
+                const options = {
+                    logFn: opts && opts.logFn ? opts.logFn : undefined,
+                };
+                // If app doesn't already have a scout instance *and* no active global one is present, create one
+                global_1.getOrCreateActiveGlobalScoutInstance(config, options)
+                    .then(scout => req.app.scout = scout);
+            });
+            next();
+            return;
+        }
         // Exit early if we cannot access the application from the request
         if (!req || !req.app) {
             if (opts && opts.logFn) {
@@ -55,23 +73,7 @@ function scoutMiddleware(opts) {
             requestTimeoutMs = opts.requestTimeoutMs;
         }
         // Use scout instance already set on the application if present
-        Promise.resolve(opts && opts.scout ? opts.scout : req.app.scout || global_1.getActiveGlobalScoutInstance())
-            // Attempt to get the global scout instance
-            .then(scout => {
-            // Build configuration overrides
-            const overrides = opts && opts.config ? opts.config : {};
-            const config = types_1.buildScoutConfiguration(overrides);
-            const options = {
-                logFn: opts && opts.logFn ? opts.logFn : undefined,
-            };
-            // If the app already has a scout instance or there is a global instance, then update the configuration
-            if (scout) {
-                req.app.scout = scout;
-                return req.app.scout;
-            }
-            // If app doesn't have a scout instance *and* global is not present, create one
-            return global_1.getOrCreateActiveGlobalScoutInstance(config, options);
-        })
+        Promise.resolve(scout)
             // Set the scout instance on the application
             .then(scout => req.app.scout = scout)
             // Set up the scout instance (if necessary)
@@ -135,6 +137,7 @@ function scoutMiddleware(opts) {
                         const rootSpan = scout.getCurrentSpan();
                         // Add the span to the request object
                         req.scout.rootSpan = rootSpan;
+                        // Setup of the transaction and instrumentation succeeded
                         next();
                     });
                 });

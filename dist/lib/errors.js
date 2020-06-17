@@ -26,6 +26,7 @@ var ErrorCode;
     ErrorCode[ErrorCode["NoAgentPresent"] = 19] = "NoAgentPresent";
     ErrorCode[ErrorCode["NoActiveParentContext"] = 20] = "NoActiveParentContext";
     ErrorCode[ErrorCode["InvalidConfiguration"] = 21] = "InvalidConfiguration";
+    ErrorCode[ErrorCode["InstanceNotReady"] = 22] = "InstanceNotReady";
 })(ErrorCode = exports.ErrorCode || (exports.ErrorCode = {}));
 class ScoutError extends Error {
 }
@@ -205,3 +206,11 @@ class InvalidConfiguration extends ScoutError {
     }
 }
 exports.InvalidConfiguration = InvalidConfiguration;
+class InstanceNotReady extends ScoutError {
+    constructor(m) {
+        super();
+        this.code = ErrorCode.InstanceNotReady;
+        this.message = m || "Scout instance not ready (yet)";
+    }
+}
+exports.InstanceNotReady = InstanceNotReady;
