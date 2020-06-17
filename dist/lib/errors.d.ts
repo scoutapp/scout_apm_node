@@ -21,7 +21,8 @@ export declare enum ErrorCode {
     MonitoringDisabled = 18,
     NoAgentPresent = 19,
     NoActiveParentContext = 20,
-    InvalidConfiguration = 21
+    InvalidConfiguration = 21,
+    InstanceNotReady = 22
 }
 declare class ScoutError extends Error {
     readonly code: number;
@@ -111,6 +112,10 @@ export declare class NoActiveParentContext extends ScoutError {
     constructor(m?: string);
 }
 export declare class InvalidConfiguration extends ScoutError {
+    readonly code: number;
+    constructor(m?: string);
+}
+export declare class InstanceNotReady extends ScoutError {
     readonly code: number;
     constructor(m?: string);
 }

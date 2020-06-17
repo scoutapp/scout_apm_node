@@ -11,7 +11,10 @@ import {
 } from "./types";
 import * as Constants from "./constants";
 import { Scout, ScoutRequest, ScoutSpan, ScoutOptions } from "./scout";
-import { getActiveGlobalScoutInstance, getOrCreateActiveGlobalScoutInstance } from "./global";
+import {
+    getActiveGlobalScoutInstance,
+    getOrCreateActiveGlobalScoutInstance,
+} from "./global";
 
 export interface ApplicationWithScout {
     scout?: Scout;
@@ -24,6 +27,9 @@ export interface ExpressMiddlewareOptions {
     requestTimeoutMs?: number;
     logFn?: LogFn;
     scout?: Scout;
+
+    // Whether to wait (normally during the first request) for scout to setup
+    waitForScoutSetup?: boolean;
 }
 
 // The information that is
@@ -48,6 +54,34 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
     const commonRouteMiddlewares: any[] = [];
 
     return (req: any, res: any, next: () => void) => {
+        // If there is no global scout instance yet and no scout instance just go to next middleware immediately
+        const scout = opts && opts.scout ? opts.scout : req.app.scout || getActiveGlobalScoutInstance();
+
+        // Build a closure that installs scout (and waits on it)
+        // depending on whether waitForScoutSetup is set we will run this in the background or inline
+        const setupScout = () => {
+            // Build configuration overrides
+            const overrides = opts && opts.config ? opts.config : {};
+            const config: Partial<ScoutConfiguration> = buildScoutConfiguration(overrides);
+            const options: ScoutOptions = {
+                logFn: opts && opts.logFn ? opts.logFn : undefined,
+            };
+
+            // If app doesn't already have a scout instance *and* no active global one is present, create one
+            return getOrCreateActiveGlobalScoutInstance(config, options)
+                .then(scout => req.app.scout = scout);
+        };
+
+        const waitForScoutSetup = opts && opts.waitForScoutSetup;
+
+        // If we're not waiting for scout to set up, then set it up in the background
+        if (!scout && !waitForScoutSetup) {
+            // Get or create the active global scout instance, in the background
+            setImmediate(setupScout);
+            next();
+            return;
+        }
+
         // Exit early if we cannot access the application from the request
         if (!req || !req.app) {
             if (opts && opts.logFn) {
@@ -90,24 +124,12 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         }
 
         // Use scout instance already set on the application if present
-        Promise.resolve(opts && opts.scout ? opts.scout : req.app.scout || getActiveGlobalScoutInstance())
-        // Attempt to get the global scout instance
+        Promise.resolve(scout)
             .then(scout => {
-                // Build configuration overrides
-                const overrides = opts && opts.config ? opts.config : {};
-                const config: Partial<ScoutConfiguration> = buildScoutConfiguration(overrides);
-                const options: ScoutOptions = {
-                    logFn: opts && opts.logFn ? opts.logFn : undefined,
-                };
-
-                // If the app already has a scout instance or there is a global instance, then update the configuration
-                if (scout) {
-                    req.app.scout = scout;
-                    return req.app.scout;
+                if (!scout && waitForScoutSetup) {
+                    return setupScout();
                 }
-
-                // If app doesn't have a scout instance *and* global is not present, create one
-                return getOrCreateActiveGlobalScoutInstance(config, options);
+                return scout;
             })
         // Set the scout instance on the application
             .then(scout => req.app.scout = scout)
@@ -184,6 +206,8 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                                 const rootSpan = scout.getCurrentSpan();
                                 // Add the span to the request object
                                 req.scout.rootSpan = rootSpan;
+
+                                // Setup of the transaction and instrumentation succeeded
                                 next();
                             });
 
@@ -195,6 +219,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                 if (opts && opts.logFn) {
                     opts.logFn(`[scout] No scout instance on Express application:\n ${err}`, LogLevel.Error);
                 }
+
                 next();
             });
     };

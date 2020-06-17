@@ -9,6 +9,7 @@ export interface ExpressMiddlewareOptions {
     requestTimeoutMs?: number;
     logFn?: LogFn;
     scout?: Scout;
+    waitForScoutSetup?: boolean;
 }
 export interface ExpressScoutInfo {
     instance?: Scout;

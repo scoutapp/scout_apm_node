@@ -81,6 +81,17 @@ class Scout extends events_1.EventEmitter {
     log(msg, lvl) {
         this.logFn(msg, lvl);
     }
+    /**
+     * Helper to facilitate non-blocking setup
+     *
+     * @throws ScoutSettingUp if the scout instance is still setting up (rather than waiting)
+     */
+    setupNonBlocking() {
+        if (!this.settingUp) {
+            return this.setup();
+        }
+        return Promise.race([this.settingUp, Promise.reject(new Errors.InstanceNotReady())]);
+    }
     setup() {
         // Return early if agent has already been set up
         if (this.agent) {
@@ -89,7 +100,7 @@ class Scout extends events_1.EventEmitter {
         this.log("[scout] setting up scout...", types_1.LogLevel.Debug);
         const shouldLaunch = this.config.coreAgentLaunch;
         // If the socket path exists then we may be able to skip downloading and launching
-        return (shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket())
+        this.settingUp = (shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket())
             .then(() => {
             if (!this.agent) {
                 throw new Errors.NoAgentPresent();
@@ -125,6 +136,7 @@ class Scout extends events_1.EventEmitter {
             // Set up this scout instance as the global one, if there isn't already one
             .then(() => global_1.setActiveGlobalScoutInstance(this))
             .then(() => this);
+        return this.settingUp;
     }
     shutdown() {
         if (!this.agent) {

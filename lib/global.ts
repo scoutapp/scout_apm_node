@@ -1,6 +1,7 @@
 import { Scout, ScoutOptions } from "./scout";
 import { buildScoutConfiguration, LogLevel, ScoutConfiguration, ScoutEvent } from "./types";
 import { ExportBag } from "./types/integrations";
+import * as Errors from "./errors";
 
 // Create an export bag which will contain exports modified by scout
 export const EXPORT_BAG: ExportBag = {};
@@ -65,6 +66,24 @@ export function getOrCreateActiveGlobalScoutInstance(
     // Set creating to the currently executing promise to ensure that setup won't be triggered twice
     creating = instance.setup();
     return creating;
+}
+
+/**
+ * Lazily get or create the current active global scout instance
+ *
+ * @param {ScoutConfiguration} [config] - Scout configuration to use to create (if necessary)
+ * @param {ScoutOptions} [opts] - options
+ * @returns {Promise<Scout>} created or retrieved Scout instance
+ */
+export function getOrCreateActiveGlobalScoutInstanceNonBlocking(
+    config?: Partial<ScoutConfiguration>,
+    opts?: ScoutOptions,
+): Promise<Scout> {
+    const p = getOrCreateActiveGlobalScoutInstance(config, opts);
+
+    // If the promise isn't yet resolved, then let's not wait on it and *fail* immediately
+    // eventually, the promise will be resolved, and when called again, we'll pass back the instance
+    return Promise.race([p, Promise.reject(new Errors.InstanceNotReady())]);
 }
 
 /**

@@ -103,6 +103,8 @@ export class Scout extends EventEmitter {
 
     private uncaughtExceptionListenerFn: (err) => void;
 
+    private settingUp: Promise<this>;
+
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         super();
 
@@ -178,6 +180,17 @@ export class Scout extends EventEmitter {
         this.logFn(msg, lvl);
     }
 
+    /**
+     * Helper to facilitate non-blocking setup
+     *
+     * @throws ScoutSettingUp if the scout instance is still setting up (rather than waiting)
+     */
+    public setupNonBlocking(): Promise<this> {
+        if (!this.settingUp) { return this.setup(); }
+
+        return Promise.race([this.settingUp, Promise.reject(new Errors.InstanceNotReady())]);
+    }
+
     public setup(): Promise<this> {
         // Return early if agent has already been set up
         if (this.agent) { return Promise.resolve(this); }
@@ -187,7 +200,7 @@ export class Scout extends EventEmitter {
         const shouldLaunch = this.config.coreAgentLaunch;
 
         // If the socket path exists then we may be able to skip downloading and launching
-        return (shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket())
+        this.settingUp = (shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket())
             .then(() => {
                 if (!this.agent) { throw new Errors.NoAgentPresent(); }
                 return this.agent.connect();
@@ -226,6 +239,8 @@ export class Scout extends EventEmitter {
         // Set up this scout instance as the global one, if there isn't already one
             .then(() => setActiveGlobalScoutInstance(this))
             .then(() => this);
+
+        return this.settingUp;
     }
 
     public shutdown(): Promise<void> {

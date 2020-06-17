@@ -19,6 +19,7 @@ test("Simple operation", t => {
             monitor: true,
         }),
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     let scout;
     // Send a request to the application (which should trigger setup of scout)
@@ -63,6 +64,7 @@ test("Dynamic segment routes (uses global instance)", { timeout: TestUtil.EXPRES
             monitor: true,
         }),
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     let scout;
     const expectedRootSpan = "Controller/GET /dynamic/:segment";
@@ -120,6 +122,7 @@ test("Application which errors (uses global scout instance)", { timeout: TestUti
             monitor: true,
         }),
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     let scout;
     // Send a request to the application (which should trigger setup of scout)
@@ -148,6 +151,7 @@ test("express ignores a path (exact path, with dynamic segments)", TEST_OPTS, t 
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
     const listener = (ignoredPath) => {
@@ -175,6 +179,7 @@ test("express ignores a path (exact path, static)", { timeout: TestUtil.EXPRESS_
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
     const listener = (ignoredPath) => {
@@ -203,6 +208,7 @@ test("express ignores a path (prefix, with dynamic segments)", { timeout: TestUt
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
     const listener = (ignoredPath) => {
@@ -232,6 +238,7 @@ test("express ignores a path (prefix, static)", { timeout: TestUtil.EXPRESS_TEST
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
     const listener = (ignoredPath) => {
@@ -259,6 +266,7 @@ test("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
     const listener = (data) => {
@@ -295,6 +303,7 @@ test("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS },
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
     const listener = (data) => {
@@ -331,6 +340,7 @@ test("Pug integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t =
     const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }), "pug");
     // Set up a listener that should fire when the request is finished
     const listener = (data) => {
@@ -377,6 +387,7 @@ test("ejs integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t =
     const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }), "ejs");
     // Set up a listener that should fire when the request is finished
     const listener = (data) => {
@@ -423,6 +434,7 @@ test("mustache integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }
     const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }), "mustache");
     // Set up a listener that should fire when the request is finished
     const listener = (data) => {
@@ -469,6 +481,7 @@ test("Nested spans on the top level controller have parent ID specified", t => {
     const app = TestUtil.simpleInstrumentApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     // Set up a listener that should fire when the request is finished
     const listener = (data) => {
@@ -515,6 +528,7 @@ test("Unknown routes should not be recorded", t => {
     const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
         scout,
         requestTimeoutMs: 0,
+        waitForScoutSetup: true,
     }));
     // Set up a listener that should fire when the request is finished
     const listener = (url) => {

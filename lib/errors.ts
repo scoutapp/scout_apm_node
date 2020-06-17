@@ -23,6 +23,7 @@ export enum ErrorCode {
     NoAgentPresent,
     NoActiveParentContext,
     InvalidConfiguration,
+    InstanceNotReady,
 }
 
 class ScoutError extends Error {
@@ -224,5 +225,14 @@ export class InvalidConfiguration extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "Invalid configuration";
+    }
+}
+
+export class InstanceNotReady extends ScoutError {
+    public readonly code: number = ErrorCode.InstanceNotReady;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Scout instance not ready (yet)";
     }
 }
