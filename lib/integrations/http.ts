@@ -12,6 +12,9 @@ export class HTTPIntegration extends RequireIntegration {
     protected shim(httpExport: any): any {
         httpExport = this.shimHTTPRequest(httpExport);
 
+        // NOTE: Order here matters, the shimmed http.get depends on http.request already being shimmed
+        httpExport = this.shimHTTPGet(httpExport);
+
         return httpExport;
     }
 
@@ -122,6 +125,28 @@ export class HTTPIntegration extends RequireIntegration {
         };
 
         httpExport.request = request;
+        return httpExport;
+    }
+
+    /**
+     * Shim for http's `get` function
+     * `get` has to be shimmed because it uses the defined version of `request`
+     * which is exported, but cannot be reassigned externally
+     *
+     * @param {any} httpExport - http's export
+     */
+    private shimHTTPGet(httpExport: any): any {
+        const integration = this;
+
+        // http://github.com/nodejs/node/blob/master/lib/http.js#L315
+        // Since the original function is so small we just replace it, making sure
+        // to use the shiimmed version (on the export object)
+        httpExport.get = function(this: any) {
+            const req = httpExport.request.apply(this, arguments);
+            req.end();
+            return req;
+        };
+
         return httpExport;
     }
 
