@@ -27,6 +27,9 @@ export interface ExpressMiddlewareOptions {
     requestTimeoutMs?: number;
     logFn?: LogFn;
     scout?: Scout;
+
+    // Whether to wait (normally during the first request) for scout to setup
+    waitForScoutSetup?: boolean;
 }
 
 // The information that is
@@ -53,22 +56,28 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
     return (req: any, res: any, next: () => void) => {
         // If there is no global scout instance yet and no scout instance just go to next middleware immediately
         const scout = opts && opts.scout ? opts.scout : req.app.scout || getActiveGlobalScoutInstance();
-        if (!scout) {
+
+        // Build a closure that installs scout (and waits on it)
+        // depending on whether waitForScoutSetup is set we will run this in the background or inline
+        const setupScout = () => {
+            // Build configuration overrides
+            const overrides = opts && opts.config ? opts.config : {};
+            const config: Partial<ScoutConfiguration> = buildScoutConfiguration(overrides);
+            const options: ScoutOptions = {
+                logFn: opts && opts.logFn ? opts.logFn : undefined,
+            };
+
+            // If app doesn't already have a scout instance *and* no active global one is present, create one
+            return getOrCreateActiveGlobalScoutInstance(config, options)
+                .then(scout => req.app.scout = scout);
+        };
+
+        const waitForScoutSetup = opts && opts.waitForScoutSetup;
+
+        // If we're not waiting for scout to set up, then set it up in the background
+        if (!scout && !waitForScoutSetup) {
             // Get or create the active global scout instance, in the background
-            setImmediate(() => {
-
-                // Build configuration overrides
-                const overrides = opts && opts.config ? opts.config : {};
-                const config: Partial<ScoutConfiguration> = buildScoutConfiguration(overrides);
-                const options: ScoutOptions = {
-                    logFn: opts && opts.logFn ? opts.logFn : undefined,
-                };
-
-                // If app doesn't already have a scout instance *and* no active global one is present, create one
-                getOrCreateActiveGlobalScoutInstance(config, options)
-                    .then(scout => req.app.scout = scout);
-            });
-
+            setImmediate(setupScout);
             next();
             return;
         }
@@ -116,6 +125,12 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
         // Use scout instance already set on the application if present
         Promise.resolve(scout)
+            .then(scout => {
+                if (!scout && waitForScoutSetup) {
+                    return setupScout();
+                }
+                return scout;
+            })
         // Set the scout instance on the application
             .then(scout => req.app.scout = scout)
         // Set up the scout instance (if necessary)

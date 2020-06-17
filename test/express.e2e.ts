@@ -5,6 +5,7 @@ import * as request from "supertest";
 
 import { Application } from "express";
 import { scoutMiddleware, ApplicationWithScout } from "../lib/express";
+import { getOrCreateActiveGlobalScoutInstance } from "../lib/global";
 import {
     AgentEvent,
     AgentRequestType,
@@ -35,6 +36,7 @@ test("Simple operation", t => {
             monitor: true,
         }),
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }));
 
     let scout: Scout;
@@ -86,6 +88,7 @@ test("Dynamic segment routes (uses global instance)", {timeout: TestUtil.EXPRESS
                 monitor: true,
             }),
             requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+            waitForScoutSetup: true,
         }),
     );
 
@@ -152,6 +155,7 @@ test("Application which errors (uses global scout instance)", {timeout: TestUtil
             monitor: true,
         }),
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }));
 
     let scout: Scout;
@@ -182,6 +186,7 @@ test("express ignores a path (exact path, with dynamic segments)", TEST_OPTS, t 
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }));
 
     // Set up a listener that should *not* fire
@@ -215,6 +220,7 @@ test("express ignores a path (exact path, static)", {timeout: TestUtil.EXPRESS_T
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }));
 
     // Set up a listener that should *not* fire
@@ -249,6 +255,7 @@ test("express ignores a path (prefix, with dynamic segments)", {timeout: TestUti
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }));
 
     // Set up a listener that should *not* fire
@@ -284,6 +291,7 @@ test("express ignores a path (prefix, static)", {timeout: TestUtil.EXPRESS_TEST_
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }));
 
     // Set up a listener that should *not* fire
@@ -317,6 +325,7 @@ test("URI params are filtered", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t =
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }));
 
     // Set up a listener that should *not* fire
@@ -365,6 +374,7 @@ test("URI filtered down to path", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }));
 
     // Set up a listener that should *not* fire
@@ -414,6 +424,7 @@ test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
     const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }), "pug");
 
     // Set up a listener that should fire when the request is finished
@@ -470,6 +481,7 @@ test("ejs integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
     const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }), "ejs");
 
     // Set up a listener that should fire when the request is finished
@@ -527,6 +539,7 @@ test("mustache integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, 
     const app: Application & ApplicationWithScout = TestUtil.simpleHTML5BoilerplateApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }), "mustache");
 
     // Set up a listener that should fire when the request is finished
@@ -583,6 +596,7 @@ test("Nested spans on the top level controller have parent ID specified", t => {
     const app: Application & ApplicationWithScout = TestUtil.simpleInstrumentApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }));
 
     // Set up a listener that should fire when the request is finished
@@ -644,6 +658,7 @@ test("Unknown routes should not be recorded", t => {
     const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(scoutMiddleware({
         scout,
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
+        waitForScoutSetup: true,
     }));
 
     // Set up a listener that should fire when the request is finished
