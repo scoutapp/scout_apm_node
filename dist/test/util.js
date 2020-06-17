@@ -210,6 +210,20 @@ function appWithGETSynchronousError(middleware, expressFnTransform) {
     return app;
 }
 exports.appWithGETSynchronousError = appWithGETSynchronousError;
+function appWithHTTPProxyMiddleware(middleware, proxyTarget) {
+    const app = express();
+    app.use(middleware);
+    const { createProxyMiddleware } = require("http-proxy-middleware");
+    app.get("/", createProxyMiddleware({
+        target: proxyTarget,
+        changeOrigin: true,
+        onError: (err, req, res) => {
+            res.status(503).end();
+        },
+    }));
+    return app;
+}
+exports.appWithHTTPProxyMiddleware = appWithHTTPProxyMiddleware;
 // An express application which performs a bunch of trivial SQL queries and renders a template that uses the reuslts
 function queryAndRenderRandomNumbers(middleware, templateEngine, dbClient) {
     const app = express();

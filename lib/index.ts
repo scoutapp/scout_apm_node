@@ -39,6 +39,7 @@ setupRequireIntegrations([
 
     // NodeJS internals
     "http",
+    "https",
 ]);
 
 const API = {

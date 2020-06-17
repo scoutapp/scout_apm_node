@@ -6,11 +6,11 @@ import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types"
 import * as Constants from "../constants";
 
 // Hook into the express and mongodb module
-export class HttpIntegration extends RequireIntegration {
+export class HTTPIntegration extends RequireIntegration {
     protected readonly packageName: string = "http";
 
     protected shim(httpExport: any): any {
-        httpExport = this.shimHttpRequest(httpExport);
+        httpExport = this.shimHTTPRequest(httpExport);
 
         return httpExport;
     }
@@ -20,7 +20,7 @@ export class HttpIntegration extends RequireIntegration {
      *
      * @param {any} httpExport - http's export
      */
-    private shimHttpRequest(httpExport: any): any {
+    protected shimHTTPRequest(httpExport: any): any {
         const originalFn = httpExport.request;
         const integration = this;
 
@@ -61,11 +61,21 @@ export class HttpIntegration extends RequireIntegration {
                 url = urlOrObject.href;
             } else {
                 method = urlOrObject.method || "Unknown";
+
+                // Determine protocol, set to HTTPS if not present but port if 443
+                let protocol = urlOrObject.protocol;
+                if (!protocol) { protocol = urlOrObject.port === 443 ? "https" : "http"; }
+
+                // Determine port, only show port if it's a non-standard port
+                let port: string | number | undefined = urlOrObject.port;
+                if (typeof port === "string") { port = parseInt(port, 10); }
+                if (port && port === 443 || port === 80) { port = undefined; }
+
                 url = [
-                    urlOrObject.protocol,
-                    "//",
+                    protocol,
+                    "://",
                     urlOrObject.hostname || "localhost",
-                    urlOrObject.port ? `:${urlOrObject.port}` : "",
+                    port ? `:${port}` : "",
                     urlOrObject.path,
                 ].join("") || "Unknown";
             }
@@ -117,4 +127,4 @@ export class HttpIntegration extends RequireIntegration {
 
 }
 
-export default new HttpIntegration();
+export default new HTTPIntegration();
