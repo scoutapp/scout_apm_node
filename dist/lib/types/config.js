@@ -10,11 +10,31 @@ const util_1 = require("./util");
 const enum_2 = require("./enum");
 const Constants = require("../constants");
 const errors_1 = require("../errors");
+const CONFIG_MODULE_INSIDE_NODE_MODULES = [
+    "node_modules",
+    "@scout_apm",
+    "scout-apm",
+    "dist",
+    "lib",
+    "types",
+    "config.js",
+].join(path.sep);
 class ApplicationMetadata {
     constructor(config, opts) {
-        const pkgJson = require("root-require")("package.json") || { dependencies: [], version: "unknown" };
-        const depsWithVersions = Object.entries(pkgJson.dependencies);
-        const libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
+        // Starting at the path to this module, we must work backwards to get the including project's package.json
+        // expecting a path like [path/to/project/node_modules/@scout_apm/scout-apm/....]
+        let projectRootDir = __filename;
+        let libraries = [];
+        // If we see the path pattern we expect (@scout_apm/scout-apm nested in a node module)
+        // then get the project's libraries
+        if (projectRootDir.includes(CONFIG_MODULE_INSIDE_NODE_MODULES)) {
+            // Go up seven directories to make it from the types folder to the containing project root
+            projectRootDir = [...Array(7)].reduce((acc) => path.dirname(acc), projectRootDir);
+            const pkgJsonPath = path.join(projectRootDir, "package.json");
+            const pkgJson = require(pkgJsonPath) || { dependencies: [], version: "unknown" };
+            const depsWithVersions = Object.entries(pkgJson.dependencies);
+            libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
+        }
         this.language = "nodejs";
         this.languageVersion = process_1.version;
         this.serverTime = new Date().toISOString();
