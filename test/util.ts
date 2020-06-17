@@ -274,6 +274,26 @@ export function appWithGETSynchronousError(
     return app;
 }
 
+export function appWithHTTPProxyMiddleware(
+    middleware: any,
+    proxyTarget: string,
+): Application {
+    const app = express();
+    app.use(middleware);
+
+    const { createProxyMiddleware } = require("http-proxy-middleware");
+
+    app.get("/", createProxyMiddleware({
+        target: proxyTarget,
+        changeOrigin: true,
+        onError: (err, req, res) => {
+            res.status(503).end();
+        },
+    }));
+
+    return app;
+}
+
 // An express application which performs a bunch of trivial SQL queries and renders a template that uses the reuslts
 export function queryAndRenderRandomNumbers(
     middleware: any,

@@ -3,13 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
-class HttpIntegration extends integrations_1.RequireIntegration {
+class HTTPIntegration extends integrations_1.RequireIntegration {
     constructor() {
         super(...arguments);
         this.packageName = "http";
     }
     shim(httpExport) {
-        httpExport = this.shimHttpRequest(httpExport);
+        httpExport = this.shimHTTPRequest(httpExport);
+        // NOTE: Order here matters, the shimmed http.get depends on http.request already being shimmed
+        httpExport = this.shimHTTPGet(httpExport);
         return httpExport;
     }
     /**
@@ -17,7 +19,7 @@ class HttpIntegration extends integrations_1.RequireIntegration {
      *
      * @param {any} httpExport - http's export
      */
-    shimHttpRequest(httpExport) {
+    shimHTTPRequest(httpExport) {
         const originalFn = httpExport.request;
         const integration = this;
         const request = function () {
@@ -57,11 +59,24 @@ class HttpIntegration extends integrations_1.RequireIntegration {
             }
             else {
                 method = urlOrObject.method || "Unknown";
+                // Determine protocol, set to HTTPS if not present but port if 443
+                let protocol = urlOrObject.protocol;
+                if (!protocol) {
+                    protocol = urlOrObject.port === 443 ? "https" : "http";
+                }
+                // Determine port, only show port if it's a non-standard port
+                let port = urlOrObject.port;
+                if (typeof port === "string") {
+                    port = parseInt(port, 10);
+                }
+                if (port && port === 443 || port === 80) {
+                    port = undefined;
+                }
                 url = [
-                    urlOrObject.protocol,
-                    "//",
+                    protocol,
+                    "://",
                     urlOrObject.hostname || "localhost",
-                    urlOrObject.port ? `:${urlOrObject.port}` : "",
+                    port ? `:${port}` : "",
                     urlOrObject.path,
                 ].join("") || "Unknown";
             }
@@ -100,6 +115,25 @@ class HttpIntegration extends integrations_1.RequireIntegration {
         httpExport.request = request;
         return httpExport;
     }
+    /**
+     * Shim for http's `get` function
+     * `get` has to be shimmed because it uses the defined version of `request`
+     * which is exported, but cannot be reassigned externally
+     *
+     * @param {any} httpExport - http's export
+     */
+    shimHTTPGet(httpExport) {
+        const integration = this;
+        // http://github.com/nodejs/node/blob/master/lib/http.js#L315
+        // Since the original function is so small we just replace it, making sure
+        // to use the shiimmed version (on the export object)
+        httpExport.get = function () {
+            const req = httpExport.request.apply(this, arguments);
+            req.end();
+            return req;
+        };
+        return httpExport;
+    }
 }
-exports.HttpIntegration = HttpIntegration;
-exports.default = new HttpIntegration();
+exports.HTTPIntegration = HTTPIntegration;
+exports.default = new HTTPIntegration();

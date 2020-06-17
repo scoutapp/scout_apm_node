@@ -31,6 +31,7 @@ setupRequireIntegrations([
     "nuxt",
     // NodeJS internals
     "http",
+    "https",
 ]);
 const API = {
     // Configuration building
