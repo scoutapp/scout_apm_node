@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const os_1 = require("os");
 const process_1 = require("process");
 const os = require("os");
+const fs = require("fs");
 const path = require("path");
 const app_root_path_1 = require("app-root-path");
 const enum_1 = require("./enum");
@@ -21,20 +22,6 @@ const CONFIG_MODULE_INSIDE_NODE_MODULES = [
 ].join(path.sep);
 class ApplicationMetadata {
     constructor(config, opts) {
-        // Starting at the path to this module, we must work backwards to get the including project's package.json
-        // expecting a path like [path/to/project/node_modules/@scout_apm/scout-apm/....]
-        let projectRootDir = __filename;
-        let libraries = [];
-        // If we see the path pattern we expect (@scout_apm/scout-apm nested in a node module)
-        // then get the project's libraries
-        if (projectRootDir.includes(CONFIG_MODULE_INSIDE_NODE_MODULES)) {
-            // Go up seven directories to make it from the types folder to the containing project root
-            projectRootDir = [...Array(7)].reduce((acc) => path.dirname(acc), projectRootDir);
-            const pkgJsonPath = path.join(projectRootDir, "package.json");
-            const pkgJson = require(pkgJsonPath) || { dependencies: [], version: "unknown" };
-            const depsWithVersions = Object.entries(pkgJson.dependencies);
-            libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
-        }
         this.language = "nodejs";
         this.languageVersion = process_1.version;
         this.serverTime = new Date().toISOString();
@@ -46,7 +33,7 @@ class ApplicationMetadata {
         this.databaseEngine = "";
         this.databaseAdapter = "";
         this.applicationName = config.name || "";
-        this.libraries = libraries;
+        this.libraries = [];
         this.paas = "";
         this.applicationRoot = config.applicationRoot || "";
         this.scmSubdirectory = config.scmSubdirectory || "";
@@ -103,6 +90,57 @@ class ApplicationMetadata {
             }
             if (opts.scmSubdirectory) {
                 this.scmSubdirectory = opts.scmSubdirectory;
+            }
+        }
+        // Attempt to derive the libraries used by the project
+        if (!this.libraries || this.libraries.length === 0) {
+            let pkgJsonPath;
+            // If applicationRoot was provided then use it
+            const applicationRootDirExists = this.applicationRoot &&
+                fs.existsSync(this.applicationRoot) &&
+                fs.lstatSync(this.applicationRoot).isDirectory();
+            if (applicationRootDirExists) {
+                pkgJsonPath = path.join(this.applicationRoot, "package.json");
+                // If a package json exists at the applicationRoot folder, attempt to load it
+                if (fs.existsSync(pkgJsonPath)) {
+                    try {
+                        const pkgJson = require(pkgJsonPath) || { dependencies: [], version: "unknown" };
+                        const depsWithVersions = Object.entries(pkgJson.dependencies);
+                        this.libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
+                    }
+                    catch (_a) {
+                        // If the require has failed or package.json is malformed
+                        // tslint:disable-next-line:no-console
+                        console.log(`package.json at [${pkgJsonPath}] is malformed/couldn't be read`);
+                    }
+                    return;
+                }
+            }
+            // If the applicationRoot was *not* provided, then attempt to get to package json
+            // from the installed @scout_apm/scout-apm config.js file
+            // Starting at the path to this module, we must work backwards to get the including project's package.json
+            // expecting a path like [path/to/project/node_modules/@scout_apm/scout-apm/....]
+            let projectRootDir = __filename;
+            // If we see the path pattern we expect (@scout_apm/scout-apm nested in a node module)
+            // then get the project's libraries
+            if (projectRootDir.includes(CONFIG_MODULE_INSIDE_NODE_MODULES)) {
+                // Go up seven directories to make it from the types folder to the containing project root
+                projectRootDir = [...Array(7)].reduce((acc) => path.dirname(acc), projectRootDir);
+                const pkgJsonPath = path.join(projectRootDir, "package.json");
+                // If a package json exists at the root, attempt ot load it
+                if (fs.existsSync(pkgJsonPath)) {
+                    try {
+                        const pkgJson = require(pkgJsonPath) || { dependencies: [], version: "unknown" };
+                        const depsWithVersions = Object.entries(pkgJson.dependencies);
+                        this.libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
+                    }
+                    catch (_b) {
+                        // If the require has failed or package.json is malformed
+                        // tslint:disable-next-line:no-console
+                        console.log(`package.json at [${pkgJsonPath}] is malformed/couldn't be read`);
+                    }
+                    return;
+                }
             }
         }
     }
