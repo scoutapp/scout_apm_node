@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.10-rc.2] - 2020-06-19
+
+### Changed
+- HOTFIX: support for externally located `node_modules` folders during library resolution ([PR](https://github.com/scoutapp/scout_apm_node/pull/215))
+
 ## [0.1.10-rc.1] - 2020-06-18
 
 ### Added
@@ -99,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10-rc.1...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10-rc.2...HEAD
+[0.1.10-rc.2]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10-rc.1...v0.1.10-rc.2
 [0.1.10-rc.1]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10-rc.0...v0.1.10-rc.1
 [0.1.10-rc.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.9...v0.1.10-rc.0
 [0.1.9]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.9-rc.0...v0.1.9
