@@ -149,3 +149,9 @@ Scoutは様々欲使われてるライブラリやフレームワークのプラ
 ### ExpressJS ###
 
 ExpressJSのプラグインについては`docs/integrations/express.md`をご参照してください。
+
+## FAQ / 注意ポイント ##
+
+### 共有された`node_modules`のプロジェクトに`applicationRoot`設定は必要 ###
+
+プロジェクト外の`node_modules`フォルダーを使ってる場合にはマニュアルで`applicationRoot`を設定することが必要になります。マニュアルで設定するとスカウトのエージェントが`package.json`を見つけることが出きる用になります。

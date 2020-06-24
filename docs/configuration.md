@@ -147,3 +147,9 @@ Scout offers various integrations for often-used libraries and frameworks in the
 ### Express ###
 
 For more information on how the express integration works (and how to configure it), see `docs/integrations/express.md`
+
+## FAQ / Gotchas ##
+
+### Configure `applicationRoot` for shared node_modules ###
+
+If your project uses a shared/external `node_modules` folder, you should manually set `applicationRoot` so that the scout agent can find your `package.json` and accurately report dependencies.
