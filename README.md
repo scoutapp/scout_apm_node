@@ -61,7 +61,15 @@ process.on('exit', () => {
 });
 
 // Start application
-app.listen(3000);
+async function start() {
+  // Install and wait for scout
+  await scout.install();
+
+  // Start the server
+  app.listen(3000);
+}
+
+if require.main === module { start(); }
 ```
 
 In addition to specifying `app` and `name` in the `config` object when building the middleware, you may also specify it via ENV by setting `SCOUT_NAME` and `SCOUT_APP` as environment variables for the process.
