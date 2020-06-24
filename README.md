@@ -31,17 +31,6 @@ const scout = require("@scout_apm/scout-apm");
 const process = require("process");
 const express = require("express");
 
-// Set up scout (this returns a Promise you may wait on if desired)
-scout.install(
-  {
-    allowShutdown: true, // allow shutting down spawned scout-agent processes from this program
-    monitor: true, // enable monitoring
-    name: "<application name>",
-    key: "<scout key>",
-  },
-);
-
-
 // Initialize the express application
 const app = express();
 
@@ -50,6 +39,10 @@ app.use(scout.expressMiddleware());
 
 // Set up the routes for the application
 app.get('/', function (req, res) {
+  // Add some custom context to the request synchronously
+  // In an asynchronous context, `await` or `.then` can be used with `scout.api.Context.add`
+  scout.api.Context.addSync("custom_name", "custom_value);
+
   res.send('hello, world!');
 });
 
@@ -61,7 +54,22 @@ process.on('exit', () => {
 });
 
 // Start application
-app.listen(3000);
+async function start() {
+  // Install and wait for scout to set up
+  await scout.install({
+    monitor: true, // enable monitoring
+    name: "<application name>",
+    key: "<scout key>",
+
+    // allow scout to be shutdown when the process exits
+    allowShutdown: true,
+  });
+
+  // Start the server
+  app.listen(3000);
+}
+
+if require.main === module { start(); }
 ```
 
 In addition to specifying `app` and `name` in the `config` object when building the middleware, you may also specify it via ENV by setting `SCOUT_NAME` and `SCOUT_APP` as environment variables for the process.
@@ -69,6 +77,24 @@ In addition to specifying `app` and `name` in the `config` object when building 
 If your `core-agent` instance is running externally and you do not need `@scout_apm/scout-apm` to start it, you can set the `coreAgentLaunch` setting to `false` or specify the ENV variable `SCOUT_CORE_AGENT_LAUNCH` with value `false`.
 
 For more information on configuration, see `docs/configuration.md`
+
+## Supported module integrations ##
+
+`@scout_apm/scout-apm` supports a variety of modules and
+
+| Name       | Status | Description                                                                          |
+|------------|--------|--------------------------------------------------------------------------------------|
+| `net`      | STABLE | NodeJS standard library `net` module                                                 |
+| `http`     | STABLE | NodeJS standard library `http` module                                                |
+| `https`    | STABLE | NodeJS standard library `https` module                                               |
+| `ejs`      | STABLE | [EJS](https://www.npmjs.com/package/ejs) templating library                          |
+| `mustache` | STABLE | [Mustache](https://github.com/janl/mustache.js/) templating library                  |
+| `pug`      | STABLE | [Pug](https://pugjs.org/api/getting-started.html) (formerly Jade) templating library |
+| `mysql`    | STABLE | [Mysql](https://www.npmjs.com/package/mysql) database driver                         |
+| `mysql2`   | STABLE | [Mysql2](https://www.npmjs.com/package/mysql2) database driver                       |
+| `pg`       | STABLE | [Postgres](https://www.npmjs.com/package/postgres) database driver                   |
+| `express`  | STABLE | [Express](https://www.npmjs.com/package/express) web framework                       |
+| `nuxt`     | ALPHA  | [Nuxt](https://www.npmjs.com/package/nuxt) web framework                             |
 
 ## Using `@scout_apm/scout-apm` with other frameworks ##
 

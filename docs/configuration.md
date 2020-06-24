@@ -106,6 +106,27 @@ enum URIReportingLevel {
 }
 ```
 
+## `ScoutOptions` ##
+
+A `ScoutOptions` object can also be provided to either `scout.install` or `buildScoutConfiguration` with the following interface:
+
+```typscript
+interface ScoutOptions {
+    logFn?: LogFn;
+    downloadOptions?: Partial<AgentDownloadOptions>;
+    appMeta?: ApplicationMetadata;
+    slowRequestThresholdMs?: number;
+}
+```
+
+| Value                    | Type                            | Description                                                                                                                     |
+|                          |                                 |                                                                                                                                 |
+|--------------------------|---------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| `logFn`                  | `LogFn`                         | A function that takes a log and level and writes a log message (ex. `scout.consoleLogFn` or `scout.buildWinstonLogFn(winston)`) |
+| `downloadOptions`        | `Partial<AgentDownloadOptions>` | Options that can be set to control how the `core-agent` is downloaded                                                           |
+| `appMeta`                | `ApplicationMetadata`           | Custom application metadata                                                                                                     |
+| `slowRequestThresholdMs` | `number`                        | The threshold at which a request should be considered slow (in milliseconds)                                                    |
+
 ## Override Behavior ##
 
 If a value is specified at both ENV and the application level, then the *top most* level overrides the lower layers.
@@ -118,6 +139,7 @@ As an example, in a scenario where configuration is specified in the following m
 
 The Scout agent will use a name of `"my-app-from-env"` -- the ENV value overrides the application-specified value, and the default.
 
+
 ## Integrations ##
 
 Scout offers various integrations for often-used libraries and frameworks in the NodeJS ecosystem. Cursory configuration information regarding each is listed below (please consult integration-specific documentation for more details).
@@ -125,3 +147,9 @@ Scout offers various integrations for often-used libraries and frameworks in the
 ### Express ###
 
 For more information on how the express integration works (and how to configure it), see `docs/integrations/express.md`
+
+## FAQ / Gotchas ##
+
+### Configure `applicationRoot` for shared node_modules ###
+
+If your project uses a shared/external `node_modules` folder, you should manually set `applicationRoot` so that the scout agent can find your `package.json` and accurately report dependencies.
