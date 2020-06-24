@@ -109,6 +109,27 @@ enum URIReportingLevel {
 }
 ```
 
+## `ScoutOptions` ##
+
+`ScoutConfiguration`とともに`ScoutOptions`のオブジェクトを使って設定出来ます。`scout.install`と`buildScoutConfiguration`のファンクションにも`ScoutOption`を使える:
+
+```typscript
+interface ScoutOptions {
+    logFn?: LogFn;
+    downloadOptions?: Partial<AgentDownloadOptions>;
+    appMeta?: ApplicationMetadata;
+    slowRequestThresholdMs?: number;
+}
+```
+
+| Value                    | Type                            | Description                                                                                                             |
+|                          |                                 |                                                                                                                         |
+|--------------------------|---------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| `logFn`                  | `LogFn`                         | ログレベルとメッセージを取って保存出来るファンクション (例: `scout.consoleLogFn` or `scout.buildWinstonLogFn(winston)`) |
+| `downloadOptions`        | `Partial<AgentDownloadOptions>` | `core-agent`がダウンロードされる時の設定                                                                                |
+| `appMeta`                | `ApplicationMetadata`           | アプリKションのメタデータ                                                                                               |
+| `slowRequestThresholdMs` | `number`                        | リクエストがスローと判断するリミット (ミリ秒)                                                                           |
+
 ## オーバーライド仕組み ##
 
 同時に環境バリアブルとアプリ内のバリューを設定する場合には、一番リストに早い方の勝ちです。
