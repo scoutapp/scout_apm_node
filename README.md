@@ -60,6 +60,9 @@ async function start() {
     monitor: true, // enable monitoring
     name: "<application name>",
     key: "<scout key>",
+
+    // allow scout to be shutdown when the process exits
+    allowShutdown: true,
   });
 
   // Start the server
