@@ -104,7 +104,9 @@ export class HTTPIntegration extends RequireIntegration {
 
             // If the request times out at any point add the context to the span
             request.once("timeout", () => {
-                reqSpan.addContext(ScoutContextName.Timeout, "true");
+                if (reqSpan) {
+                    reqSpan.addContext(ScoutContextName.Timeout, "true");
+                }
             });
 
             // After the request has started we'll finish the instrumentation
@@ -114,7 +116,9 @@ export class HTTPIntegration extends RequireIntegration {
             });
 
             request.once("error", () => {
-                reqSpan.addContext(ScoutContextName.Error, "true");
+                if (reqSpan) {
+                    reqSpan.addContext(ScoutContextName.Error, "true");
+                }
             });
 
             request.once("close", () => {

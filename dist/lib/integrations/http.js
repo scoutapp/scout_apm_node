@@ -97,7 +97,9 @@ class HTTPIntegration extends integrations_1.RequireIntegration {
             const request = originalFn.apply(this, originalArgsArr);
             // If the request times out at any point add the context to the span
             request.once("timeout", () => {
-                reqSpan.addContext(types_1.ScoutContextName.Timeout, "true");
+                if (reqSpan) {
+                    reqSpan.addContext(types_1.ScoutContextName.Timeout, "true");
+                }
             });
             // After the request has started we'll finish the instrumentation
             // this is in contrast to stopping only on close
@@ -105,7 +107,9 @@ class HTTPIntegration extends integrations_1.RequireIntegration {
                 stopSpan();
             });
             request.once("error", () => {
-                reqSpan.addContext(types_1.ScoutContextName.Error, "true");
+                if (reqSpan) {
+                    reqSpan.addContext(types_1.ScoutContextName.Error, "true");
+                }
             });
             request.once("close", () => {
                 stopSpan();

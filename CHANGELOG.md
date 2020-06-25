@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11-rc.0] - 2020-06-25
+
+### Changed
+- bugfix/219 Timed out requests cause errors during context addition ([#219](https://github.com/scoutapp/scout_apm_node/issues/219))
+- bugfix/214 Better documentation around integrations, waiting for setup ([#214](https://github.com/scoutapp/scout_apm_node/issues/214))
+
 ## [0.1.10] - 2020-06-23
 
 ### Changed
@@ -109,7 +115,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.0...HEAD
+[0.1.11-rc.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10...v0.1.11-rc.0
 [0.1.10]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10-rc.2...v0.1.10
 [0.1.10-rc.2]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10-rc.1...v0.1.10-rc.2
 [0.1.10-rc.1]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10-rc.0...v0.1.10-rc.1
