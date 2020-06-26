@@ -97,6 +97,10 @@ class Scout extends events_1.EventEmitter {
         if (this.agent) {
             return Promise.resolve(this);
         }
+        // If setting up has already begun return that
+        if (this.settingUp) {
+            return this.settingUp;
+        }
         this.log("[scout] setting up scout...", types_1.LogLevel.Debug);
         const shouldLaunch = this.config.coreAgentLaunch;
         // If the socket path exists then we may be able to skip downloading and launching

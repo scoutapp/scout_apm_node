@@ -23,7 +23,8 @@ export function convertCamelCaseToEnvVar(prop: string): string {
  */
 export function consoleLogFn(message: string, level?: LogLevel) {
     level = level || LogLevel.Info;
-    const msg = `[${level.toUpperCase()}] ${message}`;
+    const time = new Date().toISOString();
+    const msg = `[${time}] [${level.toUpperCase()}] ${message}`;
 
     switch (level) {
         case LogLevel.Warn:

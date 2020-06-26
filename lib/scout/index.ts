@@ -195,6 +195,9 @@ export class Scout extends EventEmitter {
         // Return early if agent has already been set up
         if (this.agent) { return Promise.resolve(this); }
 
+        // If setting up has already begun return that
+        if (this.settingUp) { return this.settingUp; }
+
         this.log("[scout] setting up scout...", LogLevel.Debug);
 
         const shouldLaunch = this.config.coreAgentLaunch;

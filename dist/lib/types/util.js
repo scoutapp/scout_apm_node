@@ -15,7 +15,8 @@ exports.convertCamelCaseToEnvVar = convertCamelCaseToEnvVar;
  */
 function consoleLogFn(message, level) {
     level = level || enum_1.LogLevel.Info;
-    const msg = `[${level.toUpperCase()}] ${message}`;
+    const time = new Date().toISOString();
+    const msg = `[${time}] [${level.toUpperCase()}] ${message}`;
     switch (level) {
         case enum_1.LogLevel.Warn:
             console.warn(msg); // tslint:disable-line no-console
