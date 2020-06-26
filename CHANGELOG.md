@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11-rc.1] - 2020-06-26
+
+### Changed
+- bugfix/221 Fix setup being repeatedly performed during initial requests ([#221](https://github.com/scoutapp/scout_apm_node/issues/221))
+
 ## [0.1.11-rc.0] - 2020-06-25
 
 ### Changed
@@ -115,7 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.0...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.1...HEAD
+[0.1.11-rc.1]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.0...v0.1.11-rc.1
 [0.1.11-rc.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10...v0.1.11-rc.0
 [0.1.10]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10-rc.2...v0.1.10
 [0.1.10-rc.2]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10-rc.1...v0.1.10-rc.2
