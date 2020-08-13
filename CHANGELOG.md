@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11-rc.1] - 2020-08-13
+
+### Changed
+- bugfix/226 Add warning when config was missing during `scout.install`, support remembering config used in `scout.install`/`scout.expressMiddleware`) ([#226](https://github.com/scoutapp/scout_apm_node/issues/226))
+
 ## [0.1.11-rc.1] - 2020-06-26
 
 ### Changed
@@ -120,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.1...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.2...HEAD
+[0.1.11-rc.2]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.1...v0.1.11-rc.2
 [0.1.11-rc.1]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.0...v0.1.11-rc.1
 [0.1.11-rc.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10...v0.1.11-rc.0
 [0.1.10]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.10-rc.2...v0.1.10
