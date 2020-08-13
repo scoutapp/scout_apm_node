@@ -41,7 +41,7 @@ app.use(scout.expressMiddleware());
 app.get('/', function (req, res) {
   // Add some custom context to the request synchronously
   // In an asynchronous context, `await` or `.then` can be used with `scout.api.Context.add`
-  scout.api.Context.addSync("custom_name", "custom_value);
+  scout.api.Context.addSync("custom_name", "custom_value");
 
   res.send('hello, world!');
 });
