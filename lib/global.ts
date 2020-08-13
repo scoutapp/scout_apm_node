@@ -10,6 +10,10 @@ export const EXPORT_BAG: ExportBag = {};
 let SCOUT_INSTANCE: Scout | null;
 let creating: Promise<Scout> | null;
 
+// Last set of configuration used
+let LAST_USED_CONFIG: Partial<ScoutConfiguration> | null = null;
+let LAST_USED_OPTS: ScoutOptions | null = null;
+
 /**
  * Set the active global scout instance
  *
@@ -52,6 +56,30 @@ export function getOrCreateActiveGlobalScoutInstance(
 ): Promise<Scout> {
     if (SCOUT_INSTANCE && !SCOUT_INSTANCE.isShutdown()) { return SCOUT_INSTANCE.setup(); }
     if (creating) { return creating; }
+
+    // If config/opts were provided, save them
+    if (config) { setGlobalLastUsedConfiguration(config); }
+    if (opts) { setGlobalLastUsedOptions(opts); }
+
+    // If no configuration was passed for scout, alert the user
+    if (!config) {
+        // tslint:disable-next-line no-console
+        console.log("[scout] no configuration provided, one will be created from ENV & defaults");
+    }
+
+    // If config and/or opts weren't provided but they *were* provided previously to a different setup method
+    // ex. scout.expressMiddleware({ ... }) is called, and scout.install() is called afterwards
+    // see: https://github.com/scoutapp/scout_apm_node/issues/226
+    if (!config && LAST_USED_CONFIG) {
+        config = LAST_USED_CONFIG;
+        LAST_USED_CONFIG = null;
+    }
+    if (!opts && LAST_USED_OPTS) {
+        opts = LAST_USED_OPTS;
+        LAST_USED_OPTS = null;
+    }
+
+    if (!config && LAST_USED_CONFIG) { config = LAST_USED_CONFIG; }
 
     const instance = new Scout(buildScoutConfiguration(config), opts);
     setActiveGlobalScoutInstance(instance);
@@ -107,4 +135,22 @@ export function shutdownActiveGlobalScoutInstance(): Promise<void> {
  */
 export function isActiveGlobalScoutInstance(scout: Scout): boolean {
     return scout === SCOUT_INSTANCE;
+}
+
+/**
+ * Set the last used scout configuration, to support flexibility in setup from middleware or scout.install()
+ *
+ * @param {Partial<ScoutConfiguration>} config
+ */
+export function setGlobalLastUsedConfiguration(config: Partial<ScoutConfiguration>): void {
+    LAST_USED_CONFIG = config;
+}
+
+/**
+ * Set the last used scout options, to support flexibility in setup from middleware or scout.install()
+ *
+ * @param {Partial<ScoutOptsuration>} opts
+ */
+export function setGlobalLastUsedOptions(opts: ScoutOptions): void {
+    LAST_USED_OPTS = opts;
 }

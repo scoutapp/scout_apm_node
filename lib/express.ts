@@ -14,6 +14,8 @@ import { Scout, ScoutRequest, ScoutSpan, ScoutOptions } from "./scout";
 import {
     getActiveGlobalScoutInstance,
     getOrCreateActiveGlobalScoutInstance,
+    setGlobalLastUsedConfiguration,
+    setGlobalLastUsedOptions,
 } from "./global";
 
 export interface ApplicationWithScout {
@@ -53,6 +55,17 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
     // A cache for frequently hit middlewares (which are often routes like  sorts for
     const commonRouteMiddlewares: any[] = [];
 
+    // Build configuration overrides
+    const overrides = opts && opts.config ? opts.config : {};
+    const config: Partial<ScoutConfiguration> = buildScoutConfiguration(overrides);
+    const options: ScoutOptions = {
+        logFn: opts && opts.logFn ? opts.logFn : undefined,
+    };
+
+    // Set the last used configurations
+    setGlobalLastUsedConfiguration(config);
+    setGlobalLastUsedOptions(options);
+
     return (req: any, res: any, next: () => void) => {
         // If there is no global scout instance yet and no scout instance just go to next middleware immediately
         const scout = opts && opts.scout ? opts.scout : req.app.scout || getActiveGlobalScoutInstance();
@@ -60,13 +73,6 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // Build a closure that installs scout (and waits on it)
         // depending on whether waitForScoutSetup is set we will run this in the background or inline
         const setupScout = () => {
-            // Build configuration overrides
-            const overrides = opts && opts.config ? opts.config : {};
-            const config: Partial<ScoutConfiguration> = buildScoutConfiguration(overrides);
-            const options: ScoutOptions = {
-                logFn: opts && opts.logFn ? opts.logFn : undefined,
-            };
-
             // If app doesn't already have a scout instance *and* no active global one is present, create one
             return getOrCreateActiveGlobalScoutInstance(config, options)
                 .then(scout => req.app.scout = scout);

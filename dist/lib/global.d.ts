@@ -43,3 +43,15 @@ export declare function shutdownActiveGlobalScoutInstance(): Promise<void>;
  * @returns {boolean} whether the scout is same instance
  */
 export declare function isActiveGlobalScoutInstance(scout: Scout): boolean;
+/**
+ * Set the last used scout configuration, to support flexibility in setup from middleware or scout.install()
+ *
+ * @param {Partial<ScoutConfiguration>} config
+ */
+export declare function setGlobalLastUsedConfiguration(config: Partial<ScoutConfiguration>): void;
+/**
+ * Set the last used scout options, to support flexibility in setup from middleware or scout.install()
+ *
+ * @param {Partial<ScoutOptsuration>} opts
+ */
+export declare function setGlobalLastUsedOptions(opts: ScoutOptions): void;

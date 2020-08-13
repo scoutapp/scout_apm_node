@@ -16,18 +16,21 @@ const global_1 = require("./global");
 function scoutMiddleware(opts) {
     // A cache for frequently hit middlewares (which are often routes like  sorts for
     const commonRouteMiddlewares = [];
+    // Build configuration overrides
+    const overrides = opts && opts.config ? opts.config : {};
+    const config = types_1.buildScoutConfiguration(overrides);
+    const options = {
+        logFn: opts && opts.logFn ? opts.logFn : undefined,
+    };
+    // Set the last used configurations
+    global_1.setGlobalLastUsedConfiguration(config);
+    global_1.setGlobalLastUsedOptions(options);
     return (req, res, next) => {
         // If there is no global scout instance yet and no scout instance just go to next middleware immediately
         const scout = opts && opts.scout ? opts.scout : req.app.scout || global_1.getActiveGlobalScoutInstance();
         // Build a closure that installs scout (and waits on it)
         // depending on whether waitForScoutSetup is set we will run this in the background or inline
         const setupScout = () => {
-            // Build configuration overrides
-            const overrides = opts && opts.config ? opts.config : {};
-            const config = types_1.buildScoutConfiguration(overrides);
-            const options = {
-                logFn: opts && opts.logFn ? opts.logFn : undefined,
-            };
             // If app doesn't already have a scout instance *and* no active global one is present, create one
             return global_1.getOrCreateActiveGlobalScoutInstance(config, options)
                 .then(scout => req.app.scout = scout);
