@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getIntegrationForPackage = void 0;
 const pg_1 = require("./pg");
 const mysql_1 = require("./mysql");
 const mysql2_1 = require("./mysql2");

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.buildProcessOptions = exports.buildDownloadOptions = exports.buildScoutConfiguration = exports.ScoutConfigurationProxy = exports.generateTriple = exports.detectPlatformTriple = exports.DEFAULT_SCOUT_CONFIGURATION = exports.ApplicationMetadata = void 0;
 const os_1 = require("os");
 const process_1 = require("process");
 const os = require("os");

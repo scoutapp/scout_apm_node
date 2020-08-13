@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.setGlobalLastUsedOptions = exports.setGlobalLastUsedConfiguration = exports.isActiveGlobalScoutInstance = exports.shutdownActiveGlobalScoutInstance = exports.getOrCreateActiveGlobalScoutInstanceNonBlocking = exports.getOrCreateActiveGlobalScoutInstance = exports.getActiveGlobalScoutInstance = exports.setActiveGlobalScoutInstance = exports.EXPORT_BAG = void 0;
 const scout_1 = require("./scout");
 const types_1 = require("./types");
 const Errors = require("./errors");
@@ -8,6 +9,9 @@ exports.EXPORT_BAG = {};
 // Global scout instance
 let SCOUT_INSTANCE;
 let creating;
+// Last set of configuration used
+let LAST_USED_CONFIG = null;
+let LAST_USED_OPTS = null;
 /**
  * Set the active global scout instance
  *
@@ -48,6 +52,32 @@ function getOrCreateActiveGlobalScoutInstance(config, opts) {
     }
     if (creating) {
         return creating;
+    }
+    // If config/opts were provided, save them
+    if (config) {
+        setGlobalLastUsedConfiguration(config);
+    }
+    if (opts) {
+        setGlobalLastUsedOptions(opts);
+    }
+    // If no configuration was passed for scout, alert the user
+    if (!config) {
+        // tslint:disable-next-line no-console
+        console.log("[scout] no configuration provided, one will be created from ENV & defaults");
+    }
+    // If config and/or opts weren't provided but they *were* provided previously to a different setup method
+    // ex. scout.expressMiddleware({ ... }) is called, and scout.install() is called afterwards
+    // see: https://github.com/scoutapp/scout_apm_node/issues/226
+    if (!config && LAST_USED_CONFIG) {
+        config = LAST_USED_CONFIG;
+        LAST_USED_CONFIG = null;
+    }
+    if (!opts && LAST_USED_OPTS) {
+        opts = LAST_USED_OPTS;
+        LAST_USED_OPTS = null;
+    }
+    if (!config && LAST_USED_CONFIG) {
+        config = LAST_USED_CONFIG;
     }
     const instance = new scout_1.Scout(types_1.buildScoutConfiguration(config), opts);
     setActiveGlobalScoutInstance(instance);
@@ -98,3 +128,21 @@ function isActiveGlobalScoutInstance(scout) {
     return scout === SCOUT_INSTANCE;
 }
 exports.isActiveGlobalScoutInstance = isActiveGlobalScoutInstance;
+/**
+ * Set the last used scout configuration, to support flexibility in setup from middleware or scout.install()
+ *
+ * @param {Partial<ScoutConfiguration>} config
+ */
+function setGlobalLastUsedConfiguration(config) {
+    LAST_USED_CONFIG = config;
+}
+exports.setGlobalLastUsedConfiguration = setGlobalLastUsedConfiguration;
+/**
+ * Set the last used scout options, to support flexibility in setup from middleware or scout.install()
+ *
+ * @param {Partial<ScoutOptsuration>} opts
+ */
+function setGlobalLastUsedOptions(opts) {
+    LAST_USED_OPTS = opts;
+}
+exports.setGlobalLastUsedOptions = setGlobalLastUsedOptions;

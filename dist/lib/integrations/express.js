@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ExpressIntegration = void 0;
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 const stacktrace_js_1 = require("stacktrace-js");
