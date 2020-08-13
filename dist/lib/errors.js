@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.InstanceNotReady = exports.InvalidConfiguration = exports.NoActiveParentContext = exports.NoAgentPresent = exports.MonitoringDisabled = exports.AgentLaunchDisabled = exports.ConnectionPoolDisabled = exports.FinishedRequest = exports.NotSupported = exports.ResourceAllocationFailureLimitExceeded = exports.ResourceAllocationFailure = exports.MissingRequiredFeature = exports.RequestDoesNotPromptResponse = exports.ExternalDownloadDisallowed = exports.UnrecognizedAgentResponse = exports.MalformedAgentResponse = exports.Disconnected = exports.NoProcessReference = exports.InvalidAgentDownloadConfig = exports.UnexpectedError = exports.UnsupportedVersion = exports.InvalidVersion = exports.NotImplemented = exports.ErrorCode = void 0;
 var promise_timeout_1 = require("promise-timeout");
-exports.TimeoutError = promise_timeout_1.TimeoutError;
+Object.defineProperty(exports, "TimeoutError", { enumerable: true, get: function () { return promise_timeout_1.TimeoutError; } });
 var ErrorCode;
 (function (ErrorCode) {
     ErrorCode[ErrorCode["NotImplemented"] = 0] = "NotImplemented";

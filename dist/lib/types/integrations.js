@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.doNothingRequireIntegration = exports.RequireIntegration = exports.getIntegrationSymbol = void 0;
 const Hook = require("require-in-the-middle");
 const enum_1 = require("../types/enum");
 const global_1 = require("../global");

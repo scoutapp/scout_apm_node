@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.scoutMiddleware = void 0;
 const onFinished = require("on-finished");
 const types_1 = require("./types");
 const Constants = require("./constants");

@@ -70,7 +70,7 @@ export class HTTPIntegration extends RequireIntegration {
                 if (!protocol) { protocol = urlOrObject.port === 443 ? "https" : "http"; }
 
                 // Determine port, only show port if it's a non-standard port
-                let port: string | number | undefined = urlOrObject.port;
+                let port: string | number | null | undefined = urlOrObject.port;
                 if (typeof port === "string") { port = parseInt(port, 10); }
                 if (port && port === 443 || port === 80) { port = undefined; }
 

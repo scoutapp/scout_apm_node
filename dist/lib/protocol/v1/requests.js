@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.V1ApplicationEvent = exports.V1TagSpan = exports.V1StopSpan = exports.V1StartSpan = exports.V1TagRequest = exports.V1FinishRequest = exports.V1StartRequest = exports.V1Register = exports.V1GetVersionRequest = void 0;
 const uuid_1 = require("uuid");
 const Constants = require("../../constants");
 const types_1 = require("../../types");

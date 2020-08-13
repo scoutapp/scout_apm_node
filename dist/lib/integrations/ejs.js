@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.EJSIntegration = void 0;
 const path = require("path");
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
