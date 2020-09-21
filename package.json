@@ -49,6 +49,7 @@
     "express": "^4.16.4",
     "get-port": "^5.1.0",
     "http-proxy-middleware": "^1.0.4",
+    "loadtest": "^5.1.0",
     "mustache": "^4.0.0",
     "mustache-express": "^1.3.0",
     "mysql": "^2.17.1",
