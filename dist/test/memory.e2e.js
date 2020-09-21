@@ -31,7 +31,7 @@ const loadTest = util_1.promisify(loadtest_1.loadTest);
 const LOAD_TEST_CONCURRENCY = parseInt(process.env.LOAD_TEST_CONCURRENCY || "5", 10);
 const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS || "10", 10);
 const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "10", 10);
-const MEMORY_USAGE_BOUND_MULTIPLIER = 1.5;
+const MEMORY_USAGE_BOUND_MULTIPLIER = 1.25;
 const DEFAULT_LOADTEST_OPTIONS = {
     concurrency: LOAD_TEST_CONCURRENCY,
     method: "GET",
