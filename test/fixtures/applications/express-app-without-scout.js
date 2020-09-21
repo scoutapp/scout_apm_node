@@ -1,40 +1,29 @@
 /* global module, process, require */
-
-// Work out the relative path of ScoutJS compiled lib
-const path = require("path");
-console.log("path:", path.resolve(path.join(__dirname, '../../../dist/lib')));
-
-const scout = require('../../../dist/lib');
 const express = require('express');
 
-// Setup process message hooks
+// Report memory usage
 process.on("message", msg => {
   if (!msg) { return; }
 
   // Handle memory usage requests
-  if (msg === "report-memory-usage") {
+  if (msg === "get-memory-usage") {
     process.send({
       msgType: "memory-usage-report",
-      memoryUsageJSON: JSON.stringify(process.memoryUsage()),
+      memoryUsageJSON: process.memoryUsage(),
     });
   }
 });
 
 // Setup express server
 const server = express();
-server.use(scout.expressMiddleware());
 server.get('/', (req, res) => {
   process.send("request-processed");
   res.status(200).send('Hello world');
 });
 
 async function start() {
-  // Install scout (ENV should provide necessary opts)
-  await scout.install();
-  process.send("scout-install-completed");
-
   // Start the express server
-  await server.listen(process.env.PORT, () => {
+  await server.listen(3000, () => {
     process.send("server-started");
     console.log('server started on port 3000');
   });
