@@ -39,7 +39,7 @@ const DEFAULT_LOADTEST_OPTIONS = {
     maxSeconds: LOAD_TEST_DURATION_SECONDS,
 };
 // https://github.com/scoutapp/scout_apm_node/issues/239
-test("express application launched with scout does not leak memory", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, (t) => __awaiter(void 0, void 0, void 0, function* () {
+test("no large memory leaks", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, (t) => __awaiter(void 0, void 0, void 0, function* () {
     // Stats that will get updated later
     const stats = {
         express: {
@@ -99,7 +99,9 @@ test("express application launched with scout does not leak memory", { timeout: 
     // Get the memory usage after load testing
     expressWithScoutProcess.send("report-memory-usage");
     yield TestUtil.waitMs(500);
-    if (!stats.express.memoryUsage || !stats.expressWithScout.memoryUsage) {
+    // Ensure stats are as we expect
+    if (!stats.express.memoryUsage || !stats.express.memoryUsage.heapUsed
+        || !stats.expressWithScout.memoryUsage || !stats.expressWithScout.memoryUsage.heapUsed) {
         const err = new Error("Invalid/missing stats for either express or express with scout");
         t.end(err);
         throw err;

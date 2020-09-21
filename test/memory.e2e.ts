@@ -41,7 +41,7 @@ const DEFAULT_LOADTEST_OPTIONS = {
 };
 
 // https://github.com/scoutapp/scout_apm_node/issues/239
-test("express application launched with scout does not leak memory", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, async (t) => {
+test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, async (t) => {
     // Stats that will get updated later
     const stats = {
         express: {
@@ -56,7 +56,7 @@ test("express application launched with scout does not leak memory", {timeout: T
 
     // Ensure SCOUT_KEY was provided
     if (!process.env.SCOUT_KEY) {
-        const err = new Error("Invalid/missing SCOUT_KEY ENV variable")
+        const err = new Error("Invalid/missing SCOUT_KEY ENV variable");
         t.end(err);
         throw err;
     }
@@ -81,7 +81,7 @@ test("express application launched with scout does not leak memory", {timeout: T
         PORT: await getPort(),
         SCOUT_KEY: process.env.SCOUT_KEY,
         SCOUT_NAME: `${testName}-with-scout`,
-    }
+    };
     const expressWithScoutProcess = fork(FILE_PATHS.EXPRESS_APP_WITH_SCOUT_PATH, [], {
         env: expressWithScoutENV,
     });
@@ -112,8 +112,10 @@ test("express application launched with scout does not leak memory", {timeout: T
     expressWithScoutProcess.send("report-memory-usage");
     await TestUtil.waitMs(500);
 
-    if (!stats.express.memoryUsage || !stats.expressWithScout.memoryUsage) {
-        const err = new Error("Invalid/missing stats for either express or express with scout")
+    // Ensure stats are as we expect
+    if (!stats.express.memoryUsage || !stats.express.memoryUsage.heapUsed
+        || !stats.expressWithScout.memoryUsage || !stats.expressWithScout.memoryUsage.heapUsed ) {
+        const err = new Error("Invalid/missing stats for either express or express with scout");
         t.end(err);
         throw err;
     }
