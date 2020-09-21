@@ -19,21 +19,25 @@ import { promisify } from "util";
 
 const loadTest = promisify(loadTestCb);
 
-const LOAD_TEST_CONCURRENCY = parseInt(process.env.LOAD_TEST_CONCURRENCY, 10) || 5;
-const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS, 10) || 10;
-const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION, 10) || 5;
+const LOAD_TEST_CONCURRENCY = parseInt(process.env.LOAD_TEST_CONCURRENCY || "5", 10);
+const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS || "10", 10);
+const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "5", 10);
 
 // https://github.com/scoutapp/scout_apm_node/issues/239
 test("express application launched with scout does not leak memory", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
     // TODO: Launch small express application as a child process
     // The child process *should* exit after the parent does
 
+    // TODO: Perform a handful of requests
+
+    // TODO: Get the "baseline" memory usage
+
     // Set up the load test options
     const randomPort = 12345;
     const options = {
         url: `localhost:${randomPort}`,
         concurrency: LOAD_TEST_CONCURRENCY,
-        method: 'GET',
+        method: "GET" as const,
         requestsPerSecond: LOAD_TEST_RPS,
         maxSeconds: LOAD_TEST_DURATION_SECONDS,
         // requestGenerator: (params, options, client, callback) => {}
@@ -42,8 +46,9 @@ test("express application launched with scout does not leak memory", {timeout: T
     // Perform the load test
     loadTest(options)
         .then(() => {
-
+            // TODO: check that memory usage stayed within 1.5x
         })
+    // Shutdown the child process process
         .then(() => t.end())
         .catch(t.end);
 });
