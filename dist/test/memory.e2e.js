@@ -112,7 +112,7 @@ test("no large memory leaks", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, (
     const memUsageWithScout = stats.expressWithScout.memoryUsage.heapUsed;
     const ratio = memUsageWithScout / memUsage;
     t.comment(`usage with/out scout (${memUsageWithScout.toLocaleString()}B) / (${memUsage.toLocaleString()}B) => ${ratio}`);
-    t.assert(ratio <= MEMORY_USAGE_BOUND_MULTIPLIER, `memoryUsage().heapUsed with scout is within ${MEMORY_USAGE_BOUND_MULTIPLIER}x of a similar app without it`);
+    t.assert(ratio <= MEMORY_USAGE_BOUND_MULTIPLIER, `memoryUsage().heapUsed with scout should be within ${MEMORY_USAGE_BOUND_MULTIPLIER}x of app without scout`);
     // Kill the two child processes
     expressWithScoutProcess.kill();
     expressProcess.kill();
