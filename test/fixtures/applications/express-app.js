@@ -25,7 +25,7 @@ async function start() {
   // Start the express server
   await server.listen(process.env.PORT, () => {
     process.send("server-started");
-    console.log('server started on port 3000');
+    console.log(`server started on port ${process.env.PORT}`);
   });
 }
 

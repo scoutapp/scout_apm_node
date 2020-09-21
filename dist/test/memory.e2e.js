@@ -40,6 +40,12 @@ const DEFAULT_LOADTEST_OPTIONS = {
 };
 // https://github.com/scoutapp/scout_apm_node/issues/239
 test("no large memory leaks", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, (t) => __awaiter(void 0, void 0, void 0, function* () {
+    // Ensure SCOUT_KEY was provided
+    if (!process.env.SCOUT_KEY) {
+        const err = new Error("Invalid/missing SCOUT_KEY ENV variable");
+        t.end(err);
+        throw err;
+    }
     // Stats that will get updated later
     const stats = {
         express: {
@@ -50,12 +56,6 @@ test("no large memory leaks", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, (
         },
     };
     const testName = `memory-leak-test-${randomstring_1.generate(5)}`;
-    // Ensure SCOUT_KEY was provided
-    if (!process.env.SCOUT_KEY) {
-        const err = new Error("Invalid/missing SCOUT_KEY ENV variable");
-        t.end(err);
-        throw err;
-    }
     // Launch a small express application as a child process *without* scout
     const expressENV = {
         PORT: yield getPort(),
@@ -97,7 +97,7 @@ test("no large memory leaks", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, (
     // Load test the application with express
     yield loadTest(Object.assign(Object.assign({}, DEFAULT_LOADTEST_OPTIONS), { url: `http://localhost:${expressWithScoutENV.PORT}` }));
     // After performing load test with express, wait 3 mins for messages to get sent
-    yield TestUtil.waitMs(60 * 1000 * 3);
+    // await TestUtil.waitMs(60 * 1000 * 3);
     // Get the memory usage after load testing
     expressWithScoutProcess.send("report-memory-usage");
     yield TestUtil.waitMs(500);
@@ -110,9 +110,9 @@ test("no large memory leaks", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, (
     }
     const memUsage = stats.express.memoryUsage.heapUsed;
     const memUsageWithScout = stats.expressWithScout.memoryUsage.heapUsed;
-    t.comment(`memUsage without scout: ${memUsage}`);
-    t.comment(`memUsage with scout: ${memUsageWithScout}`);
-    t.assert(memUsageWithScout <= memUsage * MEMORY_USAGE_BOUND_MULTIPLIER, `memoryUsage().heapUsed with scout is within ${MEMORY_USAGE_BOUND_MULTIPLIER}x of a similar app without it`);
+    const ratio = memUsageWithScout / memUsage;
+    t.comment(`usage with/out scout (${memUsageWithScout.toLocaleString()}B) / (${memUsage.toLocaleString()}B) => ${ratio}`);
+    t.assert(ratio <= MEMORY_USAGE_BOUND_MULTIPLIER, `memoryUsage().heapUsed with scout is within ${MEMORY_USAGE_BOUND_MULTIPLIER}x of a similar app without it`);
     // Kill the two child processes
     expressWithScoutProcess.kill();
     expressProcess.kill();

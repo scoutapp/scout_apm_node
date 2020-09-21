@@ -41,6 +41,13 @@ const DEFAULT_LOADTEST_OPTIONS = {
 
 // https://github.com/scoutapp/scout_apm_node/issues/239
 test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, async (t) => {
+    // Ensure SCOUT_KEY was provided
+    if (!process.env.SCOUT_KEY) {
+        const err = new Error("Invalid/missing SCOUT_KEY ENV variable");
+        t.end(err);
+        throw err;
+    }
+
     // Stats that will get updated later
     const stats = {
         express: {
@@ -52,13 +59,6 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
     };
 
     const testName = `memory-leak-test-${generateRandomString(5)}`;
-
-    // Ensure SCOUT_KEY was provided
-    if (!process.env.SCOUT_KEY) {
-        const err = new Error("Invalid/missing SCOUT_KEY ENV variable");
-        t.end(err);
-        throw err;
-    }
 
     // Launch a small express application as a child process *without* scout
     const expressENV = {
@@ -108,7 +108,7 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
     });
 
     // After performing load test with express, wait 3 mins for messages to get sent
-    await TestUtil.waitMs(60 * 1000 * 3);
+    // await TestUtil.waitMs(60 * 1000 * 3);
 
     // Get the memory usage after load testing
     expressWithScoutProcess.send("report-memory-usage");
@@ -124,11 +124,13 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
 
     const memUsage = stats.express.memoryUsage!.heapUsed;
     const memUsageWithScout = stats.expressWithScout.memoryUsage!.heapUsed;
+    const ratio = memUsageWithScout / memUsage;
 
-    t.comment(`memUsage without scout: ${memUsage}`);
-    t.comment(`memUsage with scout: ${memUsageWithScout}`);
+    t.comment(
+        `usage with/out scout (${memUsageWithScout.toLocaleString()}B) / (${memUsage.toLocaleString()}B) => ${ratio}`,
+    );
     t.assert(
-        memUsageWithScout <= memUsage * MEMORY_USAGE_BOUND_MULTIPLIER,
+        ratio <= MEMORY_USAGE_BOUND_MULTIPLIER,
         `memoryUsage().heapUsed with scout is within ${MEMORY_USAGE_BOUND_MULTIPLIER}x of a similar app without it`,
     );
 

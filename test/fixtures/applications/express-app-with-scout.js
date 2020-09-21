@@ -2,7 +2,6 @@
 
 // Work out the relative path of ScoutJS compiled lib
 const path = require("path");
-console.log("path:", path.resolve(path.join(__dirname, '../../../dist/lib')));
 
 const scout = require('../../../dist/lib');
 const express = require('express');
@@ -36,7 +35,7 @@ async function start() {
   // Start the express server
   await server.listen(process.env.PORT, () => {
     process.send("server-started");
-    console.log('server started on port 3000');
+    console.log(`server started on port ${process.env.PORT}`);
   });
 }
 
