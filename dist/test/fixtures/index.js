@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MUSTACHE_TEMPLATES = exports.SQL_QUERIES = exports.RESPONSES = exports.APP_META = exports.FILE_PATHS = void 0;
 const PATHS = require("./paths");
 exports.FILE_PATHS = PATHS;
 exports.APP_META = {

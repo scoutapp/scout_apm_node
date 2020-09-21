@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendThroughAgent = exports.sendStopSpan = exports.sendTagSpan = exports.sendStartSpan = exports.sendTagRequest = exports.sendStopRequest = exports.sendStartRequest = exports.Scout = void 0;
 const events_1 = require("events");
 const path = require("path");
 const process = require("process");
@@ -15,9 +14,9 @@ const Requests = require("../protocol/v1/requests");
 const Constants = require("../constants");
 const Errors = require("../errors");
 var request_1 = require("./request");
-Object.defineProperty(exports, "ScoutRequest", { enumerable: true, get: function () { return request_1.default; } });
+exports.ScoutRequest = request_1.default;
 var span_1 = require("./span");
-Object.defineProperty(exports, "ScoutSpan", { enumerable: true, get: function () { return span_1.default; } });
+exports.ScoutSpan = span_1.default;
 const request_2 = require("./request");
 const DONE_NOTHING = () => undefined;
 const ASYNC_NS = "scout";

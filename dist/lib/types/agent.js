@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProcessOptions = exports.CoreAgentVersion = exports.BaseAgentResponse = exports.BaseAgentRequest = void 0;
 const semver_1 = require("semver");
 const buffer_1 = require("buffer");
 const errors_1 = require("../errors");

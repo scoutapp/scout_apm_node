@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HTTPSIntegration = void 0;
 const http_1 = require("./http");
 // Hook into the express and mongodb module
 class HTTPSIntegration extends http_1.HTTPIntegration {
