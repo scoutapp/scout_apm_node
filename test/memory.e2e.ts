@@ -28,7 +28,7 @@ const loadTest = promisify(loadTestCb);
 
 const LOAD_TEST_CONCURRENCY = parseInt(process.env.LOAD_TEST_CONCURRENCY || "5", 10);
 const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS || "10", 10);
-const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "60", 10);
+const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "10", 10);
 
 const MEMORY_USAGE_BOUND_MULTIPLIER = 1.5;
 
@@ -37,7 +37,6 @@ const DEFAULT_LOADTEST_OPTIONS = {
     method: "GET" as const,
     requestsPerSecond: LOAD_TEST_RPS,
     maxSeconds: LOAD_TEST_DURATION_SECONDS,
-    // requestGenerator: (params, options, client, callback) => {}
 };
 
 // https://github.com/scoutapp/scout_apm_node/issues/239
@@ -108,6 +107,9 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
         url: `http://localhost:${expressWithScoutENV.PORT}`,
     });
 
+    // After performing load test with express, wait 3 mins for messages to get sent
+    await TestUtil.waitMs(60 * 1000 * 3);
+
     // Get the memory usage after load testing
     expressWithScoutProcess.send("report-memory-usage");
     await TestUtil.waitMs(500);
@@ -120,8 +122,8 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
         throw err;
     }
 
-    const memUsage = stats.expressWithScout.memoryUsage!.heapUsed;
-    const memUsageWithScout = stats.express.memoryUsage!.heapUsed;
+    const memUsage = stats.express.memoryUsage!.heapUsed;
+    const memUsageWithScout = stats.expressWithScout.memoryUsage!.heapUsed;
 
     t.comment(`memUsage without scout: ${memUsage}`);
     t.comment(`memUsage with scout: ${memUsageWithScout}`);

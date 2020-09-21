@@ -30,7 +30,7 @@ const util_1 = require("util");
 const loadTest = util_1.promisify(loadtest_1.loadTest);
 const LOAD_TEST_CONCURRENCY = parseInt(process.env.LOAD_TEST_CONCURRENCY || "5", 10);
 const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS || "10", 10);
-const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "60", 10);
+const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "10", 10);
 const MEMORY_USAGE_BOUND_MULTIPLIER = 1.5;
 const DEFAULT_LOADTEST_OPTIONS = {
     concurrency: LOAD_TEST_CONCURRENCY,
@@ -96,6 +96,8 @@ test("no large memory leaks", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, (
     yield TestUtil.waitMs(500);
     // Load test the application with express
     yield loadTest(Object.assign(Object.assign({}, DEFAULT_LOADTEST_OPTIONS), { url: `http://localhost:${expressWithScoutENV.PORT}` }));
+    // After performing load test with express, wait 3 mins for messages to get sent
+    yield TestUtil.waitMs(60 * 1000 * 3);
     // Get the memory usage after load testing
     expressWithScoutProcess.send("report-memory-usage");
     yield TestUtil.waitMs(500);
@@ -106,8 +108,8 @@ test("no large memory leaks", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, (
         t.end(err);
         throw err;
     }
-    const memUsage = stats.expressWithScout.memoryUsage.heapUsed;
-    const memUsageWithScout = stats.express.memoryUsage.heapUsed;
+    const memUsage = stats.express.memoryUsage.heapUsed;
+    const memUsageWithScout = stats.expressWithScout.memoryUsage.heapUsed;
     t.comment(`memUsage without scout: ${memUsage}`);
     t.comment(`memUsage with scout: ${memUsageWithScout}`);
     t.assert(memUsageWithScout <= memUsage * MEMORY_USAGE_BOUND_MULTIPLIER, `memoryUsage().heapUsed with scout is within ${MEMORY_USAGE_BOUND_MULTIPLIER}x of a similar app without it`);
