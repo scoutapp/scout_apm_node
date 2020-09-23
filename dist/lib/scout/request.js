@@ -60,6 +60,8 @@ class ScoutRequest {
     ignore() {
         this.addContextSync(types_2.ScoutContextName.IgnoreTransaction, true);
         this.ignored = true;
+        // Ignore all the child spans
+        this.childSpans.forEach(s => s.ignore());
         return this;
     }
     /** @see ChildSpannable */

@@ -312,8 +312,6 @@ class Scout extends events_1.EventEmitter {
                     resolve(cb(DONE_NOTHING, {}));
                     return;
                 }
-                // // TODO: ? Bind CB to namespace
-                // cb = this.asyncNamespace.bind(cb);
                 // Create & start a child span on the current parent (request/span)
                 parent
                     .startChildSpan(operation)

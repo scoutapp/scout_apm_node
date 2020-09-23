@@ -98,6 +98,10 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     public ignore(): this {
         this.addContextSync(ScoutContextName.IgnoreTransaction, true);
         this.ignored = true;
+
+        // Ignore all the child spans
+        this.childSpans.forEach(s => s.ignore());
+
         return this;
     }
 
