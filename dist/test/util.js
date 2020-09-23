@@ -27,6 +27,7 @@ exports.EXPRESS_TEST_TIMEOUT_MS = 3000;
 exports.PG_TEST_TIMEOUT_MS = 10000;
 exports.MYSQL_TEST_TIMEOUT_MS = 10000;
 exports.DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
+exports.MEMORY_LEAK_TEST_TIMEOUT_MS = 1000 * 60 * 6; // 6 minutes
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
 const PROJECT_ROOT = path.join(path.dirname(require.main.filename), "../../");
 // Helper for downloading and creating an agent

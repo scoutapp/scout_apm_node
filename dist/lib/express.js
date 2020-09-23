@@ -110,6 +110,7 @@ function scoutMiddleware(opts) {
             }
             req.scout = { instance: scout };
             const name = `Controller/${reqMethod} ${path}`;
+            let transactionTimeout;
             // Create a trace
             scout.transaction(name, (finishTransaction) => {
                 req.scout.request = scout.getCurrentRequest();
@@ -126,27 +127,27 @@ function scoutMiddleware(opts) {
                     .then(() => {
                     // Start a span for the Controller
                     scout.instrument(name, finishSpan => {
-                        // // Set up the request timeout
-                        // if (requestTimeoutMs > 0) {
-                        //     setTimeout(() => {
-                        //         // Add context to indicate request as timed out
-                        //         req.scout.request
-                        //             .addContext(ScoutContextName.Timeout, "true")
-                        //             .then(() => finishTransaction())
-                        //             .catch(() => {
-                        //                 if (opts && opts.logFn) {
-                        //                     opts.logFn(
-                        //                         `[scout] Failed to finish (timed out): ${req.scout.request}`,
-                        //                         LogLevel.Warn,
-                        //                     );
-                        //                 }
-                        //             });
-                        //     }, requestTimeoutMs);
-                        // }
+                        // Set up the request timeout
+                        if (requestTimeoutMs > 0) {
+                            transactionTimeout = setTimeout(() => {
+                                // Add context to indicate request as timed out
+                                req.scout.request
+                                    .addContext(types_1.ScoutContextName.Timeout, "true")
+                                    .then(() => finishTransaction())
+                                    .catch(() => {
+                                    if (opts && opts.logFn) {
+                                        opts.logFn(`[scout] Failed to finish (timed out): ${req.scout.request}`, types_1.LogLevel.Warn);
+                                    }
+                                });
+                            }, requestTimeoutMs);
+                        }
                         // Set up handler to act on end of request
                         onFinished(res, (err, res) => {
-                            // Finish transaction (which will trigger a send)
-                            // finishSpan()
+                            // If the request finished, clear the timeout-marker
+                            if (transactionTimeout) {
+                                clearTimeout(transactionTimeout);
+                            }
+                            // Finish transaction (which *must* trigger a send)
                             finishTransaction()
                                 .then(() => delete req.scout);
                         });

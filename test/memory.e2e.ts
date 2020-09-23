@@ -27,10 +27,11 @@ import { promisify } from "util";
 const loadTest = promisify(loadTestCb);
 
 const LOAD_TEST_CONCURRENCY = parseInt(process.env.LOAD_TEST_CONCURRENCY || "5", 10);
-const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS || "10", 10);
-const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "60", 10);
+const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS || "20", 10);
+const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "120", 10);
 
-const MEMORY_USAGE_BOUND_MULTIPLIER = 1.25;
+const MEMORY_USAGE_BOUND_MULTIPLIER = 2; // heuristics
+const MEMORY_USAGE_LIMIT_MB = 16; // heuristics
 
 const DEFAULT_LOADTEST_OPTIONS = {
     concurrency: LOAD_TEST_CONCURRENCY,
@@ -40,7 +41,7 @@ const DEFAULT_LOADTEST_OPTIONS = {
 };
 
 // https://github.com/scoutapp/scout_apm_node/issues/239
-test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, async (t) => {
+test("no large memory leaks", {timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS}, async (t) => {
     // Ensure SCOUT_KEY was provided
     if (!process.env.SCOUT_KEY) {
         const err = new Error("Invalid/missing SCOUT_KEY ENV variable");
@@ -93,9 +94,7 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
         }
     });
 
-    await TestUtil.waitMs(10000);
-
-    // Load test the first application
+    // Load test the first application (without scout)
     await loadTest({
         ...DEFAULT_LOADTEST_OPTIONS,
         url: `http://localhost:${expressENV.PORT}`,
@@ -103,20 +102,17 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
 
     // Get the memory usage after load testing
     expressProcess.send("report-memory-usage");
-    await TestUtil.waitMs(500);
+    await TestUtil.waitMs(100);
 
-    // Load test the application with express
+    // Load test the application with scout
     await loadTest({
         ...DEFAULT_LOADTEST_OPTIONS,
         url: `http://localhost:${expressWithScoutENV.PORT}`,
     });
 
-    // After performing load test with express, wait 3 mins for messages to get sent
-    // await TestUtil.waitMs(60 * 1000 * 3);
-
     // Get the memory usage after load testing
     expressWithScoutProcess.send("report-memory-usage");
-    await TestUtil.waitMs(500);
+    await TestUtil.waitMs(100);
 
     // Ensure stats are as we expect
     if (!stats.express.memoryUsage || !stats.express.memoryUsage.heapUsed
@@ -134,13 +130,17 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
         `usage with/out scout (${memUsageWithScout.toLocaleString()}B) / (${memUsage.toLocaleString()}B) => ${ratio}`,
     );
     t.assert(
+        memUsageWithScout <= MEMORY_USAGE_LIMIT_MB * 1000 * 1000,
+        `memory usage with scout should be below ${MEMORY_USAGE_LIMIT_MB}MB`,
+    );
+    t.assert(
         ratio <= MEMORY_USAGE_BOUND_MULTIPLIER,
         `memoryUsage().heapUsed with scout should be within ${MEMORY_USAGE_BOUND_MULTIPLIER}x of app without scout`,
     );
 
     // Kill the two child processes
-    // expressWithScoutProcess.kill();
-    // expressProcess.kill();
+    expressWithScoutProcess.kill();
+    expressProcess.kill();
 
     t.end();
 });

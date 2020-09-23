@@ -49,6 +49,7 @@ export const EXPRESS_TEST_TIMEOUT_MS = 3000;
 export const PG_TEST_TIMEOUT_MS = 10000;
 export const MYSQL_TEST_TIMEOUT_MS = 10000;
 export const DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
+export const MEMORY_LEAK_TEST_TIMEOUT_MS = 1000 * 60 * 6; // 6 minutes
 
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
 
