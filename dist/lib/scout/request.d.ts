@@ -54,6 +54,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     isStopped(): boolean;
     getEndTime(): Date;
     setOnStop(fn: () => Promise<void>): void;
+    clearOnStop(): void;
     stop(): Promise<this>;
     stopSync(): this;
     isStarted(): boolean;

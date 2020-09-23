@@ -275,7 +275,7 @@ test("Many select statments and a render are in the right order", {timeout: Test
 
         // All the DB spans should have the controllerSpan as parent
         t.assert(
-            dbSpans.every(s => s.parent && s.parent.id === controllerSpan.id),
+            dbSpans.every(s => s.parentId === controllerSpan.id),
             "db spans have controller as parent",
         );
 
@@ -292,7 +292,7 @@ test("Many select statments and a render are in the right order", {timeout: Test
 
         // Ensure controller span has controller as parent
         t.assert(
-            renderSpan.parent && renderSpan.parent.id === controllerSpan.id,
+            renderSpan.parentId === controllerSpan.id,
             "render span has controller as parent",
         );
 

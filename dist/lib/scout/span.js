@@ -15,8 +15,9 @@ class ScoutSpan {
         this.childSpans = [];
         this.tags = {};
         this.traceFrames = [];
+        this.ignored = false;
         this.logFn = () => undefined;
-        this.request = opts.request;
+        this.requestId = opts.requestId;
         this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_SPAN_PREFIX}${uuid_1.v4()}`;
         this.operation = opts.operation;
         if (opts) {
@@ -34,11 +35,14 @@ class ScoutSpan {
             if (opts.started) {
                 this.started = opts.started;
             }
-            if (opts.parent) {
-                this.parent = opts.parent;
+            if (opts.parentId) {
+                this.parentId = opts.parentId;
             }
             if (opts.onStop) {
                 this.onStop = opts.onStop;
+            }
+            if ("ignored" in opts) {
+                this.ignored = opts.ignored || false;
             }
         }
     }
@@ -84,6 +88,16 @@ class ScoutSpan {
             return { name, value };
         });
     }
+    isIgnored() {
+        return this.ignored;
+    }
+    // Set a request as ignored
+    ignore() {
+        this.ignored = true;
+        // Ignore all child spans if present
+        this.childSpans.forEach(s => s.ignore());
+        return this;
+    }
     /** @see ChildSpannable */
     startChildSpan(operation) {
         return new Promise((resolve, reject) => {
@@ -98,15 +112,16 @@ class ScoutSpan {
     /** @see ChildSpannable */
     startChildSpanSync(operation) {
         if (this.stopped) {
-            this.logFn(`[scout/request/${this.request.id}/span/${this.id}] Cannot add span to stopped span [${this.id}]`, types_1.LogLevel.Error);
+            this.logFn(`[scout/request/${this.requestId}/span/${this.id}] Cannot add span to stopped span [${this.id}]`, types_1.LogLevel.Error);
             throw new Errors.FinishedRequest("Cannot add a child span to a finished span");
         }
         const span = new ScoutSpan({
             operation,
-            request: this.request,
+            requestId: this.requestId,
+            parentId: this.id,
             scoutInstance: this.scoutInstance,
             logFn: this.logFn,
-            parent: this,
+            ignored: this.ignored,
         });
         this.childSpans.push(span);
         return span.startSync();
@@ -134,6 +149,9 @@ class ScoutSpan {
     }
     setOnStop(fn) {
         this.onStop = fn;
+    }
+    clearOnStop() {
+        delete this.onStop;
     }
     stop() {
         if (this.stopped) {
@@ -224,7 +242,7 @@ class ScoutSpan {
             .then(() => this.sent = true)
             .then(() => this)
             .catch(err => {
-            this.logFn(`[scout/request/${this.request.id}/span/${this.id}}] Failed to send span`);
+            this.logFn(`[scout/request/${this.requestId}/span/${this.id}}] Failed to send span`);
             return this;
         });
         return this.sending;

@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setGlobalLastUsedOptions = exports.setGlobalLastUsedConfiguration = exports.isActiveGlobalScoutInstance = exports.shutdownActiveGlobalScoutInstance = exports.getOrCreateActiveGlobalScoutInstanceNonBlocking = exports.getOrCreateActiveGlobalScoutInstance = exports.getActiveGlobalScoutInstance = exports.setActiveGlobalScoutInstance = exports.EXPORT_BAG = void 0;
 const scout_1 = require("./scout");
 const types_1 = require("./types");
 const Errors = require("./errors");

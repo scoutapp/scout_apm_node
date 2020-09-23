@@ -98,6 +98,10 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     public ignore(): this {
         this.addContextSync(ScoutContextName.IgnoreTransaction, true);
         this.ignored = true;
+
+        // Ignore all the child spans
+        this.childSpans.forEach(s => s.ignore());
+
         return this;
     }
 
@@ -126,7 +130,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         // Create a new child span
         const span = new ScoutSpan({
             operation,
-            request: this,
+            requestId: this.id,
             scoutInstance: this.scoutInstance,
             logFn: this.logFn,
         });
@@ -200,6 +204,10 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
     public setOnStop(fn: () => Promise<void>) {
         this.onStop = fn;
+    }
+
+    public clearOnStop() {
+        delete this.onStop;
     }
 
     public stop(): Promise<this> {

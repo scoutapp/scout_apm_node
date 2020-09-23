@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.waitMs = exports.isScoutTag = exports.scrubRequestPath = exports.scrubRequestPathParams = exports.splitAgentResponses = exports.buildWinstonLogFn = exports.consoleLogFn = exports.convertCamelCaseToEnvVar = void 0;
 const enum_1 = require("./enum");
 const snake_case_1 = require("snake-case");
 const Constants = require("../constants");

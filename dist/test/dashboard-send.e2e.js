@@ -212,7 +212,7 @@ test("Many select statments and a render are in the right order", { timeout: Tes
             throw new Error("No DB spans");
         }
         // All the DB spans should have the controllerSpan as parent
-        t.assert(dbSpans.every(s => s.parent && s.parent.id === controllerSpan.id), "db spans have controller as parent");
+        t.assert(dbSpans.every(s => s.parentId === controllerSpan.id), "db spans have controller as parent");
         // Check for the inner render spans
         const renderSpans = innerSpans.filter(s => s.operation === types_1.ScoutSpanOperation.TemplateRender);
         t.assert(renderSpans, `render spans [${renderSpans.length}] were present on request`);
@@ -223,7 +223,7 @@ test("Many select statments and a render are in the right order", { timeout: Tes
             throw new Error("No Render span");
         }
         // Ensure controller span has controller as parent
-        t.assert(renderSpan.parent && renderSpan.parent.id === controllerSpan.id, "render span has controller as parent");
+        t.assert(renderSpan.parentId === controllerSpan.id, "render span has controller as parent");
         // Check that none of the SQL query spans overlap with the render span
         t.assert(dbSpans.every(dbSpan => dbSpan.getEndTime() <= renderSpan.getTimestamp()), "All DB spans end before the render span starts");
         // Close the PG client & shutdown

@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UnknownResponse = exports.V1FailureResponse = exports.V1ApplicationEventResponse = exports.V1TagSpanResponse = exports.V1StopSpanResponse = exports.V1StartSpanResponse = exports.V1TagRequestResponse = exports.V1FinishRequestResponse = exports.V1StartRequestResponse = exports.V1RegisterResponse = exports.V1GetVersionResponse = exports.V1AgentResponse = void 0;
 const Errors = require("../../errors");
 const types_1 = require("../../types");
 // TODO: make this more efficient (hash lookup) if it's the case

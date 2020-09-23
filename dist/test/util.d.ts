@@ -12,6 +12,7 @@ export declare const EXPRESS_TEST_TIMEOUT_MS = 3000;
 export declare const PG_TEST_TIMEOUT_MS = 10000;
 export declare const MYSQL_TEST_TIMEOUT_MS = 10000;
 export declare const DASHBOARD_SEND_TIMEOUT_MS: number;
+export declare const MEMORY_LEAK_TEST_TIMEOUT_MS: number;
 export declare function bootstrapExternalProcessAgent(t: Test, rawVersion: string, opts?: {
     buildProcOpts?: (bp: string, uri: string) => ProcessOptions;
     logFn?: LogFn;

@@ -60,6 +60,8 @@ class ScoutRequest {
     ignore() {
         this.addContextSync(types_2.ScoutContextName.IgnoreTransaction, true);
         this.ignored = true;
+        // Ignore all the child spans
+        this.childSpans.forEach(s => s.ignore());
         return this;
     }
     /** @see ChildSpannable */
@@ -82,7 +84,7 @@ class ScoutRequest {
         // Create a new child span
         const span = new span_1.default({
             operation,
-            request: this,
+            requestId: this.id,
             scoutInstance: this.scoutInstance,
             logFn: this.logFn,
         });
@@ -141,6 +143,9 @@ class ScoutRequest {
     }
     setOnStop(fn) {
         this.onStop = fn;
+    }
+    clearOnStop() {
+        delete this.onStop;
     }
     stop() {
         if (this.finished) {

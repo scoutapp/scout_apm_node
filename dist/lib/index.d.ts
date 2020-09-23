@@ -27,11 +27,11 @@ declare const API: {
         instrumentSync(operation: string, fn: SpanCallback, scout?: Scout | undefined): Promise<any>;
         readonly Config: Partial<ScoutConfiguration> | undefined;
         Context: {
-            add(name: string, value: JSONValue, scout?: Scout | undefined): Promise<ScoutRequest | void>;
+            add(name: string, value: JSONValue, scout?: Scout | undefined): Promise<void | ScoutRequest>;
             addSync(name: string, value: JSONValue, scout?: Scout | undefined): ScoutRequest | undefined;
         };
-        ignoreTransaction(scout?: Scout | undefined): Promise<ScoutRequest | void>;
-        ignoreTransactionSync(scout?: Scout | undefined): ScoutRequest | void;
+        ignoreTransaction(scout?: Scout | undefined): Promise<void | ScoutRequest>;
+        ignoreTransactionSync(scout?: Scout | undefined): void | ScoutRequest;
     };
 };
 export = API;

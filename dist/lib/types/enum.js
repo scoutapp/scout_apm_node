@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ScoutSpanOperation = exports.ScoutContextName = exports.ScoutEvent = exports.PlatformTriple = exports.Platform = exports.Architecture = exports.ConfigSourceName = exports.parseLogLevel = exports.isLogLevel = exports.AgentResponseType = exports.AgentRequestType = exports.AgentEvent = exports.ApplicationEventType = exports.LogLevel = exports.AgentType = exports.URIReportingLevel = exports.APIVersion = void 0;
 var APIVersion;
 (function (APIVersion) {
     APIVersion["V1"] = "1.0";

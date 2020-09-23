@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.minimal = exports.makeConnectedMySQL2Connection = exports.makeConnectedMySQLConnection = exports.stopContainerizedMySQLTest = exports.startContainerizedMySQLTest = exports.createClientCollectingServer = exports.makePGConnectionString = exports.makeConnectedPGClient = exports.stopContainerizedPostgresTest = exports.stopContainerizedInstanceTest = exports.startContainerizedPostgresTest = exports.killContainer = exports.startContainer = exports.TestContainerStartOpts = exports.buildTestScoutInstance = exports.buildCoreAgentSocketResponse = exports.testConfigurationOverlay = exports.queryAndRenderRandomNumbers = exports.appWithHTTPProxyMiddleware = exports.appWithGETSynchronousError = exports.simpleInstrumentApp = exports.simpleHTML5BoilerplateApp = exports.simpleErrorApp = exports.simpleDynamicSegmentExpressApp = exports.simpleExpressApp = exports.shutdownScout = exports.waitForAgentBufferFlush = exports.cleanup = exports.waitMinutes = exports.waitMs = exports.initializeAgent = exports.bootstrapExternalProcessAgent = exports.DASHBOARD_SEND_TIMEOUT_MS = exports.MYSQL_TEST_TIMEOUT_MS = exports.PG_TEST_TIMEOUT_MS = exports.EXPRESS_TEST_TIMEOUT_MS = void 0;
 const path = require("path");
 const tmp = require("tmp-promise");
 const express = require("express");
@@ -28,6 +27,7 @@ exports.EXPRESS_TEST_TIMEOUT_MS = 3000;
 exports.PG_TEST_TIMEOUT_MS = 10000;
 exports.MYSQL_TEST_TIMEOUT_MS = 10000;
 exports.DASHBOARD_SEND_TIMEOUT_MS = 1000 * 60 * 3; // 3 minutes
+exports.MEMORY_LEAK_TEST_TIMEOUT_MS = 1000 * 60 * 6; // 6 minutes
 const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections";
 const PROJECT_ROOT = path.join(path.dirname(require.main.filename), "../../");
 // Helper for downloading and creating an agent

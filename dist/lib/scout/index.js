@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendThroughAgent = exports.sendStopSpan = exports.sendTagSpan = exports.sendStartSpan = exports.sendTagRequest = exports.sendStopRequest = exports.sendStartRequest = exports.Scout = void 0;
 const events_1 = require("events");
 const path = require("path");
 const process = require("process");
@@ -15,9 +14,9 @@ const Requests = require("../protocol/v1/requests");
 const Constants = require("../constants");
 const Errors = require("../errors");
 var request_1 = require("./request");
-Object.defineProperty(exports, "ScoutRequest", { enumerable: true, get: function () { return request_1.default; } });
+exports.ScoutRequest = request_1.default;
 var span_1 = require("./span");
-Object.defineProperty(exports, "ScoutSpan", { enumerable: true, get: function () { return span_1.default; } });
+exports.ScoutSpan = span_1.default;
 const request_2 = require("./request");
 const DONE_NOTHING = () => undefined;
 const ASYNC_NS = "scout";
@@ -215,14 +214,12 @@ class Scout extends events_1.EventEmitter {
      */
     transaction(name, cb) {
         this.log(`[scout] Starting transaction [${name}]`, types_1.LogLevel.Debug);
-        let result;
         let ranContext = false;
         // Setup if necessary then then perform the async request context
         return this.setup()
             .then(() => {
             ranContext = true;
-            result = this.withAsyncRequestContext(cb);
-            return result;
+            return this.withAsyncRequestContext(cb);
         })
             .catch(err => {
             this.log("[scout] Scout setup failed: ${err}", types_1.LogLevel.Error);
@@ -300,6 +297,7 @@ class Scout extends events_1.EventEmitter {
                         // then the parent of sibling spans should be the request,
                         // so we can clear the current span entry
                         this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
+                        this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
                     }
                     // If we never made the span object then don't do anything
                     if (!span) {
@@ -323,7 +321,13 @@ class Scout extends events_1.EventEmitter {
                     this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
                     this.asyncNamespace.set(ASYNC_NS_SPAN, span);
                     // Set function to call on finish
-                    span.setOnStop(doneFn);
+                    span.setOnStop(() => {
+                        const result = doneFn();
+                        if (span) {
+                            span.clearOnStop();
+                        }
+                        return result;
+                    });
                     // Set that the cb has been run, in the case of error so we don't run twice
                     ranCb = true;
                     const result = cb(() => span.stop(), { span, request, parent });
@@ -370,8 +374,8 @@ class Scout extends events_1.EventEmitter {
         span.startSync();
         const result = fn({
             span,
-            parent: span.parent,
-            request: span.request,
+            parent,
+            request: this.getCurrentRequest() || undefined,
         });
         span.stopSync();
         // Clear out the current span for synchronous operations
@@ -536,7 +540,6 @@ class Scout extends events_1.EventEmitter {
      *
      */
     withAsyncRequestContext(cb) {
-        // If we can use async hooks then node-request-context is usable
         return new Promise((resolve) => {
             let result;
             let request;
@@ -551,6 +554,7 @@ class Scout extends events_1.EventEmitter {
                     }
                     this.log(`[scout] Finishing and sending request with ID [${request.id}]`, types_1.LogLevel.Debug);
                     this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
+                    this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
                     // Finish and send
                     return request.finishAndSend()
                         .then(() => {
@@ -571,7 +575,18 @@ class Scout extends events_1.EventEmitter {
                     this.log(`[scout] Request started w/ ID [${request.id}]`, types_1.LogLevel.Debug);
                     this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
                     // Set function to call on finish
-                    request.setOnStop(doneFn);
+                    // NOTE: at least *two* async contexts will be created for each request -- one for the request
+                    // and one for every span started inside the request. this.asyncNamespace is almost certain
+                    // to be different by the time that stopFn is run -- we need to bind the stopFn to ensure
+                    // the right async namespace gets cleared.
+                    const stopFn = () => {
+                        const result = doneFn();
+                        if (request) {
+                            request.clearOnStop();
+                        }
+                        return result;
+                    };
+                    request.setOnStop(this.asyncNamespace.bind(stopFn));
                     ranCb = true;
                     result = cb(() => request.stop(), { request });
                     // Ensure that the result is a promise
@@ -733,17 +748,17 @@ exports.sendTagRequest = sendTagRequest;
  * @returns {Promise<ScoutSpan>} the passed in span
  */
 function sendStartSpan(scout, span) {
-    if (span.request && span.request.isIgnored()) {
-        scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.request.id}]`, types_1.LogLevel.Warn);
-        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
+    if (span.isIgnored()) {
+        scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.requestId}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.requestId);
         return Promise.resolve(span);
     }
     const opts = {
         spanId: span.id,
-        parentId: span.parent ? span.parent.id : undefined,
+        parentId: span.parentId,
         timestamp: span.getTimestamp(),
     };
-    const startSpanReq = new Requests.V1StartSpan(span.operation, span.request.id, opts);
+    const startSpanReq = new Requests.V1StartSpan(span.operation, span.requestId, opts);
     return sendThroughAgent(scout, startSpanReq)
         .then(() => span)
         .catch(err => {
@@ -762,12 +777,12 @@ exports.sendStartSpan = sendStartSpan;
  * @returns {Promise<void>} A promise which resolves when the message has been
  */
 function sendTagSpan(scout, span, name, value) {
-    if (span.request && span.request.isIgnored()) {
-        scout.log(`[scout] Skipping sending TagSpan for span [${span.id}] of ignored request [${span.request.id}]`, types_1.LogLevel.Warn);
-        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
+    if (span.isIgnored()) {
+        scout.log(`[scout] Skipping sending TagSpan for span [${span.id}] of ignored request [${span.requestId}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.requestId);
         return Promise.resolve();
     }
-    const tagSpanReq = new Requests.V1TagSpan(name, value, span.id, span.request.id);
+    const tagSpanReq = new Requests.V1TagSpan(name, value, span.id, span.requestId);
     return sendThroughAgent(scout, tagSpanReq)
         .then(() => undefined)
         .catch(err => {
@@ -784,12 +799,12 @@ exports.sendTagSpan = sendTagSpan;
  * @returns {Promise<ScoutSpan>} the passed in request
  */
 function sendStopSpan(scout, span) {
-    if (span.request && span.request.isIgnored()) {
-        scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.request.id}]`, types_1.LogLevel.Warn);
-        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
+    if (span.isIgnored()) {
+        scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.requestId}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.requestId);
         return Promise.resolve(span);
     }
-    const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id, { timestamp: span.getEndTime() });
+    const stopSpanReq = new Requests.V1StopSpan(span.id, span.requestId, { timestamp: span.getEndTime() });
     return sendThroughAgent(scout, stopSpanReq)
         .then(() => span)
         .catch(err => {

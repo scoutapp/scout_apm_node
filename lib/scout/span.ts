@@ -17,8 +17,6 @@ import {
     ScoutStackFrame,
 } from "../types";
 
-import ScoutRequest from "./request";
-
 import {
     Scout,
     sendStartSpan,
@@ -51,21 +49,24 @@ export interface ScoutSpanOptions {
     id?: string;
     scoutInstance?: Scout;
     logFn?: LogFn;
-    parent?: ScoutSpan;
     timestamp?: Date;
     started?: boolean;
     operation: string;
-    request: ScoutRequest;
+
+    requestId: string;
+    parentId?: string;
 
     // Callback to run when the span is finished
     onStop?: () => Promise<void>;
+
+    ignored?: boolean;
 }
 
 const TRACE_LIMIT = 50;
 
 export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, Startable {
-    public readonly request: ScoutRequest;
-    public readonly parent?: ScoutSpan;
+    public readonly requestId: string;
+    public readonly parentId?: string;
     public readonly id: string;
     public readonly operation: string;
 
@@ -85,8 +86,10 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     private onStop: () => Promise<void>;
 
+    private ignored: boolean = false;
+
     constructor(opts: ScoutSpanOptions) {
-        this.request = opts.request;
+        this.requestId = opts.requestId;
         this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_SPAN_PREFIX}${uuidv4()}`;
         this.operation = opts.operation;
 
@@ -99,9 +102,11 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             // ex. when startSpan is used by a Scout instance
             if (opts.started) { this.started = opts.started; }
 
-            if (opts.parent)  { this.parent = opts.parent; }
+            if (opts.parentId)  { this.parentId = opts.parentId; }
 
             if (opts.onStop)  { this.onStop = opts.onStop; }
+
+            if ("ignored" in opts)  { this.ignored = opts.ignored || false; }
         }
 
     }
@@ -158,6 +163,20 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             });
     }
 
+    public isIgnored(): boolean {
+        return this.ignored;
+    }
+
+    // Set a request as ignored
+    public ignore(): this {
+        this.ignored = true;
+
+        // Ignore all child spans if present
+        this.childSpans.forEach(s => s.ignore());
+
+        return this;
+    }
+
     /** @see ChildSpannable */
     public startChildSpan(operation: string): Promise<ScoutSpan> {
         return new Promise((resolve, reject) => {
@@ -173,7 +192,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     public startChildSpanSync(operation: string): ScoutSpan {
         if (this.stopped) {
             this.logFn(
-                `[scout/request/${this.request.id}/span/${this.id}] Cannot add span to stopped span [${this.id}]`,
+                `[scout/request/${this.requestId}/span/${this.id}] Cannot add span to stopped span [${this.id}]`,
                 LogLevel.Error,
             );
 
@@ -182,10 +201,11 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
         const span = new ScoutSpan({
             operation,
-            request: this.request,
+            requestId: this.requestId,
+            parentId: this.id,
             scoutInstance: this.scoutInstance,
             logFn: this.logFn,
-            parent: this,
+            ignored: this.ignored,
         });
 
         this.childSpans.push(span);
@@ -222,6 +242,10 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     public setOnStop(fn: () => Promise<void>) {
         this.onStop = fn;
+    }
+
+    public clearOnStop() {
+        delete this.onStop;
     }
 
     public stop(): Promise<this> {
@@ -322,7 +346,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
             .then(() => this.sent = true)
             .then(() => this)
             .catch(err => {
-                this.logFn(`[scout/request/${this.request.id}/span/${this.id}}] Failed to send span`);
+                this.logFn(`[scout/request/${this.requestId}/span/${this.id}}] Failed to send span`);
                 return this;
             });
 

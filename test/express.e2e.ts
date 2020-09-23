@@ -622,14 +622,14 @@ test("Nested spans on the top level controller have parent ID specified", t => {
             throw new Error("No render span");
         }
 
-        if (!internalOpSpan.parent) {
+        if (!internalOpSpan.parentId) {
             t.fail("no parent on internal op");
             throw new Error("No parent on internal op span");
         }
 
         // the internalOpSpan should have the correct parent
         t.equals(
-          internalOpSpan.parent.id,
+          internalOpSpan.parentId,
           controllerSpan.id,
           "the internal op span's parent is the controller span",
           );
