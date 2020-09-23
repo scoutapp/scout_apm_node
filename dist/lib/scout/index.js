@@ -256,8 +256,8 @@ class Scout extends events_1.EventEmitter {
      * @returns {Promise<any>} a promsie that resolves to the result of the callback
      */
     instrument(operation, cb) {
-        const parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
-        const request = this.getCurrentRequest() || undefined;
+        let parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
+        let request = this.getCurrentRequest() || undefined;
         const parentIsSpan = parent !== request;
         this.log(`[scout] Instrumenting operation [${operation}], parent? [${parent ? parent.id : "NONE"}]`, types_1.LogLevel.Debug);
         // Create a transaction if instrument was called without an encapsulating request
@@ -301,12 +301,15 @@ class Scout extends events_1.EventEmitter {
                         this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
                         this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
                     }
+                    parent = undefined;
+                    request = undefined;
                     // If we never made the span object then don't do anything
                     if (!span) {
                         return Promise.resolve();
                     }
                     // If we did create the span, note that it was stopped successfully
                     this.log(`[scout] Stopped span with ID [${span.id}]`, types_1.LogLevel.Debug);
+                    span = undefined;
                     return Promise.resolve();
                 };
                 // If parent has become invalidated, then run the callback and exit
@@ -314,19 +317,23 @@ class Scout extends events_1.EventEmitter {
                     resolve(cb(DONE_NOTHING, {}));
                     return;
                 }
+                // // TODO: ? Bind CB to namespace
+                // cb = this.asyncNamespace.bind(cb);
                 // Create & start a child span on the current parent (request/span)
                 parent
                     .startChildSpan(operation)
                     .then(s => span = s)
                     .then(() => {
                     // Set the span & request on the namespace
-                    console.log(`SETTING (IN CHILD) on NS [${this.asyncNamespace.active.id}]: [${request.id}]`);
+                    console.log(`SETTING (IN CHILD) on NS [${this.asyncNamespace.active.id}]: [${request ? request.id : 'none'}]`);
                     this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
                     this.asyncNamespace.set(ASYNC_NS_SPAN, span);
                     // Set function to call on finish
                     span.setOnStop(() => {
                         const result = doneFn();
-                        span.clearOnStop();
+                        if (span) {
+                            span.clearOnStop();
+                        }
                         return result;
                     });
                     // Set that the cb has been run, in the case of error so we don't run twice
@@ -560,6 +567,7 @@ class Scout extends events_1.EventEmitter {
                     return request.finishAndSend()
                         .then(() => {
                         this.log(`[scout] Finished and sent request [${request.id}]`, types_1.LogLevel.Debug);
+                        request = undefined;
                     })
                         .catch(err => {
                         this.log(`[scout] Failed to finish and send request [${request.id}]:\n ${err}`, types_1.LogLevel.Error);
@@ -579,8 +587,9 @@ class Scout extends events_1.EventEmitter {
                     // Set function to call on finish
                     const stopFn = () => {
                         const result = doneFn();
-                        console.log(`in onStop, namespace ID is [${this.asyncNamespace.active.id}]`);
-                        request.clearOnStop();
+                        if (request) {
+                            request.clearOnStop();
+                        }
                         return result;
                     };
                     request.setOnStop(this.asyncNamespace.bind(stopFn));

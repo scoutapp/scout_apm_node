@@ -143,8 +143,9 @@ function scoutMiddleware(opts) {
                         // Set up handler to act on end of request
                         onFinished(res, (err, res) => {
                             // Finish transaction (which will trigger a send)
-                            finishSpan();
-                            finishTransaction();
+                            finishSpan()
+                                .then(() => finishTransaction())
+                                .then(() => delete req.scout);
                         });
                         const rootSpan = scout.getCurrentSpan();
                         // Add the span to the request object

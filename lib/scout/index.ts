@@ -380,8 +380,8 @@ export class Scout extends EventEmitter {
      * @returns {Promise<any>} a promsie that resolves to the result of the callback
      */
     public instrument(operation: string, cb: DoneCallback): Promise<any> {
-        const parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
-        const request = this.getCurrentRequest() || undefined;
+        let parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
+        let request = this.getCurrentRequest() || undefined;
         const parentIsSpan = parent !== request;
 
         this.log(
@@ -443,11 +443,16 @@ export class Scout extends EventEmitter {
                         this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
                     }
 
+                    parent = undefined;
+                    request = undefined;
+
                     // If we never made the span object then don't do anything
                     if (!span) { return Promise.resolve(); }
 
                     // If we did create the span, note that it was stopped successfully
                     this.log(`[scout] Stopped span with ID [${span.id}]`, LogLevel.Debug);
+
+                    (span as any) = undefined;
 
                     return Promise.resolve();
                 };
@@ -458,20 +463,23 @@ export class Scout extends EventEmitter {
                     return;
                 }
 
+                // // TODO: ? Bind CB to namespace
+                // cb = this.asyncNamespace.bind(cb);
+
                 // Create & start a child span on the current parent (request/span)
                 parent
                     .startChildSpan(operation)
                     .then(s => span = s)
                     .then(() => {
                         // Set the span & request on the namespace
-                        console.log(`SETTING (IN CHILD) on NS [${this.asyncNamespace.active.id}]: [${request.id}]`);
+                        console.log(`SETTING (IN CHILD) on NS [${this.asyncNamespace.active.id}]: [${request ? request.id : 'none'}]`);
                         this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
                         this.asyncNamespace.set(ASYNC_NS_SPAN, span);
 
                         // Set function to call on finish
                         span.setOnStop(() => {
                             const result = doneFn();
-                            span.clearOnStop();
+                            if (span) { span.clearOnStop(); }
                             return result;
                         });
 
@@ -757,6 +765,7 @@ export class Scout extends EventEmitter {
                     return request.finishAndSend()
                         .then(() => {
                             this.log(`[scout] Finished and sent request [${request.id}]`, LogLevel.Debug);
+                            (request as any) = undefined;
                         })
                         .catch(err => {
                             this.log(
@@ -784,8 +793,7 @@ export class Scout extends EventEmitter {
                         // Set function to call on finish
                         const stopFn = () => {
                             const result = doneFn();
-                            console.log(`in onStop, namespace ID is [${this.asyncNamespace.active.id}]`);
-                            request.clearOnStop();
+                            if (request) { request.clearOnStop(); }
                             return result;
                         };
                         request.setOnStop(this.asyncNamespace.bind(stopFn));
