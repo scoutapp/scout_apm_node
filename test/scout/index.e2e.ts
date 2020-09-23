@@ -922,7 +922,7 @@ test("instrumentSync should automatically create a transaction", t => {
     scout
         .setup()
         .then(() => {
-            // The scout object should be created as sa result of doing the .run
+            // The scout object should be created as a result of doing the .run
             scout.instrumentSync("test-instrument-sync-auto-create-transaction", ({request}) => {
                 if (!request) {
                     throw new Error("request is missing inside transactionSync");

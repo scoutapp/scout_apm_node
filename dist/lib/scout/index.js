@@ -376,6 +376,8 @@ class Scout extends events_1.EventEmitter {
         span.startSync();
         const result = fn({
             span,
+            parent,
+            request: this.getCurrentRequest() || undefined,
         });
         span.stopSync();
         // Clear out the current span for synchronous operations
