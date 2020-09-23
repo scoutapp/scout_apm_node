@@ -42,6 +42,9 @@ const VERSIONS = [
   "1.2.6",
   "1.2.7",
   "1.2.8",
+  "1.2.9",
+  "1.2.10",
+  "1.3.0",
 ];
 
 // Directory in which to store the downloaded tarballs

@@ -241,7 +241,7 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     coreAgentLaunch: true,
     coreAgentLogLevel: LogLevel.Info,
     coreAgentPermissions: 700,
-    coreAgentVersion: "v1.2.8", // can be exact tag name, or 'latest'
+    coreAgentVersion: "v1.3.0", // can be exact tag name, or 'latest'
 
     disabledInstruments: [],
     downloadUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",

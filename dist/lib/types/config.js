@@ -180,7 +180,7 @@ exports.DEFAULT_SCOUT_CONFIGURATION = {
     coreAgentLaunch: true,
     coreAgentLogLevel: enum_1.LogLevel.Info,
     coreAgentPermissions: 700,
-    coreAgentVersion: "v1.2.8",
+    coreAgentVersion: "v1.3.0",
     disabledInstruments: [],
     downloadUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
     framework: "",
