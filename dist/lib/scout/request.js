@@ -142,6 +142,9 @@ class ScoutRequest {
     setOnStop(fn) {
         this.onStop = fn;
     }
+    clearOnStop() {
+        delete this.onStop;
+    }
     stop() {
         if (this.finished) {
             return Promise.resolve(this);

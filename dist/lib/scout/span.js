@@ -150,6 +150,9 @@ class ScoutSpan {
     setOnStop(fn) {
         this.onStop = fn;
     }
+    clearOnStop() {
+        delete this.onStop;
+    }
     stop() {
         if (this.stopped) {
             return Promise.resolve(this);

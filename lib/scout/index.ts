@@ -466,7 +466,11 @@ export class Scout extends EventEmitter {
                         this.asyncNamespace.set(ASYNC_NS_SPAN, span);
 
                         // Set function to call on finish
-                        span.setOnStop(doneFn);
+                        span.setOnStop(() => {
+                            const result = doneFn();
+                            span.clearOnStop();
+                            return result;
+                        });
 
                         // Set that the cb has been run, in the case of error so we don't run twice
                         ranCb = true;
@@ -620,6 +624,7 @@ export class Scout extends EventEmitter {
         try {
             this.asyncNamespace.set(key, undefined);
         } catch {
+            console.log("FAILED TO CLEAR ASYNC NAMESPACE");
             this.logFn("failed to clear async namespace", LogLevel.Debug);
         }
     }
@@ -773,7 +778,11 @@ export class Scout extends EventEmitter {
                         this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
 
                         // Set function to call on finish
-                        request.setOnStop(doneFn);
+                        request.setOnStop(() => {
+                            const result = doneFn();
+                            request.clearOnStop();
+                            return result;
+                        });
 
                         ranCb = true;
                         result = cb(() => request.stop(), {request});

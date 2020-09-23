@@ -202,6 +202,10 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         this.onStop = fn;
     }
 
+    public clearOnStop() {
+        delete this.onStop;
+    }
+
     public stop(): Promise<this> {
         if (this.finished) { return Promise.resolve(this); }
 

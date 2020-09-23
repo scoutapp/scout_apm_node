@@ -17,8 +17,6 @@ import {
     ScoutStackFrame,
 } from "../types";
 
-import ScoutRequest from "./request";
-
 import {
     Scout,
     sendStartSpan,
@@ -244,6 +242,10 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     public setOnStop(fn: () => Promise<void>) {
         this.onStop = fn;
+    }
+
+    public clearOnStop() {
+        delete this.onStop;
     }
 
     public stop(): Promise<this> {

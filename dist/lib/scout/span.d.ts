@@ -74,6 +74,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     isStopped(): boolean;
     getEndTime(): Date;
     setOnStop(fn: () => Promise<void>): void;
+    clearOnStop(): void;
     stop(): Promise<this>;
     stopSync(): this;
     isStarted(): boolean;
