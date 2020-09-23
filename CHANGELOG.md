@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-rc.0] - 2020-09-23
+
+### Added
+- feature/242 Capture request queue time ([#242](https://github.com/scoutapp/scout_apm_node/issues/242))
+- feature/237 Update core agent to 1.3.0 ([#237](https://github.com/scoutapp/scout_apm_node/issues/237))
+
+### Changed
+- Bump decompress from 4.2.0 to 4.2.1
+- Bump node-fetch from 2.6.0 to 2.6.1
+- bugfix/239 reduce memory usage & remove leaks ([#239](https://github.com/scoutapp/scout_apm_node/issues/239))
+
 ## [0.1.12] - 2020-08-13
 
 ### Changed
@@ -16,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 -  See `v0.1.11-rc.0` -> `v0.1.11-rc.2` changes
 
-## [0.1.11-rc.1] - 2020-08-13
+## [0.1.11-rc.2] - 2020-08-13
 
 ### Changed
 - bugfix/226 Add warning when config was missing during `scout.install`, support remembering config used in `scout.install`/`scout.expressMiddleware`) ([#226](https://github.com/scoutapp/scout_apm_node/issues/226))
@@ -136,6 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial implementation of NodeJS agent
 
 [Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.12...HEAD
+[0.2.0-rc.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.12...v0.2.0-rc.0
 [0.1.12]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11...v0.1.12
 [0.1.11]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.2...v0.1.11
 [0.1.11-rc.2]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.1...v0.1.11-rc.2
