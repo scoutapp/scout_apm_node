@@ -19,6 +19,8 @@ import {
 
 import { Scout } from "../lib/scout";
 
+import * as TestConstants from "./constants";
+
 import { testConfigurationOverlay } from "./util";
 
 test("ScoutConfiguration builds with minimal passed ENV", t => {
@@ -138,7 +140,7 @@ test("application metadata is correctly generated", (t: Test) => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/124
 test("core agent dir matches python", (t: Test) => {
-    const config = buildScoutConfiguration({coreAgentVersion: "v1.2.8"});
+    const config = buildScoutConfiguration({coreAgentVersion: TestConstants.TEST_APP_VERSION});
     const scout = new Scout(config);
 
     const expectedCoreAgentDir = path.join(
@@ -148,7 +150,7 @@ test("core agent dir matches python", (t: Test) => {
 
     const expectedSocketPath = path.join(
         expectedCoreAgentDir,
-        `scout_apm_core-v1.2.8-${generateTriple()}`,
+        `scout_apm_core-${TestConstants.TEST_APP_VERSION}-${generateTriple()}`,
         "core-agent.sock",
     );
 

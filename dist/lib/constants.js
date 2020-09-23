@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_CORE_AGENT_VERSION = "v1.2.8";
+exports.DEFAULT_CORE_AGENT_VERSION = "v1.3.0";
 exports.DOMAIN_SOCKET_URI_SCHEME_RGX = /^(unix|file):\/\//;
 exports.TMP_DIR_PREFIX = "core-agent-dl-";
 exports.CORE_AGENT_BIN_FILE_NAME = "core-agent";

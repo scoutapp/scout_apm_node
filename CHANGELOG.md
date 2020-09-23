@@ -74,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.8] - 2020-03-11
 
 ### Added
-- feature/174 bump core agent versiont 1.2.8 ([#174](https://github.com/scoutapp/scout_apm_node/issues/174))
+- feature/174 bump core agent version to 1.2.8 ([#174](https://github.com/scoutapp/scout_apm_node/issues/174))
 - feature/169 detect application root ([#169](https://github.com/scoutapp/scout_apm_node/issues/169))
 
 ### Changed

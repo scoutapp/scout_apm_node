@@ -7,6 +7,7 @@ const process_1 = require("process");
 const app_root_dir_1 = require("app-root-dir");
 const types_1 = require("../lib/types");
 const scout_1 = require("../lib/scout");
+const TestConstants = require("./constants");
 const util_1 = require("./util");
 test("ScoutConfiguration builds with minimal passed ENV", t => {
     // This env mimics what would be passed in from process.env
@@ -101,10 +102,10 @@ test("application metadata is correctly generated", (t) => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/124
 test("core agent dir matches python", (t) => {
-    const config = types_1.buildScoutConfiguration({ coreAgentVersion: "v1.2.8" });
+    const config = types_1.buildScoutConfiguration({ coreAgentVersion: TestConstants.TEST_APP_VERSION });
     const scout = new scout_1.Scout(config);
     const expectedCoreAgentDir = path.join(os.tmpdir(), "scout_apm_core");
-    const expectedSocketPath = path.join(expectedCoreAgentDir, `scout_apm_core-v1.2.8-${types_1.generateTriple()}`, "core-agent.sock");
+    const expectedSocketPath = path.join(expectedCoreAgentDir, `scout_apm_core-${TestConstants.TEST_APP_VERSION}-${types_1.generateTriple()}`, "core-agent.sock");
     t.equals(config.coreAgentDir, expectedCoreAgentDir, "core agent directory matches the expected value");
     t.equals(scout.getSocketPath(), `unix://${expectedSocketPath}`, "socket path matches expected value");
     t.end();
