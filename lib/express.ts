@@ -11,12 +11,16 @@ import {
 } from "./types";
 import * as Constants from "./constants";
 import { Scout, ScoutRequest, ScoutSpan, ScoutOptions } from "./scout";
+import { Request } from "express";
 import {
     getActiveGlobalScoutInstance,
     getOrCreateActiveGlobalScoutInstance,
     setGlobalLastUsedConfiguration,
     setGlobalLastUsedOptions,
 } from "./global";
+
+const getNanoTime = require("nano-time");
+const BigNumber = require("big-number");
 
 export interface ApplicationWithScout {
     scout?: Scout;
@@ -43,6 +47,27 @@ export interface ExpressScoutInfo {
 
 export type ExpressRequestWithScout = Request & ExpressScoutInfo;
 
+// Support common request queue time headers
+// https://github.com/scoutapp/scout_apm_node/issues/68
+const REQUEST_QUEUE_TIME_HEADERS = ["x-queue-start", "x-request-start"];
+/**
+ * Parse a queue time in NS out of a HTTP header value
+ *
+ * @param {string} value - value of the header
+ * @return {BigNumber}
+ */
+function parseQueueTimeNS(value: string): any {
+    if (!value) { return null; }
+
+    value = value.trim();
+    if (!value.startsWith("t=")) { return null; }
+
+    const parsed = new BigNumber(value.slice(2));
+    if (parsed.number === "Invalid Number") { return null; }
+
+    return parsed;
+}
+
 /**
  * Middleware for using scout, this should be
  * attached to the application object using app.use(...)
@@ -67,6 +92,8 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
     setGlobalLastUsedOptions(options);
 
     return (req: any, res: any, next: () => void) => {
+        const requestStartTimeNS = getNanoTime();
+
         // If there is no global scout instance yet and no scout instance just go to next middleware immediately
         const scout = opts && opts.scout ? opts.scout : req.app.scout || getActiveGlobalScoutInstance();
 
@@ -178,7 +205,21 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                     }
 
                     // Add the path context
-                    req.scout.request.addContext(ScoutContextName.Path, scout.filterRequestPath(reqPath))
+                    req.scout.request
+                        .addContext(ScoutContextName.Path, scout.filterRequestPath(reqPath))
+                    // Add request queue time context if present
+                        .then(() => {
+                            const matchingHeader = REQUEST_QUEUE_TIME_HEADERS.find(headerName => req.get(headerName));
+
+                            // If a header was found, extract the queue time
+                            if (matchingHeader) {
+                                const value = parseQueueTimeNS(req.get(matchingHeader));
+                                return req.scout.request.addContext(
+                                    ScoutContextName.QueueTimeNS,
+                                    new BigNumber(requestStartTimeNS).minus(value).toString(),
+                                );
+                            }
+                        })
                     // Perform the rest of the request tracing
                         .then(() => {
                             // Start a span for the Controller

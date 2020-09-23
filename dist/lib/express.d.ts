@@ -1,5 +1,6 @@
 import { LogFn, ScoutConfiguration } from "./types";
 import { Scout, ScoutRequest, ScoutSpan } from "./scout";
+import { Request } from "express";
 export interface ApplicationWithScout {
     scout?: Scout;
 }

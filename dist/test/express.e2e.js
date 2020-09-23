@@ -8,6 +8,8 @@ const express_1 = require("../lib/express");
 const types_1 = require("../lib/types");
 const scout_1 = require("../lib/scout");
 const lib_1 = require("../lib");
+const getNanoTime = require("nano-time");
+const BigNumber = require("big-number");
 const global_1 = require("../lib/global");
 const TEST_OPTS = { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS };
 lib_1.setupRequireIntegrations(["pug", "ejs", "mustache"]);
@@ -548,6 +550,49 @@ test("Unknown routes should not be recorded", t => {
             .expect("Content-Type", /html/)
             .expect(404)
             .then(() => t.pass("unknown route was visited"));
+    })
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+// https://github.com/scoutapp/scout_apm_node/issues/68
+test("Request queue time should be recorded", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    }));
+    // Create an application that's set up to do a simple instrumentation
+    const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0,
+        waitForScoutSetup: true,
+    }));
+    let preRequestTimeNS;
+    // Set up a listener that should fire when the request is finished
+    const listener = (data) => {
+        // Remove listener since this should fire once
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        const nowInListenerNS = new BigNumber(getNanoTime());
+        const queueTimeNSRaw = data.request.getContextValue(types_1.ScoutContextName.QueueTimeNS);
+        t.assert(queueTimeNSRaw, "duration in NS is present is valid BigNumber");
+        const queueTimeNS = new BigNumber(queueTimeNSRaw);
+        const totalRequestTimeNS = nowInListenerNS.minus(preRequestTimeNS);
+        t.assert(queueTimeNS.gte(0), "positive queueTimeNS is bigger than 0");
+        t.assert(queueTimeNS.lte(totalRequestTimeNS), `request queue duration (${queueTimeNS}) is less than time of request (${totalRequestTimeNS.toString()})`);
+        // Shutdown and close scout
+        TestUtil.shutdownScout(t, scout);
+    };
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
+    scout
+        .setup()
+        .then(() => {
+        // Take the time before making the request
+        preRequestTimeNS = new BigNumber(getNanoTime());
+        // Send a request that has recognized headers set
+        return request(app)
+            .get("/")
+            .set("X-QUEUE-START", `t=${preRequestTimeNS.toString()}`)
+            .expect("Content-Type", /json/)
+            .expect(200)
+            .then(() => t.pass("root route was visited"));
     })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });

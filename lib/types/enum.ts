@@ -142,6 +142,7 @@ export enum ScoutContextName {
     Path = "path",
     Timeout = "timeout",
     IgnoreTransaction = "ignore_transaction",
+    QueueTimeNS = "scout.queue_time_ns",
 }
 
 export enum ScoutSpanOperation {
