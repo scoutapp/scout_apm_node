@@ -26,7 +26,7 @@ import * as TestConstants from "../constants";
 
 const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY || "fake-agent-key";
 
-test(`external process can be launched locally (${TestConstants.TEST_APP_VERSION}))`, t => {
+test(`external process can be launched locally (v${TestConstants.TEST_APP_VERSION})`, t => {
     let agent: ExternalProcessAgent;
     let process: ChildProcess;
 
@@ -43,7 +43,7 @@ test(`external process can be launched locally (${TestConstants.TEST_APP_VERSION
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`manual async GetVersion message works (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`manual async GetVersion message works (v${TestConstants.TEST_APP_VERSION})`, t => {
     let agent: ExternalProcessAgent;
 
     // Create the external process agent
@@ -62,7 +62,7 @@ test(`manual async GetVersion message works (${TestConstants.TEST_APP_VERSION})`
                 t.equals(
                   resp.version.raw,
                     TestConstants.TEST_APP_VERSION,
-                    `parsed response version matches (${TestConstants.TEST_APP_VERSION})`,
+                    `parsed response version matches (v${TestConstants.TEST_APP_VERSION})`,
                   );
 
                 // Remove listener
@@ -82,7 +82,7 @@ test(`manual async GetVersion message works (${TestConstants.TEST_APP_VERSION})`
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`GetVersion message works (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`GetVersion message works (v${TestConstants.TEST_APP_VERSION})`, t => {
     let agent: ExternalProcessAgent;
 
     // Create the external process agent
@@ -101,7 +101,7 @@ test(`GetVersion message works (${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`Register message works (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`Register message works (v${TestConstants.TEST_APP_VERSION})`, t => {
     let agent: ExternalProcessAgent;
 
     // Ensure agent key is present (fed in from ENV)
@@ -128,7 +128,7 @@ test(`Register message works (${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`StartRequest message works (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`StartRequest message works (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -151,7 +151,7 @@ test(`StartRequest message works (${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`FinishRequest message works (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`FinishRequest message works (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
@@ -180,7 +180,7 @@ test(`FinishRequest message works (${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`TagRequest message works (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`TagRequest message works (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
@@ -216,7 +216,7 @@ test(`TagRequest message works (${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`StartSpan message works for leaf span (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`StartSpan message works for leaf span (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
@@ -251,7 +251,7 @@ test(`StartSpan message works for leaf span (${TestConstants.TEST_APP_VERSION})`
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`StopSpan works for leaf span (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`StopSpan works for leaf span (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -294,7 +294,7 @@ test(`StopSpan works for leaf span (${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`TagSpan works for leaf span (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`TagSpan works for leaf span (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -342,7 +342,7 @@ test(`TagSpan works for leaf span (${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`ApplicationEvent for application metadata works (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`ApplicationEvent for application metadata works (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -366,7 +366,7 @@ test(`ApplicationEvent for application metadata works (${TestConstants.TEST_APP_
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`ApplicationEvent for sampling works (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`ApplicationEvent for sampling works (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -396,7 +396,7 @@ test(`ApplicationEvent for sampling works (${TestConstants.TEST_APP_VERSION})`, 
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`Nested spans work (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`Nested spans work (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -447,7 +447,7 @@ test(`Nested spans work (${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`Nested spans work in the wrong close order (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`Nested spans work in the wrong close order (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -498,7 +498,7 @@ test(`Nested spans work in the wrong close order (${TestConstants.TEST_APP_VERSI
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`Request with 'Controller' span works, after waiting for flush (${TestConstants.TEST_APP_VERSION})`, t => {
+test(`Request with 'Controller' span works, after waiting for flush (v${TestConstants.TEST_APP_VERSION})`, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
