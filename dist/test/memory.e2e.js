@@ -30,7 +30,7 @@ const util_1 = require("util");
 const loadTest = util_1.promisify(loadtest_1.loadTest);
 const LOAD_TEST_CONCURRENCY = parseInt(process.env.LOAD_TEST_CONCURRENCY || "5", 10);
 const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS || "10", 10);
-const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "10", 10);
+const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "60", 10);
 const MEMORY_USAGE_BOUND_MULTIPLIER = 1.25;
 const DEFAULT_LOADTEST_OPTIONS = {
     concurrency: LOAD_TEST_CONCURRENCY,
@@ -91,6 +91,7 @@ test("no large memory leaks", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, (
             stats.expressWithScout.memoryUsage = JSON.parse(payload.memoryUsageJSON);
         }
     });
+    yield TestUtil.waitMs(10000);
     // Load test the first application
     yield loadTest(Object.assign(Object.assign({}, DEFAULT_LOADTEST_OPTIONS), { url: `http://localhost:${expressENV.PORT}` }));
     // Get the memory usage after load testing

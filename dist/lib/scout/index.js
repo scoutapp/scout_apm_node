@@ -214,14 +214,12 @@ class Scout extends events_1.EventEmitter {
      */
     transaction(name, cb) {
         this.log(`[scout] Starting transaction [${name}]`, types_1.LogLevel.Debug);
-        let result;
         let ranContext = false;
         // Setup if necessary then then perform the async request context
         return this.setup()
             .then(() => {
             ranContext = true;
-            result = this.withAsyncRequestContext(cb);
-            return result;
+            return this.withAsyncRequestContext(cb);
         })
             .catch(err => {
             this.log("[scout] Scout setup failed: ${err}", types_1.LogLevel.Error);
@@ -325,7 +323,7 @@ class Scout extends events_1.EventEmitter {
                     .then(s => span = s)
                     .then(() => {
                     // Set the span & request on the namespace
-                    console.log(`SETTING (IN CHILD) on NS [${this.asyncNamespace.active.id}]: [${request ? request.id : 'none'}]`);
+                    // console.log(`SETTING (IN CHILD) on NS [${this.asyncNamespace.active.id}]: [${request ? request.id : 'none'}]`);
                     this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
                     this.asyncNamespace.set(ASYNC_NS_SPAN, span);
                     // Set function to call on finish
@@ -458,7 +456,7 @@ class Scout extends events_1.EventEmitter {
      */
     clearAsyncNamespaceEntry(key) {
         try {
-            console.log(`CLEARING on NS [${this.asyncNamespace.active.id}]`);
+            // console.log(`CLEARING on NS [${this.asyncNamespace.active.id}]`);
             this.asyncNamespace.set(key, undefined);
         }
         catch (_a) {
@@ -547,7 +545,6 @@ class Scout extends events_1.EventEmitter {
      *
      */
     withAsyncRequestContext(cb) {
-        // If we can use async hooks then node-request-context is usable
         return new Promise((resolve) => {
             let result;
             let request;
@@ -582,7 +579,7 @@ class Scout extends events_1.EventEmitter {
                     // Update async namespace, run function
                     .then(() => {
                     this.log(`[scout] Request started w/ ID [${request.id}]`, types_1.LogLevel.Debug);
-                    console.log(`SETTING (IN REQ) on NS [${this.asyncNamespace.active.id}]: [${request.id}]`);
+                    // console.log(`SETTING (IN REQ) on NS [${this.asyncNamespace.active.id}]: [${request.id}]`);
                     this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
                     // Set function to call on finish
                     const stopFn = () => {
