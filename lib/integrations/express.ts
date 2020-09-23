@@ -26,6 +26,9 @@ export class ExpressIntegration extends RequireIntegration {
         // Shim application creation
         expressExport = this.shimApplicationCreate(expressExport);
 
+        // Shim Router
+        expressExport = this.shimRouter(expressExport);
+
         return expressExport;
     }
 
@@ -134,6 +137,21 @@ export class ExpressIntegration extends RequireIntegration {
 
         return app;
     }
+
+    /**
+     * Shim express Router
+     *
+     * @param {any} expressExport
+     * @return {any} the modified express export
+     */
+    private shimRouter(expressExport: any): any {
+        const integration = this;
+
+        const originalRouter = expressExport.Router;
+
+        return expressExport;
+    }
+
 }
 
 export default new ExpressIntegration();

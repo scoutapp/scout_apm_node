@@ -247,6 +247,20 @@ function queryAndRenderRandomNumbers(middleware, templateEngine, dbClient) {
     return app;
 }
 exports.queryAndRenderRandomNumbers = queryAndRenderRandomNumbers;
+function appWithRouterGET(middleware, expressFnTransform) {
+    const app = expressFnTransform(express)();
+    app.use(middleware);
+    const router = express.Router();
+    router.get("/", (req, res) => {
+        res.send({ status: "success" });
+    });
+    app.get("/", (req, res) => {
+        res.status(500).send({ error: "should be hitting the router" });
+    });
+    app.use("/router", router);
+    return app;
+}
+exports.appWithRouterGET = appWithRouterGET;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;

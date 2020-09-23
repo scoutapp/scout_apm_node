@@ -327,6 +327,27 @@ export function queryAndRenderRandomNumbers(
     return app;
 }
 
+export function appWithRouterGET(
+    middleware: any,
+    expressFnTransform: (expressFn: ExpressFn) => ExpressFn,
+): Application {
+    const app = expressFnTransform(express)();
+    app.use(middleware);
+
+    const router = express.Router();
+    router.get("/", (req: Request, res: Response) => {
+        res.send({status: "success"});
+    });
+
+    app.get("/", (req: any, res: Response) => {
+        res.status(500).send({error: "should be hitting the router"});
+    });
+
+    app.use("/router", router);
+
+    return app;
+}
+
 // Test that a given variable is effectively overlaid in the configuration
 export function testConfigurationOverlay(
     t: Test,

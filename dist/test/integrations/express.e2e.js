@@ -61,3 +61,40 @@ test("errors in controller functions trigger context updates", t => {
         // If an error occurs, shutdown scout
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
+// https://github.com/scoutapp/scout_apm_node/issues/238
+test("express Routers are recorded", t => {
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    const scout = new scout_1.Scout(config);
+    const app = TestUtil.appWithRouterGET(express_2.scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0,
+    }), (fn) => express_1.default.shimExpressFn(fn));
+    // Set up a listener for the scout request that will be after the Router-hosted GET is hit
+    const listener = (data) => {
+        // Once we know we're looking at the right request, we can remove the listener
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        t.pass("scout request was sent");
+        // console.log("data.request?", data.request);
+        // console.log("URL?:", data.request.getContextValue(ScoutContextName.URL));
+        // console.log("PATH?:", data.request.getContextValue(ScoutContextName.Path));
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+    // Activate the listener
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
+    scout
+        .setup()
+        // Send a request to trigger the controller-function error
+        .then(() => {
+        return request(app)
+            .get("/router")
+            .expect("Content-Type", /json/)
+            .expect(200)
+            .then(res => t.assert(res, "request sent"));
+    })
+        // If an error occurs, shutdown scout
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
