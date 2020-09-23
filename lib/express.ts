@@ -131,6 +131,9 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         const preQueryUrl = reqPath.split("?")[0];
         let matchedRouteMiddleware = commonRouteMiddlewares.find((m: any) => m.regexp.test(preQueryUrl));
 
+        console.log("req.url?", req.url);
+        console.log("matchedRouteMiddleware?", matchedRouteMiddleware);
+
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
         if (!matchedRouteMiddleware) {
@@ -173,9 +176,12 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                 // If no route matches then we don't need to record
                 if (!matchedRouteMiddleware) {
                     scout.emit(ScoutEvent.UnknownRequestPathSkipped, req.url);
+                    console.log("UKNOWN REQUEST SKIPPING");
                     next();
                     return;
                 }
+
+                console.log("DID NOT SKIP!");
 
                 // Create a Controller/ span for the request
                 const path = matchedRouteMiddleware.route.path;

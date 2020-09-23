@@ -213,6 +213,8 @@ class ScoutRequest {
             inst.emit(types_2.ScoutEvent.IgnoredRequestProcessingSkipped, this);
             return Promise.resolve(this);
         }
+        // TODO: Bug here, what is sending the request???
+        console.log("SENDING??");
         this.sending = index_1.sendStartRequest(inst, this)
             // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
