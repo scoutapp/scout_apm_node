@@ -132,6 +132,7 @@ var ScoutContextName;
     ScoutContextName["Path"] = "path";
     ScoutContextName["Timeout"] = "timeout";
     ScoutContextName["IgnoreTransaction"] = "ignore_transaction";
+    ScoutContextName["QueueTimeNS"] = "scout.queue_time_ns";
 })(ScoutContextName = exports.ScoutContextName || (exports.ScoutContextName = {}));
 var ScoutSpanOperation;
 (function (ScoutSpanOperation) {
