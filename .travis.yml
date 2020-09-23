@@ -9,8 +9,7 @@ cache:
 env:
   - TEST_SUITE="test-unit"
   - TEST_SUITE="test-int"
-  - TEST_SUITE="test-e2e"
-  - TEST_SUITE="test-integrations"
+  - TEST_SUITE="test-e2e" # includes integrations
 
 script: "make $TEST_SUITE"
 
