@@ -470,7 +470,6 @@ export class Scout extends EventEmitter {
                     .then(s => span = s)
                     .then(() => {
                         // Set the span & request on the namespace
-                        // console.log(`SETTING (IN CHILD) on NS [${this.asyncNamespace.active.id}]: [${request ? request.id : 'none'}]`);
                         this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
                         this.asyncNamespace.set(ASYNC_NS_SPAN, span);
 
@@ -631,7 +630,6 @@ export class Scout extends EventEmitter {
      */
     private clearAsyncNamespaceEntry(key: string) {
         try {
-            // console.log(`CLEARING on NS [${this.asyncNamespace.active.id}]`);
             this.asyncNamespace.set(key, undefined);
         } catch {
             this.logFn("failed to clear async namespace", LogLevel.Debug);
@@ -784,31 +782,22 @@ export class Scout extends EventEmitter {
                 // Update async namespace, run function
                     .then(() => {
                         this.log(`[scout] Request started w/ ID [${request.id}]`, LogLevel.Debug);
-                        // console.log(`SETTING (IN REQ) on NS [${this.asyncNamespace.active.id}]: [${request.id}]`);
                         this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
 
                         // Set function to call on finish
+                        // NOTE: at least *two* async contexts will be created for each request -- one for the request
+                        // and one for every span started inside the request. this.asyncNamespace is almost certain
+                        // to be different by the time that stopFn is run -- we need to bind the stopFn to ensure
+                        // the right async namespace gets cleared.
                         const stopFn = () => {
                             const result = doneFn();
                             if (request) { request.clearOnStop(); }
                             return result;
                         };
                         request.setOnStop(this.asyncNamespace.bind(stopFn));
-                        // request.setOnStop(stopFn);
-
-                        // NOTE: at least *two* async contexts will be created for each request -- one for the request
-                        // and one for every span started inside the request. this.asyncNamespace *will* be different by the
-                        // time that stopFn is run -- we need to save a ref to the async namespace we used to have to remove
-                        // the request (the span will get removed by other things)
-                        //
-                        // Why not this.asyncNamespace.bind(stopFn)?
-                        // if we bind it, the right clears don't happen.
-
-                        // Maybe we can just clear it when we clear span?
 
                         ranCb = true;
                         result = cb(() => request.stop(), {request});
-                        // result = this.asyncNamespace.bind(cb)(() => request.stop(), {request});
 
                         // Ensure that the result is a promise
                         resolve(result);
