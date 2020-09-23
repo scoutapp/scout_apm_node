@@ -33,7 +33,9 @@
     "test-integration-mysql2": "./node_modules/.bin/tape 'dist/test/integrations/mysql2.e2e.js'",
     "test-integration-pug": "./node_modules/.bin/tape 'dist/test/integrations/pug.e2e.js'",
     "test-integration-mustache": "./node_modules/.bin/tape 'dist/test/integrations/mustache.e2e.js'",
-    "test-integration-ejs": "./node_modules/.bin/tape 'dist/test/integrations/ejs.e2e.js'"
+    "test-integration-ejs": "./node_modules/.bin/tape 'dist/test/integrations/ejs.e2e.js'",
+    "test-integration-express": "./node_modules/.bin/tape 'dist/test/integrations/express.e2e.js'",
+    "test-integration-nuxt": "./node_modules/.bin/tape 'dist/test/integrations/nuxt.e2e.js'"
   },
   "types": "index.d.ts",
   "files": [
