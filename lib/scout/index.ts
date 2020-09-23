@@ -528,8 +528,8 @@ export class Scout extends EventEmitter {
         span.startSync();
         const result = fn({
             span,
-            parent: span.parent,
-            request: span.request,
+            // parentId: span.parentId,
+            // requestId: span.requestId,
         });
         span.stopSync();
 
@@ -743,6 +743,7 @@ export class Scout extends EventEmitter {
 
                     this.log(`[scout] Finishing and sending request with ID [${request.id}]`, LogLevel.Debug);
                     this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
+                    this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
 
                     // Finish and send
                     return request.finishAndSend()
@@ -755,6 +756,7 @@ export class Scout extends EventEmitter {
                                 LogLevel.Error,
                             );
                         });
+
                 };
 
                 this.log(`[scout] Starting request in async namespace...`, LogLevel.Debug);
@@ -967,24 +969,24 @@ export function sendTagRequest(
  * @returns {Promise<ScoutSpan>} the passed in span
  */
 export function sendStartSpan(scout: Scout, span: ScoutSpan): Promise<ScoutSpan> {
-    if (span.request && span.request.isIgnored()) {
+    if (span.isIgnored()) {
         scout.log(
-            `[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.request.id}]`,
+            `[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.requestId}]`,
             LogLevel.Warn,
         );
-        scout.emit(ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
+        scout.emit(ScoutEvent.IgnoredRequestProcessingSkipped, span.requestId);
         return Promise.resolve(span);
     }
 
     const opts = {
         spanId: span.id,
-        parentId: span.parent ? span.parent.id : undefined,
+        parentId: span.parentId,
         timestamp: span.getTimestamp(),
     };
 
     const startSpanReq = new Requests.V1StartSpan(
         span.operation,
-        span.request.id,
+        span.requestId,
         opts,
     );
 
@@ -1011,12 +1013,12 @@ export function sendTagSpan(
     name: string,
     value: JSONValue | JSONValue[],
 ): Promise<void> {
-    if (span.request && span.request.isIgnored()) {
+    if (span.isIgnored()) {
         scout.log(
-            `[scout] Skipping sending TagSpan for span [${span.id}] of ignored request [${span.request.id}]`,
+            `[scout] Skipping sending TagSpan for span [${span.id}] of ignored request [${span.requestId}]`,
             LogLevel.Warn,
         );
-        scout.emit(ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
+        scout.emit(ScoutEvent.IgnoredRequestProcessingSkipped, span.requestId);
         return Promise.resolve();
     }
 
@@ -1024,7 +1026,7 @@ export function sendTagSpan(
         name,
         value,
         span.id,
-        span.request.id,
+        span.requestId,
     );
 
     return sendThroughAgent(scout, tagSpanReq)
@@ -1043,16 +1045,16 @@ export function sendTagSpan(
  * @returns {Promise<ScoutSpan>} the passed in request
  */
 export function sendStopSpan(scout: Scout, span: ScoutSpan): Promise<ScoutSpan> {
-    if (span.request && span.request.isIgnored()) {
+    if (span.isIgnored()) {
         scout.log(
-            `[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.request.id}]`,
+            `[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.requestId}]`,
             LogLevel.Warn,
         );
-        scout.emit(ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
+        scout.emit(ScoutEvent.IgnoredRequestProcessingSkipped, span.requestId);
         return Promise.resolve(span);
     }
 
-    const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id, {timestamp: span.getEndTime()});
+    const stopSpanReq = new Requests.V1StopSpan(span.id, span.requestId, {timestamp: span.getEndTime()});
 
     return sendThroughAgent(scout, stopSpanReq)
         .then(() => span)

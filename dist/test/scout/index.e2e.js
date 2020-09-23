@@ -80,7 +80,7 @@ test("Single span request", t => {
                 throw new Error("span missing");
             }
             t.assert(span, "span was created");
-            t.equals(span.request.id, req.id, "created span's request matches");
+            t.equals(span.requestId, req.id, "created span's request matches");
             // stop the span
             stopSpan();
         })

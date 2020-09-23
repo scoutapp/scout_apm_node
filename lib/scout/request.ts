@@ -126,7 +126,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
         // Create a new child span
         const span = new ScoutSpan({
             operation,
-            request: this,
+            requestId: this.id,
             scoutInstance: this.scoutInstance,
             logFn: this.logFn,
         });

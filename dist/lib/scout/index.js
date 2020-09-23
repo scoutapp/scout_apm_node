@@ -369,8 +369,6 @@ class Scout extends events_1.EventEmitter {
         span.startSync();
         const result = fn({
             span,
-            parent: span.parent,
-            request: span.request,
         });
         span.stopSync();
         // Clear out the current span for synchronous operations
@@ -550,6 +548,7 @@ class Scout extends events_1.EventEmitter {
                     }
                     this.log(`[scout] Finishing and sending request with ID [${request.id}]`, types_1.LogLevel.Debug);
                     this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
+                    this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
                     // Finish and send
                     return request.finishAndSend()
                         .then(() => {
@@ -732,17 +731,17 @@ exports.sendTagRequest = sendTagRequest;
  * @returns {Promise<ScoutSpan>} the passed in span
  */
 function sendStartSpan(scout, span) {
-    if (span.request && span.request.isIgnored()) {
-        scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.request.id}]`, types_1.LogLevel.Warn);
-        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
+    if (span.isIgnored()) {
+        scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.requestId}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.requestId);
         return Promise.resolve(span);
     }
     const opts = {
         spanId: span.id,
-        parentId: span.parent ? span.parent.id : undefined,
+        parentId: span.parentId,
         timestamp: span.getTimestamp(),
     };
-    const startSpanReq = new Requests.V1StartSpan(span.operation, span.request.id, opts);
+    const startSpanReq = new Requests.V1StartSpan(span.operation, span.requestId, opts);
     return sendThroughAgent(scout, startSpanReq)
         .then(() => span)
         .catch(err => {
@@ -761,12 +760,12 @@ exports.sendStartSpan = sendStartSpan;
  * @returns {Promise<void>} A promise which resolves when the message has been
  */
 function sendTagSpan(scout, span, name, value) {
-    if (span.request && span.request.isIgnored()) {
-        scout.log(`[scout] Skipping sending TagSpan for span [${span.id}] of ignored request [${span.request.id}]`, types_1.LogLevel.Warn);
-        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
+    if (span.isIgnored()) {
+        scout.log(`[scout] Skipping sending TagSpan for span [${span.id}] of ignored request [${span.requestId}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.requestId);
         return Promise.resolve();
     }
-    const tagSpanReq = new Requests.V1TagSpan(name, value, span.id, span.request.id);
+    const tagSpanReq = new Requests.V1TagSpan(name, value, span.id, span.requestId);
     return sendThroughAgent(scout, tagSpanReq)
         .then(() => undefined)
         .catch(err => {
@@ -783,12 +782,12 @@ exports.sendTagSpan = sendTagSpan;
  * @returns {Promise<ScoutSpan>} the passed in request
  */
 function sendStopSpan(scout, span) {
-    if (span.request && span.request.isIgnored()) {
-        scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.request.id}]`, types_1.LogLevel.Warn);
-        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.request);
+    if (span.isIgnored()) {
+        scout.log(`[scout] Skipping sending StartSpan for span [${span.id}] of ignored request [${span.requestId}]`, types_1.LogLevel.Warn);
+        scout.emit(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, span.requestId);
         return Promise.resolve(span);
     }
-    const stopSpanReq = new Requests.V1StopSpan(span.id, span.request.id, { timestamp: span.getEndTime() });
+    const stopSpanReq = new Requests.V1StopSpan(span.id, span.requestId, { timestamp: span.getEndTime() });
     return sendThroughAgent(scout, stopSpanReq)
         .then(() => span)
         .catch(err => {

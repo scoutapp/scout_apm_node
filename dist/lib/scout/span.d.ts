@@ -1,6 +1,5 @@
 import { StackFrame } from "stacktrace-js";
 import { LogFn, Taggable, Stoppable, Startable, ScoutTag, JSONValue } from "../types";
-import ScoutRequest from "./request";
 import { Scout } from "./index";
 export interface ChildSpannable {
     /**
@@ -19,16 +18,17 @@ export interface ScoutSpanOptions {
     id?: string;
     scoutInstance?: Scout;
     logFn?: LogFn;
-    parent?: ScoutSpan;
     timestamp?: Date;
     started?: boolean;
     operation: string;
-    request: ScoutRequest;
+    requestId: string;
+    parentId?: string;
     onStop?: () => Promise<void>;
+    ignored?: boolean;
 }
 export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, Startable {
-    readonly request: ScoutRequest;
-    readonly parent?: ScoutSpan;
+    readonly requestId: string;
+    readonly parentId?: string;
     readonly id: string;
     readonly operation: string;
     private timestamp;
@@ -42,6 +42,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     private tags;
     private traceFrames;
     private onStop;
+    private ignored;
     constructor(opts: ScoutSpanOptions);
     pushTraceFrames(frames: StackFrame[]): void;
     prependTraceFrames(frames: StackFrame[]): void;
@@ -58,6 +59,8 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
     /** @see Taggable */
     getContextValue(name: string): JSONValue | JSONValue[] | undefined;
     getTags(): ScoutTag[];
+    isIgnored(): boolean;
+    ignore(): this;
     /** @see ChildSpannable */
     startChildSpan(operation: string): Promise<ScoutSpan>;
     /** @see ChildSpannable */

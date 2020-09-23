@@ -82,7 +82,7 @@ class ScoutRequest {
         // Create a new child span
         const span = new span_1.default({
             operation,
-            request: this,
+            requestId: this.id,
             scoutInstance: this.scoutInstance,
             logFn: this.logFn,
         });
