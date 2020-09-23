@@ -89,8 +89,9 @@ test-dashboard-send: check-tool-yarn
 	@echo -e "running a test that will send a test to the dashboard, it should take ~ 30 seconds to run..."
 	$(YARN) test-dashboard-send
 
-test-integrations: test-integration-pg test-integration-mysql test-integration-mysql2 \
-									 test-integration-pug test-integration-mustache test-integration-ejs
+test-integrations: ensure-docker-images test-integration-pg test-integration-mysql \
+									test-integration-mysql2 test-integration-pug test-integration-mustache \
+									test-integration-ejs
 
 ensure-docker-images: ensure-mysql-docker-image ensure-pg-docker-image
 

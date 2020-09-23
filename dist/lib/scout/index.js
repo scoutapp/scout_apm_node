@@ -254,8 +254,8 @@ class Scout extends events_1.EventEmitter {
      * @returns {Promise<any>} a promsie that resolves to the result of the callback
      */
     instrument(operation, cb) {
-        let parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
-        let request = this.getCurrentRequest() || undefined;
+        const parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
+        const request = this.getCurrentRequest() || undefined;
         const parentIsSpan = parent !== request;
         this.log(`[scout] Instrumenting operation [${operation}], parent? [${parent ? parent.id : "NONE"}]`, types_1.LogLevel.Debug);
         // Create a transaction if instrument was called without an encapsulating request
@@ -299,15 +299,12 @@ class Scout extends events_1.EventEmitter {
                         this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
                         this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
                     }
-                    parent = undefined;
-                    request = undefined;
                     // If we never made the span object then don't do anything
                     if (!span) {
                         return Promise.resolve();
                     }
                     // If we did create the span, note that it was stopped successfully
                     this.log(`[scout] Stopped span with ID [${span.id}]`, types_1.LogLevel.Debug);
-                    span = undefined;
                     return Promise.resolve();
                 };
                 // If parent has become invalidated, then run the callback and exit
@@ -562,7 +559,6 @@ class Scout extends events_1.EventEmitter {
                     return request.finishAndSend()
                         .then(() => {
                         this.log(`[scout] Finished and sent request [${request.id}]`, types_1.LogLevel.Debug);
-                        request = undefined;
                     })
                         .catch(err => {
                         this.log(`[scout] Failed to finish and send request [${request.id}]:\n ${err}`, types_1.LogLevel.Error);

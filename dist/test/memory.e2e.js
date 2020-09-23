@@ -31,8 +31,8 @@ const loadTest = util_1.promisify(loadtest_1.loadTest);
 const LOAD_TEST_CONCURRENCY = parseInt(process.env.LOAD_TEST_CONCURRENCY || "5", 10);
 const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS || "20", 10);
 const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "120", 10);
-const MEMORY_USAGE_BOUND_MULTIPLIER = 2; // heuristics
-const MEMORY_USAGE_LIMIT_MB = 16; // heuristics
+const MEM_USAGE_BOUND_MULTIPLIER = 2; // heuristics-based
+const MEM_USAGE_LIMIT_MB = 16; // heuristics-based
 const DEFAULT_LOADTEST_OPTIONS = {
     concurrency: LOAD_TEST_CONCURRENCY,
     method: "GET",
@@ -112,9 +112,10 @@ test("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS },
     const memUsage = stats.express.memoryUsage.heapUsed;
     const memUsageWithScout = stats.expressWithScout.memoryUsage.heapUsed;
     const ratio = memUsageWithScout / memUsage;
+    const withinHardLimit = memUsageWithScout <= MEM_USAGE_LIMIT_MB * 1000 * 1000;
+    const withinRatio = ratio <= MEM_USAGE_BOUND_MULTIPLIER;
     t.comment(`usage with/out scout (${memUsageWithScout.toLocaleString()}B) / (${memUsage.toLocaleString()}B) => ${ratio}`);
-    t.assert(memUsageWithScout <= MEMORY_USAGE_LIMIT_MB * 1000 * 1000, `memory usage with scout should be below ${MEMORY_USAGE_LIMIT_MB}MB`);
-    t.assert(ratio <= MEMORY_USAGE_BOUND_MULTIPLIER, `memoryUsage().heapUsed with scout should be within ${MEMORY_USAGE_BOUND_MULTIPLIER}x of app without scout`);
+    t.assert(withinHardLimit || withinRatio, `memory usage with scout should be below ${MEM_USAGE_LIMIT_MB}MB, or within ${MEM_USAGE_BOUND_MULTIPLIER}x`);
     // Kill the two child processes
     expressWithScoutProcess.kill();
     expressProcess.kill();

@@ -378,8 +378,8 @@ export class Scout extends EventEmitter {
      * @returns {Promise<any>} a promsie that resolves to the result of the callback
      */
     public instrument(operation: string, cb: DoneCallback): Promise<any> {
-        let parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
-        let request = this.getCurrentRequest() || undefined;
+        const parent = this.getCurrentSpan() || this.getCurrentRequest() || undefined;
+        const request = this.getCurrentRequest() || undefined;
         const parentIsSpan = parent !== request;
 
         this.log(
@@ -441,16 +441,11 @@ export class Scout extends EventEmitter {
                         this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
                     }
 
-                    parent = undefined;
-                    request = undefined;
-
                     // If we never made the span object then don't do anything
                     if (!span) { return Promise.resolve(); }
 
                     // If we did create the span, note that it was stopped successfully
                     this.log(`[scout] Stopped span with ID [${span.id}]`, LogLevel.Debug);
-
-                    (span as any) = undefined;
 
                     return Promise.resolve();
                 };
@@ -760,7 +755,6 @@ export class Scout extends EventEmitter {
                     return request.finishAndSend()
                         .then(() => {
                             this.log(`[scout] Finished and sent request [${request.id}]`, LogLevel.Debug);
-                            (request as any) = undefined;
                         })
                         .catch(err => {
                             this.log(
