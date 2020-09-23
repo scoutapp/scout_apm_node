@@ -68,6 +68,7 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
     const expressProcess = fork(FILE_PATHS.EXPRESS_APP_PATH, [], {
         env: expressENV,
     });
+    t.comment(`app without scout started (PID: [${expressProcess.pid}])`);
     expressProcess.on("message", payload => {
         if (!payload) { return; }
         if (typeof payload === "object" && payload.msgType === "memory-usage-report") {
@@ -84,6 +85,7 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
     const expressWithScoutProcess = fork(FILE_PATHS.EXPRESS_APP_WITH_SCOUT_PATH, [], {
         env: expressWithScoutENV,
     });
+    t.comment(`app with scout started (PID: [${expressWithScoutProcess.pid}])`);
     expressWithScoutProcess.on("message", payload => {
         if (!payload) { return; }
         if (typeof payload === "object" && payload.msgType === "memory-usage-report") {
@@ -135,8 +137,8 @@ test("no large memory leaks", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, asy
     );
 
     // Kill the two child processes
-    expressWithScoutProcess.kill();
-    expressProcess.kill();
+    // expressWithScoutProcess.kill();
+    // expressProcess.kill();
 
     t.end();
 });
