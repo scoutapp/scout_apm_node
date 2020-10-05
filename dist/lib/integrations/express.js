@@ -19,8 +19,6 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
     shim(expressExport) {
         // Shim application creation
         expressExport = this.shimApplicationCreate(expressExport);
-        // Shim Router
-        expressExport = this.shimRouter(expressExport);
         return expressExport;
     }
     /**
@@ -111,17 +109,6 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
             return originalFn.apply(this, originalArgs);
         };
         return app;
-    }
-    /**
-     * Shim express Router
-     *
-     * @param {any} expressExport
-     * @return {any} the modified express export
-     */
-    shimRouter(expressExport) {
-        const integration = this;
-        const originalRouter = expressExport.Router;
-        return expressExport;
     }
 }
 exports.ExpressIntegration = ExpressIntegration;

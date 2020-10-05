@@ -4,6 +4,8 @@ const onFinished = require("on-finished");
 const types_1 = require("./types");
 const Constants = require("./constants");
 const global_1 = require("./global");
+const path_to_regexp_1 = require("path-to-regexp");
+const listExpressEndpoints = require("express-list-endpoints");
 const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
 const EXPRESS_ROUTER_PATH_BUILD_MAX_DEPTH = 5;
@@ -30,6 +32,7 @@ function parseQueueTimeNS(value) {
     }
     return parsed;
 }
+let CACHED_ENDPOINT_LISTING = [];
 /**
  * Middleware for using scout, this should be
  * attached to the application object using app.use(...)
@@ -77,8 +80,10 @@ function scoutMiddleware(opts) {
             next();
             return;
         }
-        // Attempt to match the request URL to previous matched middleware first
-        const reqPath = req.url;
+        // We don't know the route path (ex. '/echo/:name'), but we must figure it out
+        let routePath = null;
+        // Attempt to match the request URL (ex. '/echo/john') to previous matched middleware first
+        let reqPath = req.url;
         // The query of the URL needs to be  stripped before attempting to test it against express regexps
         // i.e. all route regexps end in /..\?$/
         const preQueryUrl = reqPath.split("?")[0];
@@ -102,7 +107,41 @@ function scoutMiddleware(opts) {
                 return isMatch;
             })[0];
         }
-        // FIX: In the case of router requests, matchedRouteMiddleware does *not* get defined properly!
+        // If by this point we know a matching route middleware we can use it's path
+        // (for the request name, e.x. "Controller/GET <some path>")
+        if (matchedRouteMiddleware) {
+            routePath = matchedRouteMiddleware.route.path;
+        }
+        // If we get to this point and matchedRouteMiddleware is still empty/missing
+        // we're likely in the case of a nested express.Router and cannot rely on
+        // app.mountpath, req.baseUrl, req.originalUrl, or anything else to get the correct path
+        // We're stuck with the worst possible way -- listing all the routes, and there's only
+        // one lib that does it right (without re-implementing the walk ourselves), and we still have to
+        // perform the regex matches to find out which path is actually *active*
+        if (!matchedRouteMiddleware) {
+            try {
+                // Generate the endpoint listing cache if it's empty, once
+                if (CACHED_ENDPOINT_LISTING.length === 0) {
+                    CACHED_ENDPOINT_LISTING = listExpressEndpoints(req.app)
+                        // Enrich endpoint list with regexes for the full match
+                        .map(r => {
+                        r.regex = path_to_regexp_1.pathToRegexp(r.path);
+                        return r;
+                    });
+                }
+                const matchedRoute = CACHED_ENDPOINT_LISTING.find(r => r.regex.exec(req.originalUrl));
+                if (!matchedRoute) {
+                    throw new Error("Failed to match route");
+                }
+                // If we were able to find a matching route the hard way, we can use it
+                routePath = matchedRoute.path;
+            }
+            catch (err) {
+                if (opts && opts.logFn) {
+                    opts.logFn(`[scout] Failed to determine route of request, [${req.originalUrl}]`, types_1.LogLevel.Warn);
+                }
+            }
+        }
         // Set default request timeout if not specified
         let requestTimeoutMs = Constants.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS;
         if (opts && "requestTimeoutMs" in opts) {
@@ -122,22 +161,23 @@ function scoutMiddleware(opts) {
             .then(scout => scout.setup())
             // Start perofrming midleware duties
             .then(scout => {
-            // If no route matches then we don't need to record
-            if (!matchedRouteMiddleware) {
+            // If we get here but have no route path,
+            // (meaning we couldn't figure it out from a matched middleware or full route listing)
+            // then we can't record the request
+            if (!routePath) {
                 scout.emit(types_1.ScoutEvent.UnknownRequestPathSkipped, req.url);
                 next();
                 return;
             }
             // Create a Controller/ span for the request
-            const path = matchedRouteMiddleware.route.path;
             const reqMethod = req.method.toUpperCase();
             // Exit early if this path is on the list of ignored paths
-            if (scout.ignoresPath(path)) {
+            if (scout.ignoresPath(routePath)) {
                 next();
                 return;
             }
             req.scout = { instance: scout };
-            const name = `Controller/${reqMethod} ${path}`;
+            const name = `Controller/${reqMethod} ${routePath}`;
             let transactionTimeout;
             // Create a trace
             scout.transaction(name, (finishTransaction) => {

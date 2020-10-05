@@ -25,13 +25,6 @@ export declare class ExpressIntegration extends RequireIntegration {
      * @returns {any} the modified express export
      */
     private shimHTTPMethod;
-    /**
-     * Shim express Router
-     *
-     * @param {any} expressExport
-     * @return {any} the modified express export
-     */
-    private shimRouter;
 }
 declare const _default: ExpressIntegration;
 export default _default;

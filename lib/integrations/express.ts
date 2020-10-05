@@ -3,7 +3,7 @@ import { Express, Application } from "express";
 
 import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout } from "../scout";
-import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation, ExpressFn } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation, ExpressFn, isExpressPathLike } from "../types";
 import * as Constants from "../constants";
 
 import {
@@ -25,9 +25,6 @@ export class ExpressIntegration extends RequireIntegration {
     protected shim(expressExport: any): any {
         // Shim application creation
         expressExport = this.shimApplicationCreate(expressExport);
-
-        // Shim Router
-        expressExport = this.shimRouter(expressExport);
 
         return expressExport;
     }
@@ -136,20 +133,6 @@ export class ExpressIntegration extends RequireIntegration {
         };
 
         return app;
-    }
-
-    /**
-     * Shim express Router
-     *
-     * @param {any} expressExport
-     * @return {any} the modified express export
-     */
-    private shimRouter(expressExport: any): any {
-        const integration = this;
-
-        const originalRouter = expressExport.Router;
-
-        return expressExport;
     }
 
 }
