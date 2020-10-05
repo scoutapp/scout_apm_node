@@ -255,6 +255,10 @@ function appWithRouterGET(middleware, expressFnTransform) {
     r1.get("/echo/:name", (req, res) => {
         res.send({ status: "success", name: req.params.name });
     });
+    // Create first level router & endpoint
+    r1.get("/echo-two/:name", (req, res) => {
+        res.send({ status: "success", name: req.params.name });
+    });
     // Create level 2 router & endpoint
     const r2 = express.Router();
     r2.get("/echo/:name", (req, res) => {
@@ -266,10 +270,10 @@ function appWithRouterGET(middleware, expressFnTransform) {
     });
     // connect r2 -> r1 -> app
     // / -> app
-    // /router -> r1
-    // /router/level-2 -> r2 (through r1)
+    // /mounted -> r1
+    // /mounted/level-2 -> r2 (through r1)
     r1.use("/level-2/", r2);
-    app.use("/router", r1);
+    app.use("/mounted", r1);
     return app;
 }
 exports.appWithRouterGET = appWithRouterGET;

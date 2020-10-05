@@ -111,7 +111,7 @@ test("express Routers are recorded", t => {
         .setup()
         // Send a request to trigger the controller-function error
         .then(() => {
-        const url = `/router/echo/${reqName}`;
+        const url = `/mounted/echo/${reqName}`;
         t.comment(`sending request to [${url}]`);
         return request(app)
             .get(url)

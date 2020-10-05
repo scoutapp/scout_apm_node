@@ -69,7 +69,6 @@ function parseQueueTimeNS(value: string): any {
 
     return parsed;
 }
-
 /**
  * Middleware for using scout, this should be
  * attached to the application object using app.use(...)
@@ -151,54 +150,6 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                     return isMatch;
                 })[0];
         }
-
-        // If the normal method of finding the right path didn't work, we're likely in a express.Router
-        // invocation, so we must try a bit harder to build the path
-        if (!matchedRouteMiddleware) {
-            // express.Router(...) & app.use(...) create routes that do *not* have proper paths.
-            // in particular, the mounting path (ex. "/router") and nested route (ex. "/some/path/underneath")
-            // are not exposed straight forwardly as (req.url, req.baseUrl, req.originalUrl, or req.app.mountpath)
-            //
-            // In this case, we must look for and follow any express.Layer objects in the req.app._router.stack
-            // and identify ones that have a handle that is a *complex* object with a 'stack' property.
-            //
-            // Upon finding a layer with a stack-holding handle, we must continue traveling and discovering the route
-            // by using either the 'name' property (for simple routes the route is the name of the router)
-            // or the route.path variable (if present), which will be some value like '/echo/:name'.
-
-            const pathChunks: string[] = [];
-            let depth = 0;
-
-            // Get initial stack and layer
-            let stack = req.app._router.stack;
-
-            while (stack) {
-                if (depth >= EXPRESS_ROUTER_PATH_BUILD_MAX_DEPTH) { break; }
-
-                // Find the layer with it's own stack
-                const layer = stack.find(l => l && l.handle && l.handle.stack);
-                console.log("LAYER:", layer);
-                if (!layer) { break; }
-
-                // TODO: need to figure out if it's terminal or not,
-                // what's happening is layer-2 router is coming up first but is *NOT* the right layer.
-                // regexp.test? gotta remove the initial ^ though....
-
-                // Add this chunk of the route path
-                // If the layer doen't have a route but has a name, use that
-                const routeName = layer.route?.path ?? layer.name;
-                pathChunks.push(routeName);
-
-                // Set up the next stack
-                stack = layer.handle?.stack;
-                depth +=1;
-            }
-            // Find a express.Layer with a handle that has it's own stack (not just a bound function)
-
-            const builtPath = pathChunks.join("/");
-            console.log(`BUILT PATH: [/${builtPath}]`);
-        }
-
 
         // FIX: In the case of router requests, matchedRouteMiddleware does *not* get defined properly!
 
