@@ -3,7 +3,7 @@ import { Express, Application } from "express";
 
 import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout } from "../scout";
-import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation, ExpressFn, isExpressPathLike } from "../types";
+import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation, ExpressFn } from "../types";
 import * as Constants from "../constants";
 
 import {

@@ -141,11 +141,11 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // We don't know the route path (ex. '/echo/:name'), but we must figure it out
         let routePath: string | null = null;
         // Attempt to match the request URL (ex. '/echo/john') to previous matched middleware first
-        let reqPath = req.url;
+        const reqUrl = req.url;
 
         // The query of the URL needs to be  stripped before attempting to test it against express regexps
         // i.e. all route regexps end in /..\?$/
-        const preQueryUrl = reqPath.split("?")[0];
+        const preQueryUrl = reqUrl.split("?")[0];
         let matchedRouteMiddleware = commonRouteMiddlewares.find((m: any) => m.regexp.test(preQueryUrl));
 
         // If we couldn't find a route in the ones that have worked before,
@@ -261,7 +261,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
                     // Add the path context
                     req.scout.request
-                        .addContext(ScoutContextName.Path, scout.filterRequestPath(reqPath))
+                        .addContext(ScoutContextName.Path, scout.filterRequestPath(reqUrl))
                     // Add request queue time context if present
                         .then(() => {
                             const matchingHeader = REQUEST_QUEUE_TIME_HEADERS.find(headerName => req.get(headerName));

@@ -214,11 +214,3 @@ export function waitMs(ms: number): Promise<void> {
         }, ms);
     });
 }
-
-function isStringOrRegex(obj: any): boolean {
-    return typeof obj === "string" || Object.prototype.toString.call(obj) === '[object RegExp]';
-}
-                                           
-export function isExpressPathLike(obj: any): boolean {
-    return isStringOrRegex(obj) || Array.isArray(obj) && obj.every(o => isExpressPathLike(o));
-}

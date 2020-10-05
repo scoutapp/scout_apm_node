@@ -149,10 +149,3 @@ function waitMs(ms) {
     });
 }
 exports.waitMs = waitMs;
-function isStringOrRegex(obj) {
-    return typeof obj === "string" || Object.prototype.toString.call(obj) === '[object RegExp]';
-}
-function isExpressPathLike(obj) {
-    return isStringOrRegex(obj) || Array.isArray(obj) && obj.every(o => isExpressPathLike(o));
-}
-exports.isExpressPathLike = isExpressPathLike;

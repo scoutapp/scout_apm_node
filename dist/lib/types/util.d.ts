@@ -76,4 +76,3 @@ export interface ScoutStackFrame {
     function?: string;
 }
 export declare function waitMs(ms: number): Promise<void>;
-export declare function isExpressPathLike(obj: any): boolean;
