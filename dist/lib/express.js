@@ -82,8 +82,6 @@ function scoutMiddleware(opts) {
         // i.e. all route regexps end in /..\?$/
         const preQueryUrl = reqPath.split("?")[0];
         let matchedRouteMiddleware = commonRouteMiddlewares.find((m) => m.regexp.test(preQueryUrl));
-        console.log("req.url?", req.url);
-        console.log("matchedRouteMiddleware?", matchedRouteMiddleware);
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
         if (!matchedRouteMiddleware) {
@@ -103,6 +101,7 @@ function scoutMiddleware(opts) {
                 return isMatch;
             })[0];
         }
+        // FIX: In the case of router requests, matchedRouteMiddleware does *not* get defined properly!
         // Set default request timeout if not specified
         let requestTimeoutMs = Constants.DEFAULT_EXPRESS_REQUEST_TIMEOUT_MS;
         if (opts && "requestTimeoutMs" in opts) {
@@ -125,11 +124,9 @@ function scoutMiddleware(opts) {
             // If no route matches then we don't need to record
             if (!matchedRouteMiddleware) {
                 scout.emit(types_1.ScoutEvent.UnknownRequestPathSkipped, req.url);
-                console.log("UKNOWN REQUEST SKIPPING");
                 next();
                 return;
             }
-            console.log("DID NOT SKIP!");
             // Create a Controller/ span for the request
             const path = matchedRouteMiddleware.route.path;
             const reqMethod = req.method.toUpperCase();

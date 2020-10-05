@@ -75,9 +75,24 @@ test("express Routers are recorded", t => {
     }), (fn) => express_1.default.shimExpressFn(fn));
     // Set up a listener for the scout request that will be after the Router-hosted GET is hit
     const listener = (data) => {
+        if (!data || !data.request) {
+            return;
+        }
+        // Ensure there the top level span is what we expect
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length <= 0) {
+            return;
+        }
+        const topLevelSpan = spans[0];
+        // Ensure that the top level span is a Controller span
+        // (ex. a HTTP/GET span/request will also come through b/c supertest makes a request)
+        if (!topLevelSpan.operation.startsWith("Controller")) {
+            return;
+        }
         // Once we know we're looking at the right request, we can remove the listener
         scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
         t.pass("scout request was sent");
+        // console.log("data:", data.request.getChildSpansSync()[0]);
         // console.log("data.request?", data.request);
         // console.log("URL?:", data.request.getContextValue(ScoutContextName.URL));
         // console.log("PATH?:", data.request.getContextValue(ScoutContextName.Path));
