@@ -334,16 +334,29 @@ export function appWithRouterGET(
     const app = expressFnTransform(express)();
     app.use(middleware);
 
-    const router = express.Router();
-    router.get("/", (req: Request, res: Response) => {
-        res.send({status: "success"});
+    // Create first level router & endpoint
+    const r1 = express.Router();
+    r1.get("/echo/:name", (req: Request, res: Response) => {
+        res.send({status: "success", name: req.params.name});
     });
 
+    // Create level 2 router & endpoint
+    const r2 = express.Router();
+    r2.get("/echo/:name", (req: Request, res: Response) => {
+        res.send({status: "success", name: req.params.name});
+    });
+
+    // Create app endpoint (shouldn't be hit in most cases, since we want to test router functionality)
     app.get("/", (req: any, res: Response) => {
         res.status(500).send({error: "should be hitting the router"});
     });
 
-    app.use("/router", router);
+    // connect r2 -> r1 -> app
+    // / -> app
+    // /router -> r1
+    // /router/level-2 -> r2 (through r1)
+    r1.use("/level-2/", r2);
+    app.use("/router", r1);
 
     return app;
 }

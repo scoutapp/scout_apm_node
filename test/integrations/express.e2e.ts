@@ -1,6 +1,7 @@
 import * as test from "tape";
 import * as request from "supertest";
 import { Express, Application } from "express";
+import { generate as generateRandomString } from "randomstring";
 
 import {
     ScoutEvent,
@@ -106,6 +107,9 @@ test("express Routers are recorded", t => {
         (fn: ExpressFn) => ExpressIntegration.shimExpressFn(fn),
     );
 
+    // Create a name to use the echo router
+    const reqName = generateRandomString(5);
+
     // Set up a listener for the scout request that will be after the Router-hosted GET is hit
     const listener = (data: ScoutEventRequestSentData) => {
         if (!data || !data.request) { return; }
@@ -118,6 +122,13 @@ test("express Routers are recorded", t => {
         // Ensure that the top level span is a Controller span
         // (ex. a HTTP/GET span/request will also come through b/c supertest makes a request)
         if (!topLevelSpan.operation.startsWith("Controller")) { return; }
+
+        // Ensure that path matches the full path of router
+        t.equals(
+            data.request.getContextValue(ScoutContextName.Path),
+            "/echo/:name",
+            "path matches combined dynamic path to router function",
+        );
 
         // Once we know we're looking at the right request, we can remove the listener
         scout.removeListener(ScoutEvent.RequestSent, listener);
@@ -139,8 +150,11 @@ test("express Routers are recorded", t => {
         .setup()
     // Send a request to trigger the controller-function error
         .then(() => {
+            const url = `/router/echo/${reqName}`;
+            t.comment(`sending request to [${url}]`);
+
             return request(app)
-                .get("/router")
+                .get(url)
                 .expect("Content-Type", /json/)
                 .expect(200)
                 .then(res => t.assert(res, "request sent"));
