@@ -8,7 +8,6 @@ const path_to_regexp_1 = require("path-to-regexp");
 const listExpressEndpoints = require("express-list-endpoints");
 const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
-const EXPRESS_ROUTER_PATH_BUILD_MAX_DEPTH = 5;
 // Support common request queue time headers
 // https://github.com/scoutapp/scout_apm_node/issues/68
 const REQUEST_QUEUE_TIME_HEADERS = ["x-queue-start", "x-request-start"];

@@ -25,8 +25,6 @@ const listExpressEndpoints = require("express-list-endpoints");
 const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
 
-const EXPRESS_ROUTER_PATH_BUILD_MAX_DEPTH = 5;
-
 export interface ApplicationWithScout {
     scout?: Scout;
 }
