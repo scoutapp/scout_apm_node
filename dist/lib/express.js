@@ -129,6 +129,7 @@ function scoutMiddleware(opts) {
                     });
                 }
                 const matchedRoute = CACHED_ENDPOINT_LISTING.find(r => r.regex.exec(req.originalUrl));
+                console.log("endpoint listing match?", matchedRoute);
                 if (!matchedRoute) {
                     throw new Error("Failed to match route");
                 }
@@ -164,6 +165,7 @@ function scoutMiddleware(opts) {
             // (meaning we couldn't figure it out from a matched middleware or full route listing)
             // then we can't record the request
             if (!routePath) {
+                console.log(`ROUTE PATH MISSING, skipping`);
                 scout.emit(types_1.ScoutEvent.UnknownRequestPathSkipped, req.url);
                 next();
                 return;
@@ -172,6 +174,7 @@ function scoutMiddleware(opts) {
             const reqMethod = req.method.toUpperCase();
             // Exit early if this path is on the list of ignored paths
             if (scout.ignoresPath(routePath)) {
+                console.log(`ROUTE PATH [${routePath}] IS IGNORED`);
                 next();
                 return;
             }

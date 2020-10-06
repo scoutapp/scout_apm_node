@@ -112,7 +112,16 @@ test("express Routers are recorded (one level)", t => {
 
     // Set up a listener for the scout request that will be after the Router-hosted GET is hit
     const listener = (data: ScoutEventRequestSentData) => {
-        console.log("\ngot data?", data);
+        console.log("\n got data, before try?", data);
+        try {
+            console.log("children?", data.request.getChildSpansSync());
+            if (data.request.getChildSpansSync().length >= 0) {
+                console.log("firstChild?", data.request.getChildSpansSync()[0]);
+            }
+        } catch (err) {
+            console.log("ERR:", err);
+        }
+
         if (!data || !data.request) { return; }
 
         // Ensure there the top level span is what we expect
