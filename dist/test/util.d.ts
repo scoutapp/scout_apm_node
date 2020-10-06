@@ -31,6 +31,7 @@ export declare function simpleInstrumentApp(middleware: any): Application;
 export declare function appWithGETSynchronousError(middleware: any, expressFnTransform: (expressFn: ExpressFn) => ExpressFn): Application;
 export declare function appWithHTTPProxyMiddleware(middleware: any, proxyTarget: string): Application;
 export declare function queryAndRenderRandomNumbers(middleware: any, templateEngine: "pug" | "ejs" | "mustache", dbClient: Client): Application;
+export declare function appWithRouterGET(middleware: any, expressFnTransform: (expressFn: ExpressFn) => ExpressFn): Application;
 export declare function testConfigurationOverlay(t: Test, opts: {
     appKey: string;
     envValue: string;

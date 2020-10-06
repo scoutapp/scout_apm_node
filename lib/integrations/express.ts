@@ -134,6 +134,7 @@ export class ExpressIntegration extends RequireIntegration {
 
         return app;
     }
+
 }
 
 export default new ExpressIntegration();

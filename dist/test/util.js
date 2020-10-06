@@ -247,6 +247,36 @@ function queryAndRenderRandomNumbers(middleware, templateEngine, dbClient) {
     return app;
 }
 exports.queryAndRenderRandomNumbers = queryAndRenderRandomNumbers;
+function appWithRouterGET(middleware, expressFnTransform) {
+    const app = expressFnTransform(express)();
+    app.use(middleware);
+    // Create first level router & endpoint
+    const r1 = express.Router();
+    r1.get("/echo/:name", (req, res) => {
+        res.send({ status: "success", name: req.params.name });
+    });
+    // Create first level router & endpoint
+    r1.get("/echo-two/:name", (req, res) => {
+        res.send({ status: "success", name: req.params.name });
+    });
+    // Create level 2 router & endpoint
+    const r2 = express.Router();
+    r2.get("/echo/:name", (req, res) => {
+        res.send({ status: "success", name: req.params.name });
+    });
+    // Create app endpoint (shouldn't be hit in most cases, since we want to test router functionality)
+    app.get("/", (req, res) => {
+        res.status(500).send({ error: "should be hitting the router" });
+    });
+    // connect r2 -> r1 -> app
+    // / -> app
+    // /mounted -> r1
+    // /mounted/level-2 -> r2 (through r1)
+    r1.use("/level-2/", r2);
+    app.use("/mounted", r1);
+    return app;
+}
+exports.appWithRouterGET = appWithRouterGET;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;

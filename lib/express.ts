@@ -11,7 +11,7 @@ import {
 } from "./types";
 import * as Constants from "./constants";
 import { Scout, ScoutRequest, ScoutSpan, ScoutOptions } from "./scout";
-import { Request } from "express";
+import { Request, Router } from "express";
 import {
     getActiveGlobalScoutInstance,
     getOrCreateActiveGlobalScoutInstance,
@@ -19,6 +19,9 @@ import {
     setGlobalLastUsedOptions,
 } from "./global";
 
+import { pathToRegexp } from "path-to-regexp";
+
+const listExpressEndpoints = require("express-list-endpoints");
 const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
 
@@ -50,6 +53,7 @@ export type ExpressRequestWithScout = Request & ExpressScoutInfo;
 // Support common request queue time headers
 // https://github.com/scoutapp/scout_apm_node/issues/68
 const REQUEST_QUEUE_TIME_HEADERS = ["x-queue-start", "x-request-start"];
+
 /**
  * Parse a queue time in NS out of a HTTP header value
  *
@@ -67,6 +71,15 @@ function parseQueueTimeNS(value: string): any {
 
     return parsed;
 }
+
+interface EndpointListingItem {
+    path: string;
+    methods: string[];
+    middleware: string[];
+    regex: RegExp;
+}
+
+const ROUTE_INFO_LOOKUP: {[key: string]: EndpointListingItem} = {};
 
 /**
  * Middleware for using scout, this should be
@@ -124,11 +137,14 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
             return;
         }
 
-        // Attempt to match the request URL to previous matched middleware first
-        const reqPath = req.url;
+        // We don't know the route path (ex. '/echo/:name'), but we must figure it out
+        let routePath: string | null = null;
+        // Attempt to match the request URL (ex. '/echo/john') to previous matched middleware first
+        const reqUrl = req.url;
+
         // The query of the URL needs to be  stripped before attempting to test it against express regexps
         // i.e. all route regexps end in /..\?$/
-        const preQueryUrl = reqPath.split("?")[0];
+        const preQueryUrl = reqUrl.split("?")[0];
         let matchedRouteMiddleware = commonRouteMiddlewares.find((m: any) => m.regexp.test(preQueryUrl));
 
         // If we couldn't find a route in the ones that have worked before,
@@ -148,6 +164,50 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
                     return isMatch;
                 })[0];
+        }
+
+        // If by this point we know a matching route middleware we can use it's path
+        // (for the request name, e.x. "Controller/GET <some path>")
+        if (matchedRouteMiddleware) {
+            routePath = matchedRouteMiddleware.route.path;
+        }
+
+        // If we get to this point and matchedRouteMiddleware is still empty/missing
+        // we're likely in the case of a nested express.Router and cannot rely on
+        // app.mountpath, req.baseUrl, req.originalUrl, or anything else to get the correct path
+        // We're stuck with the worst possible way -- listing all the routes, and there's only
+        // one lib that does it right (without re-implementing the walk ourselves), and we still have to
+        // perform the regex matches to find out which path is actually *active*
+        if (!matchedRouteMiddleware) {
+            try {
+                // Attempt to find a matchedRoute in the cached endpoint listing
+                let matchedRoute = Object.values(ROUTE_INFO_LOOKUP).find(r => r.regex.exec(req.originalUrl));
+
+                // If we fail to find a matched route, we can try generating the listing anew,
+                // and insert what we find if any new routes are present and try again
+                if (!matchedRoute) {
+                    listExpressEndpoints(req.app)
+                        .forEach(r => {
+                            // Enrich endpoint list with regexes for the full match
+                            r.regex = pathToRegexp(r.path);
+                            ROUTE_INFO_LOOKUP[r.path] = r;
+                        });
+
+                    // Search again after adding to the cache
+                    matchedRoute = Object.values(ROUTE_INFO_LOOKUP).find(r => r.regex.exec(req.originalUrl));
+                }
+
+                // If we *still* can't find a matched route then we have to give up on this method
+                if (!matchedRoute) { throw new Error("Failed to match route"); }
+
+                // If we were able to find a matching route the hard way, we can use it
+                routePath = matchedRoute.path;
+
+            } catch (err) {
+                if (opts && opts.logFn) {
+                    opts.logFn(`[scout] Failed to determine route of request, [${req.originalUrl}]`, LogLevel.Warn);
+                }
+            }
         }
 
         // Set default request timeout if not specified
@@ -170,26 +230,27 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
             .then(scout => scout.setup())
         // Start perofrming midleware duties
             .then(scout => {
-                // If no route matches then we don't need to record
-                if (!matchedRouteMiddleware) {
+                // If we get here but have no route path,
+                // (meaning we couldn't figure it out from a matched middleware or full route listing)
+                // then we can't record the request
+                if (!routePath) {
                     scout.emit(ScoutEvent.UnknownRequestPathSkipped, req.url);
                     next();
                     return;
                 }
 
                 // Create a Controller/ span for the request
-                const path = matchedRouteMiddleware.route.path;
                 const reqMethod = req.method.toUpperCase();
 
                 // Exit early if this path is on the list of ignored paths
-                if (scout.ignoresPath(path)) {
+                if (scout.ignoresPath(routePath)) {
                     next();
                     return;
                 }
 
                 req.scout = {instance: scout} as ExpressRequestWithScout;
 
-                const name = `Controller/${reqMethod} ${path}`;
+                const name = `Controller/${reqMethod} ${routePath}`;
 
                 let transactionTimeout;
 
@@ -206,7 +267,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
                     // Add the path context
                     req.scout.request
-                        .addContext(ScoutContextName.Path, scout.filterRequestPath(reqPath))
+                        .addContext(ScoutContextName.Path, scout.filterRequestPath(reqUrl))
                     // Add request queue time context if present
                         .then(() => {
                             const matchingHeader = REQUEST_QUEUE_TIME_HEADERS.find(headerName => req.get(headerName));
