@@ -191,7 +191,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                             // Enrich endpoint list with regexes for the full match
                             r.regex = pathToRegexp(r.path);
                             ROUTE_INFO_LOOKUP[r.path] = r;
-                        })
+                        });
 
                     // Search again after adding to the cache
                     matchedRoute = Object.values(ROUTE_INFO_LOOKUP).find(r => r.regex.exec(req.originalUrl));
@@ -234,7 +234,6 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                 // (meaning we couldn't figure it out from a matched middleware or full route listing)
                 // then we can't record the request
                 if (!routePath) {
-                    console.log(`ROUTE PATH MISSING, skipping`);
                     scout.emit(ScoutEvent.UnknownRequestPathSkipped, req.url);
                     next();
                     return;
@@ -245,7 +244,6 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
                 // Exit early if this path is on the list of ignored paths
                 if (scout.ignoresPath(routePath)) {
-                    console.log(`ROUTE PATH [${routePath}] IS IGNORED`);
                     next();
                     return;
                 }

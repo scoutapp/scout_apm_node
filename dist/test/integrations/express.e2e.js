@@ -77,16 +77,6 @@ test("express Routers are recorded (one level)", t => {
     const reqName = randomstring_1.generate(5);
     // Set up a listener for the scout request that will be after the Router-hosted GET is hit
     const listener = (data) => {
-        console.log("\n got data, before try?", data);
-        try {
-            console.log("children?", data.request.getChildSpansSync());
-            if (data.request.getChildSpansSync().length >= 0) {
-                console.log("firstChild?", data.request.getChildSpansSync()[0]);
-            }
-        }
-        catch (err) {
-            console.log("ERR:", err);
-        }
         if (!data || !data.request) {
             return;
         }
@@ -126,62 +116,57 @@ test("express Routers are recorded (one level)", t => {
         // If an error occurs, shutdown scout
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-// // https://github.com/scoutapp/scout_apm_node/issues/238
-// test("express Routers are recorded (two levels)", t => {
-//     const config = buildScoutConfiguration({
-//         allowShutdown: true,
-//         monitor: true,
-//     });
-//     const scout = new Scout(config);
-//     const app: Application & ApplicationWithScout = TestUtil.appWithRouterGET(
-//         scoutMiddleware({
-//             scout,
-//             requestTimeoutMs: 0, // disable request timeout to stop test from hanging
-//         }),
-//         (fn: ExpressFn) => ExpressIntegration.shimExpressFn(fn),
-//     );
-//     // Create a name to use the echo router
-//     const reqName = generateRandomString(5);
-//     // Set up a listener for the scout request that will be after the Router-hosted GET is hit
-//     const listener = (data: ScoutEventRequestSentData) => {
-//         if (!data || !data.request) { return; }
-//         // Ensure there the top level span is what we expect
-//         const spans = data.request.getChildSpansSync();
-//         if (!spans || spans.length <= 0) { return; }
-//         const topLevelSpan = spans[0];
-//         // Ensure that the top level span is a Controller span
-//         // (ex. a HTTP/GET span/request will also come through b/c supertest makes a request)
-//         if (!topLevelSpan.operation.startsWith("Controller")) { return; }
-//         // Ensure that path matches the full path of router
-//         t.equals(
-//             topLevelSpan.operation,
-//             "Controller/GET /mounted/level-2/echo/:name",
-//             "path matches combined dynamic path to router function",
-//         );
-//         t.equals(
-//             data.request.getContextValue(ScoutContextName.Path),
-//             `/mounted/level-2/echo/${reqName}`,
-//             "tagged URL matches the expected URL",
-//         );
-//         // Once we know we're looking at the right request, we can remove the listener
-//         scout.removeListener(ScoutEvent.RequestSent, listener);
-//         TestUtil.shutdownScout(t, scout)
-//             .catch(err => TestUtil.shutdownScout(t, scout, err));
-//     };
-//     // Activate the listener
-//     scout.on(ScoutEvent.RequestSent, listener);
-//     scout
-//         .setup()
-//     // Send a request to trigger the controller-function error
-//         .then(() => {
-//             const url = `/mounted/level-2/echo/${reqName}`;
-//             t.comment(`sending request to [${url}]`);
-//             return request(app)
-//                 .get(url)
-//                 .expect("Content-Type", /json/)
-//                 .expect(200)
-//                 .then(res => t.assert(res, "request sent"));
-//         })
-//     // If an error occurs, shutdown scout
-//         .catch(err => TestUtil.shutdownScout(t, scout, err));
-// });
+// https://github.com/scoutapp/scout_apm_node/issues/238
+test("express Routers are recorded (two levels)", t => {
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+    });
+    const scout = new scout_1.Scout(config);
+    const app = TestUtil.appWithRouterGET(express_2.scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0,
+    }), (fn) => express_1.default.shimExpressFn(fn));
+    // Create a name to use the echo router
+    const reqName = randomstring_1.generate(5);
+    // Set up a listener for the scout request that will be after the Router-hosted GET is hit
+    const listener = (data) => {
+        if (!data || !data.request) {
+            return;
+        }
+        // Ensure there the top level span is what we expect
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length <= 0) {
+            return;
+        }
+        const topLevelSpan = spans[0];
+        // Ensure that the top level span is a Controller span
+        // (ex. a HTTP/GET span/request will also come through b/c supertest makes a request)
+        if (!topLevelSpan.operation.startsWith("Controller")) {
+            return;
+        }
+        // Ensure that path matches the full path of router
+        t.equals(topLevelSpan.operation, "Controller/GET /mounted/level-2/echo/:name", "path matches combined dynamic path to router function");
+        t.equals(data.request.getContextValue(types_2.ScoutContextName.Path), `/mounted/level-2/echo/${reqName}`, "tagged URL matches the expected URL");
+        // Once we know we're looking at the right request, we can remove the listener
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+    // Activate the listener
+    scout.on(types_1.ScoutEvent.RequestSent, listener);
+    scout
+        .setup()
+        // Send a request to trigger the controller-function error
+        .then(() => {
+        const url = `/mounted/level-2/echo/${reqName}`;
+        t.comment(`sending request to [${url}]`);
+        return request(app)
+            .get(url)
+            .expect("Content-Type", /json/)
+            .expect(200)
+            .then(res => t.assert(res, "request sent"));
+    })
+        // If an error occurs, shutdown scout
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
