@@ -31,7 +31,7 @@ function parseQueueTimeNS(value) {
     }
     return parsed;
 }
-let CACHED_ENDPOINT_LISTING = [];
+const ROUTE_INFO_LOOKUP = {};
 /**
  * Middleware for using scout, this should be
  * attached to the application object using app.use(...)
@@ -119,17 +119,21 @@ function scoutMiddleware(opts) {
         // perform the regex matches to find out which path is actually *active*
         if (!matchedRouteMiddleware) {
             try {
-                // Generate the endpoint listing cache if it's empty, once
-                if (CACHED_ENDPOINT_LISTING.length === 0) {
-                    CACHED_ENDPOINT_LISTING = listExpressEndpoints(req.app)
+                // Attempt to find a matchedRoute in the cached endpoint listing
+                let matchedRoute = Object.values(ROUTE_INFO_LOOKUP).find(r => r.regex.exec(req.originalUrl));
+                // If we fail to find a matched route, we can try generating the listing anew,
+                // and insert what we find if any new routes are present and try again
+                if (!matchedRoute) {
+                    listExpressEndpoints(req.app)
+                        .forEach(r => {
                         // Enrich endpoint list with regexes for the full match
-                        .map(r => {
                         r.regex = path_to_regexp_1.pathToRegexp(r.path);
-                        return r;
+                        ROUTE_INFO_LOOKUP[r.path] = r;
                     });
+                    // Search again after adding to the cache
+                    matchedRoute = Object.values(ROUTE_INFO_LOOKUP).find(r => r.regex.exec(req.originalUrl));
                 }
-                const matchedRoute = CACHED_ENDPOINT_LISTING.find(r => r.regex.exec(req.originalUrl));
-                console.log("endpoint listing match?", matchedRoute);
+                // If we *still* can't find a matched route then we have to give up on this method
                 if (!matchedRoute) {
                     throw new Error("Failed to match route");
                 }

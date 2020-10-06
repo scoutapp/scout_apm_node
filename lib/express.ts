@@ -53,6 +53,7 @@ export type ExpressRequestWithScout = Request & ExpressScoutInfo;
 // Support common request queue time headers
 // https://github.com/scoutapp/scout_apm_node/issues/68
 const REQUEST_QUEUE_TIME_HEADERS = ["x-queue-start", "x-request-start"];
+
 /**
  * Parse a queue time in NS out of a HTTP header value
  *
@@ -78,7 +79,7 @@ interface EndpointListingItem {
     regex: RegExp;
 }
 
-let CACHED_ENDPOINT_LISTING: EndpointListingItem[] = [];
+const ROUTE_INFO_LOOKUP: {[key: string]: EndpointListingItem} = {};
 
 /**
  * Middleware for using scout, this should be
@@ -179,18 +180,24 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // perform the regex matches to find out which path is actually *active*
         if (!matchedRouteMiddleware) {
             try {
-                // Generate the endpoint listing cache if it's empty, once
-                if (CACHED_ENDPOINT_LISTING.length === 0) {
-                    CACHED_ENDPOINT_LISTING = listExpressEndpoints(req.app)
-                    // Enrich endpoint list with regexes for the full match
-                        .map(r => {
+                // Attempt to find a matchedRoute in the cached endpoint listing
+                let matchedRoute = Object.values(ROUTE_INFO_LOOKUP).find(r => r.regex.exec(req.originalUrl));
+
+                // If we fail to find a matched route, we can try generating the listing anew,
+                // and insert what we find if any new routes are present and try again
+                if (!matchedRoute) {
+                    listExpressEndpoints(req.app)
+                        .forEach(r => {
+                            // Enrich endpoint list with regexes for the full match
                             r.regex = pathToRegexp(r.path);
-                            return r;
-                        });
+                            ROUTE_INFO_LOOKUP[r.path] = r;
+                        })
+
+                    // Search again after adding to the cache
+                    matchedRoute = Object.values(ROUTE_INFO_LOOKUP).find(r => r.regex.exec(req.originalUrl));
                 }
 
-                const matchedRoute = CACHED_ENDPOINT_LISTING.find(r => r.regex.exec(req.originalUrl));
-                console.log("endpoint listing match?", matchedRoute);
+                // If we *still* can't find a matched route then we have to give up on this method
                 if (!matchedRoute) { throw new Error("Failed to match route"); }
 
                 // If we were able to find a matching route the hard way, we can use it
