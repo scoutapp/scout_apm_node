@@ -93,17 +93,23 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         });
     }
 
-    /** @see Agent */
-    public start(): Promise<this> {
-        // Check if the socket already exists
-        let checkExists: () => Promise<boolean> = () => pathExists(this.getSocketPath());
+    protected agentExists(): Promise<boolean> {
+        if (this.opts.isDomainSocket()) {
+            return pathExists(this.getSocketPath());
+        }
+
         if (this.opts.isTCPSocket()) {
-            // We assume if something is on the default port, then it must be core-agent
-            checkExists = () => isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
+            return isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
                 .then(available => !available);
         }
 
-        return checkExists()
+        return Promise.reject(new Errors.UnknownSocketType());
+    }
+
+    /** @see Agent */
+    public start(): Promise<this> {
+
+        return this.agentExists()
             .then(exists => {
                 // If the socket doesn't already exist, start the process as configured
                 if (exists) {
@@ -401,12 +407,24 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * @returns {Promise<Socket>} A socket for use in  the socket pool
      */
     private createSocket(): Promise<Socket> {
-        return new Promise((resolve) => {
-            // Connect the socket
-            const socket = createConnection(this.getSocketPath(), () => {
+        return new Promise((resolve, reject) => {
+            let socket: Socket;
+            const cb = () => {
                 this.emit(AgentEvent.SocketConnected);
                 resolve(socket);
-            });
+            };
+
+            // Perform the right connection based on the type of socket
+            if (this.opts.isDomainSocket()) {
+                socket = createConnection(this.getSocketPath(), cb);
+            } else if (this.opts.isTCPSocket()) {
+                const [host, portRaw] = this.getSocketPath().split(":");
+                const port = parseInt(portRaw, 10);
+                socket = createConnection(port, host, cb);
+            } else {
+                reject(new Error("Unrecognized connection, neither domain nor TCP"));
+                return;
+            }
 
             // Set timeout for socket to half a second
             // on timeouts, we will close the socket close the socket because otherwise nodejs will hang
@@ -566,7 +584,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             return this.opts.uri.replace(Constants.TCP_SOCKET_URI_SCHEME_RGX, "");
         }
 
-        throw new Error("Unrecognized socket path, neither domain nor TCP");
+        throw new Errors.UnknownSocketType();
     }
 
     // Helper for retrieving generic-pool stats
@@ -614,7 +632,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         // Wait until process is listening on the given socket port
         return new Promise((resolve, reject) => {
             setTimeout(() => {
-                pathExists(socketPath)
+                this.agentExists()
                     .then(exists => {
                         if (exists) {
                             this.stopped = false;

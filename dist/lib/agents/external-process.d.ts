@@ -35,6 +35,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     options(): Readonly<ProcessOptions>;
     /** @see Agent */
     status(): Promise<AgentStatus>;
+    protected agentExists(): Promise<boolean>;
     /** @see Agent */
     start(): Promise<this>;
     /** @see Agent */

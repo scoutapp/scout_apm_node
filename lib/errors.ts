@@ -24,6 +24,7 @@ export enum ErrorCode {
     NoActiveParentContext,
     InvalidConfiguration,
     InstanceNotReady,
+    UnknownSocketType,
 }
 
 class ScoutError extends Error {
@@ -234,5 +235,14 @@ export class InstanceNotReady extends ScoutError {
     constructor(m?: string) {
         super();
         this.message = m || "Scout instance not ready (yet)";
+    }
+}
+
+export class UnknownSocketType extends ScoutError {
+    public readonly code: number = ErrorCode.UnknownSocketType;
+
+    constructor(m?: string) {
+        super();
+        this.message = m || "Unrecognized socket type, neither domain nor TCP";
     }
 }
