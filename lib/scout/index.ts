@@ -149,19 +149,19 @@ export class Scout extends EventEmitter {
 
         // For core-agents version less than CORE_AGENT_TCP_SOCKET_MIN_VERSION
         // use a unix socket path based on the default socket file name as the default
-        if (semver.lt(this.coreAgentVersion.toString(), Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
-            return path.join(
-                path.dirname(this.binPath),
-                Constants.DEFAULT_SOCKET_FILE_NAME,
-            );
+        if (semver.lt(this.coreAgentVersion.raw, Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
+            return this.getDefaultSocketFilePath();
         }
 
         // For core agents newer than CORE_AGENT_TCP_SOCKET_MIN_VERSION, use TCP
-        return `tcp://127.0.0.1:6590`;
+        return `tcp://${Constants.CORE_AGENT_TCP_DEFAULT_HOST}:${Constants.CORE_AGENT_TCP_DEFAULT_PORT}`;
     }
 
-    public getSocketPath() {
-        return this.getSocketType() === AgentSocketType.TCP ? this.socketPath : `unix://${this.socketPath}`;
+    protected getDefaultSocketFilePath(): string {
+        return path.join(
+            path.dirname(this.binPath),
+            Constants.DEFAULT_SOCKET_FILE_NAME,
+        );
     }
 
     public getSocketType(): AgentSocketType {
@@ -169,7 +169,12 @@ export class Scout extends EventEmitter {
         return AgentSocketType.Unix;
     }
 
-    public getSocketFilePath(): string {
+    public getSocketPath() {
+        return this.getSocketType() === AgentSocketType.TCP ? this.socketPath : `unix://${this.socketPath}`;
+    }
+
+    public getSocketFilePath(): string | null {
+        if (this.getSocketType() !== AgentSocketType.Unix) { return null; }
         return this.socketPath.slice();
     }
 

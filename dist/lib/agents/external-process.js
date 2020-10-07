@@ -10,6 +10,7 @@ const generic_pool_1 = require("generic-pool");
 const promise_timeout_1 = require("promise-timeout");
 const types_1 = require("../types");
 const responses_1 = require("../protocol/v1/responses");
+const is_port_available_1 = require("is-port-available");
 const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
 const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
 class ExternalProcessAgent extends events_1.EventEmitter {
@@ -43,7 +44,14 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     }
     /** @see Agent */
     start() {
-        return fs_extra_1.pathExists(this.getSocketPath())
+        // Check if the socket already exists
+        let checkExists = () => fs_extra_1.pathExists(this.getSocketPath());
+        if (this.opts.isTCPSocket()) {
+            // We assume if something is on the default port, then it must be core-agent
+            checkExists = is_port_available_1.isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
+                .then(available => !available);
+        }
+        return checkExists()
             .then(exists => {
             // If the socket doesn't already exist, start the process as configured
             if (exists) {
@@ -269,8 +277,8 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
      */
     initPool() {
-        if (!this.opts.isDomainSocket()) {
-            return Promise.reject(new Errors.NotSupported("Only domain sockets (file:// | unix://) are supported"));
+        if (!this.opts.isValidSocket()) {
+            return Promise.reject(new Errors.NotSupported("Only domain (file:// | unix://) or TCP (tcp://) sockets are supported"));
         }
         this.pool = generic_pool_1.createPool({
             create: () => {
@@ -279,7 +287,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 if (this.poolErrors.length > DOMAIN_SOCKET_CREATE_ERR_THRESHOLD) {
                     maybeWait = () => types_1.waitMs(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
                 }
-                return maybeWait().then(() => this.createDomainSocket());
+                return maybeWait().then(() => this.createSocket());
             },
             destroy: (socket) => {
                 // Ensure the socket is not used again
@@ -302,12 +310,13 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     }
     /**
      * Create a socket to the agent for sending requests
+     * the socket *may* be a domain or TCP socket, depending on the output of this.getSocketPath()
      *
      * NOTE: this method *must* police itself, if it fails too many times
      *
      * @returns {Promise<Socket>} A socket for use in  the socket pool
      */
-    createDomainSocket() {
+    createSocket() {
         return new Promise((resolve) => {
             // Connect the socket
             const socket = net_1.createConnection(this.getSocketPath(), () => {
@@ -440,10 +449,12 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     }
     // Get the path for the socket
     getSocketPath() {
-        if (!this.opts.isDomainSocket()) {
-            return this.opts.uri;
+        // if the socket is a domain socket, then we want a file path to feed to core-agent
+        if (this.opts.isDomainSocket()) {
+            return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
         }
-        return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
+        // If the socket is not a domain socket already then return it as is
+        return this.opts.uri;
     }
     // Helper for retrieving generic-pool stats
     getPoolStats() {
@@ -477,9 +488,10 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             args.push("--log-level", this.opts.logLevel);
         }
         // Support TCP socket connections
-        if (this.opts.socketPath && this.opts.socketPath.startsWith("tcp://")) {
+        console.log("SOCKET PATH?", this.opts.uri);
+        if (this.opts.uri && this.opts.uri.startsWith("tcp://")) {
             console.log("SETTING UP TCP");
-            args.push("--tcp", this.opts.socketPath);
+            args.push("--tcp", this.opts.uri);
         }
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, types_1.LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, types_1.LogLevel.Debug);

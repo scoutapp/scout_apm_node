@@ -122,6 +122,22 @@ class ProcessOptions {
     isDomainSocket() {
         return Constants.DOMAIN_SOCKET_URI_SCHEME_RGX.test(this.uri);
     }
+    /**
+     * Returns whether the address represents a TCP socket
+     *
+     * @returns {boolean} whether the address is a TCP socket
+     */
+    isTCPSocket() {
+        return Constants.TCP_SOCKET_URI_SCHEME_RGX.test(this.uri);
+    }
+    /**
+     * Returns whether the address represents an accepted socket type
+     *
+     * @returns {boolean} whether the address is a valid socket type
+     */
+    isValidSocket() {
+        return this.isTCPSocket() || this.isDomainSocket();
+    }
 }
 exports.ProcessOptions = ProcessOptions;
 var AgentSocketType;

@@ -41,9 +41,10 @@ export declare class Scout extends EventEmitter {
     private settingUp;
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions);
     private get socketPath();
-    getSocketPath(): string;
+    protected getDefaultSocketFilePath(): string;
     getSocketType(): AgentSocketType;
-    getSocketFilePath(): string;
+    getSocketPath(): string;
+    getSocketFilePath(): string | null;
     getCoreAgentVersion(): CoreAgentVersion;
     getApplicationMetadata(): ApplicationMetadata;
     getConfig(): Partial<ScoutConfiguration>;

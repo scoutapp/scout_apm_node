@@ -6,6 +6,7 @@ const os = require("os");
 const fs = require("fs");
 const path = require("path");
 const app_root_path_1 = require("app-root-path");
+const semver = require("semver");
 const enum_1 = require("./enum");
 const util_1 = require("./util");
 const enum_2 = require("./enum");
@@ -261,6 +262,12 @@ class DerivedConfigSource {
         // working through the sources again
         switch (prop) {
             case "socketPath":
+                const agentVersion = p.get({}, "coreAgentVersion");
+                // If we are using core agent newer than CORE_AGENT_TCP_SOCKET_MIN_VERSION,
+                // default to a TCP connection
+                if (agentVersion && semver.lt(agentVersion.raw, Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
+                    return `tcp://${Constants.CORE_AGENT_TCP_DEFAULT_HOST}:${Constants.CORE_AGENT_TCP_DEFAULT_PORT}`;
+                }
                 const coreAgentDir = p.get({}, "coreAgentDir");
                 const coreAgentFullName = p.get({}, "coreAgentFullName");
                 return `${coreAgentDir}/${coreAgentFullName}/${Constants.DEFAULT_SOCKET_FILE_NAME}`;
@@ -409,7 +416,6 @@ function buildProcessOptions(config) {
     return {
         disallowLaunch: !config.coreAgentLaunch,
         logFilePath: config.logFilePath,
-        socketPath: config.socketPath,
         logLevel: config.logLevel || config.coreAgentLogLevel,
     };
 }

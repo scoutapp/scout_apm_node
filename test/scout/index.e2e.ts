@@ -392,6 +392,8 @@ test("Launch disabling works via top level config", t => {
 
     const socketPath = scout.getSocketFilePath();
 
+    if (!socketPath) { throw new Error("unexpected/invalid non-unix socket path!"); }
+
     // We need to make sure that the socket path doesn't exist
     pathExists(socketPath)
         .then(exists => {
