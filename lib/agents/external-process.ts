@@ -561,8 +561,12 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
         }
 
+        if (this.opts.isTCPSocket()) {
         // If the socket is not a domain socket already then return it as is
-        return this.opts.uri;
+            return this.opts.uri.replace(Constants.TCP_SOCKET_URI_SCHEME_RGX, "");
+        }
+
+        throw new Error("Unrecognized socket path, neither domain nor TCP");
     }
 
     // Helper for retrieving generic-pool stats
@@ -589,15 +593,15 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         // Build command and arguments
         const socketPath = this.getSocketPath();
-        const args = ["start", "--socket", socketPath];
+        const args = [
+            "start",
+            this.opts.isTCPSocket() ? "--tcp" : "--socket",
+            socketPath,
+        ];
+
         if (this.opts.logFilePath) { args.push("--log-file", this.opts.logFilePath); }
         if (this.opts.configFilePath) { args.push("--config-file", this.opts.configFilePath); }
         if (this.opts.logLevel) { args.push("--log-level", this.opts.logLevel); }
-
-        // Support TCP socket connections
-        if (this.opts.uri && this.opts.uri.startsWith("tcp://")) {
-            args.push("--tcp", this.opts.uri);
-        }
 
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, LogLevel.Debug);
