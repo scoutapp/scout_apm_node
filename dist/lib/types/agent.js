@@ -124,3 +124,8 @@ class ProcessOptions {
     }
 }
 exports.ProcessOptions = ProcessOptions;
+var AgentSocketType;
+(function (AgentSocketType) {
+    AgentSocketType["TCP"] = "tcp";
+    AgentSocketType["Unix"] = "unix";
+})(AgentSocketType = exports.AgentSocketType || (exports.AgentSocketType = {}));

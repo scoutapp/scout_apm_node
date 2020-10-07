@@ -21,17 +21,18 @@ import {
     JSONValue,
     LogFn,
     LogLevel,
-    isLogLevel,
     ProcessOptions,
     ScoutConfiguration,
     ScoutContextName,
     ScoutEvent,
     ScoutTag,
+    AgentSocketType,
     URIReportingLevel,
     buildDownloadOptions,
     buildProcessOptions,
     buildScoutConfiguration,
     generateTriple,
+    isLogLevel,
     parseLogLevel,
     scrubRequestPath,
     scrubRequestPathParams,
@@ -146,10 +147,26 @@ export class Scout extends EventEmitter {
             return this.config.socketPath;
         }
 
-        return path.join(
-            path.dirname(this.binPath),
-            Constants.DEFAULT_SOCKET_FILE_NAME,
-        );
+        // For core-agents version less than CORE_AGENT_TCP_SOCKET_MIN_VERSION
+        // use a unix socket path based on the default socket file name as the default
+        if (semver.lt(this.coreAgentVersion.toString(), Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
+            return path.join(
+                path.dirname(this.binPath),
+                Constants.DEFAULT_SOCKET_FILE_NAME,
+            );
+        }
+
+        // For core agents newer than CORE_AGENT_TCP_SOCKET_MIN_VERSION, use TCP
+        return `tcp://127.0.0.1:6590`;
+    }
+
+    public getSocketPath() {
+        return this.getSocketType() === AgentSocketType.TCP ? this.socketPath : `unix://${this.socketPath}`;
+    }
+
+    public getSocketType(): AgentSocketType {
+        if (this.socketPath.startsWith("tcp://")) { return AgentSocketType.TCP; }
+        return AgentSocketType.Unix;
     }
 
     public getSocketFilePath(): string {
@@ -607,10 +624,6 @@ export class Scout extends EventEmitter {
         Object.keys(EXPORT_BAG)
             .map(packageName => getIntegrationForPackage(packageName))
             .forEach(integration => integration.setScoutInstance(this));
-    }
-
-    public getSocketPath() {
-        return `unix://${this.socketPath}`;
     }
 
     /**

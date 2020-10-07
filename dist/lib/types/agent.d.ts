@@ -121,6 +121,7 @@ export declare class ProcessOptions {
     readonly logFilePath?: string;
     readonly configFilePath?: string;
     readonly disallowLaunch?: boolean;
+    readonly socketPath?: string;
     readonly sendTimeoutMs: number;
     readonly socketTimeoutMs: number;
     readonly connPoolOpts?: ConnectionPoolOptions;
@@ -134,4 +135,8 @@ export declare class ProcessOptions {
 }
 export interface AgentStatus {
     connected: boolean;
+}
+export declare enum AgentSocketType {
+    TCP = "tcp",
+    Unix = "unix"
 }

@@ -4,6 +4,7 @@ const events_1 = require("events");
 const path = require("path");
 const process = require("process");
 const cls = require("cls-hooked");
+const semver = require("semver");
 const fs_extra_1 = require("fs-extra");
 const types_1 = require("../types");
 const global_1 = require("../global");
@@ -58,7 +59,22 @@ class Scout extends events_1.EventEmitter {
         if (this.config.socketPath) {
             return this.config.socketPath;
         }
-        return path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
+        // For core-agents version less than CORE_AGENT_TCP_SOCKET_MIN_VERSION
+        // use a unix socket path based on the default socket file name as the default
+        if (semver.lt(this.coreAgentVersion.toString(), Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
+            return path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
+        }
+        // For core agents newer than CORE_AGENT_TCP_SOCKET_MIN_VERSION, use TCP
+        return `tcp://127.0.0.1:6590`;
+    }
+    getSocketPath() {
+        return this.getSocketType() === types_1.AgentSocketType.TCP ? this.socketPath : `unix://${this.socketPath}`;
+    }
+    getSocketType() {
+        if (this.socketPath.startsWith("tcp://")) {
+            return types_1.AgentSocketType.TCP;
+        }
+        return types_1.AgentSocketType.Unix;
     }
     getSocketFilePath() {
         return this.socketPath.slice();
@@ -439,9 +455,6 @@ class Scout extends events_1.EventEmitter {
         Object.keys(global_1.EXPORT_BAG)
             .map(packageName => integrations_1.getIntegrationForPackage(packageName))
             .forEach(integration => integration.setScoutInstance(this));
-    }
-    getSocketPath() {
-        return `unix://${this.socketPath}`;
     }
     /**
      * Attempt to clear an async name space entry

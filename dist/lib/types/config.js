@@ -409,6 +409,7 @@ function buildProcessOptions(config) {
     return {
         disallowLaunch: !config.coreAgentLaunch,
         logFilePath: config.logFilePath,
+        socketPath: config.socketPath,
         logLevel: config.logLevel || config.coreAgentLogLevel,
     };
 }

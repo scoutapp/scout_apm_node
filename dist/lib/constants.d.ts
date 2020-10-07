@@ -47,3 +47,4 @@ export declare const DEFAULT_PARAM_SCRUB_REPLACEMENT = "[FILTERED]";
 export declare const DEFAULT_SLOW_REQUEST_THRESHOLD_MS: number;
 export declare const DEFAULT_SOCKET_TIMEOUT_MS: number;
 export declare const DEFAULT_AGENT_SEND_TIMEOUT_MS = 10000;
+export declare const CORE_AGENT_TCP_SOCKET_MIN_VERSION = "1.3.0";

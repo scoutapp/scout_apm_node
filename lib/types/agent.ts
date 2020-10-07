@@ -199,6 +199,7 @@ export class ProcessOptions {
     public readonly logFilePath?: string;
     public readonly configFilePath?: string;
     public readonly disallowLaunch?: boolean;
+    public readonly socketPath?: string;
 
     // Amount of time to wait before timing out messages
     public readonly sendTimeoutMs: number = Constants.DEFAULT_AGENT_SEND_TIMEOUT_MS;
@@ -236,4 +237,9 @@ export class ProcessOptions {
 
 export interface AgentStatus {
     connected: boolean;
+}
+
+export enum AgentSocketType {
+    TCP = "tcp",
+    Unix = "unix",
 }

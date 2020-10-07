@@ -476,6 +476,11 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if (this.opts.logLevel) {
             args.push("--log-level", this.opts.logLevel);
         }
+        // Support TCP socket connections
+        if (this.opts.socketPath && this.opts.socketPath.startsWith("tcp://")) {
+            console.log("SETTING UP TCP");
+            args.push("--tcp", this.opts.socketPath);
+        }
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, types_1.LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, types_1.LogLevel.Debug);
         this.detachedProcess = child_process_1.spawn(this.opts.binPath, args, {
