@@ -262,10 +262,13 @@ class DerivedConfigSource {
         // working through the sources again
         switch (prop) {
             case "socketPath":
-                const rawVersion = p.get({}, "coreAgentVersion");
+                let rawVersion = p.get({}, "coreAgentVersion");
+                if (rawVersion[0] === "v") {
+                    rawVersion = rawVersion.slice(1);
+                }
                 // If we are using core agent equal to or newer than CORE_AGENT_TCP_SOCKET_MIN_VERSION,
                 // then we should default to a TCP connection
-                if (rawVersion && semver.gte(rawVersion.slice(1), Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
+                if (rawVersion && semver.gte(rawVersion, Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
                     return `tcp://${Constants.CORE_AGENT_TCP_DEFAULT_HOST}:${Constants.CORE_AGENT_TCP_DEFAULT_PORT}`;
                 }
                 const coreAgentDir = p.get({}, "coreAgentDir");
