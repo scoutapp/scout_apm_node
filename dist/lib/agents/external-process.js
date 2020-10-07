@@ -42,19 +42,9 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             connected: this.pool.min > 0 ? this.pool.available > 0 : true,
         });
     }
-    agentExists() {
-        if (this.opts.isDomainSocket()) {
-            return fs_extra_1.pathExists(this.getSocketPath());
-        }
-        if (this.opts.isTCPSocket()) {
-            return isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
-                .then(available => !available);
-        }
-        return Promise.reject(new Errors.UnknownSocketType());
-    }
     /** @see Agent */
     start() {
-        return this.agentExists()
+        return this.peerRunning()
             .then(exists => {
             // If the socket doesn't already exist, start the process as configured
             if (exists) {
@@ -273,6 +263,21 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     setRegistrationAndMetadata(registerMsg, appMetadataMsg) {
         this.registrationMsg = registerMsg;
         this.appMetadataMsg = appMetadataMsg;
+    }
+    /**
+     * Check if a peer agent is running
+     *
+     * @return {Promise<boolean>}
+     */
+    peerRunning() {
+        if (this.opts.isDomainSocket()) {
+            return fs_extra_1.pathExists(this.getSocketPath());
+        }
+        if (this.opts.isTCPSocket()) {
+            return isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
+                .then(available => !available);
+        }
+        return Promise.reject(new Errors.UnknownSocketType());
     }
     /**
      * Initialize the socket pool
@@ -520,7 +525,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         // Wait until process is listening on the given socket port
         return new Promise((resolve, reject) => {
             setTimeout(() => {
-                this.agentExists()
+                this.peerRunning()
                     .then(exists => {
                     if (exists) {
                         this.stopped = false;

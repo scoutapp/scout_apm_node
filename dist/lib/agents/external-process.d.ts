@@ -35,7 +35,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     options(): Readonly<ProcessOptions>;
     /** @see Agent */
     status(): Promise<AgentStatus>;
-    protected agentExists(): Promise<boolean>;
     /** @see Agent */
     start(): Promise<this>;
     /** @see Agent */
@@ -62,6 +61,12 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      * @param {V1ApplicationEvent} metadata - App metadata
      */
     setRegistrationAndMetadata(registerMsg: V1Register, appMetadataMsg: V1ApplicationEvent): void;
+    /**
+     * Check if a peer agent is running
+     *
+     * @return {Promise<boolean>}
+     */
+    protected peerRunning(): Promise<boolean>;
     /**
      * Initialize the socket pool
      *

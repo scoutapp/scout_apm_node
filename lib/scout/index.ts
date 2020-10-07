@@ -6,6 +6,7 @@ import * as cls from "cls-hooked";
 import * as semver from "semver";
 import { pathExists } from "fs-extra";
 import { instrument as instrumentTrace } from "stacktrace-js";
+import * as isPortAvailable from "is-port-available";
 
 import {
     APIVersion,
@@ -632,6 +633,28 @@ export class Scout extends EventEmitter {
     }
 
     /**
+     * Check if an agent is already running
+     *
+     * @returns {Promise<boolean>}
+     */
+    public agentIsRunning(socketPath): Promise<boolean> {
+        const socketType = this.getSocketType();
+
+        if (socketType === AgentSocketType.Unix) {
+            return pathExists(socketPath);
+        }
+
+        if (socketPath === AgentSocketType.TCP) {
+            const [_, portRaw] = socketPath.split(":");
+            const port = parseInt(portRaw, 10);
+            return isPortAvailable(port)
+                .then(available => !available);
+        }
+
+        return Promise.reject(new Errors.UnknownSocketType());
+    }
+
+    /**
      * Attempt to clear an async name space entry
      *
      * this.asyncNamespace.set can fail if the async context ID is already gone
@@ -653,7 +676,7 @@ export class Scout extends EventEmitter {
         socketPath = socketPath || this.socketPath;
 
         // Check if the socketPath exists
-        return pathExists(socketPath)
+        return this.agentIsRunning(socketPath)
             .then(exists => {
                 if (!exists) {
                     throw new Errors.InvalidConfiguration("socket @ path [${socketPath}] does not exist");

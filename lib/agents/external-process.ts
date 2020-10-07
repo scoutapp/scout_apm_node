@@ -93,23 +93,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         });
     }
 
-    protected agentExists(): Promise<boolean> {
-        if (this.opts.isDomainSocket()) {
-            return pathExists(this.getSocketPath());
-        }
-
-        if (this.opts.isTCPSocket()) {
-            return isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
-                .then(available => !available);
-        }
-
-        return Promise.reject(new Errors.UnknownSocketType());
-    }
-
     /** @see Agent */
     public start(): Promise<this> {
 
-        return this.agentExists()
+        return this.peerRunning()
             .then(exists => {
                 // If the socket doesn't already exist, start the process as configured
                 if (exists) {
@@ -347,6 +334,24 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     public setRegistrationAndMetadata(registerMsg: V1Register, appMetadataMsg: V1ApplicationEvent) {
         this.registrationMsg = registerMsg;
         this.appMetadataMsg = appMetadataMsg;
+    }
+
+    /**
+     * Check if a peer agent is running
+     *
+     * @return {Promise<boolean>}
+     */
+    protected peerRunning(): Promise<boolean> {
+        if (this.opts.isDomainSocket()) {
+            return pathExists(this.getSocketPath());
+        }
+
+        if (this.opts.isTCPSocket()) {
+            return isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
+                .then(available => !available);
+        }
+
+        return Promise.reject(new Errors.UnknownSocketType());
     }
 
     /**
@@ -632,7 +637,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         // Wait until process is listening on the given socket port
         return new Promise((resolve, reject) => {
             setTimeout(() => {
-                this.agentExists()
+                this.peerRunning()
                     .then(exists => {
                         if (exists) {
                             this.stopped = false;

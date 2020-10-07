@@ -127,6 +127,12 @@ export declare class Scout extends EventEmitter {
     getCurrentSpan(): ScoutSpan | null;
     setupIntegrations(): void;
     /**
+     * Check if an agent is already running
+     *
+     * @returns {Promise<boolean>}
+     */
+    agentIsRunning(socketPath: any): Promise<boolean>;
+    /**
      * Attempt to clear an async name space entry
      *
      * this.asyncNamespace.set can fail if the async context ID is already gone
