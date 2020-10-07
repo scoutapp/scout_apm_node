@@ -59,7 +59,7 @@ class Scout extends events_1.EventEmitter {
         if (this.config.socketPath) {
             return this.config.socketPath;
         }
-        // For core-agents version less than CORE_AGENT_TCP_SOCKET_MIN_VERSION
+        // Only core-agents version less than CORE_AGENT_TCP_SOCKET_MIN_VERSION
         // use a unix socket path based on the default socket file name as the default
         if (semver.lt(this.coreAgentVersion.raw, Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
             return this.getDefaultSocketFilePath();

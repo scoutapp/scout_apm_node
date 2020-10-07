@@ -27,7 +27,7 @@ import {
 import { V1AgentResponse, V1ApplicationEventResponse, V1RegisterResponse } from "../protocol/v1/responses";
 import { V1Register, V1ApplicationEvent } from "../protocol/v1/requests";
 
-import { isPortAvailable } from "is-port-available";
+import * as isPortAvailable from "is-port-available";
 
 const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
 const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
@@ -99,7 +99,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         let checkExists: () => Promise<boolean> = () => pathExists(this.getSocketPath());
         if (this.opts.isTCPSocket()) {
             // We assume if something is on the default port, then it must be core-agent
-            checkExists = isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
+            checkExists = () => isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
                 .then(available => !available);
         }
 
@@ -595,9 +595,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (this.opts.logLevel) { args.push("--log-level", this.opts.logLevel); }
 
         // Support TCP socket connections
-        console.log("SOCKET PATH?", this.opts.uri);
         if (this.opts.uri && this.opts.uri.startsWith("tcp://")) {
-            console.log("SETTING UP TCP");
             args.push("--tcp", this.opts.uri);
         }
 

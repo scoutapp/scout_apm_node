@@ -365,11 +365,11 @@ class DerivedConfigSource implements ConfigSource {
         // working through the sources again
         switch (prop) {
             case "socketPath":
-                const agentVersion = p.get({}, "coreAgentVersion");
+                const rawVersion = p.get({}, "coreAgentVersion");
 
-                // If we are using core agent newer than CORE_AGENT_TCP_SOCKET_MIN_VERSION,
-                // default to a TCP connection
-                if (agentVersion && semver.lt(agentVersion.raw, Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
+                // If we are using core agent equal to or newer than CORE_AGENT_TCP_SOCKET_MIN_VERSION,
+                // then we should default to a TCP connection
+                if (rawVersion && semver.gte(rawVersion.slice(1), Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
                     return `tcp://${Constants.CORE_AGENT_TCP_DEFAULT_HOST}:${Constants.CORE_AGENT_TCP_DEFAULT_PORT}`;
                 }
 
