@@ -1,6 +1,7 @@
 import * as test from "tape";
 import * as path from "path";
-import { mkdtemp } from "fs-extra";
+import { mkdtemp, ensureDir } from "fs-extra";
+import * as os from "os";
 
 import {
     Scout,
@@ -384,18 +385,27 @@ test("Download disabling works via top level config", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/59
 test("Launch disabling works via top level config", t => {
-    const scout = new Scout(buildScoutConfiguration({
-        coreAgentLaunch: false,
-        allowShutdown: true,
-        monitor: true,
-    }));
 
-    const socketPath = scout.getSocketFilePath();
+    const socketDir = path.join(os.tmpdir(), "core-agent-launch-disable-test");
+    let scout: Scout;
+    let socketPath: string;
 
-    if (!socketPath) { throw new Error("unexpected/invalid non-unix socket path!"); }
+    // Ensure a directoy to put the socket in exists
+    ensureDir(socketDir)
+        .then(() => {
+            scout = new Scout(buildScoutConfiguration({
+                coreAgentLaunch: false,
+                allowShutdown: true,
+                monitor: true,
+                socketPath: `${socketDir}/core-agent.sock`,
+            }));
 
+            const filePath = scout.getSocketFilePath();
+            if (!filePath) { throw new Error("unexpected/invalid non-unix socket path!"); }
+            socketPath = filePath;
+        })
     // We need to make sure that the socket path doesn't exist
-    pathExists(socketPath)
+        .then(() => pathExists(socketPath))
         .then(exists => {
             if (exists) {
                 t.comment(`removing existing socket path @ [${socketPath}] to prevent use of existing agent`);
