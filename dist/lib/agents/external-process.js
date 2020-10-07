@@ -474,8 +474,8 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if (this.opts.isDomainSocket()) {
             return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
         }
+        // For TCP sockets the path should be of form x.x.x.x:0000 (ex. '127.0.0.1:6590')
         if (this.opts.isTCPSocket()) {
-            // If the socket is not a domain socket already then return it as is
             return this.opts.uri.replace(Constants.TCP_SOCKET_URI_SCHEME_RGX, "");
         }
         throw new Errors.UnknownSocketType();

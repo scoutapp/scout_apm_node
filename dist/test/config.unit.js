@@ -113,7 +113,7 @@ test("core agent dir matches python (pre-TCP-by-default, v1.2.9)", (t) => {
     t.end();
 });
 // https://github.com/scoutapp/scout_apm_node/issues/233
-test("core agent dir matches python (post-TCP v.1.3.0", (t) => {
+test("core agent dir matches python (post-TCP v.1.3.0+)", (t) => {
     const config = types_1.buildScoutConfiguration({ coreAgentVersion: TestConstants.TEST_APP_VERSION });
     const scout = new scout_1.Scout(config);
     const expectedCoreAgentDir = path.join(os.tmpdir(), "scout_apm_core");
