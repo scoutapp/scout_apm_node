@@ -62,6 +62,12 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
      */
     setRegistrationAndMetadata(registerMsg: V1Register, appMetadataMsg: V1ApplicationEvent): void;
     /**
+     * Check if a peer agent is running
+     *
+     * @return {Promise<boolean>}
+     */
+    protected peerRunning(): Promise<boolean>;
+    /**
      * Initialize the socket pool
      *
      * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
@@ -69,12 +75,13 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private initPool;
     /**
      * Create a socket to the agent for sending requests
+     * the socket *may* be a domain or TCP socket, depending on the output of this.getSocketPath()
      *
      * NOTE: this method *must* police itself, if it fails too many times
      *
      * @returns {Promise<Socket>} A socket for use in  the socket pool
      */
-    private createDomainSocket;
+    private createSocket;
     /**
      * Handle socket error
      *

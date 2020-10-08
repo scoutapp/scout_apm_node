@@ -4,7 +4,9 @@ const events_1 = require("events");
 const path = require("path");
 const process = require("process");
 const cls = require("cls-hooked");
+const semver = require("semver");
 const fs_extra_1 = require("fs-extra");
+const isPortAvailable = require("is-port-available");
 const types_1 = require("../types");
 const global_1 = require("../global");
 const integrations_1 = require("../integrations");
@@ -58,9 +60,30 @@ class Scout extends events_1.EventEmitter {
         if (this.config.socketPath) {
             return this.config.socketPath;
         }
+        // Only core-agents version less than CORE_AGENT_TCP_SOCKET_MIN_VERSION
+        // use a unix socket path based on the default socket file name as the default
+        if (semver.lt(this.coreAgentVersion.raw, Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
+            return this.getDefaultSocketFilePath();
+        }
+        // For core agents newer than CORE_AGENT_TCP_SOCKET_MIN_VERSION, use TCP
+        return `tcp://${Constants.CORE_AGENT_TCP_DEFAULT_HOST}:${Constants.CORE_AGENT_TCP_DEFAULT_PORT}`;
+    }
+    getDefaultSocketFilePath() {
         return path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
     }
+    getSocketType() {
+        if (this.socketPath.startsWith("tcp://")) {
+            return types_1.AgentSocketType.TCP;
+        }
+        return types_1.AgentSocketType.Unix;
+    }
+    getSocketPath() {
+        return this.getSocketType() === types_1.AgentSocketType.TCP ? this.socketPath : `unix://${this.socketPath}`;
+    }
     getSocketFilePath() {
+        if (this.getSocketType() !== types_1.AgentSocketType.Unix) {
+            return null;
+        }
         return this.socketPath.slice();
     }
     getCoreAgentVersion() {
@@ -440,8 +463,23 @@ class Scout extends events_1.EventEmitter {
             .map(packageName => integrations_1.getIntegrationForPackage(packageName))
             .forEach(integration => integration.setScoutInstance(this));
     }
-    getSocketPath() {
-        return `unix://${this.socketPath}`;
+    /**
+     * Check if an agent is already running
+     *
+     * @returns {Promise<boolean>}
+     */
+    agentIsRunning(socketPath) {
+        const socketType = this.getSocketType();
+        if (socketType === types_1.AgentSocketType.Unix) {
+            return fs_extra_1.pathExists(socketPath);
+        }
+        if (socketPath === types_1.AgentSocketType.TCP) {
+            const [_, portRaw] = socketPath.split(":");
+            const port = parseInt(portRaw, 10);
+            return isPortAvailable(port)
+                .then(available => !available);
+        }
+        return Promise.reject(new Errors.UnknownSocketType());
     }
     /**
      * Attempt to clear an async name space entry
@@ -463,7 +501,7 @@ class Scout extends events_1.EventEmitter {
         this.log(`[scout] detected existing socket @ [${this.socketPath}], skipping agent launch`, types_1.LogLevel.Debug);
         socketPath = socketPath || this.socketPath;
         // Check if the socketPath exists
-        return fs_extra_1.pathExists(socketPath)
+        return this.agentIsRunning(socketPath)
             .then(exists => {
             if (!exists) {
                 throw new Errors.InvalidConfiguration("socket @ path [${socketPath}] does not exist");

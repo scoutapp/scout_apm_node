@@ -35,8 +35,8 @@ let MEM_USAGE_LIMIT_MB = 16; // heuristics-based
 
 // FRAGILE: when in CI, memory usage settles around 24MB and 3x after 60s
 if (process.env.CI) {
-    MEM_USAGE_BOUND_MULTIPLIER = 3.5; // heuristics-based
-    MEM_USAGE_LIMIT_MB = 30; // heuristics-based
+    MEM_USAGE_BOUND_MULTIPLIER = 4.5; // heuristics-based
+    MEM_USAGE_LIMIT_MB = 40; // heuristics-based
 }
 
 const DEFAULT_LOADTEST_OPTIONS = {

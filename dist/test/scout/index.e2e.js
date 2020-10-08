@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const test = require("tape");
 const path = require("path");
 const fs_extra_1 = require("fs-extra");
+const os = require("os");
 const scout_1 = require("../../lib/scout");
 const types_1 = require("../../lib/types");
 const global_1 = require("../../lib/global");
@@ -320,14 +321,26 @@ test("Download disabling works via top level config", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
 test("Launch disabling works via top level config", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        coreAgentLaunch: false,
-        allowShutdown: true,
-        monitor: true,
-    }));
-    const socketPath = scout.getSocketFilePath();
-    // We need to make sure that the socket path doesn't exist
-    fs_extra_2.pathExists(socketPath)
+    const socketDir = path.join(os.tmpdir(), "core-agent-launch-disable-test");
+    let scout;
+    let socketPath;
+    // Ensure a directoy to put the socket in exists
+    fs_extra_1.ensureDir(socketDir)
+        .then(() => {
+        scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+            coreAgentLaunch: false,
+            allowShutdown: true,
+            monitor: true,
+            socketPath: `${socketDir}/core-agent.sock`,
+        }));
+        const filePath = scout.getSocketFilePath();
+        if (!filePath) {
+            throw new Error("unexpected/invalid non-unix socket path!");
+        }
+        socketPath = filePath;
+    })
+        // We need to make sure that the socket path doesn't exist
+        .then(() => fs_extra_2.pathExists(socketPath))
         .then(exists => {
         if (exists) {
             t.comment(`removing existing socket path @ [${socketPath}] to prevent use of existing agent`);

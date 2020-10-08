@@ -232,8 +232,32 @@ export class ProcessOptions {
     public isDomainSocket(): boolean {
         return Constants.DOMAIN_SOCKET_URI_SCHEME_RGX.test(this.uri);
     }
+
+    /**
+     * Returns whether the address represents a TCP socket
+     *
+     * @returns {boolean} whether the address is a TCP socket
+     */
+    public isTCPSocket(): boolean {
+        return Constants.TCP_SOCKET_URI_SCHEME_RGX.test(this.uri);
+    }
+
+    /**
+     * Returns whether the address represents an accepted socket type
+     *
+     * @returns {boolean} whether the address is a valid socket type
+     */
+    public isValidSocket(): boolean {
+        return this.isTCPSocket() || this.isDomainSocket();
+    }
+
 }
 
 export interface AgentStatus {
     connected: boolean;
+}
+
+export enum AgentSocketType {
+    TCP = "tcp",
+    Unix = "unix",
 }

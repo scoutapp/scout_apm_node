@@ -91,6 +91,7 @@
     "fs-extra": "7.0.1",
     "generic-pool": "3.6.1",
     "hasha": "4.0.1",
+    "is-port-available": "^0.1.5",
     "nano-time": "^1.0.0",
     "on-finished": "2.3.0",
     "path-to-regexp": "^6.2.0",

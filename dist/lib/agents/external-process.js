@@ -10,6 +10,7 @@ const generic_pool_1 = require("generic-pool");
 const promise_timeout_1 = require("promise-timeout");
 const types_1 = require("../types");
 const responses_1 = require("../protocol/v1/responses");
+const isPortAvailable = require("is-port-available");
 const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
 const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
 class ExternalProcessAgent extends events_1.EventEmitter {
@@ -43,7 +44,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     }
     /** @see Agent */
     start() {
-        return fs_extra_1.pathExists(this.getSocketPath())
+        return this.peerRunning()
             .then(exists => {
             // If the socket doesn't already exist, start the process as configured
             if (exists) {
@@ -264,13 +265,28 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         this.appMetadataMsg = appMetadataMsg;
     }
     /**
+     * Check if a peer agent is running
+     *
+     * @return {Promise<boolean>}
+     */
+    peerRunning() {
+        if (this.opts.isDomainSocket()) {
+            return fs_extra_1.pathExists(this.getSocketPath());
+        }
+        if (this.opts.isTCPSocket()) {
+            return isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
+                .then(available => !available);
+        }
+        return Promise.reject(new Errors.UnknownSocketType());
+    }
+    /**
      * Initialize the socket pool
      *
      * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
      */
     initPool() {
-        if (!this.opts.isDomainSocket()) {
-            return Promise.reject(new Errors.NotSupported("Only domain sockets (file:// | unix://) are supported"));
+        if (!this.opts.isValidSocket()) {
+            return Promise.reject(new Errors.NotSupported("Only domain (file:// | unix://) or TCP (tcp://) sockets are supported"));
         }
         this.pool = generic_pool_1.createPool({
             create: () => {
@@ -279,7 +295,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 if (this.poolErrors.length > DOMAIN_SOCKET_CREATE_ERR_THRESHOLD) {
                     maybeWait = () => types_1.waitMs(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
                 }
-                return maybeWait().then(() => this.createDomainSocket());
+                return maybeWait().then(() => this.createSocket());
             },
             destroy: (socket) => {
                 // Ensure the socket is not used again
@@ -302,18 +318,32 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     }
     /**
      * Create a socket to the agent for sending requests
+     * the socket *may* be a domain or TCP socket, depending on the output of this.getSocketPath()
      *
      * NOTE: this method *must* police itself, if it fails too many times
      *
      * @returns {Promise<Socket>} A socket for use in  the socket pool
      */
-    createDomainSocket() {
-        return new Promise((resolve) => {
-            // Connect the socket
-            const socket = net_1.createConnection(this.getSocketPath(), () => {
+    createSocket() {
+        return new Promise((resolve, reject) => {
+            let socket;
+            const cb = () => {
                 this.emit(types_1.AgentEvent.SocketConnected);
                 resolve(socket);
-            });
+            };
+            // Perform the right connection based on the type of socket
+            if (this.opts.isDomainSocket()) {
+                socket = net_1.createConnection(this.getSocketPath(), cb);
+            }
+            else if (this.opts.isTCPSocket()) {
+                const [host, portRaw] = this.getSocketPath().split(":");
+                const port = parseInt(portRaw, 10);
+                socket = net_1.createConnection(port, host, cb);
+            }
+            else {
+                reject(new Error("Unrecognized connection, neither domain nor TCP"));
+                return;
+            }
             // Set timeout for socket to half a second
             // on timeouts, we will close the socket close the socket because otherwise nodejs will hang
             socket.setTimeout(this.opts.socketTimeoutMs);
@@ -440,10 +470,15 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     }
     // Get the path for the socket
     getSocketPath() {
-        if (!this.opts.isDomainSocket()) {
-            return this.opts.uri;
+        // if the socket is a domain socket, then we want a file path to feed to core-agent
+        if (this.opts.isDomainSocket()) {
+            return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
         }
-        return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
+        // For TCP sockets the path should be of form x.x.x.x:0000 (ex. '127.0.0.1:6590')
+        if (this.opts.isTCPSocket()) {
+            return this.opts.uri.replace(Constants.TCP_SOCKET_URI_SCHEME_RGX, "");
+        }
+        throw new Errors.UnknownSocketType();
     }
     // Helper for retrieving generic-pool stats
     getPoolStats() {
@@ -466,7 +501,11 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         }
         // Build command and arguments
         const socketPath = this.getSocketPath();
-        const args = ["start", "--socket", socketPath];
+        const args = [
+            "start",
+            this.opts.isTCPSocket() ? "--tcp" : "--socket",
+            socketPath,
+        ];
         if (this.opts.logFilePath) {
             args.push("--log-file", this.opts.logFilePath);
         }
@@ -486,7 +525,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         // Wait until process is listening on the given socket port
         return new Promise((resolve, reject) => {
             setTimeout(() => {
-                fs_extra_1.pathExists(socketPath)
+                this.peerRunning()
                     .then(exists => {
                     if (exists) {
                         this.stopped = false;

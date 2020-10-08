@@ -6,6 +6,7 @@ import * as cls from "cls-hooked";
 import * as semver from "semver";
 import { pathExists } from "fs-extra";
 import { instrument as instrumentTrace } from "stacktrace-js";
+import * as isPortAvailable from "is-port-available";
 
 import {
     APIVersion,
@@ -21,17 +22,18 @@ import {
     JSONValue,
     LogFn,
     LogLevel,
-    isLogLevel,
     ProcessOptions,
     ScoutConfiguration,
     ScoutContextName,
     ScoutEvent,
     ScoutTag,
+    AgentSocketType,
     URIReportingLevel,
     buildDownloadOptions,
     buildProcessOptions,
     buildScoutConfiguration,
     generateTriple,
+    isLogLevel,
     parseLogLevel,
     scrubRequestPath,
     scrubRequestPathParams,
@@ -146,13 +148,34 @@ export class Scout extends EventEmitter {
             return this.config.socketPath;
         }
 
+        // Only core-agents version less than CORE_AGENT_TCP_SOCKET_MIN_VERSION
+        // use a unix socket path based on the default socket file name as the default
+        if (semver.lt(this.coreAgentVersion.raw, Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
+            return this.getDefaultSocketFilePath();
+        }
+
+        // For core agents newer than CORE_AGENT_TCP_SOCKET_MIN_VERSION, use TCP
+        return `tcp://${Constants.CORE_AGENT_TCP_DEFAULT_HOST}:${Constants.CORE_AGENT_TCP_DEFAULT_PORT}`;
+    }
+
+    protected getDefaultSocketFilePath(): string {
         return path.join(
             path.dirname(this.binPath),
             Constants.DEFAULT_SOCKET_FILE_NAME,
         );
     }
 
-    public getSocketFilePath(): string {
+    public getSocketType(): AgentSocketType {
+        if (this.socketPath.startsWith("tcp://")) { return AgentSocketType.TCP; }
+        return AgentSocketType.Unix;
+    }
+
+    public getSocketPath() {
+        return this.getSocketType() === AgentSocketType.TCP ? this.socketPath : `unix://${this.socketPath}`;
+    }
+
+    public getSocketFilePath(): string | null {
+        if (this.getSocketType() !== AgentSocketType.Unix) { return null; }
         return this.socketPath.slice();
     }
 
@@ -609,8 +632,26 @@ export class Scout extends EventEmitter {
             .forEach(integration => integration.setScoutInstance(this));
     }
 
-    public getSocketPath() {
-        return `unix://${this.socketPath}`;
+    /**
+     * Check if an agent is already running
+     *
+     * @returns {Promise<boolean>}
+     */
+    public agentIsRunning(socketPath): Promise<boolean> {
+        const socketType = this.getSocketType();
+
+        if (socketType === AgentSocketType.Unix) {
+            return pathExists(socketPath);
+        }
+
+        if (socketPath === AgentSocketType.TCP) {
+            const [_, portRaw] = socketPath.split(":");
+            const port = parseInt(portRaw, 10);
+            return isPortAvailable(port)
+                .then(available => !available);
+        }
+
+        return Promise.reject(new Errors.UnknownSocketType());
     }
 
     /**
@@ -635,7 +676,7 @@ export class Scout extends EventEmitter {
         socketPath = socketPath || this.socketPath;
 
         // Check if the socketPath exists
-        return pathExists(socketPath)
+        return this.agentIsRunning(socketPath)
             .then(exists => {
                 if (!exists) {
                     throw new Errors.InvalidConfiguration("socket @ path [${socketPath}] does not exist");

@@ -131,7 +131,23 @@ export declare class ProcessOptions {
      * @returns {boolean} whether the address is a domain socket
      */
     isDomainSocket(): boolean;
+    /**
+     * Returns whether the address represents a TCP socket
+     *
+     * @returns {boolean} whether the address is a TCP socket
+     */
+    isTCPSocket(): boolean;
+    /**
+     * Returns whether the address represents an accepted socket type
+     *
+     * @returns {boolean} whether the address is a valid socket type
+     */
+    isValidSocket(): boolean;
 }
 export interface AgentStatus {
     connected: boolean;
+}
+export declare enum AgentSocketType {
+    TCP = "tcp",
+    Unix = "unix"
 }

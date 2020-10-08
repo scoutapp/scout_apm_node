@@ -27,6 +27,7 @@ var ErrorCode;
     ErrorCode[ErrorCode["NoActiveParentContext"] = 20] = "NoActiveParentContext";
     ErrorCode[ErrorCode["InvalidConfiguration"] = 21] = "InvalidConfiguration";
     ErrorCode[ErrorCode["InstanceNotReady"] = 22] = "InstanceNotReady";
+    ErrorCode[ErrorCode["UnknownSocketType"] = 23] = "UnknownSocketType";
 })(ErrorCode = exports.ErrorCode || (exports.ErrorCode = {}));
 class ScoutError extends Error {
 }
@@ -214,3 +215,11 @@ class InstanceNotReady extends ScoutError {
     }
 }
 exports.InstanceNotReady = InstanceNotReady;
+class UnknownSocketType extends ScoutError {
+    constructor(m) {
+        super();
+        this.code = ErrorCode.UnknownSocketType;
+        this.message = m || "Unrecognized socket type, neither domain nor TCP";
+    }
+}
+exports.UnknownSocketType = UnknownSocketType;

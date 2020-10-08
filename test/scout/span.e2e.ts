@@ -31,8 +31,9 @@ test("spans should have traces attached", t => {
         buildScoutConfiguration({
             allowShutdown: true,
             monitor: true,
+            logFilePath: "/tmp/scout.log",
         }),
-        {slowRequestThresholdMs: 50}, // reduce the threshold to ensure that trace gets generated
+        { slowRequestThresholdMs: 50 }, // reduce the threshold to ensure that trace gets generated
     );
 
     // Set up a listener for the scout request that gets sent

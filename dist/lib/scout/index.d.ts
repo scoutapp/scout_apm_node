@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { EventEmitter } from "events";
-import { AgentDownloadOptions, ApplicationMetadata, BaseAgentRequest, BaseAgentResponse, CoreAgentVersion, JSONValue, LogFn, LogLevel, ScoutConfiguration } from "../types";
+import { AgentDownloadOptions, ApplicationMetadata, BaseAgentRequest, BaseAgentResponse, CoreAgentVersion, JSONValue, LogFn, LogLevel, ScoutConfiguration, AgentSocketType } from "../types";
 import ExternalProcessAgent from "../agents/external-process";
 export { default as ScoutRequest } from "./request";
 export { default as ScoutSpan } from "./span";
@@ -41,7 +41,10 @@ export declare class Scout extends EventEmitter {
     private settingUp;
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions);
     private get socketPath();
-    getSocketFilePath(): string;
+    protected getDefaultSocketFilePath(): string;
+    getSocketType(): AgentSocketType;
+    getSocketPath(): string;
+    getSocketFilePath(): string | null;
     getCoreAgentVersion(): CoreAgentVersion;
     getApplicationMetadata(): ApplicationMetadata;
     getConfig(): Partial<ScoutConfiguration>;
@@ -123,7 +126,12 @@ export declare class Scout extends EventEmitter {
      */
     getCurrentSpan(): ScoutSpan | null;
     setupIntegrations(): void;
-    getSocketPath(): string;
+    /**
+     * Check if an agent is already running
+     *
+     * @returns {Promise<boolean>}
+     */
+    agentIsRunning(socketPath: any): Promise<boolean>;
     /**
      * Attempt to clear an async name space entry
      *

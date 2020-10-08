@@ -1,8 +1,11 @@
 export declare const DEFAULT_CORE_AGENT_VERSION = "v1.3.0";
 export declare const DOMAIN_SOCKET_URI_SCHEME_RGX: RegExp;
+export declare const TCP_SOCKET_URI_SCHEME_RGX: RegExp;
 export declare const TMP_DIR_PREFIX = "core-agent-dl-";
 export declare const CORE_AGENT_BIN_FILE_NAME = "core-agent";
 export declare const CORE_AGENT_MANIFEST_FILE_NAME = "manifest.json";
+export declare const CORE_AGENT_TCP_DEFAULT_PORT = 6590;
+export declare const CORE_AGENT_TCP_DEFAULT_HOST = "127.0.0.1";
 export declare const DEFAULT_BIN_STARTUP_WAIT_MS = 1000;
 export declare const DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR = "/tmp/scout_apm_core";
 export declare const DEFAULT_REQUEST_PREFIX = "req-";
@@ -47,3 +50,4 @@ export declare const DEFAULT_PARAM_SCRUB_REPLACEMENT = "[FILTERED]";
 export declare const DEFAULT_SLOW_REQUEST_THRESHOLD_MS: number;
 export declare const DEFAULT_SOCKET_TIMEOUT_MS: number;
 export declare const DEFAULT_AGENT_SEND_TIMEOUT_MS = 10000;
+export declare const CORE_AGENT_TCP_SOCKET_MIN_VERSION = "1.3.0";

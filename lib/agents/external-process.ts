@@ -27,6 +27,8 @@ import {
 import { V1AgentResponse, V1ApplicationEventResponse, V1RegisterResponse } from "../protocol/v1/responses";
 import { V1Register, V1ApplicationEvent } from "../protocol/v1/requests";
 
+import * as isPortAvailable from "is-port-available";
+
 const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
 const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
 
@@ -93,7 +95,8 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     /** @see Agent */
     public start(): Promise<this> {
-        return pathExists(this.getSocketPath())
+
+        return this.peerRunning()
             .then(exists => {
                 // If the socket doesn't already exist, start the process as configured
                 if (exists) {
@@ -334,13 +337,33 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     }
 
     /**
+     * Check if a peer agent is running
+     *
+     * @return {Promise<boolean>}
+     */
+    protected peerRunning(): Promise<boolean> {
+        if (this.opts.isDomainSocket()) {
+            return pathExists(this.getSocketPath());
+        }
+
+        if (this.opts.isTCPSocket()) {
+            return isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
+                .then(available => !available);
+        }
+
+        return Promise.reject(new Errors.UnknownSocketType());
+    }
+
+    /**
      * Initialize the socket pool
      *
      * @returns {Promise<Pool<Socket>>} A promise that resolves to the socket pool
      */
     private initPool(): Promise<Pool<Socket>> {
-        if (!this.opts.isDomainSocket()) {
-            return Promise.reject(new Errors.NotSupported("Only domain sockets (file:// | unix://) are supported"));
+        if (!this.opts.isValidSocket()) {
+            return Promise.reject(
+                new Errors.NotSupported("Only domain (file:// | unix://) or TCP (tcp://) sockets are supported"),
+            );
         }
 
         this.pool = createPool({
@@ -351,7 +374,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                     maybeWait = () => waitMs(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
                 }
 
-                return maybeWait().then(() => this.createDomainSocket());
+                return maybeWait().then(() => this.createSocket());
             },
             destroy: (socket: ScoutSocket) => {
                 // Ensure the socket is not used again
@@ -382,18 +405,31 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     /**
      * Create a socket to the agent for sending requests
+     * the socket *may* be a domain or TCP socket, depending on the output of this.getSocketPath()
      *
      * NOTE: this method *must* police itself, if it fails too many times
      *
      * @returns {Promise<Socket>} A socket for use in  the socket pool
      */
-    private createDomainSocket(): Promise<Socket> {
-        return new Promise((resolve) => {
-            // Connect the socket
-            const socket = createConnection(this.getSocketPath(), () => {
+    private createSocket(): Promise<Socket> {
+        return new Promise((resolve, reject) => {
+            let socket: Socket;
+            const cb = () => {
                 this.emit(AgentEvent.SocketConnected);
                 resolve(socket);
-            });
+            };
+
+            // Perform the right connection based on the type of socket
+            if (this.opts.isDomainSocket()) {
+                socket = createConnection(this.getSocketPath(), cb);
+            } else if (this.opts.isTCPSocket()) {
+                const [host, portRaw] = this.getSocketPath().split(":");
+                const port = parseInt(portRaw, 10);
+                socket = createConnection(port, host, cb);
+            } else {
+                reject(new Error("Unrecognized connection, neither domain nor TCP"));
+                return;
+            }
 
             // Set timeout for socket to half a second
             // on timeouts, we will close the socket close the socket because otherwise nodejs will hang
@@ -543,11 +579,17 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     // Get the path for the socket
     private getSocketPath(): string {
-        if (!this.opts.isDomainSocket()) {
-            return this.opts.uri;
+        // if the socket is a domain socket, then we want a file path to feed to core-agent
+        if (this.opts.isDomainSocket()) {
+            return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
         }
 
-        return this.opts.uri.replace(Constants.DOMAIN_SOCKET_URI_SCHEME_RGX, "");
+        // For TCP sockets the path should be of form x.x.x.x:0000 (ex. '127.0.0.1:6590')
+        if (this.opts.isTCPSocket()) {
+            return this.opts.uri.replace(Constants.TCP_SOCKET_URI_SCHEME_RGX, "");
+        }
+
+        throw new Errors.UnknownSocketType();
     }
 
     // Helper for retrieving generic-pool stats
@@ -574,7 +616,12 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         // Build command and arguments
         const socketPath = this.getSocketPath();
-        const args = ["start", "--socket", socketPath];
+        const args = [
+            "start",
+            this.opts.isTCPSocket() ? "--tcp" : "--socket",
+            socketPath,
+        ];
+
         if (this.opts.logFilePath) { args.push("--log-file", this.opts.logFilePath); }
         if (this.opts.configFilePath) { args.push("--config-file", this.opts.configFilePath); }
         if (this.opts.logLevel) { args.push("--log-level", this.opts.logLevel); }
@@ -590,7 +637,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         // Wait until process is listening on the given socket port
         return new Promise((resolve, reject) => {
             setTimeout(() => {
-                pathExists(socketPath)
+                this.peerRunning()
                     .then(exists => {
                         if (exists) {
                             this.stopped = false;

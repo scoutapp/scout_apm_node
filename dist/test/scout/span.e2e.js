@@ -10,6 +10,7 @@ test("spans should have traces attached", t => {
     const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
+        logFilePath: "/tmp/scout.log",
     }), { slowRequestThresholdMs: 50 });
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {

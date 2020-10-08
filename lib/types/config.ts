@@ -4,6 +4,7 @@ import * as os from "os";
 import * as fs from "fs";
 import * as path from "path";
 import { path as appRootPath } from "app-root-path";
+import * as semver from "semver";
 
 import {
     Architecture,
@@ -364,6 +365,14 @@ class DerivedConfigSource implements ConfigSource {
         // working through the sources again
         switch (prop) {
             case "socketPath":
+                const rawVersion = p.get({}, "coreAgentVersion");
+
+                // If we are using core agent equal to or newer than CORE_AGENT_TCP_SOCKET_MIN_VERSION,
+                // then we should default to a TCP connection
+                if (rawVersion && semver.gte(rawVersion, Constants.CORE_AGENT_TCP_SOCKET_MIN_VERSION)) {
+                    return `tcp://${Constants.CORE_AGENT_TCP_DEFAULT_HOST}:${Constants.CORE_AGENT_TCP_DEFAULT_PORT}`;
+                }
+
                 const coreAgentDir = p.get({}, "coreAgentDir");
                 const coreAgentFullName = p.get({}, "coreAgentFullName");
                 return `${coreAgentDir}/${coreAgentFullName}/${Constants.DEFAULT_SOCKET_FILE_NAME}`;
