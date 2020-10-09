@@ -49,26 +49,30 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
 
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data: ScoutEventRequestSentData) => {
+        const spans = data.request.getChildSpansSync();
+        const dbSpan = spans.find(s => s.operation === ScoutSpanOperation.SQLQuery);
+
+        // Exit early if the span isn't what we expect
+        if (!spans || !dbSpan) { return; }
+
+        // Remove the listener, since we only expect one db span
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
         // Look up the database span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => {
-                const dbSpan = spans.find(s => s.operation === ScoutSpanOperation.SQLQuery);
-                t.assert(dbSpan, "db span was present on request");
-                if (!dbSpan) {
-                    t.fail("no DB span present on request");
-                    throw new Error("No DB Span");
-                }
+        t.pass("db span was present on request");
+        if (!dbSpan) {
+            t.fail("no DB span present on request");
+            throw new Error("No DB Span");
+        }
 
-                t.equals(
-                    dbSpan.getContextValue(ScoutContextName.DBStatement),
-                    SQL_QUERIES.SELECT_TIME,
-                    "db.statement tag is correct",
-                );
-            })
-            .then(() => client.end())
+        t.equals(
+            dbSpan.getContextValue(ScoutContextName.DBStatement),
+            SQL_QUERIES.SELECT_TIME,
+            "db.statement tag is correct",
+        );
+
+        // Shutdown the client and scout
+        client.end()
             .then(() => TestUtil.shutdownScout(t, scout))
             .catch(err => {
                 client.end()
@@ -108,38 +112,39 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_
 
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data: ScoutEventRequestSentData) => {
+        const spans = data.request.getChildSpansSync();
+        const dbSpans = spans.filter(s => s.operation === "SQL/Query");
+
+        // Exit early if the spans aren't what we expect
+        // We expect one request with multiple spans
+        if (!spans || !dbSpans || dbSpans.length <= 0) { return; }
+
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
         // Look up the database span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => {
-                const dbSpans = spans.filter(s => s.operation === "SQL/Query");
-                t.equal(dbSpans.length, 2, "two db spans were present");
+        t.equal(dbSpans.length, 2, "two db spans were present");
 
-                // Ensure span for CREATE TABLE is present
-                const createTableSpan = dbSpans.find(s => {
-                    return s.getContextValue(ScoutContextName.DBStatement) === SQL_QUERIES.CREATE_STRING_KV_TABLE;
-                });
-                if (!createTableSpan) {
-                    t.fail("span for CREATE TABLE not found");
-                    throw new Error("span for create table not found");
-                }
+        // Ensure span for CREATE TABLE is present
+        const createTableSpan = dbSpans.find(s => {
+            return s.getContextValue(ScoutContextName.DBStatement) === SQL_QUERIES.CREATE_STRING_KV_TABLE;
+        });
+        if (!createTableSpan) {
+            t.fail("span for CREATE TABLE not found");
+            throw new Error("span for create table not found");
+        }
 
-                // Ensure span for INSERT is present
-                const insertSpan = dbSpans.find(s => {
-                    return s.getContextValue(ScoutContextName.DBStatement) === SQL_QUERIES.INSERT_STRING_KV_TABLE;
-                });
-                if (!insertSpan) {
-                    t.fail("span for INSERT not found");
-                    throw new Error("span for insert not found");
-                }
-            })
+        // Ensure span for INSERT is present
+        const insertSpan = dbSpans.find(s => {
+            return s.getContextValue(ScoutContextName.DBStatement) === SQL_QUERIES.INSERT_STRING_KV_TABLE;
+        });
+        if (!insertSpan) {
+            t.fail("span for INSERT not found");
+            throw new Error("span for insert not found");
+        }
+
         // Reset the database by removing the kv table
-            .then(() => {
-                t.comment("removing kv table for next test...");
-                return client.query(SQL_QUERIES.DROP_STRING_KV_TABLE);
-            })
+        t.comment("removing kv table for next test...");
+        client.query(SQL_QUERIES.DROP_STRING_KV_TABLE)
         // If everything went well, close the client and shutdown scout
             .then(() => client.end())
             .then(() => TestUtil.shutdownScout(t, scout))

@@ -449,9 +449,9 @@ export interface WaitForConfigFn {
 
 export interface WaitForConfig {
     // Wait for output on stdout
-    stdout?: string;
+    stdout?: {phrase: string, times?: number};
     // Wait for output on stderr
-    stderr?: string;
+    stderr?: {phrase: string, times?: number};
     // Wait a certain number of milliseconds
     milliseconds?: number;
     // Wait until a given function that returns a promise evaluates to true
@@ -557,7 +557,7 @@ export function startContainer(
     const makeListener = (
         type: "stdout" | "stderr",
         emitter: Readable | null,
-        expected: string,
+        expected: {phrase: string, times?: number},
         resolve: (res: ContainerAndOpts) => void,
         reject: (err?: Error) => void,
     ) => {
@@ -565,17 +565,27 @@ export function startContainer(
             return () => reject(new Error(`[${type}] pipe was not Readable`));
         }
 
+        if (expected.times && expected.times <= 0) {
+            return () => reject(new Error(`[${type}] invalid waitFor: expected.times <= 0`));
+        }
+
+        let times = expected.times ?? 1;
+
         return (line: string | Buffer) => {
             line = line.toString();
-            if (!line.includes(expected)) { return; }
+            if (!line.includes(expected.phrase)) { return; }
 
+            // Reduce the amount of times we've seen the expected phrase
+            // if we haven't seen it enough times keep listening
+            times -= 1;
+            if (times > 0) { return; }
+
+            // Remove the listeners
             if (type === "stdout" && stdoutListener) { emitter.removeListener("data", stdoutListener); }
             if (type === "stderr" && stderrListener) { emitter.removeListener("data", stderrListener); }
 
-            if (!resolved) {
-                resolve({containerProcess, opts});
-            }
-
+            // Resolve only once
+            if (!resolved) { resolve({containerProcess, opts}); }
             resolved = true;
         };
     };
@@ -723,7 +733,7 @@ export function startContainerizedPostgresTest(
                     tagName,
                     portBinding,
                     envBinding,
-                    waitFor: {stdout: POSTGRES_STARTUP_MESSAGE},
+                    waitFor: {stdout: {phrase: POSTGRES_STARTUP_MESSAGE}},
                 });
             })
             .then(cao => containerAndOpts = cao)
@@ -771,15 +781,17 @@ export function makeConnectedPGClient(provider: () => ContainerAndOpts | null): 
     if (!cao) { return Promise.reject(new Error("no CAO in provider")); }
 
     const port: number = cao.opts.portBinding[5432];
-    const client = new Client({
+    const opts = {
         user: "postgres",
         host: "localhost",
         database: "postgres",
         password: "postgres",
         port,
-    });
+    };
+    const client = new Client(opts);
 
-    return client.connect().then(() => client);
+    return client.connect()
+        .then(() => client);
 }
 
 // Utility function to create a connection string

@@ -44,8 +44,14 @@ export interface WaitForConfigFn {
     check: (cao: ContainerAndOpts) => Promise<boolean>;
 }
 export interface WaitForConfig {
-    stdout?: string;
-    stderr?: string;
+    stdout?: {
+        phrase: string;
+        times?: number;
+    };
+    stderr?: {
+        phrase: string;
+        times?: number;
+    };
     milliseconds?: number;
     fn?: WaitForConfigFn;
 }
