@@ -194,7 +194,8 @@ export class Scout extends EventEmitter {
             if (!this.agent) { return; }
             const pid = process.pid;
 
-            this.log(`[scout] gathering statistics @ [${new Date().toLocaleString()}]...`, LogLevel.Debug);
+            // Gather metrics
+            this.log("`[scout] Gathering CPU & memory usage statistics...", LogLevel.Debug);
 
             // Send memory metric
             const memoryUsageMB = process.memoryUsage().rss / (1024 * 1024);
@@ -205,7 +206,7 @@ export class Scout extends EventEmitter {
             ));
 
             // Calculate the CPU usage since last measurement, send percentage
-            const cpuUsagePercent = getCPUUsage(this.cpuUsageStart).percent;
+            const cpuUsagePercent = getCPUUsage(this.cpuUsageStart).percent * 100;
             this.cpuUsageStart = getCPUUsage();
             this.agent.sendAsync(new Requests.V1ApplicationEvent(
                 `Pid: ${pid}`,

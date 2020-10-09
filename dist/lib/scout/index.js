@@ -91,12 +91,13 @@ class Scout extends events_1.EventEmitter {
                 return;
             }
             const pid = process.pid;
-            this.log(`[scout] gathering statistics @ [${new Date().toLocaleString()}]...`, types_1.LogLevel.Debug);
+            // Gather metrics
+            this.log("`[scout] Gathering CPU & memory usage statistics...", types_1.LogLevel.Debug);
             // Send memory metric
             const memoryUsageMB = process.memoryUsage().rss / (1024 * 1024);
             this.agent.sendAsync(new Requests.V1ApplicationEvent(`Pid: ${pid}`, types_1.ApplicationEventType.MemoryUsageMB, memoryUsageMB));
             // Calculate the CPU usage since last measurement, send percentage
-            const cpuUsagePercent = getCPUUsage(this.cpuUsageStart).percent;
+            const cpuUsagePercent = getCPUUsage(this.cpuUsageStart).percent * 100;
             this.cpuUsageStart = getCPUUsage();
             this.agent.sendAsync(new Requests.V1ApplicationEvent(`Pid: ${pid}`, types_1.ApplicationEventType.CPUUtilizationPercent, cpuUsagePercent));
         }, this.statsIntervalMS || Constants.DEFAULT_STATS_INTERVAL_MS);
