@@ -334,7 +334,7 @@ function buildTestScoutInstance(configOverride, options) {
 exports.buildTestScoutInstance = buildTestScoutInstance;
 class TestContainerStartOpts {
     constructor(opts) {
-        this.dockerBinPath = "/usr/bin/docker";
+        this.dockerBinPath = process.env.DOCKER_BIN_PATH || "/usr/bin/docker";
         // Phrases that should be waited for before the container is "started"
         this.waitFor = {};
         this.startTimeoutMs = 5000;

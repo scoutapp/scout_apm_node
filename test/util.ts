@@ -459,7 +459,7 @@ export interface WaitForConfig {
 }
 
 export class TestContainerStartOpts {
-    public readonly dockerBinPath: string = "/usr/bin/docker";
+    public readonly dockerBinPath: string = process.env.DOCKER_BIN_PATH || "/usr/bin/docker";
     // Phrases that should be waited for before the container is "started"
     public readonly waitFor: WaitForConfig = {};
     public readonly startTimeoutMs: number = 5000;

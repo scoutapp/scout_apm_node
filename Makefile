@@ -18,6 +18,7 @@ ENTR ?= entr
 DEV_SCRIPTS ?= .dev/scripts
 TAPE ?= ./node_modules/.bin/tape
 DOCKER ?= docker
+DOCKER_BIN_PATH ?= /usr/bin/docker
 
 GIT_HOOKS_DIR = .dev/git/hooks
 DIST_DIR = dist
