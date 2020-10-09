@@ -189,6 +189,7 @@ export class Scout extends EventEmitter {
     protected startSendingStatistics(): void {
         if (this.statsSendingInterval) { return; }
 
+        this.log("[scout] Starting sending of statistics...", LogLevel.Info);
         this.statsSendingInterval = setInterval(() => {
             if (!this.agent) { return; }
             const pid = process.pid;
@@ -221,6 +222,7 @@ export class Scout extends EventEmitter {
     protected stopSendingStatistics(): void {
         if (!this.statsSendingInterval) { return; }
 
+        this.log("[scout] Stopping sending of statistics...", LogLevel.Info);
         clearInterval(this.statsSendingInterval);
     }
 
@@ -334,7 +336,9 @@ export class Scout extends EventEmitter {
 
     public shutdown(): Promise<void> {
         // Disable the statistics sending interval if present
-        if (this.statsSendingInterval) { clearInterval(this.statsSendingInterval); }
+        if (this.statsSendingInterval) {
+            this.stopSendingStatistics();
+        }
 
         // Ensure an agent is present bfore we attempt to shut it down
         if (!this.agent) {

@@ -85,6 +85,7 @@ class Scout extends events_1.EventEmitter {
         if (this.statsSendingInterval) {
             return;
         }
+        this.log("[scout] Starting sending of statistics...", types_1.LogLevel.Info);
         this.statsSendingInterval = setInterval(() => {
             if (!this.agent) {
                 return;
@@ -108,6 +109,7 @@ class Scout extends events_1.EventEmitter {
         if (!this.statsSendingInterval) {
             return;
         }
+        this.log("[scout] Stopping sending of statistics...", types_1.LogLevel.Info);
         clearInterval(this.statsSendingInterval);
     }
     getSocketType() {
@@ -210,7 +212,7 @@ class Scout extends events_1.EventEmitter {
     shutdown() {
         // Disable the statistics sending interval if present
         if (this.statsSendingInterval) {
-            clearInterval(this.statsSendingInterval);
+            this.stopSendingStatistics();
         }
         // Ensure an agent is present bfore we attempt to shut it down
         if (!this.agent) {
