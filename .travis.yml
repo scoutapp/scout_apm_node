@@ -7,9 +7,9 @@ cache:
   yarn: true
 
 env:
-  - TEST_SUITE="test-unit"
-  - TEST_SUITE="test-int"
-  - TEST_SUITE="test-e2e" # includes integrations
+  - TEST_SUITE="make test-unit"
+  - TEST_SUITE="make test-int"
+  # - TEST_SUITE="test-e2e" # includes integrations
   # Test suites to test which is hanging
   - TEST_SUITE="./node_modules/.bin/tape dist/test/memory.e2e.js"
   - TEST_SUITE="./node_modules/.bin/tape dist/test/winston.e2e.js"
@@ -31,7 +31,7 @@ env:
   - TEST_SUITE="./node_modules/.bin/tape dist/test/scout/span.e2e.js"
 
 
-script: "make $TEST_SUITE"
+script: "$TEST_SUITE"
 
 services:
   - docker
