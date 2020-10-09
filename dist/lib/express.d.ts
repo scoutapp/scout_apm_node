@@ -7,8 +7,9 @@ export interface ApplicationWithScout {
 declare type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
 export interface ExpressMiddlewareOptions {
     config?: Partial<ScoutConfiguration>;
-    requestTimeoutMs?: number;
     logFn?: LogFn;
+    requestTimeoutMs?: number;
+    statisticsIntervalMS?: number;
     scout?: Scout;
     waitForScoutSetup?: boolean;
 }

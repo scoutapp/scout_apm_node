@@ -48,6 +48,7 @@ function scoutMiddleware(opts) {
     const config = types_1.buildScoutConfiguration(overrides);
     const options = {
         logFn: opts && opts.logFn ? opts.logFn : undefined,
+        statisticsIntervalMS: opts && opts.statisticsIntervalMS ? opts.statisticsIntervalMS : undefined,
     };
     // Set the last used configurations
     global_1.setGlobalLastUsedConfiguration(config);

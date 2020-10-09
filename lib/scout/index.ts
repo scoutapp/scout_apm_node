@@ -194,6 +194,8 @@ export class Scout extends EventEmitter {
             if (!this.agent) { return; }
             const pid = process.pid;
 
+            this.log(`[scout] gathering statistics @ [${new Date().toLocaleString()}]...`, LogLevel.Debug);
+
             // Send memory metric
             const memoryUsageMB = process.memoryUsage().rss / (1024 * 1024);
             this.agent.sendAsync(new Requests.V1ApplicationEvent(

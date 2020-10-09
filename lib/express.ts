@@ -33,8 +33,17 @@ type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
 
 export interface ExpressMiddlewareOptions {
     config?: Partial<ScoutConfiguration>;
-    requestTimeoutMs?: number;
+
+    // Function to use for logging
     logFn?: LogFn;
+
+    // Request timeout
+    requestTimeoutMs?: number;
+
+    // Amount of time between calculating and sending statistics
+    statisticsIntervalMS?: number;
+
+    // Request timeout
     scout?: Scout;
 
     // Whether to wait (normally during the first request) for scout to setup
@@ -98,6 +107,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
     const config: Partial<ScoutConfiguration> = buildScoutConfiguration(overrides);
     const options: ScoutOptions = {
         logFn: opts && opts.logFn ? opts.logFn : undefined,
+        statisticsIntervalMS: opts && opts.statisticsIntervalMS ? opts.statisticsIntervalMS : undefined,
     };
 
     // Set the last used configurations

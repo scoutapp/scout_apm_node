@@ -91,6 +91,7 @@ class Scout extends events_1.EventEmitter {
                 return;
             }
             const pid = process.pid;
+            this.log(`[scout] gathering statistics @ [${new Date().toLocaleString()}]...`, types_1.LogLevel.Debug);
             // Send memory metric
             const memoryUsageMB = process.memoryUsage().rss / (1024 * 1024);
             this.agent.sendAsync(new Requests.V1ApplicationEvent(`Pid: ${pid}`, types_1.ApplicationEventType.MemoryUsageMB, memoryUsageMB));
