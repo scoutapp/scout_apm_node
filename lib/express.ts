@@ -147,10 +147,10 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
             return;
         }
 
-        // We don't know the route path (ex. '/echo/:name'), but we must figure it out
-        let routePath: string | null = null;
         // Attempt to match the request URL (ex. '/echo/john') to previous matched middleware first
         const reqUrl = req.url;
+        // We don't know the route path (ex. '/echo/:name'), but we must figure it out
+        let routePath: string | null = reqUrl === "/" ? "/" : null;
 
         // The query of the URL needs to be  stripped before attempting to test it against express regexps
         // i.e. all route regexps end in /..\?$/
@@ -159,7 +159,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
-        if (!matchedRouteMiddleware) {
+        if (!routePath) {
             // Find routes that match the current URL
             matchedRouteMiddleware = req.app._router.stack
                 .filter((middleware: any) => {
@@ -188,7 +188,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // We're stuck with the worst possible way -- listing all the routes, and there's only
         // one lib that does it right (without re-implementing the walk ourselves), and we still have to
         // perform the regex matches to find out which path is actually *active*
-        if (!matchedRouteMiddleware) {
+        if (!routePath) {
             try {
                 // Attempt to find a matchedRoute in the cached endpoint listing
                 let matchedRoute = Object.values(ROUTE_INFO_LOOKUP).find(r => r.regex.exec(req.originalUrl));
