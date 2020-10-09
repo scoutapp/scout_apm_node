@@ -17,6 +17,9 @@ NPM ?= npm
 ENTR ?= entr
 DEV_SCRIPTS ?= .dev/scripts
 TAPE ?= ./node_modules/.bin/tape
+
+# NOTE: replace both of the below variables in your environment (.envrc if using direnv)
+# if you use an alternate container CLI tool like podman or ctr
 DOCKER ?= docker
 DOCKER_BIN_PATH ?= /usr/bin/docker
 
