@@ -728,7 +728,7 @@ test("Adding context does not cause socket close", t => {
         });
     });
 });
-// https://github.com/scoutapp/scout_apm_node/pull/186
+// https://github.com/scoutapp/scout_apm_node/issues/186
 test("instrumentSync should automatically create a transaction", t => {
     // We'll need to create a config to use with the global scout instance
     const config = types_1.buildScoutConfiguration({
@@ -759,6 +759,61 @@ test("instrumentSync should automatically create a transaction", t => {
             t.pass("instrument was run");
         });
     });
+});
+// https://github.com/scoutapp/scout_apm_node/issues/120
+test("CPU and memory stats should be sent periodically", t => {
+    const appMeta = new types_1.ApplicationMetadata({
+        frameworkVersion: "framework-version-from-app-meta",
+    });
+    const config = types_1.buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+        coreAgentLaunch: true,
+    });
+    const scout = new scout_1.Scout(config, {
+        appMeta,
+        statisticsIntervalMS: 1000,
+    });
+    // Watch for both CPU and memory metrics to be emitted
+    const observed = {
+        cpu: false,
+        memory: false,
+    };
+    // Create a listener to watch for the request sent through the inner agent
+    const listener = (message) => {
+        // Ignore requests that are sent that aren't span starts
+        if (!message || message.type !== types_1.AgentRequestType.V1ApplicationEvent) {
+            return;
+        }
+        // Skip requests that aren't the application event we expect to be sent by setup()
+        const msg = message;
+        // Ensure that the span is what we expect
+        if (msg.eventType === types_1.ApplicationEventType.CPUUtilizationPercent) {
+            observed.cpu = true;
+            t.pass("CPU usage message observed");
+        }
+        if (msg.eventType === types_1.ApplicationEventType.MemoryUsageMB) {
+            observed.memory = true;
+            t.pass("Memory usage message observed");
+        }
+        // Don't clean up the listener and shut down until we have seen both
+        if (!observed.cpu || !observed.memory) {
+            return;
+        }
+        t.pass("both CPU and memory metric have been observed");
+        // Remove agent, pass test
+        scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
+        // Wait a little while for request to finish up, then shutdown
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+    // Set up listener on the agent
+    scout.on(types_1.AgentEvent.RequestSent, listener);
+    scout
+        // Setup should end up sending the Application metadata
+        .setup()
+        // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 ///////////////////////////
 // Global instance tests //

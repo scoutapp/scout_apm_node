@@ -2926,6 +2926,11 @@ cosmiconfig@^5.0.0:
     js-yaml "^3.13.1"
     parse-json "^4.0.0"
 
+cpu-percentage@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/cpu-percentage/-/cpu-percentage-1.0.3.tgz#868fd9092f439d1ef95f4a85e5fa4b9f07efc95c"
+  integrity sha1-ho/ZCS9DnR75X0qF5fpLnwfvyVw=
+
 create-ecdh@^4.0.0:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/create-ecdh/-/create-ecdh-4.0.3.tgz#c9111b6f33045c4697f144787f9254cdc77c45ff"

@@ -85,6 +85,7 @@
     "big-number": "^2.0.0",
     "cls-hooked": "^4.2.2",
     "continuation-local-storage": "^3.2.1",
+    "cpu-percentage": "^1.0.3",
     "detect-libc": "1.0.3",
     "download": "7.1.0",
     "express-list-endpoints": "^5.0.0",
