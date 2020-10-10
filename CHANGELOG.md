@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2020-10-10
+
+### Added
+- feature/120 Report CPU and memory usage statistics ([#120](https://github.com/scoutapp/scout_apm_node/issues/120))
+- feature/233 Support TCP socket communication ([#233](https://github.com/scoutapp/scout_apm_node/issues/233))
+
+### Changed
+- bugfix/238 Fix endpoints behind express.router not being monitored ([#238](https://github.com/scoutapp/scout_apm_node/issues/238))
+
 ## [0.2.0-rc.0] - 2020-09-23
 
 ### Added
@@ -146,7 +155,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.12...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.0-rc.0...v0.2.0
 [0.2.0-rc.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.12...v0.2.0-rc.0
 [0.1.12]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11...v0.1.12
 [0.1.11]: https://github.com/scoutapp/scout_apm_node/compare/v0.1.11-rc.2...v0.1.11
