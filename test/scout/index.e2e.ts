@@ -63,11 +63,18 @@ test("Scout object setup works without config", t => {
 test("Request can be created and finished", t => {
     const scout = TestUtil.buildTestScoutInstance();
 
+    let expectedRequestId: string;
+
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        if (data.request.id !== expectedRequestId) { return; }
+        t.pass("found single-span request w/ expected operation name");
+
+        // Now that we've found our request for the transaction, stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        t.assert(data.request, "request is present");
         // Look up the database span from the request
         TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
@@ -79,8 +86,10 @@ test("Request can be created and finished", t => {
     scout
         .setup()
     // Create the request
-        .then(() => scout.transaction("test-request-create-and-finish", done => {
-            t.pass("transaction started");
+        .then(() => scout.transaction("test-request-create-and-finish", (done, {request}) => {
+            if (!request) { throw new Error("request not present"); }
+            expectedRequestId = request.id;
+            t.pass(`transaction with id [${expectedRequestId}] started`);
             done();
         }))
     // Teardown and end test
@@ -94,17 +103,18 @@ test("Single span request", t => {
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length !== 1) { return; }
+        if (spans[0].operation !== "Controller/test") { return; }
+
+        t.pass("found single-span request with Controller/test operation");
+
+        // Now that we've seen our single span we can stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        if (!data.request) {
-            throw new Error("request missing");
-        }
-
-        // Look up the database span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => t.equals(spans.length, 1, "there is one child span"))
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -139,19 +149,25 @@ test("Multi span request (2 top level)", t => {
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length !== 2) { return; }
+
+        t.pass("found two-span request");
+
+        const first = spans.find(s => s.operation === "Controller/test.first");
+        if (!first) { return; }
+        t.pass("the first span is present");
+
+        const second = spans.find(s => s.operation === "Controller/test.second");
+        if (!second) { return; }
+        t.pass("the second span is present");
+
+        // Now that we've found our two span request
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        if (!data.request) { throw new Error("request missing"); }
-
-        // Look up the database span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => {
-                t.equals(spans.length, 2, "there are two child spans");
-                t.assert(spans.find(s => s.operation === "Controller/test.first"), "the first span is present");
-                t.assert(spans.find(s => s.operation === "Controller/test.second"), "the second span is present");
-            })
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -184,24 +200,29 @@ test("Multi span request (1 top level, 1 nested)", t => {
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length !== 1) { return; }
+
+        // Ensure top level span is stopped
+        if (!spans[0].isStopped()) { return; }
+        t.pass(`found single-span request w/ outer span (operation ${spans[0].operation} stopped`);
+        t.equals(spans[0].operation, "Controller/test.first", "outer level span is correct");
+
+        // Get children of first span
+        const childSpans = spans[0].getChildSpansSync();
+        if (childSpans.length !== 1) { return; }
+
+        // Ensure child span is stopped too
+        if (!childSpans[0].isStopped()) { return; }
+        t.pass(`found single child span (operation ${childSpans[0].operation} is also stopped`);
+        t.equals(childSpans[0].operation, "Controller/test.first.nested", "outer level span is correct");
+
+        // Now that we've found our nested spans, we can stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        if (!data.request) { throw new Error("request missing"); }
-
-        // Look up the database span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => {
-                t.equals(spans.length, 1, "there is one span");
-                t.equals(spans[0].operation, "Controller/test.first", "outer level span is correct");
-                return spans[0].getChildSpans();
-            })
-        // Ensure span has one inner child
-            .then(innerSpans => {
-                t.equals(innerSpans.length, 1, "there is one span");
-                t.equals(innerSpans[0].operation, "Controller/test.first.nested", "outer level span is correct");
-            })
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -231,20 +252,27 @@ test("Parent Span auto close works (1 top level, 1 nested)", t => {
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length !== 1) { return; }
+
+        // Ensure top level span is stopped
+        if (!spans[0].isStopped()) { return; }
+        t.pass(`found single-span request w/ outer span (operation ${spans[0].operation} stopped`);
+
+        // Get children of first span
+        const childSpans = spans[0].getChildSpansSync();
+        if (childSpans.length !== 1) { return; }
+
+        // Ensure child span is stopped too
+        if (!childSpans[0].isStopped()) { return; }
+        t.pass(`found single child span (operation ${childSpans[0].operation} is also stopped`);
+
+        // Now that we've found our nested spans we can stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        if (!data.request) { throw new Error("request missing"); }
-
-        // Look up the database span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => {
-                t.assert(spans[0].isStopped(), "outer level span is stopped");
-                return spans[0].getChildSpans();
-            })
-        // Ensure span has one inner child
-            .then(innerSpans => t.assert(innerSpans[0].isStopped(), "nested span is stopped"))
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -273,20 +301,27 @@ test("Request auto close works (1 top level, 1 nested)", t => {
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length !== 1) { return; }
+
+        // Ensure top level span is stopped
+        if (!spans[0].isStopped()) { return; }
+        t.pass(`found single-span request w/ outer span (operation ${spans[0].operation} stopped`);
+
+        // Get children of first span
+        const childSpans = spans[0].getChildSpansSync();
+        if (childSpans.length !== 1) { return; }
+
+        // Ensure child span is stopped too
+        if (!childSpans[0].isStopped()) { return; }
+        t.pass(`found single child span (operation ${childSpans[0].operation} is also stopped`);
+
+        // Now that we've found our nested spans, we can stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        if (!data.request) { throw new Error("request missing"); }
-
-        // Look up the database span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => {
-                t.assert(spans[0].isStopped(), "outer level span is stopped");
-                return spans[0].getChildSpans();
-            })
-        // Ensure span has one inner child
-            .then(innerSpans => t.assert(innerSpans[0].isStopped(), "nested span is stopped"))
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -314,27 +349,28 @@ test("Request auto close works (2 top level)", t => {
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length !== 2) { return; }
+
+        t.pass("found request with 2 child spans");
+
+        // Look up the database spans we expect to be in the request
+        // if we don't find it, we must have picked up some *other* 2 span request
+        const first = spans.find(s => s.operation === "Controller/test.first");
+        const second = spans.find(s => s.operation === "Controller/test.second");
+        if (!first || !second) { return; }
+
+        t.assert(first, "the first span is present");
+        t.assert(first.isStopped(), "first span is stopped");
+        t.assert(second, "the second span is present");
+        t.assert(second.isStopped(), "second span is stopped");
+
+        // Since we've found our two-span request, stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        if (!data.request) { throw new Error("request missing"); }
-
-        // Look up the database span from the request
-        data.request
-            .getChildSpans()
-            .then(spans => {
-                t.equals(spans.length, 2, "there is one span");
-                const first = spans.find(s => s.operation === "Controller/test.first");
-                if (!first) { throw new Error("first span missing"); }
-                t.assert(first, "the first span is present");
-                t.assert(first.isStopped(), "first span is stopped");
-
-                const second = spans.find(s => s.operation === "Controller/test.second");
-                if (!second) { throw new Error("second span missing"); }
-                t.assert(second, "the second span is present");
-                t.assert(second.isStopped(), "second span is stopped");
-            })
-        // Ensure span has one inner child
-            .then(() => TestUtil.shutdownScout(t, scout))
+        TestUtil.shutdownScout(t, scout)
             .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
@@ -470,7 +506,12 @@ test("Application metadata is built and sent", t => {
         },
     );
 
-    const scout = new Scout(config, {appMeta});
+    const scout = new Scout(config, {
+        appMeta,
+        // Set statistics interval to 1s since we'll have to wait *one* interval
+        // before scout can shutdown, since scout starts then quits immediately
+        statisticsIntervalMS: 100,
+    });
 
     // Check that the applicationMetdata has values overlaid
     const returnedAppMeta = scout.getApplicationMetadata();
@@ -497,7 +538,7 @@ test("Application metadata is built and sent", t => {
         t.equals(msg.eventType, ApplicationEventType.ScoutMetadata, "eventType is scout metadata");
 
         // Remove agent, pass test
-        scout.removeListener(ScoutEvent.RequestSent, listener);
+        scout.removeListener(AgentEvent.RequestSent, listener);
 
         // Wait a little while for request to finish up, then shutdown
         TestUtil.shutdownScout(t, scout)
@@ -517,17 +558,25 @@ test("Application metadata is built and sent", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/70
 test("Multiple ongoing requests are possible at the same time", t => {
     const scout = TestUtil.buildTestScoutInstance();
+    const expectedRequestIds: string[] = [];
     const requests: ScoutRequest[] = [];
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        // Ensure either test.first or test.second is contained in the operation
+        if (!expectedRequestIds.includes(data.request.id)) { return; }
+
+        // Add the matching request
         requests.push(data.request);
 
         // Return early until the second request
         if (requests.length !== 2) { return; }
 
-        t.equals(requests.length, 2, "two requests were recorded");
+        t.pass("two independent requests with the expected IDs were recorded");
 
+        // Since we've found the two independent requests we're looking for, stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
         // Look up the database span from the request
@@ -543,13 +592,18 @@ test("Multiple ongoing requests are possible at the same time", t => {
     // Create the first & second request
         .then(() => {
             // Start tarnsaction that will finish in 300ms
-            scout.transaction("Controller/test.first", done => {
+            scout.transaction("Controller/test.first", (done, {request}) => {
+                if (!request) { throw new Error("request object missing"); }
+                expectedRequestIds.push(request.id);
+
                 TestUtil.waitMs(300)
                     .then(() => done());
             });
 
             // Start overlapping transaction that will finish in 100ms
-            scout.transaction("Controller/test.first", done => {
+            scout.transaction("Controller/test.second", (done, {request}) => {
+                if (!request) { throw new Error("request object missing"); }
+                expectedRequestIds.push(request.id);
                 done();
             });
         })
@@ -656,20 +710,20 @@ test("export WebTransaction is working", t => {
     const expectedSpanName = "Controller/test-web-transaction-export";
 
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length !== 1) { return; }
+
+        if (spans[0].operation !== expectedSpanName) { return; }
+
+        t.pass(`observed single-span request with span name [${expectedSpanName}]`);
+
+        // Since we've observed what we want we can stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        const req = data.request;
-
-        const innerSpans = req.getChildSpansSync();
-        t.assert(innerSpans.length === 1, "one inner span was present");
-        if (!innerSpans || innerSpans.length !== 1) {
-            throw new Error("Single inner top level span not present");
-        }
-
-        const topLevelInnerSpan = innerSpans[0];
-        t.equals(topLevelInnerSpan.operation, expectedSpanName, `span name is [${expectedSpanName}]`);
-
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
     // Fail the test if a request is sent from the agent
@@ -699,20 +753,20 @@ test("export BackgroundTransaction is working", t => {
     const expectedSpanName = "Job/test-background-transaction-export";
 
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length !== 1) { return; }
+
+        // If the operation of the top span isn't the expected name, then return
+        if (spans[0].operation !== expectedSpanName) { return; }
+        t.pass(`found single span request with operation name matching [${expectedSpanName}]`);
+
+        // Since we've found the request we expected we can stop looking
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        const req = data.request;
-
-        const innerSpans = req.getChildSpansSync();
-        t.assert(innerSpans.length === 1, "one inner span was present");
-        if (!innerSpans || innerSpans.length !== 1) {
-            throw new Error("Single inner top level span not present");
-        }
-
-        const topLevelInnerSpan = innerSpans[0];
-        t.equals(topLevelInnerSpan.operation, expectedSpanName, `span name is [${expectedSpanName}]`);
-
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
     // Fail the test if a request is sent from the agent
@@ -740,13 +794,18 @@ test("export Context.add add context (provided scout instance)", t => {
     }));
 
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        const val = data.request.getContextValue("testKey");
+        if (!val || val !== "testValue") { return; }
+
+        t.pass("observed request context key [testKey] and value [testValue]");
+
+        // Since we found the request with the context we want, we can stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        const req = data.request;
-        const val = req.getContextValue("testKey");
-        t.equals(val, "testValue", "context value was saved");
-
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
     // Fail the test if a request is sent from the agent
@@ -871,13 +930,18 @@ test("Adding context does not cause socket close", t => {
     const scout = new Scout(config);
 
     const listener = (data: ScoutEventRequestSentData) => {
+        if (!data.request) { return; }
+
+        const val = data.request.getContextValue("test");
+        if (!val) { return; }
+
+        // Since we've seen the context value we expect, then we can stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        const req = data.request;
-        const val = req.getContextValue("test");
         t.equals(val, "test", "context value was saved");
 
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
     // Fail the test if a request is sent from the agent
@@ -900,7 +964,7 @@ test("Adding context does not cause socket close", t => {
         });
 });
 
-// https://github.com/scoutapp/scout_apm_node/pull/186
+// https://github.com/scoutapp/scout_apm_node/issues/186
 test("instrumentSync should automatically create a transaction", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration({
@@ -910,21 +974,22 @@ test("instrumentSync should automatically create a transaction", t => {
 
     const scout = new Scout(config);
 
+    const opName = "test-instrument-sync-auto-create-transaction";
+
     const listener = (data: ScoutEventRequestSentData) => {
+        const spans = data.request.getChildSpansSync();
+        if (!spans) { return; }
+
+        const tSpan = spans.find(s => s.operation === opName);
+        if (!tSpan) { return; }
+
+        t.pass(`found span with expected operation name [${opName}]`);
+
+        // Since we've found the span we're looking for we can stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
-        const req = data.request;
-        t.assert(req, "request was present");
-
-        const childSpans = req.getChildSpansSync();
-        t.equals(childSpans.length, 1, "one child span was present");
-        t.equals(
-            childSpans[0].operation,
-            "test-instrument-sync-auto-create-transaction",
-            "sync child span had expected name",
-        );
-
-        TestUtil.shutdownScout(t, scout);
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
     // Fail the test if a request is sent from the agent
@@ -935,13 +1000,77 @@ test("instrumentSync should automatically create a transaction", t => {
         .setup()
         .then(() => {
             // The scout object should be created as a result of doing the .run
-            scout.instrumentSync("test-instrument-sync-auto-create-transaction", ({request}) => {
+            scout.instrumentSync(opName, ({request}) => {
                 if (!request) {
                     throw new Error("request is missing inside transactionSync");
                 }
                 t.pass("instrument was run");
             });
         });
+});
+
+// https://github.com/scoutapp/scout_apm_node/issues/120
+test("CPU and memory stats should be sent periodically", t => {
+    const appMeta = new ApplicationMetadata({
+        frameworkVersion: "framework-version-from-app-meta",
+    });
+
+    const config = buildScoutConfiguration({
+        allowShutdown: true,
+        monitor: true,
+        coreAgentLaunch: true,
+    });
+
+    const scout = new Scout(config, {
+        appMeta,
+        statisticsIntervalMS: 1000,
+    });
+
+    // Watch for both CPU and memory metrics to be emitted
+    const observed = {
+        cpu: false,
+        memory: false,
+    };
+
+    // Create a listener to watch for the request sent through the inner agent
+    const listener = (message: BaseAgentRequest) => {
+        // Ignore requests that are sent that aren't span starts
+        if (!message || message.type !== AgentRequestType.V1ApplicationEvent) { return; }
+
+        // Skip requests that aren't the application event we expect to be sent by setup()
+        const msg: V1ApplicationEvent = message as V1ApplicationEvent;
+
+        // Ensure that the span is what we expect
+        if (msg.eventType === ApplicationEventType.CPUUtilizationPercent) {
+            observed.cpu = true;
+            t.pass("CPU usage message observed");
+        }
+
+        if (msg.eventType === ApplicationEventType.MemoryUsageMB) {
+            observed.memory = true;
+            t.pass("Memory usage message observed");
+        }
+
+        // Don't clean up the listener and shut down until we have seen both
+        if (!observed.cpu || !observed.memory) { return; }
+        t.pass("both CPU and memory metric have been observed");
+
+        // Remove agent, pass test
+        scout.removeListener(AgentEvent.RequestSent, listener);
+
+        // Wait a little while for request to finish up, then shutdown
+        TestUtil.shutdownScout(t, scout)
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+
+    // Set up listener on the agent, not scout
+    scout.on(AgentEvent.RequestSent, listener);
+
+    scout
+    // Setup should end up sending the Application metadata
+        .setup()
+    // Teardown and end test
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
 ///////////////////////////

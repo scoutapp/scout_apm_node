@@ -7,11 +7,14 @@ cache:
   yarn: true
 
 env:
-  - TEST_SUITE="test-unit"
-  - TEST_SUITE="test-int"
-  - TEST_SUITE="test-e2e" # includes integrations
+  - TEST_SUITE="make test-unit"
+  - TEST_SUITE="make test-int"
+  - TEST_SUITE="make test-e2e-without-integration"
+  - TEST_SUITE="make test-integration"
+  - TEST_SUITE="make test-ext-memory"
+  - TEST_SUITE="make test-ext-dashboard-send"
 
-script: "make $TEST_SUITE"
+script: "$TEST_SUITE"
 
 services:
   - docker

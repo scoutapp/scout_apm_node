@@ -7,6 +7,7 @@ const cls = require("cls-hooked");
 const semver = require("semver");
 const fs_extra_1 = require("fs-extra");
 const isPortAvailable = require("is-port-available");
+const getCPUUsage = require("cpu-percentage");
 const types_1 = require("../types");
 const global_1 = require("../global");
 const integrations_1 = require("../integrations");
@@ -31,6 +32,7 @@ class Scout extends events_1.EventEmitter {
         this.slowRequestThresholdMs = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
         this.syncCurrentRequest = null;
         this.syncCurrentSpan = null;
+        this.cpuUsageStart = getCPUUsage();
         this.config = config || types_1.buildScoutConfiguration();
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
         if (opts) {
@@ -39,6 +41,9 @@ class Scout extends events_1.EventEmitter {
             }
             if (opts.slowRequestThresholdMs) {
                 this.slowRequestThresholdMs = opts.slowRequestThresholdMs;
+            }
+            if (opts.statisticsIntervalMS) {
+                this.statsIntervalMS = opts.statisticsIntervalMS;
             }
         }
         this.applicationMetadata = new types_1.ApplicationMetadata(this.config, opts && opts.appMeta ? opts.appMeta : {});
@@ -70,6 +75,49 @@ class Scout extends events_1.EventEmitter {
     }
     getDefaultSocketFilePath() {
         return path.join(path.dirname(this.binPath), Constants.DEFAULT_SOCKET_FILE_NAME);
+    }
+    /**
+     * Start sending statistics for the node process
+     *
+     * @return {Promise<void>} A promise that resolves when the statistics sending has started
+     */
+    startSendingStatistics() {
+        if (this.statsSendingInterval) {
+            return;
+        }
+        this.log("[scout] Starting sending of statistics...", types_1.LogLevel.Info);
+        this.statsSendingInterval = setInterval(() => {
+            if (!this.agent) {
+                // A shutdown likey occurred
+                this.log("[scout] Disabling stats sending interval since agent is missing...", types_1.LogLevel.Debug);
+                if (this.statsSendingInterval) {
+                    clearInterval(this.statsSendingInterval);
+                }
+                return;
+            }
+            const pid = process.pid;
+            // Gather metrics
+            this.log("`[scout] Gathering CPU & memory usage statistics...", types_1.LogLevel.Debug);
+            // Send memory metric
+            const memoryUsageMB = process.memoryUsage().rss / (1024 * 1024);
+            this.agent.sendAsync(new Requests.V1ApplicationEvent(`Pid: ${pid}`, types_1.ApplicationEventType.MemoryUsageMB, memoryUsageMB));
+            // Calculate the CPU usage since last measurement, send percentage
+            const cpuUsagePercent = getCPUUsage(this.cpuUsageStart).percent * 100;
+            this.cpuUsageStart = getCPUUsage();
+            this.agent.sendAsync(new Requests.V1ApplicationEvent(`Pid: ${pid}`, types_1.ApplicationEventType.CPUUtilizationPercent, cpuUsagePercent));
+        }, this.statsIntervalMS || Constants.DEFAULT_STATS_INTERVAL_MS);
+    }
+    /**
+     * Stop sending statistics for the node process
+     *
+     * @return {Promise<void>} A promise that resolves when the statistics sending has stoped
+     */
+    stopSendingStatistics() {
+        if (!this.statsSendingInterval) {
+            return;
+        }
+        this.log("[scout] Stopping sending of statistics...", types_1.LogLevel.Info);
+        clearInterval(this.statsSendingInterval);
     }
     getSocketType() {
         if (this.socketPath.startsWith("tcp://")) {
@@ -126,8 +174,9 @@ class Scout extends events_1.EventEmitter {
         }
         this.log("[scout] setting up scout...", types_1.LogLevel.Debug);
         const shouldLaunch = this.config.coreAgentLaunch;
+        const doLaunch = shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket();
         // If the socket path exists then we may be able to skip downloading and launching
-        this.settingUp = (shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket())
+        this.settingUp = doLaunch
             .then(() => {
             if (!this.agent) {
                 throw new Errors.NoAgentPresent();
@@ -162,10 +211,17 @@ class Scout extends events_1.EventEmitter {
         })
             // Set up this scout instance as the global one, if there isn't already one
             .then(() => global_1.setActiveGlobalScoutInstance(this))
+            // Start the statistics sending interval
+            .then(() => this.startSendingStatistics())
             .then(() => this);
         return this.settingUp;
     }
     shutdown() {
+        // Disable the statistics sending interval if present
+        if (this.statsSendingInterval) {
+            this.stopSendingStatistics();
+        }
+        // Ensure an agent is present bfore we attempt to shut it down
         if (!this.agent) {
             this.log("[scout] shutdown called but no agent to shutdown is present", types_1.LogLevel.Error);
             return Promise.reject(new Errors.NoAgentPresent());

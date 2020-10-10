@@ -2,7 +2,7 @@
 				check-tool-docker check-tool-yarn check-tool-entr \
 				lint lint-watch build build-watch \
 				test test-unit test-int test-e2e \
-				test-dashboard-send test-integrations \
+				test-dashboard-send test-integration \
 				ensure-docker-images ensure-pg-docker-image test-integration-pg \
 				ensure-mysql-docker-image test-integration-mysql test-integration-mysql2 \
 				test-integration-pug test-integration-mustache test-integration-ejs \
@@ -17,7 +17,11 @@ NPM ?= npm
 ENTR ?= entr
 DEV_SCRIPTS ?= .dev/scripts
 TAPE ?= ./node_modules/.bin/tape
+
+# NOTE: replace both of the below variables in your environment (.envrc if using direnv)
+# if you use an alternate container CLI tool like podman or ctr
 DOCKER ?= docker
+DOCKER_BIN_PATH ?= /usr/bin/docker
 
 GIT_HOOKS_DIR = .dev/git/hooks
 DIST_DIR = dist
@@ -74,7 +78,7 @@ clean:
 # Tests #
 #########
 
-test: test-unit test-int test-e2e test-integrations
+test: test-unit test-int test-e2e test-ext
 
 test-unit: check-tool-yarn
 	$(YARN) test-unit
@@ -85,13 +89,23 @@ test-int: check-tool-yarn
 test-e2e: ensure-docker-images check-tool-docker check-tool-yarn
 	$(YARN) test-e2e
 
-test-dashboard-send: check-tool-yarn
-	@echo -e "running a test that will send a test to the dashboard, it should take ~ 30 seconds to run..."
-	$(YARN) test-dashboard-send
+test-e2e-without-integration: ensure-docker-images check-tool-docker check-tool-yarn
+	$(YARN) test-e2e-without-integration
 
-test-integrations: ensure-docker-images test-integration-pg test-integration-mysql \
-									test-integration-mysql2 test-integration-pug test-integration-mustache \
-									test-integration-ejs test-integration-nuxt test-integration-express
+# External tests (those that treat scout as blackbox and normally measure some external entity)
+test-ext: ensure-docker-images check-tool-docker check-tool-yarn
+	$(YARN) test-ext
+
+test-ext-memory: check-tool-yarn
+	@echo -e "running a test that will test memory usage (runtime ~3 minutes)..."
+	$(YARN) test-ext-memory
+
+test-ext-dashboard-send: ensure-docker-images check-tool-yarn
+	@echo -e "running a test that will send a test to the dashboard, (runtime ~3 minutes)..."
+	$(YARN) test-ext-dashboard-send
+
+test-integration: ensure-docker-images
+	$(YARN) test-integration
 
 ensure-docker-images: ensure-mysql-docker-image ensure-pg-docker-image
 

@@ -334,7 +334,7 @@ function buildTestScoutInstance(configOverride, options) {
 exports.buildTestScoutInstance = buildTestScoutInstance;
 class TestContainerStartOpts {
     constructor(opts) {
-        this.dockerBinPath = "/usr/bin/docker";
+        this.dockerBinPath = process.env.DOCKER_BIN_PATH || "/usr/bin/docker";
         // Phrases that should be waited for before the container is "started"
         this.waitFor = {};
         this.startTimeoutMs = 5000;
@@ -421,20 +421,33 @@ function startContainer(t, optOverrides) {
     let stdoutListener;
     let stderrListener;
     const makeListener = (type, emitter, expected, resolve, reject) => {
+        var _a;
         if (!emitter) {
             return () => reject(new Error(`[${type}] pipe was not Readable`));
         }
+        if (expected.times && expected.times <= 0) {
+            return () => reject(new Error(`[${type}] invalid waitFor: expected.times <= 0`));
+        }
+        let times = (_a = expected.times, (_a !== null && _a !== void 0 ? _a : 1));
         return (line) => {
             line = line.toString();
-            if (!line.includes(expected)) {
+            if (!line.includes(expected.phrase)) {
                 return;
             }
+            // Reduce the amount of times we've seen the expected phrase
+            // if we haven't seen it enough times keep listening
+            times -= 1;
+            if (times > 0) {
+                return;
+            }
+            // Remove the listeners
             if (type === "stdout" && stdoutListener) {
                 emitter.removeListener("data", stdoutListener);
             }
             if (type === "stderr" && stderrListener) {
                 emitter.removeListener("data", stderrListener);
             }
+            // Resolve only once
             if (!resolved) {
                 resolve({ containerProcess, opts });
             }
@@ -563,7 +576,7 @@ function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
                 tagName,
                 portBinding,
                 envBinding,
-                waitFor: { stdout: POSTGRES_STARTUP_MESSAGE },
+                waitFor: { stdout: { phrase: POSTGRES_STARTUP_MESSAGE } },
             });
         })
             .then(cao => containerAndOpts = cao)
@@ -609,14 +622,16 @@ function makeConnectedPGClient(provider) {
         return Promise.reject(new Error("no CAO in provider"));
     }
     const port = cao.opts.portBinding[5432];
-    const client = new pg_1.Client({
+    const opts = {
         user: "postgres",
         host: "localhost",
         database: "postgres",
         password: "postgres",
         port,
-    });
-    return client.connect().then(() => client);
+    };
+    const client = new pg_1.Client(opts);
+    return client.connect()
+        .then(() => client);
 }
 exports.makeConnectedPGClient = makeConnectedPGClient;
 // Utility function to create a connection string

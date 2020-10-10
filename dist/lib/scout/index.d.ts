@@ -14,6 +14,7 @@ export interface ScoutOptions {
     downloadOptions?: Partial<AgentDownloadOptions>;
     appMeta?: ApplicationMetadata;
     slowRequestThresholdMs?: number;
+    statisticsIntervalMS?: number;
 }
 export interface CallbackInfo {
     span?: ScoutSpan;
@@ -39,9 +40,24 @@ export declare class Scout extends EventEmitter {
     private syncCurrentSpan;
     private uncaughtExceptionListenerFn;
     private settingUp;
+    private statsSendingInterval?;
+    private statsIntervalMS?;
+    private cpuUsageStart;
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions);
     private get socketPath();
     protected getDefaultSocketFilePath(): string;
+    /**
+     * Start sending statistics for the node process
+     *
+     * @return {Promise<void>} A promise that resolves when the statistics sending has started
+     */
+    protected startSendingStatistics(): void;
+    /**
+     * Stop sending statistics for the node process
+     *
+     * @return {Promise<void>} A promise that resolves when the statistics sending has stoped
+     */
+    protected stopSendingStatistics(): void;
     getSocketType(): AgentSocketType;
     getSocketPath(): string;
     getSocketFilePath(): string | null;
