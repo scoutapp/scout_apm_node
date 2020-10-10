@@ -9,18 +9,18 @@ cache:
 env:
   - TEST_SUITE="make test-unit"
   - TEST_SUITE="make test-int"
-  # - TEST_SUITE="test-e2e" # includes integrations
+  # - TEST_SUITE="make test-e2e" # includes integrations
   # Test suites to test which is hanging
   - TEST_SUITE="./node_modules/.bin/tape dist/test/memory.e2e.js"
   - TEST_SUITE="./node_modules/.bin/tape dist/test/winston.e2e.js"
   - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/http.e2e.js"
   - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/https.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/pg.e2e.js"
+  - TEST_SUITE="make ensure-pg-docker-image && ./node_modules/.bin/tape dist/test/integrations/pg.e2e.js"
   - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/express.e2e.js"
   - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/pug.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/mysql.e2e.js"
+  - TEST_SUITE="make ensure-mysql-docker-image && ./node_modules/.bin/tape dist/test/integrations/mysql.e2e.js"
+  - TEST_SUITE="make ensure-mysql-docker-image && ./node_modules/.bin/tape dist/test/integrations/mysql2.e2e.js"
   - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/nuxt.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/mysql2.e2e.js"
   - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/mustache.e2e.js"
   - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/ejs.e2e.js"
   - TEST_SUITE="./node_modules/.bin/tape dist/test/express.e2e.js"
