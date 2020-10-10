@@ -100,7 +100,7 @@ test-ext-memory: check-tool-yarn
 	@echo -e "running a test that will test memory usage (runtime ~3 minutes)..."
 	$(YARN) test-ext-memory
 
-test-ext-dashboard-send: check-tool-yarn
+test-ext-dashboard-send: ensure-docker-images check-tool-yarn
 	@echo -e "running a test that will send a test to the dashboard, (runtime ~3 minutes)..."
 	$(YARN) test-ext-dashboard-send
 
