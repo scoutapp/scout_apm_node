@@ -2,7 +2,7 @@
 				check-tool-docker check-tool-yarn check-tool-entr \
 				lint lint-watch build build-watch \
 				test test-unit test-int test-e2e \
-				test-dashboard-send test-integrations \
+				test-dashboard-send test-integration \
 				ensure-docker-images ensure-pg-docker-image test-integration-pg \
 				ensure-mysql-docker-image test-integration-mysql test-integration-mysql2 \
 				test-integration-pug test-integration-mustache test-integration-ejs \
@@ -89,20 +89,23 @@ test-int: check-tool-yarn
 test-e2e: ensure-docker-images check-tool-docker check-tool-yarn
 	$(YARN) test-e2e
 
-test-e2e-without-integrations: ensure-docker-images check-tool-docker check-tool-yarn
-	$(YARN) test-e2e-without-integrations
+test-e2e-without-integration: ensure-docker-images check-tool-docker check-tool-yarn
+	$(YARN) test-e2e-without-integration
 
 # External tests (those that treat scout as blackbox and normally measure some external entity)
 test-ext: ensure-docker-images check-tool-docker check-tool-yarn
 	$(YARN) test-ext
 
-test-dashboard-send: check-tool-yarn
-	@echo -e "running a test that will send a test to the dashboard, it should take ~ 30 seconds to run..."
-	$(YARN) test-dashboard-send
+test-ext-memory: check-tool-yarn
+	@echo -e "running a test that will test memory usage (runtime ~3 minutes)..."
+	$(YARN) test-ext-memory
 
-test-integrations: ensure-docker-images test-integration-pg test-integration-mysql \
-									test-integration-mysql2 test-integration-pug test-integration-mustache \
-									test-integration-ejs test-integration-nuxt test-integration-express
+test-ext-dashboard-send: check-tool-yarn
+	@echo -e "running a test that will send a test to the dashboard, (runtime ~3 minutes)..."
+	$(YARN) test-ext-dashboard-send
+
+test-integration: ensure-docker-images
+	$(YARN) test-integration
 
 ensure-docker-images: ensure-mysql-docker-image ensure-pg-docker-image
 

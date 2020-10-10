@@ -9,9 +9,10 @@ cache:
 env:
   - TEST_SUITE="make test-unit"
   - TEST_SUITE="make test-int"
-  - TEST_SUITE="make test-e2e-without-integrations"
-  - TEST_SUITE="make test-integrations"
-  - TEST_SUITE="make test-ext"
+  - TEST_SUITE="make test-e2e-without-integration"
+  - TEST_SUITE="make test-integration"
+  - TEST_SUITE="make test-ext-memory"
+  - TEST_SUITE="make test-ext-dashboard-send"
 
 script: "$TEST_SUITE"
 
