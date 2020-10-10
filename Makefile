@@ -78,7 +78,7 @@ clean:
 # Tests #
 #########
 
-test: test-unit test-int test-e2e test-integrations
+test: test-unit test-int test-e2e test-ext
 
 test-unit: check-tool-yarn
 	$(YARN) test-unit
@@ -88,6 +88,13 @@ test-int: check-tool-yarn
 
 test-e2e: ensure-docker-images check-tool-docker check-tool-yarn
 	$(YARN) test-e2e
+
+test-e2e-without-integrations: ensure-docker-images check-tool-docker check-tool-yarn
+	$(YARN) test-e2e-without-integrations
+
+# External tests (those that treat scout as blackbox and normally measure some external entity)
+test-ext: ensure-docker-images check-tool-docker check-tool-yarn
+	$(YARN) test-ext
 
 test-dashboard-send: check-tool-yarn
 	@echo -e "running a test that will send a test to the dashboard, it should take ~ 30 seconds to run..."

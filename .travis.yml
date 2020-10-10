@@ -9,27 +9,9 @@ cache:
 env:
   - TEST_SUITE="make test-unit"
   - TEST_SUITE="make test-int"
-  # - TEST_SUITE="make test-e2e" # includes integrations
-  # Test suites to test which is hanging
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/memory.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/winston.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/http.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/https.e2e.js"
-  - TEST_SUITE="make ensure-pg-docker-image test-integration-pg"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/express.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/pug.e2e.js"
-  - TEST_SUITE="make ensure-mysql-docker-image test-integration-mysql"
-  - TEST_SUITE="make ensure-mysql-docker-image test-integration-mysql2"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/nuxt.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/mustache.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/integrations/ejs.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/express.e2e.js"
-  - TEST_SUITE="make ensure-docker-images test-dashboard-send"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/agent-downloaders/web.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/agents/external-process.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/scout/index.e2e.js"
-  - TEST_SUITE="./node_modules/.bin/tape dist/test/scout/span.e2e.js"
-
+  - TEST_SUITE="make test-e2e-without-integrations"
+  - TEST_SUITE="make test-integrations"
+  - TEST_SUITE="make test-ext"
 
 script: "$TEST_SUITE"
 
