@@ -88,6 +88,11 @@ class Scout extends events_1.EventEmitter {
         this.log("[scout] Starting sending of statistics...", types_1.LogLevel.Info);
         this.statsSendingInterval = setInterval(() => {
             if (!this.agent) {
+                // A shutdown likey occurred
+                this.log("[scout] Disabling stats sending interval since agent is missing...", types_1.LogLevel.Debug);
+                if (this.statsSendingInterval) {
+                    clearInterval(this.statsSendingInterval);
+                }
                 return;
             }
             const pid = process.pid;
