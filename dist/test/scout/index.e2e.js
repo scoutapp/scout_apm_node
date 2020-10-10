@@ -491,7 +491,7 @@ test("Application metadata is built and sent", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/70
 test("Multiple ongoing requests are possible at the same time", t => {
     const scout = TestUtil.buildTestScoutInstance();
-    let expectedRequestIds = [];
+    const expectedRequestIds = [];
     const requests = [];
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
@@ -699,7 +699,7 @@ test("export Context.add add context (provided scout instance)", t => {
             return;
         }
         const val = data.request.getContextValue("testKey");
-        if (!val || val != "testValue") {
+        if (!val || val !== "testValue") {
             return;
         }
         t.pass("observed request context key [testKey] and value [testValue]");

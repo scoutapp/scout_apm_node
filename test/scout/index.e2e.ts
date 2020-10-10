@@ -558,7 +558,7 @@ test("Application metadata is built and sent", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/70
 test("Multiple ongoing requests are possible at the same time", t => {
     const scout = TestUtil.buildTestScoutInstance();
-    let expectedRequestIds: string[] = [];
+    const expectedRequestIds: string[] = [];
     const requests: ScoutRequest[] = [];
 
     // Set up a listener for the scout request that gets sent
@@ -797,7 +797,7 @@ test("export Context.add add context (provided scout instance)", t => {
         if (!data.request) { return; }
 
         const val = data.request.getContextValue("testKey");
-        if (!val || val != "testValue") { return; }
+        if (!val || val !== "testValue") { return; }
 
         t.pass("observed request context key [testKey] and value [testValue]");
 
@@ -983,7 +983,7 @@ test("instrumentSync should automatically create a transaction", t => {
         const tSpan = spans.find(s => s.operation === opName);
         if (!tSpan) { return; }
 
-        t.pass(`found span with expected operation name [${opName}]`)
+        t.pass(`found span with expected operation name [${opName}]`);
 
         // Since we've found the span we're looking for we can stop listening
         scout.removeListener(ScoutEvent.RequestSent, listener);
