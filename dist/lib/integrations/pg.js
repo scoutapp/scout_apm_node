@@ -36,7 +36,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
                             userCallback(err, connection);
                             return;
                         }
-                        userCallback();
+                        userCallback(undefined, connection);
                     },
                 ]);
             }

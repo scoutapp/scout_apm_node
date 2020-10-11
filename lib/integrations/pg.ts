@@ -50,7 +50,7 @@ export class PGIntegration extends RequireIntegration {
                             userCallback(err, connection);
                             return;
                         }
-                        userCallback();
+                        userCallback(undefined, connection);
                     },
                 ]);
             }
