@@ -12,6 +12,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
         // Shim client
         pgExport = this.shimPGConnect(pgExport);
         pgExport = this.shimPGQuery(pgExport);
+        pgExport = this.shimPGConnection(pgExport);
         // Add the integration symbol to the client class itself
         pgExport.Client[integrations_1.getIntegrationSymbol()] = this;
         return pgExport;
@@ -27,8 +28,12 @@ class PGIntegration extends integrations_1.RequireIntegration {
         const integration = this;
         const fn = function (userCallback) {
             integration.logFn("[scout/integrations/pg] Connecting to Postgres db...", types_1.LogLevel.Trace);
+            console.log("DOING A CONNECT");
             // If a callback was specified we need to do callback version
             if (userCallback) {
+                // console.log("USER CALLBACK WAS SPECIFIED", originalConnectFn.toString());
+                // console.log("CB?", userCallback.toString());
+                console.log("args?", arguments);
                 return originalConnectFn.apply(this, [
                     function (err) {
                         if (err) {
@@ -36,6 +41,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
                             userCallback.apply(this, arguments);
                             return;
                         }
+                        console.log("APPLYING NO ERR");
                         userCallback.apply(this, arguments);
                     },
                 ]);
@@ -116,6 +122,22 @@ class PGIntegration extends integrations_1.RequireIntegration {
             });
         };
         Client.prototype.query = fn;
+        return pgExport;
+    }
+    /**
+     * Shim for pg's `Conenction` class
+     *
+     * @param {any} pgExport - pg's exports
+     */
+    shimPGConnection(pgExport) {
+        const originalCtor = pgExport.Connection;
+        const integration = this;
+        // By the time this function runs we *should* have a scout instance set.
+        const modified = function () {
+            console.log("Creating connection!");
+            return originalCtor.apply(this, arguments);
+        };
+        pgExport.Connection = modified;
         return pgExport;
     }
 }

@@ -19,6 +19,7 @@ export class PGIntegration extends RequireIntegration {
         // Shim client
         pgExport = this.shimPGConnect(pgExport);
         pgExport = this.shimPGQuery(pgExport);
+        pgExport = this.shimPGConnection(pgExport);
 
         // Add the integration symbol to the client class itself
         pgExport.Client[getIntegrationSymbol()] = this;
@@ -40,8 +41,14 @@ export class PGIntegration extends RequireIntegration {
         const fn: any = function(this: Client, userCallback?: ConnectCallback) {
             integration.logFn("[scout/integrations/pg] Connecting to Postgres db...", LogLevel.Trace);
 
+            console.log("DOING A CONNECT");
+
             // If a callback was specified we need to do callback version
             if (userCallback) {
+                // console.log("USER CALLBACK WAS SPECIFIED", originalConnectFn.toString());
+                // console.log("CB?", userCallback.toString());
+                console.log("args?", arguments);
+
                 return originalConnectFn.apply(this, [
                     function(this: any, err) {
                         if (err) {
@@ -54,6 +61,7 @@ export class PGIntegration extends RequireIntegration {
                             return;
                         }
 
+                        console.log("APPLYING NO ERR");
                         userCallback.apply(this, arguments as any);
                     },
                 ]);
@@ -154,6 +162,26 @@ export class PGIntegration extends RequireIntegration {
         };
 
         Client.prototype.query = fn;
+
+        return pgExport;
+    }
+
+    /**
+     * Shim for pg's `Conenction` class
+     *
+     * @param {any} pgExport - pg's exports
+     */
+    private shimPGConnection(pgExport: any): any {
+        const originalCtor = pgExport.Connection;
+        const integration = this;
+
+        // By the time this function runs we *should* have a scout instance set.
+        const modified = function(this: any) {
+            console.log("Creating connection!");
+            return originalCtor.apply(this, arguments);
+        };
+
+        pgExport.Connection = modified;
 
         return pgExport;
     }

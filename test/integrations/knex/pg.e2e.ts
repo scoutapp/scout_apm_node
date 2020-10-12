@@ -112,6 +112,7 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
         .then(knexInstance => {
             if (!knexInstance) { throw new Error("failed to initialize knex"); }
             k = knexInstance;
+            // console.log("K?", (k as any).context.client);
         })
     // Create two tables, users and accounts
         .then(() => k.schema.createTable("users", table => {
