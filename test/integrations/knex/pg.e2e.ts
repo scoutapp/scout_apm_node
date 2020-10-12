@@ -30,7 +30,7 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
 
-test("knex pg createTable, insert, select", {timeout: TestUtil.MYSQL_TEST_TIMEOUT_MS}, t => {
+test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -98,6 +98,13 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.MYSQL_TEST_TIMEOU
     // Start knex and perform queries
         .then(() => {
             if (!PG_CONTAINER_AND_OPTS) { return; }
+            console.log("conn?", {
+                    host: "localhost",
+                    port: PG_CONTAINER_AND_OPTS.opts.portBinding[5432],
+                    user: "postgres",
+                    password: "postgres",
+                    database: "postgres",
+            });
             return Knex({
                 client: "pg",
                 connection: {
@@ -147,5 +154,5 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.MYSQL_TEST_TIMEOU
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-// Pseudo test that will stop a containerized postgres instance that was started
-TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);
+// // Pseudo test that will stop a containerized postgres instance that was started
+// TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);

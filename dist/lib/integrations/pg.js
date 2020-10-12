@@ -30,20 +30,21 @@ class PGIntegration extends integrations_1.RequireIntegration {
             // If a callback was specified we need to do callback version
             if (userCallback) {
                 return originalConnectFn.apply(this, [
-                    err => {
+                    function (err) {
                         if (err) {
                             integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Trace);
-                            userCallback(err);
+                            userCallback.apply(this, arguments);
                             return;
                         }
-                        userCallback();
+                        userCallback.apply(this, arguments);
                     },
                 ]);
             }
             // Promise version
             return originalConnectFn.apply(this, [])
-                .then(() => {
+                .then(result => {
                 integration.logFn("[scout/integrations/pg] Successfully connected to Postgres db", types_1.LogLevel.Trace);
+                return result;
             })
                 .catch(err => {
                 integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", types_1.LogLevel.Trace);
