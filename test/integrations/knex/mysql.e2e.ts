@@ -24,7 +24,7 @@ import { SQL_QUERIES } from "../../fixtures";
 // since a partial import like { Client } will not trigger a require
 setupRequireIntegrations(["mysql"]);
 
-import { Connection, createConnection as createMySQLConnection } from "mysql";
+import { Connection } from "mysql";
 
 let MYSQL_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 
@@ -68,18 +68,18 @@ test("knex createTable, insert, select", {timeout: TestUtil.MYSQL_TEST_TIMEOUT_M
         const statement = dbSpan.getContextValue(ScoutContextName.DBStatement);
         if (typeof statement !== "string") { throw new Error("statement is invalid type"); }
 
-        if (statement && statement.includes("CREATE TABLE")) {
+        if (statement && statement.toLowerCase().includes("create table")) {
             observed.createTable += 1;
             t.pass("observed CREATE TABLE statement");
         }
 
-        if (statement && statement.includes("INSERT")) {
+        if (statement && statement.toLowerCase().includes("insert")) {
             observed.insert += 1;
             t.pass("observed INSERT statement");
         }
 
-        if (statement && statement.includes("SELECT")) {
-            observed.insert += 1;
+        if (statement && statement.toLowerCase().includes("select")) {
+            observed.select += 1;
             t.pass("observed SELECT statement");
         }
 
@@ -117,6 +117,7 @@ test("knex createTable, insert, select", {timeout: TestUtil.MYSQL_TEST_TIMEOUT_M
                     port: MYSQL_CONTAINER_AND_OPTS.opts.portBinding[3306],
                     user: "root",
                     password: "mysql",
+                    database: "mysql",
                 },
             });
         })

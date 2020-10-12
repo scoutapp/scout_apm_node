@@ -48,16 +48,16 @@ test("knex createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_TIMEOUT_
         if (typeof statement !== "string") {
             throw new Error("statement is invalid type");
         }
-        if (statement && statement.includes("CREATE TABLE")) {
+        if (statement && statement.toLowerCase().includes("create table")) {
             observed.createTable += 1;
             t.pass("observed CREATE TABLE statement");
         }
-        if (statement && statement.includes("INSERT")) {
+        if (statement && statement.toLowerCase().includes("insert")) {
             observed.insert += 1;
             t.pass("observed INSERT statement");
         }
-        if (statement && statement.includes("SELECT")) {
-            observed.insert += 1;
+        if (statement && statement.toLowerCase().includes("select")) {
+            observed.select += 1;
             t.pass("observed SELECT statement");
         }
         // We expect to see 2 tables created, one insert, and one select reported
@@ -92,6 +92,7 @@ test("knex createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_TIMEOUT_
                 port: MYSQL_CONTAINER_AND_OPTS.opts.portBinding[3306],
                 user: "root",
                 password: "mysql",
+                database: "mysql",
             },
         });
     })
