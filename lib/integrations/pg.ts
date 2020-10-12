@@ -9,6 +9,8 @@ import * as Constants from "../constants";
 type Client = any;
 type Query = any;
 
+type ConnectCallback = (err: Error, client: Client, done: (release?: any) => void) => void;
+
 // Hook into the express and mongodb module
 export class PGIntegration extends RequireIntegration {
     protected readonly packageName: string = "pg";
@@ -35,7 +37,7 @@ export class PGIntegration extends RequireIntegration {
         const originalConnectFn = Client.prototype.connect;
         const integration = this;
 
-        const fn: any = function(this: Client, userCallback?: Function) {
+        const fn: any = function(this: Client, userCallback?: ConnectCallback) {
             integration.logFn("[scout/integrations/pg] Connecting to Postgres db...", LogLevel.Trace);
 
             // If a callback was specified we need to do callback version
@@ -48,11 +50,11 @@ export class PGIntegration extends RequireIntegration {
                                 LogLevel.Trace,
                             );
 
-                            userCallback.apply(this, arguments);
+                            userCallback.apply(this, arguments as any);
                             return;
                         }
 
-                        userCallback.apply(this, arguments);
+                        userCallback.apply(this, arguments as any);
                     },
                 ]);
             }

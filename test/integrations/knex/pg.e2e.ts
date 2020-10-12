@@ -53,7 +53,7 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
         const spans = data.request.getChildSpansSync();
         if (!spans || spans.length === 0) { return; }
 
-        // Return immediately if we odn't find any SQL/Query spans
+        // Return immediately if we odn"t find any SQL/Query spans
         const dbSpan = spans.find(s => s.operation === "SQL/Query");
         if (!dbSpan) { return; }
 
@@ -81,7 +81,7 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
         }
         t.pass("saw expected statements");
 
-        // Now that we've seen all the expected statements, remove the listener
+        // Now that we"ve seen all the expected statements, remove the listener
         scout.removeListener(ScoutEvent.RequestSent, listener);
 
         // Close the connection and shutdown
@@ -98,13 +98,6 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
     // Start knex and perform queries
         .then(() => {
             if (!PG_CONTAINER_AND_OPTS) { return; }
-            console.log("conn?", {
-                    host: "localhost",
-                    port: PG_CONTAINER_AND_OPTS.opts.portBinding[5432],
-                    user: "postgres",
-                    password: "postgres",
-                    database: "postgres",
-            });
             return Knex({
                 client: "pg",
                 connection: {
@@ -121,29 +114,29 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
             k = knexInstance;
         })
     // Create two tables, users and accounts
-        .then(() => k.schema.createTable('users', table => {
-            table.increments('id'),
-            table.string('user_name')
+        .then(() => k.schema.createTable("users", table => {
+            table.increments("id");
+            table.string("user_name");
         }))
-        .then(() => k.schema.createTable('accounts', table => {
-            table.increments('id');
-            table.string('account_name');
+        .then(() => k.schema.createTable("accounts", table => {
+            table.increments("id");
+            table.string("account_name");
             table
-                .integer('user_id')
+                .integer("user_id")
                 .unsigned()
-                .references('users.id');
+                .references("users.id");
         }))
     // Insert some records into users and accounts
-        .then(() => k('users').insert({user_name: 'scout'}))
-        .then(results => k('accounts').insert({
-            account_name: 'knex',
+        .then(() => k("users").insert({user_name: "scout"}))
+        .then(results => k("accounts").insert({
+            account_name: "knex",
             user_id: results[0],
         }))
     // Query for the data
         .then(() => {
-            return k('users')
-                .join('accounts', 'users.id', 'accounts.user_id')
-                .select('users.user_name as user', 'accounts.account_name as account');
+            return k("users")
+                .join("accounts", "users.id", "accounts.user_id")
+                .select("users.user_name as user", "accounts.account_name as account");
         })
     // Ensure the rows match what we expect
         .then(result => {
@@ -154,5 +147,5 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-// // Pseudo test that will stop a containerized postgres instance that was started
-// TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);
+// Pseudo test that will stop a containerized postgres instance that was started
+TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);
