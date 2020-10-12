@@ -13,13 +13,11 @@ let MYSQL2_CONTAINER_AND_OPTS = null;
 const Knex = require("knex");
 // Pseudo test that will start a containerized mysql2 instance
 TestUtil.startContainerizedMySQLTest(test, cao => { MYSQL2_CONTAINER_AND_OPTS = cao; }, { mysqlPackageName: "mysql2" });
-test("knex createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_TIMEOUT_MS }, t => {
+test("knex mysql2 createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_TIMEOUT_MS }, t => {
     const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
     }));
-    // Setup a MYSQL Connection that we'll use later
-    let conn;
     // Keep track of queries that have been observed
     const observed = {
         createTable: 0,
@@ -68,11 +66,7 @@ test("knex createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_TIMEOUT_
         // Close the connection and shutdown
         k.destroy()
             .then(() => TestUtil.shutdownScout(t, scout))
-            .catch(err => {
-            // Shutdown scout and disconnect the connection if present
-            TestUtil.shutdownScout(t, scout, err)
-                .then(() => conn ? conn.end() : undefined);
-        });
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
     // Activate the listener
     scout.on(types_1.ScoutEvent.RequestSent, listener);
@@ -131,10 +125,7 @@ test("knex createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_TIMEOUT_
         t.equals(result[0].account, "knex", "returned account is knex");
     })
         // Finish & Send the request
-        .catch(err => {
-        TestUtil.shutdownScout(t, scout, err)
-            .then(() => conn ? conn.end() : undefined);
-    });
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // Pseudo test that will stop a containerized mysql instance that was started
 TestUtil.stopContainerizedMySQLTest(test, () => MYSQL2_CONTAINER_AND_OPTS);

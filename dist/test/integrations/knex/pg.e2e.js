@@ -1,21 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const lib_1 = require("../../../lib");
+// The hook for PG has to be triggered this way in a typescript context
+// since a partial import like { Client } will not trigger a require
+lib_1.setupRequireIntegrations(["pg"]);
 const test = require("tape");
 const TestUtil = require("../../util");
 const types_1 = require("../../../lib/types");
-const lib_1 = require("../../../lib");
 const scout_1 = require("../../../lib/scout");
 const types_2 = require("../../../lib/types");
-// The hook for MYSQL has to be triggered this way in a typescript context
-// since a partial import like { Client } will not trigger a require
-lib_1.setupRequireIntegrations(["mysql"]);
-let MYSQL_CONTAINER_AND_OPTS = null;
+let PG_CONTAINER_AND_OPTS = null;
 const Knex = require("knex");
-// Pseudo test that will start a containerized mysql instance
-TestUtil.startContainerizedMySQLTest(test, cao => {
-    MYSQL_CONTAINER_AND_OPTS = cao;
+// Pseudo test that will start a containerized postgres instance
+TestUtil.startContainerizedPostgresTest(test, cao => {
+    PG_CONTAINER_AND_OPTS = cao;
 });
-test("knex mysql createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_TIMEOUT_MS }, t => {
+test("knex pg createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_TIMEOUT_MS }, t => {
     const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -76,17 +76,17 @@ test("knex mysql createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_TI
         .setup()
         // Start knex and perform queries
         .then(() => {
-        if (!MYSQL_CONTAINER_AND_OPTS) {
+        if (!PG_CONTAINER_AND_OPTS) {
             return;
         }
         return Knex({
-            client: 'mysql',
+            client: "pg",
             connection: {
                 host: "localhost",
-                port: MYSQL_CONTAINER_AND_OPTS.opts.portBinding[3306],
-                user: "root",
-                password: "mysql",
-                database: "mysql",
+                port: PG_CONTAINER_AND_OPTS.opts.portBinding[5432],
+                user: "postgres",
+                password: "postgres",
+                database: "postgres",
             },
         });
     })
@@ -129,5 +129,5 @@ test("knex mysql createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_TI
         // Finish & Send the request
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-// Pseudo test that will stop a containerized mysql instance that was started
-TestUtil.stopContainerizedMySQLTest(test, () => MYSQL_CONTAINER_AND_OPTS);
+// Pseudo test that will stop a containerized postgres instance that was started
+TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);

@@ -18,13 +18,10 @@ import {
 } from "../../../lib/scout";
 
 import { ScoutContextName } from "../../../lib/types";
-import { SQL_QUERIES } from "../../fixtures";
 
 // The hook for MYSQL has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
 setupRequireIntegrations(["mysql2"]);
-
-import { Connection } from "mysql2";
 
 let MYSQL2_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 
@@ -37,14 +34,11 @@ TestUtil.startContainerizedMySQLTest(
     {mysqlPackageName: "mysql2"},
 );
 
-test("knex createTable, insert, select", {timeout: TestUtil.MYSQL_TEST_TIMEOUT_MS}, t => {
+test("knex mysql2 createTable, insert, select", {timeout: TestUtil.MYSQL_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
     }));
-
-    // Setup a MYSQL Connection that we'll use later
-    let conn: Connection;
 
     // Keep track of queries that have been observed
     const observed = {
@@ -97,11 +91,7 @@ test("knex createTable, insert, select", {timeout: TestUtil.MYSQL_TEST_TIMEOUT_M
         // Close the connection and shutdown
         k.destroy()
             .then(() => TestUtil.shutdownScout(t, scout))
-            .catch(err => {
-                // Shutdown scout and disconnect the connection if present
-                TestUtil.shutdownScout(t, scout, err)
-                    .then(() => conn ? conn.end() : undefined);
-            });
+            .catch(err => TestUtil.shutdownScout(t, scout, err));
     };
 
     // Activate the listener
@@ -158,10 +148,7 @@ test("knex createTable, insert, select", {timeout: TestUtil.MYSQL_TEST_TIMEOUT_M
             t.equals(result[0].account, "knex", "returned account is knex");
         })
     // Finish & Send the request
-        .catch(err => {
-            TestUtil.shutdownScout(t, scout, err)
-                .then(() => conn ? conn.end() : undefined);
-        });
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
 // Pseudo test that will stop a containerized mysql instance that was started
