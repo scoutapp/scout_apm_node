@@ -139,7 +139,10 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
                 .select("users.user_name as user", "accounts.account_name as account");
         })
     // Ensure the rows match what we expect
-        .then(result => {
+        .then((result) => {
+            console.log("result?", result);
+            // console.log("row?", row);
+            // console.log("something?", something);
             t.equals(result[0].user, "scout", "returned username is scout");
             t.equals(result[0].account, "knex", "returned account is knex");
         })

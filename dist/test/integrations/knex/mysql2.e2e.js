@@ -9,6 +9,9 @@ const types_2 = require("../../../lib/types");
 // The hook for MYSQL has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
 lib_1.setupRequireIntegrations(["mysql2"]);
+// The hook for MYSQL2 has to be triggered this way in a typescript context
+// since a partial import like { Client } will not trigger a require
+const mysql2 = require("mysql2");
 let MYSQL2_CONTAINER_AND_OPTS = null;
 const Knex = require("knex");
 // Pseudo test that will start a containerized mysql2 instance
@@ -32,6 +35,7 @@ test("knex mysql2 createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_T
             return;
         }
         const spans = data.request.getChildSpansSync();
+        console.log("SPANS:", spans);
         if (!spans || spans.length === 0) {
             return;
         }
@@ -93,6 +97,23 @@ test("knex mysql2 createTable, insert, select", { timeout: TestUtil.MYSQL_TEST_T
             throw new Error("failed to initialize knex");
         }
         k = knexInstance;
+        return k.context.client.driver.createConnectionPromise({
+            host: "localhost",
+            port: MYSQL2_CONTAINER_AND_OPTS.opts.portBinding[3306],
+            user: "root",
+            password: "mysql",
+            database: "mysql",
+        }).then(res => {
+            // TODO: fix, connection being made is somehow created *without*
+            // mysql2's normal Connection class (it is *not* a wrapped connection, though the shim is called)
+            // The connections produced by createConnectionPromise are creating connections some *other* way
+            // console.log("driver?", (k as any).context.client.driver);
+            console.log("promise?", k.context.client.driver.createConnectionPromise.toString());
+            // console.log("\n res:", res);
+            // console.log("\n res.query:", res.query);
+            // console.log("\n res.query.toString():", res.query.toString());
+            // console.log("\n res.connection:", res.connection);
+        });
     })
         // Create two tables, users and accounts
         .then(() => k.schema.createTable("users", table => {
