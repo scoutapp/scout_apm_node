@@ -31,7 +31,7 @@
     "test-ext": "./node_modules/.bin/tape 'dist/test/**/*.ext.js'",
     "test-ext-memory": "./node_modules/.bin/tape 'dist/test/memory.ext.js'",
     "test-ext-dashboard-send": "./node_modules/.bin/tape 'dist/test/dashboard-send.ext.js'",
-    "test-integration": "./node_modules/.bin/tape 'dist/test/integrations/*.e2e.js'",
+    "test-integration": "./node_modules/.bin/tape 'dist/test/integrations/**/*.e2e.js'",
     "test-integration-pg": "./node_modules/.bin/tape 'dist/test/integrations/pg.e2e.js'",
     "test-integration-mysql": "./node_modules/.bin/tape 'dist/test/integrations/mysql.e2e.js'",
     "test-integration-mysql2": "./node_modules/.bin/tape 'dist/test/integrations/mysql2.e2e.js'",
