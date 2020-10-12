@@ -1,7 +1,7 @@
 import * as path from "path";
 import { ExportBag, RequireIntegration, getIntegrationSymbol } from "../types/integrations";
 import { Scout } from "../scout";
-import { Connection, ConnectionConfig, QueryFunction } from "mysql";
+import { Connection, ConnectionConfig, QueryFunction } from "mysql2";
 import { LogFn, LogLevel, ScoutContextName, ScoutSpanOperation } from "../types";
 import * as Constants from "../constants";
 
@@ -13,7 +13,9 @@ export class MySQL2Integration extends RequireIntegration {
     protected readonly packageName: string = "mysql2";
 
     protected shim(mysql2Export: any): any {
-        mysql2Export = this.shimMySQL2CreateConnection(mysql2Export);
+        mysql2Export = this.shimMySQL2Connection(mysql2Export);
+
+        mysql2Export = this.shimMySQL2CreateConnectionPromise(mysql2Export);
 
         return mysql2Export;
     }
@@ -24,13 +26,13 @@ export class MySQL2Integration extends RequireIntegration {
      *
      * @param {any} mysql2 - mysql2's main export
      */
-    private shimMySQL2CreateConnection(mysql2Export: any): any {
+    private shimMySQL2Connection(mysql2Export: any): any {
         // We need to shim the constructor of the connection class itself
         const originalCtor = mysql2Export.Connection;
         const integration = this;
 
         const modifiedCtor = function(this: Connection, uriOrCfg: string | ConnectionConfig) {
-            const conn = new originalCtor(uriOrCfg);
+            let conn = new originalCtor(uriOrCfg);
 
             integration.logFn("[scout/integrations/mysql2] Creating connection to Mysql db...", LogLevel.Trace);
 
@@ -38,8 +40,7 @@ export class MySQL2Integration extends RequireIntegration {
             // created by our shimmed createConnection
             conn[getIntegrationSymbol()] = integration;
 
-            // Shim the connection instance itself
-            integration.shimMySQL2ConnectionQuery(mysql2Export, conn);
+            conn = integration.shimMySQL2ConnectionQuery(mysql2Export, conn);
 
             return conn;
         };
@@ -58,15 +59,19 @@ export class MySQL2Integration extends RequireIntegration {
         const originalFn = conn.query;
         const integration = this;
 
-        const modified: any = function(this: Connection, sql, values, cb) {
+        const modified: any = function customizedQuery(this: Connection, sql, values, cb) {
             const originalArgs = arguments;
 
             // If no scout instance is available then run the function normally
+            console.log("DOING IT");
             if (!integration.scout) { return originalFn.bind(this)(sql, values, cb); }
 
             // Build a version of the query to take advantage of the string/object parsing of mysql
             const builtQuery = exports.createQuery(sql, values, cb, this.config);
             let ranFn = false;
+
+            console.log("ARGS?", originalArgs);
+            console.log("QUERY?", builtQuery);
 
             // Start the instrumentation
             integration.scout.instrument(ScoutSpanOperation.SQLQuery, stopSpan => {
@@ -92,6 +97,7 @@ export class MySQL2Integration extends RequireIntegration {
 
                 // Create a callback that will intercept the results
                 const wrappedCb = (err, results) => {
+                    console.log("DOING QUERY");
                     // If an error occurred mark the span as errored and then stop it
                     if (err) {
                         integration.logFn("[scout/integrations/mysql2] Query failed", LogLevel.Trace);
@@ -139,6 +145,43 @@ export class MySQL2Integration extends RequireIntegration {
         conn.query = modified;
         return conn;
     }
+
+    /**
+     * Shim for mysql's `createConnection` function
+     * since mysql handles everything from a connection instance this is where the shimming needs to happen
+     *
+     * @param {any} mysql2 - mysql2's main export
+     */
+    private shimMySQL2CreateConnectionPromise(mysql2Export: any): any {
+        // We need to shim the constructor of the connection class itself
+        const originalFn = mysql2Export.createConnectionPromise;
+        const integration = this;
+
+        const modifiedCtor = function(this: Connection, uriOrCfg: string | ConnectionConfig) {
+            return originalFn(uriOrCfg)
+                .then(conn => {
+                    if (integration) { integration.logFn("[scout/integrations/mysql2] Creating connection to Mysql db...", LogLevel.Trace); }
+
+                    // Shim the connection
+                    conn = integration.shimMySQL2ConnectionQuery(mysql2Export, conn);
+
+                    // Add the scout integration symbol so we know the connection itself has been
+                    // created by our shimmed createConnection
+                    conn[getIntegrationSymbol()] = integration;
+
+                    return conn;
+                })
+                .catch(err => {
+                    if (integration) { integration.logFn("[scout/integrations/pg] Failed to connect to the DB", LogLevel.Trace); }
+                    throw err;
+                });
+        };
+
+        // NOTE: we must manually replace the createConnection used by promise.js because
+        // it uses a dynamic require (which becomes a getter only) which sidesteps require-in-the-middle
+        return Object.assign({}, mysql2Export, {createConnectionPromise: modifiedCtor});
+    }
+
 }
 
 export default new MySQL2Integration();

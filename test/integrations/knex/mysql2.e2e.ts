@@ -1,8 +1,3 @@
-import { setupRequireIntegrations } from "../../../lib";
-// The hook for PG has to be triggered this way in a typescript context
-// since a partial import like { Client } will not trigger a require
-setupRequireIntegrations(["pg"]);
-
 import * as test from "tape";
 import * as TestUtil from "../../util";
 import * as Constants from "../../../lib/constants";
@@ -11,6 +6,8 @@ import {
     ScoutEvent,
     buildScoutConfiguration,
 } from "../../../lib/types";
+
+import { setupRequireIntegrations } from "../../../lib";
 
 import {
     Scout,
@@ -21,16 +18,26 @@ import {
 
 import { ScoutContextName } from "../../../lib/types";
 
-let PG_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
+// The hook for MYSQL has to be triggered this way in a typescript context
+// since a partial import like { Client } will not trigger a require
+setupRequireIntegrations(["mysql2"]);
+
+// The hook for MYSQL2 has to be triggered this way in a typescript context
+// since a partial import like { Client } will not trigger a require
+const mysql2 = require("mysql2");
+
+let MYSQL2_CONTAINER_AND_OPTS: TestUtil.ContainerAndOpts | null = null;
 
 import * as Knex from "knex";
 
-// Pseudo test that will start a containerized postgres instance
-TestUtil.startContainerizedPostgresTest(test, cao => {
-    PG_CONTAINER_AND_OPTS = cao;
-});
+// Pseudo test that will start a containerized mysql2 instance
+TestUtil.startContainerizedMySQLTest(
+    test,
+    cao => { MYSQL2_CONTAINER_AND_OPTS = cao; },
+    {mysqlPackageName: "mysql2"},
+);
 
-test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
+test("knex mysql2 createTable, insert, select", {timeout: TestUtil.MYSQL_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
@@ -51,6 +58,7 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
         if (!data || !data.request) { return; }
 
         const spans = data.request.getChildSpansSync();
+        console.log("SPANS:", spans);
         if (!spans || spans.length === 0) { return; }
 
         // Return immediately if we odn"t find any SQL/Query spans
@@ -97,21 +105,42 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
         .setup()
     // Start knex and perform queries
         .then(() => {
-            if (!PG_CONTAINER_AND_OPTS) { return; }
+            if (!MYSQL2_CONTAINER_AND_OPTS) { return; }
             return Knex({
-                client: "pg",
+                client: "mysql2",
                 connection: {
                     host: "localhost",
-                    port: PG_CONTAINER_AND_OPTS.opts.portBinding[5432],
-                    user: "postgres",
-                    password: "postgres",
-                    database: "postgres",
+                    port: MYSQL2_CONTAINER_AND_OPTS.opts.portBinding[3306],
+                    user: "root",
+                    password: "mysql",
+                    database: "mysql",
                 },
             });
         })
         .then(knexInstance => {
             if (!knexInstance) { throw new Error("failed to initialize knex"); }
             k = knexInstance;
+
+            return (k as any).context.client.driver.createConnectionPromise({
+                    host: "localhost",
+                    port: MYSQL2_CONTAINER_AND_OPTS!.opts.portBinding[3306],
+                    user: "root",
+                    password: "mysql",
+                    database: "mysql",
+            }).then(res => {
+
+                // TODO: fix, connection being made is somehow created *without*
+                // mysql2's normal Connection class (it is *not* a wrapped connection, though the shim is called)
+                // The connections produced by createConnectionPromise are creating connections some *other* way
+                
+                // console.log("driver?", (k as any).context.client.driver);
+                console.log("promise?", (k as any).context.client.driver.createConnectionPromise.toString());
+
+                // console.log("\n res:", res);
+                // console.log("\n res.query:", res.query);
+                // console.log("\n res.query.toString():", res.query.toString());
+                // console.log("\n res.connection:", res.connection);
+            });
         })
     // Create two tables, users and accounts
         .then(() => k.schema.createTable("users", table => {
@@ -139,10 +168,7 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
                 .select("users.user_name as user", "accounts.account_name as account");
         })
     // Ensure the rows match what we expect
-        .then((result) => {
-            console.log("result?", result);
-            // console.log("row?", row);
-            // console.log("something?", something);
+        .then(result => {
             t.equals(result[0].user, "scout", "returned username is scout");
             t.equals(result[0].account, "knex", "returned account is knex");
         })
@@ -150,5 +176,5 @@ test("knex pg createTable, insert, select", {timeout: TestUtil.PG_TEST_TIMEOUT_M
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
-// Pseudo test that will stop a containerized postgres instance that was started
-TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);
+// Pseudo test that will stop a containerized mysql instance that was started
+TestUtil.stopContainerizedMySQLTest(test, () => MYSQL2_CONTAINER_AND_OPTS);
