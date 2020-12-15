@@ -1,6 +1,6 @@
 {
   "name": "@scout_apm/scout-apm",
-  "version": "0.2.0",
+  "version": "0.2.1-rc.0",
   "description": "Scout APM Node Agent",
   "main": "dist/lib/index.js",
   "repository": "git@github.com:scoutapp/scout_apm_node.git",
@@ -24,17 +24,13 @@
     "build-watch": "./node_modules/.bin/tsc --watch -p tsconfig.json",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json",
     "test": "yarn lint && yarn test-unit && yarn test-int && yarn test-e2e && yarn test-integration-pg && yarn test-integration-mysql",
-
     "test-unit": "./node_modules/.bin/tape 'dist/test/**/*.unit.js'",
     "test-int": "./node_modules/.bin/tape 'dist/test/**/*.int.js'",
-
     "test-e2e": "./node_modules/.bin/tape 'dist/test/**/*.e2e.js'",
     "test-e2e-without-integration": "./node_modules/.bin/tape 'dist/test/*.e2e.js' 'dist/test/agents/**/*.e2e.js' 'dist/test/agent-downloaders/**/*.e2e.js' 'dist/test/scout/**/*.e2e.js'",
-
     "test-ext": "./node_modules/.bin/tape 'dist/test/**/*.ext.js'",
     "test-ext-memory": "./node_modules/.bin/tape 'dist/test/memory.ext.js'",
     "test-ext-dashboard-send": "./node_modules/.bin/tape 'dist/test/dashboard-send.ext.js'",
-
     "test-integration": "./node_modules/.bin/tape 'dist/test/integrations/*.e2e.js'",
     "test-integration-pg": "./node_modules/.bin/tape 'dist/test/integrations/pg.e2e.js'",
     "test-integration-mysql": "./node_modules/.bin/tape 'dist/test/integrations/mysql.e2e.js'",
@@ -100,7 +96,6 @@
     "fs-extra": "7.0.1",
     "generic-pool": "3.6.1",
     "hasha": "4.0.1",
-    "is-port-available": "^0.1.5",
     "nano-time": "^1.0.0",
     "on-finished": "2.3.0",
     "path-to-regexp": "^6.2.0",
@@ -109,6 +104,7 @@
     "semver": "^7.1.1",
     "snake-case": "3.0.2",
     "stacktrace-js": "^2.0.2",
+    "tcp-port-used": "^1.0.2",
     "tmp": "0.0.33",
     "tmp-promise": "1.0.5",
     "uuid": "3.3.2",

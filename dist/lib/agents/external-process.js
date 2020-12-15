@@ -10,7 +10,7 @@ const generic_pool_1 = require("generic-pool");
 const promise_timeout_1 = require("promise-timeout");
 const types_1 = require("../types");
 const responses_1 = require("../protocol/v1/responses");
-const isPortAvailable = require("is-port-available");
+const tcpPortUsed = require("tcp-port-used");
 const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
 const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
 class ExternalProcessAgent extends events_1.EventEmitter {
@@ -274,8 +274,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             return fs_extra_1.pathExists(this.getSocketPath());
         }
         if (this.opts.isTCPSocket()) {
-            return isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
-                .then(available => !available);
+            return tcpPortUsed(Constants.CORE_AGENT_TCP_DEFAULT_PORT);
         }
         return Promise.reject(new Errors.UnknownSocketType());
     }
