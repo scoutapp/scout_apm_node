@@ -638,10 +638,16 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             setTimeout(() => {
                 this.peerRunning()
                     .then(exists => {
-                        if (exists) {
-                            this.stopped = false;
-                            resolve(this);
+                        if (!exists) {
+                            this.logFn(
+                                "[scout/external-process] Failed to detect running core-agent peer",
+                                LogLevel.Error,
+                            );
+                            return;
                         }
+
+                        this.stopped = false;
+                        resolve(this);
                     })
                     .catch(reject);
             }, Constants.DEFAULT_BIN_STARTUP_WAIT_MS);

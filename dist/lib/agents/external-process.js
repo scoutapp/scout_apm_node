@@ -526,10 +526,12 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             setTimeout(() => {
                 this.peerRunning()
                     .then(exists => {
-                    if (exists) {
-                        this.stopped = false;
-                        resolve(this);
+                    if (!exists) {
+                        this.logFn("[scout/external-process] Failed to detect running core-agent peer", types_1.LogLevel.Error);
+                        return;
                     }
+                    this.stopped = false;
+                    resolve(this);
                 })
                     .catch(reject);
             }, Constants.DEFAULT_BIN_STARTUP_WAIT_MS);
