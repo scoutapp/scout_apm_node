@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1-rc.1] - 2020-12-16
+
+### Changed
+- Fix sudden exits on Mac OSX ([#256](https://github.com/scoutapp/scout_apm_node/issues/256))
+
 ## [0.2.0] - 2020-10-10
 
 ### Added
