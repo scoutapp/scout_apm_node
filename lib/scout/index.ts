@@ -6,7 +6,7 @@ import * as cls from "cls-hooked";
 import * as semver from "semver";
 import { pathExists } from "fs-extra";
 import { instrument as instrumentTrace } from "stacktrace-js";
-import * as tcpPortUsed from "tcp-port-used";
+import { check as tcpPortUsed } from "tcp-port-used";
 import * as getCPUUsage from "cpu-percentage";
 
 import {

@@ -27,7 +27,7 @@ import {
 import { V1AgentResponse, V1ApplicationEventResponse, V1RegisterResponse } from "../protocol/v1/responses";
 import { V1Register, V1ApplicationEvent } from "../protocol/v1/requests";
 
-import * as tcpPortUsed from "tcp-port-used";
+import { check as tcpPortUsed } from "tcp-port-used";
 
 const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
 const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
