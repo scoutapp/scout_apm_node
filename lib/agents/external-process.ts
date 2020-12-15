@@ -27,7 +27,7 @@ import {
 import { V1AgentResponse, V1ApplicationEventResponse, V1RegisterResponse } from "../protocol/v1/responses";
 import { V1Register, V1ApplicationEvent } from "../protocol/v1/requests";
 
-import * as isPortAvailable from "is-port-available";
+import { check as tcpPortUsed } from "tcp-port-used";
 
 const DOMAIN_SOCKET_CREATE_BACKOFF_MS = 3000;
 const DOMAIN_SOCKET_CREATE_ERR_THRESHOLD = 5;
@@ -347,8 +347,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         }
 
         if (this.opts.isTCPSocket()) {
-            return isPortAvailable(Constants.CORE_AGENT_TCP_DEFAULT_PORT)
-                .then(available => !available);
+            return tcpPortUsed(Constants.CORE_AGENT_TCP_DEFAULT_PORT);
         }
 
         return Promise.reject(new Errors.UnknownSocketType());
@@ -639,10 +638,16 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
             setTimeout(() => {
                 this.peerRunning()
                     .then(exists => {
-                        if (exists) {
-                            this.stopped = false;
-                            resolve(this);
+                        if (!exists) {
+                            this.logFn(
+                                "[scout/external-process] Failed to detect running core-agent peer",
+                                LogLevel.Error,
+                            );
+                            return;
                         }
+
+                        this.stopped = false;
+                        resolve(this);
                     })
                     .catch(reject);
             }, Constants.DEFAULT_BIN_STARTUP_WAIT_MS);

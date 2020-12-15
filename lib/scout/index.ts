@@ -6,7 +6,7 @@ import * as cls from "cls-hooked";
 import * as semver from "semver";
 import { pathExists } from "fs-extra";
 import { instrument as instrumentTrace } from "stacktrace-js";
-import * as isPortAvailable from "is-port-available";
+import { check as tcpPortUsed } from "tcp-port-used";
 import * as getCPUUsage from "cpu-percentage";
 
 import {
@@ -728,8 +728,7 @@ export class Scout extends EventEmitter {
         if (socketPath === AgentSocketType.TCP) {
             const [_, portRaw] = socketPath.split(":");
             const port = parseInt(portRaw, 10);
-            return isPortAvailable(port)
-                .then(available => !available);
+            return tcpPortUsed(port);
         }
 
         return Promise.reject(new Errors.UnknownSocketType());

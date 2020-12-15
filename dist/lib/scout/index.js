@@ -6,7 +6,7 @@ const process = require("process");
 const cls = require("cls-hooked");
 const semver = require("semver");
 const fs_extra_1 = require("fs-extra");
-const isPortAvailable = require("is-port-available");
+const tcp_port_used_1 = require("tcp-port-used");
 const getCPUUsage = require("cpu-percentage");
 const types_1 = require("../types");
 const global_1 = require("../global");
@@ -532,8 +532,7 @@ class Scout extends events_1.EventEmitter {
         if (socketPath === types_1.AgentSocketType.TCP) {
             const [_, portRaw] = socketPath.split(":");
             const port = parseInt(portRaw, 10);
-            return isPortAvailable(port)
-                .then(available => !available);
+            return tcp_port_used_1.check(port);
         }
         return Promise.reject(new Errors.UnknownSocketType());
     }
