@@ -95,6 +95,7 @@ For more information on configuration, see `docs/configuration.md`
 | `pg`       | STABLE | [Postgres](https://www.npmjs.com/package/postgres) database driver                   |
 | `express`  | STABLE | [Express](https://www.npmjs.com/package/express) web framework                       |
 | `nuxt`     | ALPHA  | [Nuxt](https://www.npmjs.com/package/nuxt) web framework                             |
+| `knex`     | ALPHA  | [`knex`](https://www.npmjs.com/package/knex) cross-platform SQL query builder        |
 
 ## Using `@scout_apm/scout-apm` with other frameworks ##
 

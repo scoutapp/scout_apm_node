@@ -9,6 +9,8 @@ import * as Constants from "../constants";
 type Client = any;
 type Query = any;
 
+type ConnectCallback = (err: Error, client: Client, done: (release?: any) => void) => void;
+
 // Hook into the express and mongodb module
 export class PGIntegration extends RequireIntegration {
     protected readonly packageName: string = "pg";
@@ -17,6 +19,7 @@ export class PGIntegration extends RequireIntegration {
         // Shim client
         pgExport = this.shimPGConnect(pgExport);
         pgExport = this.shimPGQuery(pgExport);
+        pgExport = this.shimPGConnection(pgExport);
 
         // Add the integration symbol to the client class itself
         pgExport.Client[getIntegrationSymbol()] = this;
@@ -35,30 +38,40 @@ export class PGIntegration extends RequireIntegration {
         const originalConnectFn = Client.prototype.connect;
         const integration = this;
 
-        const fn: any = function(this: Client, userCallback?: (err?: Error) => void) {
+        const fn: any = function(this: Client, userCallback?: ConnectCallback) {
             integration.logFn("[scout/integrations/pg] Connecting to Postgres db...", LogLevel.Trace);
+
+            console.log("DOING A CONNECT");
 
             // If a callback was specified we need to do callback version
             if (userCallback) {
+                // console.log("USER CALLBACK WAS SPECIFIED", originalConnectFn.toString());
+                // console.log("CB?", userCallback.toString());
+                console.log("args?", arguments);
+
                 return originalConnectFn.apply(this, [
-                    err => {
+                    function(this: any, err) {
                         if (err) {
                             integration.logFn(
                                 "[scout/integrations/pg] Connection to Postgres db failed",
                                 LogLevel.Trace,
                             );
-                            userCallback(err);
+
+                            userCallback.apply(this, arguments as any);
                             return;
                         }
-                        userCallback();
+
+                        console.log("APPLYING NO ERR");
+                        userCallback.apply(this, arguments as any);
                     },
                 ]);
             }
 
             // Promise version
             return originalConnectFn.apply(this, [])
-                .then(() => {
+                .then(result => {
                     integration.logFn("[scout/integrations/pg] Successfully connected to Postgres db", LogLevel.Trace);
+                    return result;
                 })
                 .catch(err => {
                     integration.logFn("[scout/integrations/pg] Connection to Postgres db failed", LogLevel.Trace);
@@ -149,6 +162,26 @@ export class PGIntegration extends RequireIntegration {
         };
 
         Client.prototype.query = fn;
+
+        return pgExport;
+    }
+
+    /**
+     * Shim for pg's `Conenction` class
+     *
+     * @param {any} pgExport - pg's exports
+     */
+    private shimPGConnection(pgExport: any): any {
+        const originalCtor = pgExport.Connection;
+        const integration = this;
+
+        // By the time this function runs we *should* have a scout instance set.
+        const modified = function(this: any) {
+            console.log("Creating connection!");
+            return originalCtor.apply(this, arguments);
+        };
+
+        pgExport.Connection = modified;
 
         return pgExport;
     }

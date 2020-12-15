@@ -24,18 +24,14 @@
     "build-watch": "./node_modules/.bin/tsc --watch -p tsconfig.json",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json",
     "test": "yarn lint && yarn test-unit && yarn test-int && yarn test-e2e && yarn test-integration-pg && yarn test-integration-mysql",
-
     "test-unit": "./node_modules/.bin/tape 'dist/test/**/*.unit.js'",
     "test-int": "./node_modules/.bin/tape 'dist/test/**/*.int.js'",
-
     "test-e2e": "./node_modules/.bin/tape 'dist/test/**/*.e2e.js'",
     "test-e2e-without-integration": "./node_modules/.bin/tape 'dist/test/*.e2e.js' 'dist/test/agents/**/*.e2e.js' 'dist/test/agent-downloaders/**/*.e2e.js' 'dist/test/scout/**/*.e2e.js'",
-
     "test-ext": "./node_modules/.bin/tape 'dist/test/**/*.ext.js'",
     "test-ext-memory": "./node_modules/.bin/tape 'dist/test/memory.ext.js'",
     "test-ext-dashboard-send": "./node_modules/.bin/tape 'dist/test/dashboard-send.ext.js'",
-
-    "test-integration": "./node_modules/.bin/tape 'dist/test/integrations/*.e2e.js'",
+    "test-integration": "./node_modules/.bin/tape 'dist/test/integrations/**/*.e2e.js'",
     "test-integration-pg": "./node_modules/.bin/tape 'dist/test/integrations/pg.e2e.js'",
     "test-integration-mysql": "./node_modules/.bin/tape 'dist/test/integrations/mysql.e2e.js'",
     "test-integration-mysql2": "./node_modules/.bin/tape 'dist/test/integrations/mysql2.e2e.js'",
@@ -53,12 +49,14 @@
   "devDependencies": {
     "@types/express": "^4.16.1",
     "@types/mysql": "^2.15.8",
+    "@types/pg": "^7.14.5",
     "@types/supertest": "^2.0.7",
     "app-root-dir": "^1.0.2",
     "ejs": "^3.0.1",
     "express": "^4.16.4",
     "get-port": "^5.1.0",
     "http-proxy-middleware": "^1.0.4",
+    "knex": "^0.21.6",
     "loadtest": "^5.1.0",
     "mustache": "^4.0.0",
     "mustache-express": "^1.3.0",
