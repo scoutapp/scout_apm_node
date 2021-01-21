@@ -725,10 +725,10 @@ export class Scout extends EventEmitter {
             return pathExists(socketPath);
         }
 
-        if (socketPath === AgentSocketType.TCP) {
-            const [_, portRaw] = socketPath.split(":");
-            const port = parseInt(portRaw, 10);
-            return tcpPortUsed(port);
+        if (socketType === AgentSocketType.TCP) {
+          const [_, __, portRaw] = socketPath.split(":");
+          const port = parseInt(portRaw, 10);
+          return tcpPortUsed(port);
         }
 
         return Promise.reject(new Errors.UnknownSocketType());
