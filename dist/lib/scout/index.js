@@ -529,8 +529,8 @@ class Scout extends events_1.EventEmitter {
         if (socketType === types_1.AgentSocketType.Unix) {
             return fs_extra_1.pathExists(socketPath);
         }
-        if (socketPath === types_1.AgentSocketType.TCP) {
-            const [_, portRaw] = socketPath.split(":");
+        if (socketType === types_1.AgentSocketType.TCP) {
+            const [_, __, portRaw] = socketPath.split(":");
             const port = parseInt(portRaw, 10);
             return tcp_port_used_1.check(port);
         }
