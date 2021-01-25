@@ -95,6 +95,7 @@ For more information on configuration, see `docs/configuration.md`
 | `pg`       | STABLE | [Postgres](https://www.npmjs.com/package/postgres) database driver                   |
 | `express`  | STABLE | [Express](https://www.npmjs.com/package/express) web framework                       |
 | `nuxt`     | ALPHA  | [Nuxt](https://www.npmjs.com/package/nuxt) web framework                             |
+| `nest`     | ALPHA  | [Nest](https://www.nestjs.com) web framework                                         |
 
 ## Using `@scout_apm/scout-apm` with other frameworks ##
 
