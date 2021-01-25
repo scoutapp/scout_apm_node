@@ -34,8 +34,10 @@ class Scout extends events_1.EventEmitter {
         this.syncCurrentSpan = null;
         this.cpuUsageStart = getCPUUsage();
         this.config = config || types_1.buildScoutConfiguration();
-        this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
         if (opts) {
+            if (opts.logFn) {
+                this.logFn = opts.logFn;
+            }
             if (opts.downloadOptions) {
                 this.downloaderOptions = opts.downloadOptions;
             }
@@ -54,12 +56,25 @@ class Scout extends events_1.EventEmitter {
         // Build expected bin & socket path based on current version
         const triple = types_1.generateTriple();
         this.binPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, `scout_apm_core-v${version}-${triple}`, Constants.CORE_AGENT_BIN_FILE_NAME);
-        // If the logFn that is provided has a 'logger' attempt to set the log level to the passed in logger's level
+        // If the passed-in logging function (saved @ logFn) has a 'logger' property which has a correposnding level
+        // attempt to set the log level to the passed in logger's level
         if (this.logFn && this.logFn.logger && this.logFn.logger.level && types_1.isLogLevel(this.logFn.logger.level)) {
             this.config.logLevel = types_1.parseLogLevel(this.logFn.logger.level);
         }
         // Create async namespace if it does not exist
         this.createAsyncNamespace();
+    }
+    log(message, level = types_1.LogLevel.Info) {
+        if (!this.logFn) {
+            return;
+        }
+        if (!this.config || !this.config.logLevel) {
+            return;
+        }
+        if (types_1.isIgnoredLogMessage(this.config.logLevel, level)) {
+            return;
+        }
+        return this.logFn(message, level);
     }
     get socketPath() {
         if (this.config.socketPath) {
@@ -148,9 +163,6 @@ class Scout extends events_1.EventEmitter {
     }
     getSlowRequestThresholdMs() {
         return this.slowRequestThresholdMs;
-    }
-    log(msg, lvl) {
-        this.logFn(msg, lvl);
     }
     /**
      * Helper to facilitate non-blocking setup
@@ -565,14 +577,14 @@ class Scout extends events_1.EventEmitter {
             // Build process options and agent
             .then(() => {
             this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
-            return new external_process_1.default(this.processOptions, this.logFn);
+            return new external_process_1.default(this.processOptions, this.log);
         })
             .then(agent => this.setupAgent(agent));
     }
     // Helper for downloading and launching an agent
     downloadAndLaunchAgent() {
         this.log(`[scout] downloading and launching agent`, types_1.LogLevel.Debug);
-        this.downloader = new web_1.default({ logFn: this.logFn });
+        this.downloader = new web_1.default({ logFn: this.log });
         // Ensure coreAgentVersion is present
         if (!this.config.coreAgentVersion) {
             const err = new Error("No core agent version specified!");
@@ -595,7 +607,7 @@ class Scout extends events_1.EventEmitter {
             // Build options for the agent and create the agent
             .then(() => {
             this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
-            const agent = new external_process_1.default(this.processOptions, this.logFn);
+            const agent = new external_process_1.default(this.processOptions, this.log);
             if (!agent) {
                 throw new Errors.NoAgentPresent();
             }

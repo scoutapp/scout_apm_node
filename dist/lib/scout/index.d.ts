@@ -44,6 +44,7 @@ export declare class Scout extends EventEmitter {
     private statsIntervalMS?;
     private cpuUsageStart;
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions);
+    log(message: string, level?: LogLevel): void;
     private get socketPath();
     protected getDefaultSocketFilePath(): string;
     /**
@@ -66,7 +67,6 @@ export declare class Scout extends EventEmitter {
     getConfig(): Partial<ScoutConfiguration>;
     getAgent(): ExternalProcessAgent | null;
     getSlowRequestThresholdMs(): number;
-    log(msg: string, lvl: LogLevel): void;
     /**
      * Helper to facilitate non-blocking setup
      *

@@ -7,6 +7,23 @@ function convertCamelCaseToEnvVar(prop) {
     return `SCOUT_${snake_case_1.snakeCase(prop).toUpperCase()}`;
 }
 exports.convertCamelCaseToEnvVar = convertCamelCaseToEnvVar;
+exports.LOG_LEVEL_VALUE = {
+    [enum_1.LogLevel.Error]: 0,
+    [enum_1.LogLevel.Warn]: 1,
+    [enum_1.LogLevel.Info]: 2,
+    [enum_1.LogLevel.Debug]: 3,
+    [enum_1.LogLevel.Trace]: 4,
+};
+function isIgnoredLogMessage(applicationLevel, messageLevel) {
+    if (!(applicationLevel in exports.LOG_LEVEL_VALUE)) {
+        return false;
+    }
+    if (!(messageLevel in exports.LOG_LEVEL_VALUE)) {
+        return false;
+    }
+    return exports.LOG_LEVEL_VALUE[messageLevel] > exports.LOG_LEVEL_VALUE[applicationLevel];
+}
+exports.isIgnoredLogMessage = isIgnoredLogMessage;
 /**
  * Default implementation for logging simple messages to console
  *
