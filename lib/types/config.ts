@@ -240,7 +240,7 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
 
     coreAgentDownload: true,
     coreAgentLaunch: true,
-    coreAgentLogLevel: LogLevel.Info,
+    coreAgentLogLevel: LogLevel.Error,
     coreAgentPermissions: 700,
     coreAgentVersion: "v1.3.0", // can be exact tag name, or 'latest'
 

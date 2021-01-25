@@ -179,7 +179,7 @@ exports.DEFAULT_SCOUT_CONFIGURATION = {
     appServer: "",
     coreAgentDownload: true,
     coreAgentLaunch: true,
-    coreAgentLogLevel: enum_1.LogLevel.Info,
+    coreAgentLogLevel: enum_1.LogLevel.Error,
     coreAgentPermissions: 700,
     coreAgentVersion: "v1.3.0",
     disabledInstruments: [],

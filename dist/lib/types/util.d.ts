@@ -7,6 +7,14 @@ export interface LogFn {
 }
 export declare type JSONValue = object | string | number | boolean;
 export declare function convertCamelCaseToEnvVar(prop: string): string;
+export declare const LOG_LEVEL_VALUE: {
+    [LogLevel.Error]: number;
+    [LogLevel.Warn]: number;
+    [LogLevel.Info]: number;
+    [LogLevel.Debug]: number;
+    [LogLevel.Trace]: number;
+};
+export declare function isIgnoredLogMessage(applicationLevel: LogLevel, messageLevel: LogLevel): boolean;
 /**
  * Default implementation for logging simple messages to console
  *

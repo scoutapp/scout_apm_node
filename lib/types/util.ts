@@ -15,6 +15,21 @@ export function convertCamelCaseToEnvVar(prop: string): string {
     return `SCOUT_${snakeCase(prop).toUpperCase()}`;
 }
 
+export const LOG_LEVEL_VALUE = {
+  [LogLevel.Error]: 0,
+  [LogLevel.Warn]: 1,
+  [LogLevel.Info]: 2,
+  [LogLevel.Debug]: 3,
+  [LogLevel.Trace]: 4,
+};
+
+export function isIgnoredLogMessage(applicationLevel: LogLevel, messageLevel: LogLevel): boolean {
+    if (!(applicationLevel in LOG_LEVEL_VALUE)) { return false; }
+    if (!(messageLevel in LOG_LEVEL_VALUE)) { return false; }
+
+    return LOG_LEVEL_VALUE[messageLevel] > LOG_LEVEL_VALUE[applicationLevel];
+}
+
 /**
  * Default implementation for logging simple messages to console
  *

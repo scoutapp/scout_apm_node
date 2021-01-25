@@ -38,6 +38,7 @@ import {
     parseLogLevel,
     scrubRequestPath,
     scrubRequestPathParams,
+    isIgnoredLogMessage,
 } from "../types";
 import { setActiveGlobalScoutInstance, EXPORT_BAG } from "../global";
 import { getIntegrationForPackage } from "../integrations";
@@ -126,9 +127,10 @@ export class Scout extends EventEmitter {
         super();
 
         this.config = config || buildScoutConfiguration();
-        this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
 
         if (opts) {
+            if (opts.logFn) { this.logFn = opts.logFn; }
+
             if (opts.downloadOptions) { this.downloaderOptions = opts.downloadOptions; }
             if (opts.slowRequestThresholdMs) { this.slowRequestThresholdMs = opts.slowRequestThresholdMs; }
             if (opts.statisticsIntervalMS) { this.statsIntervalMS  = opts.statisticsIntervalMS; }
@@ -150,13 +152,25 @@ export class Scout extends EventEmitter {
             Constants.CORE_AGENT_BIN_FILE_NAME,
         );
 
-        // If the logFn that is provided has a 'logger' attempt to set the log level to the passed in logger's level
+        // If the passed-in logging function (saved @ logFn) has a 'logger' property which has a correposnding level
+        // attempt to set the log level to the passed in logger's level
         if (this.logFn && this.logFn.logger && this.logFn.logger.level && isLogLevel(this.logFn.logger.level)) {
             this.config.logLevel = parseLogLevel(this.logFn.logger.level);
         }
 
         // Create async namespace if it does not exist
         this.createAsyncNamespace();
+    }
+
+    public log(message: string, level: LogLevel = LogLevel.Info) {
+        if (!this.logFn) { return; }
+        if (!this.config || !this.config.logLevel) { return; }
+
+        if (isIgnoredLogMessage(this.config.logLevel, level)) {
+            return;
+        }
+
+        return this.logFn(message, level);
     }
 
     private get socketPath() {
@@ -268,10 +282,6 @@ export class Scout extends EventEmitter {
 
     public getSlowRequestThresholdMs(): number {
         return this.slowRequestThresholdMs;
-    }
-
-    public log(msg: string, lvl: LogLevel) {
-        this.logFn(msg, lvl);
     }
 
     /**
@@ -770,7 +780,7 @@ export class Scout extends EventEmitter {
                     buildProcessOptions(this.config),
                 );
 
-                return new ExternalProcessAgent(this.processOptions, this.logFn);
+                return new ExternalProcessAgent(this.processOptions, this.log);
             })
             .then(agent => this.setupAgent(agent));
     }
@@ -778,7 +788,7 @@ export class Scout extends EventEmitter {
     // Helper for downloading and launching an agent
     private downloadAndLaunchAgent(): Promise<ExternalProcessAgent> {
         this.log(`[scout] downloading and launching agent`, LogLevel.Debug);
-        this.downloader = new WebAgentDownloader({logFn: this.logFn});
+        this.downloader = new WebAgentDownloader({logFn: this.log});
 
         // Ensure coreAgentVersion is present
         if (!this.config.coreAgentVersion) {
@@ -814,7 +824,7 @@ export class Scout extends EventEmitter {
                     buildProcessOptions(this.config),
                 );
 
-                const agent = new ExternalProcessAgent(this.processOptions, this.logFn);
+                const agent = new ExternalProcessAgent(this.processOptions, this.log);
                 if (!agent) { throw new Errors.NoAgentPresent(); }
 
                 return this.setupAgent(agent);
