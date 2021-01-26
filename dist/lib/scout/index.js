@@ -433,7 +433,7 @@ class Scout extends events_1.EventEmitter {
                     }
                     // It's possible that an error happened *before* the callback could be run
                     if (!ranCb) {
-                        result = cb(() => span.stop(), { span, request, parent });
+                        result = cb(() => span && span.stop(), { span, request, parent });
                     }
                     this.log("[scout] failed to send start span", types_1.LogLevel.Error);
                     // Ensure that the result is a promise
