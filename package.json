@@ -22,7 +22,7 @@
   "scripts": {
     "build": "./node_modules/.bin/tsc -p tsconfig.json",
     "build-watch": "./node_modules/.bin/tsc --watch -p tsconfig.json",
-    "lint": "./node_modules/.bin/tslint -p tsconfig.json",
+    "lint": "./node_modules/.bin/eslint --ext .ts .",
     "test": "yarn lint && yarn test-unit && yarn test-int && yarn test-e2e && yarn test-integration-pg && yarn test-integration-mysql",
     "test-unit": "./node_modules/.bin/tape 'dist/test/**/*.unit.js'",
     "test-int": "./node_modules/.bin/tape 'dist/test/**/*.int.js'",
@@ -50,8 +50,11 @@
     "@types/express": "^4.16.1",
     "@types/mysql": "^2.15.8",
     "@types/supertest": "^2.0.7",
+    "@typescript-eslint/eslint-plugin": "^4.31.0",
+    "@typescript-eslint/parser": "^4.31.0",
     "app-root-dir": "^1.0.2",
     "ejs": "^3.0.1",
+    "eslint": "^7.32.0",
     "express": "^4.16.4",
     "get-port": "^5.1.0",
     "http-proxy-middleware": "^1.0.4",
@@ -69,7 +72,6 @@
     "supertest": "^4.0.2",
     "tape": "^4.12.1",
     "tempfile": "^3.0.0",
-    "tslint": "^5.14.0",
     "typescript": "^3.7.3"
   },
   "dependencies": {

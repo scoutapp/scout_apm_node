@@ -111,7 +111,6 @@ class ApplicationMetadata {
                     }
                     catch (_a) {
                         // If the require has failed or package.json is malformed
-                        // tslint:disable-next-line:no-console
                         console.log(`package.json at [${pkgJsonPath}] is malformed/couldn't be read`);
                     }
                     return;
@@ -137,7 +136,6 @@ class ApplicationMetadata {
                     }
                     catch (_b) {
                         // If the require has failed or package.json is malformed
-                        // tslint:disable-next-line:no-console
                         console.log(`package.json at [${pkgJsonPath}] is malformed/couldn't be read`);
                     }
                     return;

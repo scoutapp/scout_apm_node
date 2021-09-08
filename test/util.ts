@@ -145,7 +145,7 @@ export function waitForAgentBufferFlush(t?: Test): Promise<void> {
 export function shutdownScout(t: Test, scout: Scout, err?: Error): Promise<void> {
     return scout.shutdown()
         .then(() => {
-            if (err) { console.log("ERROR:", err); } // tslint:disable-line no-console
+            if (err) { console.log("ERROR:", err); }
             t.end(err);
         });
 }

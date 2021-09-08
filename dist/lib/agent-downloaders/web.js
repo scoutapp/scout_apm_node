@@ -4,7 +4,6 @@ const download = require("download");
 const path = require("path");
 const types_1 = require("../types");
 const fs = require("fs-extra");
-// tslint:disable-next-line no-var-requires
 const hasha = require("hasha");
 const types_2 = require("../types");
 const Errors = require("../errors");

@@ -81,8 +81,8 @@ $ make dev-setup
 `Makefile`に開発してる時に便利なコマンドも含めています:
 
 ```
-$ make lint # tslint実行
-$ make lint-watch # 継続的にtslint実行
+$ make lint # eslint実行
+$ make lint-watch # 継続的にeslint実行
 
 $ make build # tsc(タイプスクリプトのコンパイラ)実行
 $ make build-watch # 継続的にtsc実行

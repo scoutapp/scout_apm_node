@@ -144,8 +144,8 @@ This will set up the necessary environment (including git hooks) to get started 
 This repository comes with a few development aids pre-installed, via `make` targets:
 
 ```
-$ make lint # run tslint (a typescript linter
-$ make lint-watch # run tslint continuously
+$ make lint # run eslint (a typescript linter
+$ make lint-watch # run eslint continuously
 
 $ make build # run tsc (the typescript compiler)
 $ make build-watch # run tsc continuously

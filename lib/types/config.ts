@@ -117,7 +117,6 @@ export class ApplicationMetadata {
                         this.libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
                     } catch {
                         // If the require has failed or package.json is malformed
-                        // tslint:disable-next-line:no-console
                         console.log(`package.json at [${pkgJsonPath}] is malformed/couldn't be read`);
                     }
                     return;
@@ -147,7 +146,6 @@ export class ApplicationMetadata {
                         this.libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
                     } catch {
                         // If the require has failed or package.json is malformed
-                        // tslint:disable-next-line:no-console
                         console.log(`package.json at [${pkgJsonPath}] is malformed/couldn't be read`);
                     }
                     return;

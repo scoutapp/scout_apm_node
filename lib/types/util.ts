@@ -43,19 +43,19 @@ export function consoleLogFn(message: string, level?: LogLevel) {
 
     switch (level) {
         case LogLevel.Warn:
-            console.warn(msg); // tslint:disable-line no-console
+            console.warn(msg);
             break;
         case LogLevel.Error:
-            console.error(msg); // tslint:disable-line no-console
+            console.error(msg);
             break;
         case LogLevel.Debug:
-            console.debug(msg); // tslint:disable-line no-console
+            console.debug(msg);
             break;
         case LogLevel.Trace:
-            console.trace(msg); // tslint:disable-line no-console
+            console.trace(msg);
             break;
         default:
-            console.log(msg); // tslint:disable-line no-console
+            console.log(msg);
     }
 }
 

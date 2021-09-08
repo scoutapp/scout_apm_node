@@ -6,7 +6,6 @@ import { mkdtemp, createReadStream } from "fs";
 import { PlatformTriple, detectPlatformTriple } from "../types";
 import * as fs from "fs-extra";
 
-// tslint:disable-next-line no-var-requires
 const hasha = require("hasha");
 
 import {

@@ -61,7 +61,6 @@ function getOrCreateActiveGlobalScoutInstance(config, opts) {
     }
     // If no configuration was passed for scout, alert the user
     if (!config) {
-        // tslint:disable-next-line no-console
         console.log("[scout] no configuration provided, one will be created from ENV & defaults");
     }
     // If config and/or opts weren't provided but they *were* provided previously to a different setup method

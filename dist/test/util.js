@@ -107,7 +107,7 @@ function shutdownScout(t, scout, err) {
         .then(() => {
         if (err) {
             console.log("ERROR:", err);
-        } // tslint:disable-line no-console
+        }
         t.end(err);
     });
 }
