@@ -41,9 +41,8 @@
     "test-integration-express": "./node_modules/.bin/tape 'dist/test/integrations/express.e2e.js'",
     "test-integration-nuxt": "./node_modules/.bin/tape 'dist/test/integrations/nuxt.e2e.js'"
   },
-  "types": "index.d.ts",
+  "types": "dist/lib/index.d.ts",
   "files": [
-    "index.d.ts",
     "dist/lib/**/*"
   ],
   "devDependencies": {
