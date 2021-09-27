@@ -43,6 +43,7 @@
   },
   "types": "dist/lib/index.d.ts",
   "files": [
+    "index.d.ts",
     "dist/lib/**/*"
   ],
   "devDependencies": {
