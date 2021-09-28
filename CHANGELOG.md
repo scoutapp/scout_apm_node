@@ -6,7 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.2] - 2020-08-28
+## [0.2.3] - 2021-09-28
+
+### Changes
+- bugfix/270 Fix types field in package.json ([#270](https://github.com/scoutapp/scout_apm_node/issues/270))
+
+## [0.2.2] - 2021-01-28
 
 ### Changed
 -  See `v0.2.2-rc.0` -> `v0.2.2-rc.1` changes
@@ -178,7 +183,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.2-rc.1...v0.2.2
 [0.2.2-rc.1]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.2-rc.0...v0.2.2-rc.1
 [0.2.2-rc.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.1...v0.2.2-rc.0
