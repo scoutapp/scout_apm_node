@@ -560,7 +560,6 @@ class Scout extends events_1.EventEmitter {
             this.asyncNamespace.set(key, undefined);
         }
         catch (_a) {
-            this.logFn("failed to clear async namespace", types_1.LogLevel.Debug);
         }
     }
     // Helper for creating an ExternalProcessAgent for an existing, listening agent
