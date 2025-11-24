@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.MySQLIntegration = void 0;
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
@@ -26,7 +27,7 @@ class MySQLIntegration extends integrations_1.RequireIntegration {
             integration.logFn("[scout/integrations/mysql] Creating connection to Mysql db...", types_1.LogLevel.Trace);
             // Add the scout integration symbol so we know the connection itself has been
             // created by our shimmed createConnection
-            connection[integrations_1.getIntegrationSymbol()] = this;
+            connection[(0, integrations_1.getIntegrationSymbol)()] = this;
             // Shim the connection instance itself
             return integration.shimMySQLConnectionQuery(mysqlExport, connection);
         };

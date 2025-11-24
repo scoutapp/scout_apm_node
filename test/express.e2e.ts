@@ -1,7 +1,7 @@
-import * as test from "tape";
+import test from "tape";
 import * as TestUtil from "./util";
 import * as Constants from "../lib/constants";
-import * as request from "supertest";
+import request from "supertest";
 
 import { Application } from "express";
 import { scoutMiddleware, ApplicationWithScout } from "../lib/express";

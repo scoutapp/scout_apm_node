@@ -1,13 +1,49 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const lib_1 = require("../../lib");
 // The hook for PG has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
-lib_1.setupRequireIntegrations(["pg"]);
+(0, lib_1.setupRequireIntegrations)(["pg"]);
 const pg_1 = require("pg");
 const sequelize_1 = require("sequelize");
-const test = require("tape");
-const TestUtil = require("../util");
+const tape_1 = __importDefault(require("tape"));
+const TestUtil = __importStar(require("../util"));
 const integrations_1 = require("../../lib/types/integrations");
 const types_1 = require("../../lib/types");
 const scout_1 = require("../../lib/scout");
@@ -16,16 +52,16 @@ const fixtures_1 = require("../fixtures");
 let PG_CONTAINER_AND_OPTS = null;
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // it may break if import order is changed (require hook would not have taken place)
-test("the shim works", t => {
-    t.assert(pg_1.Client[integrations_1.getIntegrationSymbol()], "client has the integration symbol");
+(0, tape_1.default)("the shim works", t => {
+    t.assert(pg_1.Client[(0, integrations_1.getIntegrationSymbol)()], "client has the integration symbol");
     t.end();
 });
 // Pseudo test that will start a containerized postgres instance
-TestUtil.startContainerizedPostgresTest(test, cao => {
+TestUtil.startContainerizedPostgresTest(tape_1.default, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
-test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
@@ -78,8 +114,8 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
             .then(() => TestUtil.shutdownScout(t, scout, err));
     });
 });
-test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
@@ -151,8 +187,8 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
     });
 });
 // https://github.com/scoutapp/scout_apm_node/issues/191
-test("sequelize basic authenticate works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("sequelize basic authenticate works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
@@ -207,8 +243,8 @@ test("sequelize basic authenticate works", { timeout: TestUtil.PG_TEST_TIMEOUT_M
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/191
-test("sequelize library works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("sequelize library works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
@@ -288,4 +324,4 @@ test("sequelize library works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // Pseudo test that will stop a containerized postgres instance that was started
-TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);
+TestUtil.stopContainerizedPostgresTest(tape_1.default, () => PG_CONTAINER_AND_OPTS);

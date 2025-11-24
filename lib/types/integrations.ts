@@ -1,4 +1,4 @@
-import * as Hook from "require-in-the-middle";
+import { Hook } from "require-in-the-middle";
 
 import { Scout } from "../scout";
 import { LogFn } from "./util";
@@ -39,7 +39,7 @@ export abstract class RequireIntegration {
      * @param {ExportBag} exportBag - The bag of exports that have been shimmed by scout already
      */
     public ritmHook(exportBag: ExportBag): void {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
+        new Hook([this.getPackageName()], (exports, name, basedir) => {
             // Set the scout instsance to the global one if there is one
             // this is needed in cases where require()s are run dynamically, long after scout.setup()
             // we assume that scout.setup() will set *one* instance of scout to be the global one
@@ -56,14 +56,14 @@ export abstract class RequireIntegration {
             }
 
             // If the shim has already been run, then finish
-            if (!exports || getIntegrationSymbol() in exports) {
+            if (!exports || (typeof exports === 'object' && getIntegrationSymbol() in exports)) {
                 return exports;
             }
 
             const sym = getIntegrationSymbol();
 
             // Check if the shim has already been performed
-            if (sym in exports) { return exports; }
+            if (typeof exports === 'object' && sym in exports) { return exports; }
 
             // Make changes to the mysql2 package to enable integration
             exports = this.shim(exports);

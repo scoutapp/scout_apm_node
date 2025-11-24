@@ -9,25 +9,52 @@
  * and the ENV variable SCOUT_KEY should be provided
  *
  */
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const test = require("tape");
+const tape_1 = __importDefault(require("tape"));
 const randomstring_1 = require("randomstring");
 const child_process_1 = require("child_process");
 const getPort = require("get-port");
-const TestUtil = require("./util");
+const TestUtil = __importStar(require("./util"));
 const fixtures_1 = require("./fixtures");
 const loadtest_1 = require("loadtest");
 const util_1 = require("util");
-const loadTest = util_1.promisify(loadtest_1.loadTest);
+const loadTest = (0, util_1.promisify)(loadtest_1.loadTest);
 const LOAD_TEST_CONCURRENCY = parseInt(process.env.LOAD_TEST_CONCURRENCY || "5", 10);
 const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS || "20", 10);
 const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "120", 10);
@@ -45,7 +72,7 @@ const DEFAULT_LOADTEST_OPTIONS = {
     maxSeconds: LOAD_TEST_DURATION_SECONDS,
 };
 // https://github.com/scoutapp/scout_apm_node/issues/239
-test("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS }, (t) => __awaiter(void 0, void 0, void 0, function* () {
+(0, tape_1.default)("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS }, async (t) => {
     // Ensure SCOUT_KEY was provided
     if (!process.env.SCOUT_KEY) {
         const err = new Error("Invalid/missing SCOUT_KEY ENV variable");
@@ -61,13 +88,13 @@ test("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS },
             memoryUsage: {},
         },
     };
-    const testName = `memory-leak-test-${randomstring_1.generate(5)}`;
+    const testName = `memory-leak-test-${(0, randomstring_1.generate)(5)}`;
     // Launch a small express application as a child process *without* scout
     const expressENV = {
-        PORT: yield getPort(),
+        PORT: await getPort(),
         SCOUT_NAME: `${testName}-no-scout`,
     };
-    const expressProcess = child_process_1.fork(fixtures_1.FILE_PATHS.EXPRESS_APP_PATH, [], {
+    const expressProcess = (0, child_process_1.fork)(fixtures_1.FILE_PATHS.EXPRESS_APP_PATH, [], {
         env: expressENV,
     });
     t.comment(`app without scout started (PID: [${expressProcess.pid}])`);
@@ -75,17 +102,17 @@ test("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS },
         if (!payload) {
             return;
         }
-        if (typeof payload === "object" && payload.msgType === "memory-usage-report") {
+        if (typeof payload === "object" && 'msgType' in payload && payload.msgType === "memory-usage-report") {
             stats.express.memoryUsage = JSON.parse(payload.memoryUsageJSON);
         }
     });
     // Launch small express application as a child process *with* scout
     const expressWithScoutENV = {
-        PORT: yield getPort(),
+        PORT: await getPort(),
         SCOUT_KEY: process.env.SCOUT_KEY,
         SCOUT_NAME: `${testName}-with-scout`,
     };
-    const expressWithScoutProcess = child_process_1.fork(fixtures_1.FILE_PATHS.EXPRESS_APP_WITH_SCOUT_PATH, [], {
+    const expressWithScoutProcess = (0, child_process_1.fork)(fixtures_1.FILE_PATHS.EXPRESS_APP_WITH_SCOUT_PATH, [], {
         env: expressWithScoutENV,
     });
     t.comment(`app with scout started (PID: [${expressWithScoutProcess.pid}])`);
@@ -93,20 +120,26 @@ test("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS },
         if (!payload) {
             return;
         }
-        if (typeof payload === "object" && payload.msgType === "memory-usage-report") {
+        if (typeof payload === "object" && 'msgType' in payload && payload.msgType === "memory-usage-report") {
             stats.expressWithScout.memoryUsage = JSON.parse(payload.memoryUsageJSON);
         }
     });
     // Load test the first application (without scout)
-    yield loadTest(Object.assign(Object.assign({}, DEFAULT_LOADTEST_OPTIONS), { url: `http://localhost:${expressENV.PORT}` }));
+    await loadTest({
+        ...DEFAULT_LOADTEST_OPTIONS,
+        url: `http://localhost:${expressENV.PORT}`,
+    });
     // Get the memory usage after load testing
     expressProcess.send("report-memory-usage");
-    yield TestUtil.waitMs(100);
+    await TestUtil.waitMs(100);
     // Load test the application with scout
-    yield loadTest(Object.assign(Object.assign({}, DEFAULT_LOADTEST_OPTIONS), { url: `http://localhost:${expressWithScoutENV.PORT}` }));
+    await loadTest({
+        ...DEFAULT_LOADTEST_OPTIONS,
+        url: `http://localhost:${expressWithScoutENV.PORT}`,
+    });
     // Get the memory usage after load testing
     expressWithScoutProcess.send("report-memory-usage");
-    yield TestUtil.waitMs(100);
+    await TestUtil.waitMs(100);
     // Ensure stats are as we expect
     if (!stats.express.memoryUsage || !stats.express.memoryUsage.heapUsed
         || !stats.expressWithScout.memoryUsage || !stats.expressWithScout.memoryUsage.heapUsed) {
@@ -125,4 +158,4 @@ test("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS },
     expressWithScoutProcess.kill();
     expressProcess.kill();
     t.end();
-}));
+});

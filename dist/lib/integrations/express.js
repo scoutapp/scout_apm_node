@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ExpressIntegration = void 0;
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 const stacktrace_js_1 = require("stacktrace-js");
@@ -74,11 +75,11 @@ class ExpressIntegration extends integrations_1.RequireIntegration {
             }
             const handler = originalArgsArr[handlerIdx];
             // Capture the stack frames @ definition of the endpoint
-            const framesAtHandlerCreation = stacktrace_js_1.getSync();
+            const framesAtHandlerCreation = (0, stacktrace_js_1.getSync)();
             // Shim the handler
             originalArgs[handlerIdx] = function () {
                 // Gather a stacktrace from *inside* the handler, at execution time
-                const framesAtExecution = stacktrace_js_1.getSync();
+                const framesAtExecution = (0, stacktrace_js_1.getSync)();
                 // If no scout instance is available when the handler is executed,
                 // then run original handler
                 if (!integration.scout) {

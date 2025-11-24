@@ -5,7 +5,7 @@ Monitor the performance of NodeJS apps, with [Scout](https://www.scoutapp.com). 
 ## Requirements
 
 [NodeJS](https://nodejs.org) Versions:
-- 10+
+- 18+
 
 Scout APM works with the following frameworks:
 - [Express](https://expressjs.com) 4.x

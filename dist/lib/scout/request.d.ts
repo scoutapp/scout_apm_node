@@ -23,7 +23,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     private childSpans;
     private tags;
     private ignored;
-    private onStop;
+    private onStop?;
     constructor(opts?: ScoutRequestOptions);
     span(operation: string): Promise<ScoutSpan>;
     getTimestamp(): Date;

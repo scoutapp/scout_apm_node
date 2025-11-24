@@ -1,8 +1,50 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.EXPORT_BAG = void 0;
+exports.setActiveGlobalScoutInstance = setActiveGlobalScoutInstance;
+exports.getActiveGlobalScoutInstance = getActiveGlobalScoutInstance;
+exports.getOrCreateActiveGlobalScoutInstance = getOrCreateActiveGlobalScoutInstance;
+exports.getOrCreateActiveGlobalScoutInstanceNonBlocking = getOrCreateActiveGlobalScoutInstanceNonBlocking;
+exports.shutdownActiveGlobalScoutInstance = shutdownActiveGlobalScoutInstance;
+exports.isActiveGlobalScoutInstance = isActiveGlobalScoutInstance;
+exports.setGlobalLastUsedConfiguration = setGlobalLastUsedConfiguration;
+exports.setGlobalLastUsedOptions = setGlobalLastUsedOptions;
 const scout_1 = require("./scout");
 const types_1 = require("./types");
-const Errors = require("./errors");
+const Errors = __importStar(require("./errors"));
 // Create an export bag which will contain exports modified by scout
 exports.EXPORT_BAG = {};
 // Global scout instance
@@ -25,7 +67,6 @@ function setActiveGlobalScoutInstance(scout) {
     // When the global scout instance is set ensure that it's integrations are setup
     SCOUT_INSTANCE.setupIntegrations();
 }
-exports.setActiveGlobalScoutInstance = setActiveGlobalScoutInstance;
 /**
  * Get the current active global scout instance
  *
@@ -37,7 +78,6 @@ function getActiveGlobalScoutInstance() {
     }
     return SCOUT_INSTANCE;
 }
-exports.getActiveGlobalScoutInstance = getActiveGlobalScoutInstance;
 /**
  * Get or create the current active global scout instance
  *
@@ -78,7 +118,7 @@ function getOrCreateActiveGlobalScoutInstance(config, opts) {
     if (!config && LAST_USED_CONFIG) {
         config = LAST_USED_CONFIG;
     }
-    const instance = new scout_1.Scout(types_1.buildScoutConfiguration(config), opts);
+    const instance = new scout_1.Scout((0, types_1.buildScoutConfiguration)(config), opts);
     setActiveGlobalScoutInstance(instance);
     // Set up a listener if the global instance is ever shut down
     instance.on(types_1.ScoutEvent.Shutdown, () => {
@@ -90,7 +130,6 @@ function getOrCreateActiveGlobalScoutInstance(config, opts) {
     creating = instance.setup();
     return creating;
 }
-exports.getOrCreateActiveGlobalScoutInstance = getOrCreateActiveGlobalScoutInstance;
 /**
  * Lazily get or create the current active global scout instance
  *
@@ -104,7 +143,6 @@ function getOrCreateActiveGlobalScoutInstanceNonBlocking(config, opts) {
     // eventually, the promise will be resolved, and when called again, we'll pass back the instance
     return Promise.race([p, Promise.reject(new Errors.InstanceNotReady())]);
 }
-exports.getOrCreateActiveGlobalScoutInstanceNonBlocking = getOrCreateActiveGlobalScoutInstanceNonBlocking;
 /**
  * Shutdown the active global scout instance if there is one
  *
@@ -116,7 +154,6 @@ function shutdownActiveGlobalScoutInstance() {
     }
     return Promise.resolve();
 }
-exports.shutdownActiveGlobalScoutInstance = shutdownActiveGlobalScoutInstance;
 /**
  * Check if a given scout instance is the active global scout instance
  *
@@ -126,7 +163,6 @@ exports.shutdownActiveGlobalScoutInstance = shutdownActiveGlobalScoutInstance;
 function isActiveGlobalScoutInstance(scout) {
     return scout === SCOUT_INSTANCE;
 }
-exports.isActiveGlobalScoutInstance = isActiveGlobalScoutInstance;
 /**
  * Set the last used scout configuration, to support flexibility in setup from middleware or scout.install()
  *
@@ -135,7 +171,6 @@ exports.isActiveGlobalScoutInstance = isActiveGlobalScoutInstance;
 function setGlobalLastUsedConfiguration(config) {
     LAST_USED_CONFIG = config;
 }
-exports.setGlobalLastUsedConfiguration = setGlobalLastUsedConfiguration;
 /**
  * Set the last used scout options, to support flexibility in setup from middleware or scout.install()
  *
@@ -144,4 +179,3 @@ exports.setGlobalLastUsedConfiguration = setGlobalLastUsedConfiguration;
 function setGlobalLastUsedOptions(opts) {
     LAST_USED_OPTS = opts;
 }
-exports.setGlobalLastUsedOptions = setGlobalLastUsedOptions;

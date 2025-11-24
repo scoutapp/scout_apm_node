@@ -1,4 +1,4 @@
-import * as onFinished from "on-finished";
+import onFinished from "on-finished";
 import {
     LogFn,
     LogLevel,

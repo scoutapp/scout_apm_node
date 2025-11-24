@@ -1,8 +1,45 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const onFinished = require("on-finished");
+exports.scoutMiddleware = scoutMiddleware;
+const on_finished_1 = __importDefault(require("on-finished"));
 const types_1 = require("./types");
-const Constants = require("./constants");
+const Constants = __importStar(require("./constants"));
 const global_1 = require("./global");
 const path_to_regexp_1 = require("path-to-regexp");
 const listExpressEndpoints = require("express-list-endpoints");
@@ -45,23 +82,23 @@ function scoutMiddleware(opts) {
     const commonRouteMiddlewares = [];
     // Build configuration overrides
     const overrides = opts && opts.config ? opts.config : {};
-    const config = types_1.buildScoutConfiguration(overrides);
+    const config = (0, types_1.buildScoutConfiguration)(overrides);
     const options = {
         logFn: opts && opts.logFn ? opts.logFn : undefined,
         statisticsIntervalMS: opts && opts.statisticsIntervalMS ? opts.statisticsIntervalMS : undefined,
     };
     // Set the last used configurations
-    global_1.setGlobalLastUsedConfiguration(config);
-    global_1.setGlobalLastUsedOptions(options);
+    (0, global_1.setGlobalLastUsedConfiguration)(config);
+    (0, global_1.setGlobalLastUsedOptions)(options);
     return (req, res, next) => {
         const requestStartTimeNS = getNanoTime();
         // If there is no global scout instance yet and no scout instance just go to next middleware immediately
-        const scout = opts && opts.scout ? opts.scout : req.app.scout || global_1.getActiveGlobalScoutInstance();
+        const scout = opts && opts.scout ? opts.scout : req.app.scout || (0, global_1.getActiveGlobalScoutInstance)();
         // Build a closure that installs scout (and waits on it)
         // depending on whether waitForScoutSetup is set we will run this in the background or inline
         const setupScout = () => {
             // If app doesn't already have a scout instance *and* no active global one is present, create one
-            return global_1.getOrCreateActiveGlobalScoutInstance(config, options)
+            return (0, global_1.getOrCreateActiveGlobalScoutInstance)(config, options)
                 .then(scout => req.app.scout = scout);
         };
         const waitForScoutSetup = opts && opts.waitForScoutSetup;
@@ -128,7 +165,7 @@ function scoutMiddleware(opts) {
                     listExpressEndpoints(req.app)
                         .forEach(r => {
                         // Enrich endpoint list with regexes for the full match
-                        r.regex = path_to_regexp_1.pathToRegexp(r.path);
+                        r.regex = (0, path_to_regexp_1.pathToRegexp)(r.path);
                         ROUTE_INFO_LOOKUP[r.path] = r;
                     });
                     // Search again after adding to the cache
@@ -225,7 +262,7 @@ function scoutMiddleware(opts) {
                             }, requestTimeoutMs);
                         }
                         // Set up handler to act on end of request
-                        onFinished(res, (err, res) => {
+                        (0, on_finished_1.default)(res, (err, res) => {
                             // If the request finished, clear the timeout-marker
                             if (transactionTimeout) {
                                 clearTimeout(transactionTimeout);
@@ -252,4 +289,3 @@ function scoutMiddleware(opts) {
         });
     };
 }
-exports.scoutMiddleware = scoutMiddleware;

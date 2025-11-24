@@ -9,17 +9,53 @@
  * NOTE - the tests in here do *NOT* properly shut down the scout instances they use right away,
  * cleanup happens at the end after waiting a certain amount of time to ensure the traces are sent.
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const test = require("tape");
-const request = require("supertest");
+const tape_1 = __importDefault(require("tape"));
+const supertest_1 = __importDefault(require("supertest"));
 const randomstring_1 = require("randomstring");
 const types_1 = require("../lib/types");
 const lib_1 = require("../lib");
-lib_1.setupRequireIntegrations(["pg", "ejs", "pug"]);
+(0, lib_1.setupRequireIntegrations)(["pg", "ejs", "pug"]);
 const scout_1 = require("../lib/scout");
 const express_1 = require("../lib/express");
-const TestUtil = require("./util");
-const TestConstants = require("./constants");
+const TestUtil = __importStar(require("./util"));
+const TestConstants = __importStar(require("./constants"));
 const fixtures_1 = require("./fixtures");
 let PG_CONTAINER_AND_OPTS = null;
 let MYSQL_CONTAINER_AND_OPTS = null;
@@ -28,9 +64,9 @@ const SCOUT_INSTANCES = [];
 const ejs = require("ejs");
 const pug = require("pug");
 // https://github.com/scoutapp/scout_apm_node/issues/82
-test("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
+(0, tape_1.default)("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
     // Build scout config & app meta for test
-    const config = types_1.buildScoutConfiguration({
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
@@ -41,7 +77,7 @@ test("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_
     if (!config.name) {
         throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable");
     }
-    const sha = randomstring_1.generate(64);
+    const sha = (0, randomstring_1.generate)(64);
     config.revisionSHA = sha;
     t.comment(`set revision sha to ${sha}`);
     // Generate generic app metadata
@@ -50,9 +86,9 @@ test("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_
     const scout = new scout_1.Scout(config, { appMeta });
     SCOUT_INSTANCES.push(scout);
     // Create a simple application and setup scout middleware
-    const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }));
     // Set up a listener that should fire when the request is finished
     const listener = (data, another) => {
@@ -64,15 +100,15 @@ test("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_
     scout.on(types_1.ScoutEvent.RequestSent, listener);
     // Simply performing a request to he application should cause the creation & setup of the scout instance
     // app metadata should be automatically sent (along with the randomized SHA which should indicate a change)
-    return request(app)
+    return (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /json/)
         .expect(200)
         .then(res => t.pass("request was sent to simple express app"));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/71
-test("Scout sends basic controller span to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
-    const config = types_1.buildScoutConfiguration({
+(0, tape_1.default)("Scout sends basic controller span to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
@@ -112,13 +148,13 @@ test("Scout sends basic controller span to dashboard", { timeout: TestUtil.DASHB
 // Postgres dashboard sends //
 //////////////////////////////
 // Pseudo test that will start a containerized postgres instance
-TestUtil.startContainerizedPostgresTest(test, cao => {
+TestUtil.startContainerizedPostgresTest(tape_1.default, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
 // For the postgres integration
 // https://github.com/scoutapp/scout_apm_node/issues/83
-test("transaction with with postgres DB query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
-    const config = types_1.buildScoutConfiguration({
+(0, tape_1.default)("transaction with with postgres DB query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
@@ -180,8 +216,8 @@ test("transaction with with postgres DB query to dashboard", { timeout: TestUtil
     });
 });
 // https://github.com/scoutapp/scout_apm_node/issues/140
-test("Many select statments and a render are in the right order", { timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000 }, t => {
-    const config = types_1.buildScoutConfiguration({
+(0, tape_1.default)("Many select statments and a render are in the right order", { timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000 }, t => {
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     });
@@ -241,14 +277,14 @@ test("Many select statments and a render are in the right order", { timeout: Tes
         // Build the app with the postgres client
         .then(() => {
         // Create an application will do many queries and render something using ejs
-        app = TestUtil.queryAndRenderRandomNumbers(express_1.scoutMiddleware({
+        app = TestUtil.queryAndRenderRandomNumbers((0, express_1.scoutMiddleware)({
             scout,
-            requestTimeoutMs: 0,
+            requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         }), "ejs", client);
     })
         // Perform the request to trigger the queries & render
         .then(() => {
-        return request(app)
+        return (0, supertest_1.default)(app)
             .get("/")
             .expect("Content-Type", /text/)
             .expect(200)
@@ -263,17 +299,17 @@ test("Many select statments and a render are in the right order", { timeout: Tes
     });
 });
 // Pseudo test that will stop a containerized postgres instance that was started
-TestUtil.stopContainerizedPostgresTest(test, () => PG_CONTAINER_AND_OPTS);
+TestUtil.stopContainerizedPostgresTest(tape_1.default, () => PG_CONTAINER_AND_OPTS);
 ///////////////////////////
 // MySQL dashboard sends //
 ///////////////////////////
 // Pseudo test that will start a containerized mysql instance
-TestUtil.startContainerizedMySQLTest(test, cao => {
+TestUtil.startContainerizedMySQLTest(tape_1.default, cao => {
     MYSQL_CONTAINER_AND_OPTS = cao;
 });
-test("transaction with mysql query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
+(0, tape_1.default)("transaction with mysql query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
     // Build scout config & app meta for test
-    const config = types_1.buildScoutConfiguration({
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
@@ -333,9 +369,9 @@ test("transaction with mysql query to dashboard", { timeout: TestUtil.DASHBOARD_
         }
     });
 });
-test("transaction with mysql2 query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
+(0, tape_1.default)("transaction with mysql2 query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
     // Build scout config & app meta for test
-    const config = types_1.buildScoutConfiguration({
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
@@ -396,14 +432,14 @@ test("transaction with mysql2 query to dashboard", { timeout: TestUtil.DASHBOARD
     });
 });
 // Pseudo test that will stop a containerized mysql instance that was started
-TestUtil.stopContainerizedMySQLTest(test, () => MYSQL_CONTAINER_AND_OPTS);
+TestUtil.stopContainerizedMySQLTest(tape_1.default, () => MYSQL_CONTAINER_AND_OPTS);
 /////////////////////////////////////////
 // Express integration dashboard sends //
 /////////////////////////////////////////
 // https://github.com/scoutapp/scout_apm_node/issues/82
-test("Express pug integration dashboard send", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
+(0, tape_1.default)("Express pug integration dashboard send", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
     // Build scout config & app meta for test
-    const config = types_1.buildScoutConfiguration({
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
@@ -417,9 +453,9 @@ test("Express pug integration dashboard send", { timeout: TestUtil.DASHBOARD_SEN
     const scout = new scout_1.Scout(config);
     SCOUT_INSTANCES.push(scout);
     // Create an application that's set up to use pug templating
-    const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleHTML5BoilerplateApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }), "pug");
     // Set up a listener that should fire when the request is finished
     const listener = (data, another) => {
@@ -448,7 +484,7 @@ test("Express pug integration dashboard send", { timeout: TestUtil.DASHBOARD_SEN
         t.end();
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
-    return request(app)
+    return (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /html/)
         .expect(200)
@@ -457,7 +493,7 @@ test("Express pug integration dashboard send", { timeout: TestUtil.DASHBOARD_SEN
     });
 });
 // Shutdown all the scout instances after waiting what we expect should be enough time to send the tests
-test("wait for all scout instances to send", t => {
+(0, tape_1.default)("wait for all scout instances to send", t => {
     // Wait ~2 minutes for request to be sent to scout in the cloud then shutdown
     TestUtil.waitMinutes(2)
         .then(() => t.comment(`shutting down [${SCOUT_INSTANCES.length}] scout instances...`))

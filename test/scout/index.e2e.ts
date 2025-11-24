@@ -1,4 +1,4 @@
-import * as test from "tape";
+import test from "tape";
 import * as path from "path";
 import { mkdtemp, ensureDir } from "fs-extra";
 import * as os from "os";

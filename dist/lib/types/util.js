@@ -1,12 +1,54 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.LOG_LEVEL_VALUE = void 0;
+exports.convertCamelCaseToEnvVar = convertCamelCaseToEnvVar;
+exports.isIgnoredLogMessage = isIgnoredLogMessage;
+exports.consoleLogFn = consoleLogFn;
+exports.buildWinstonLogFn = buildWinstonLogFn;
+exports.splitAgentResponses = splitAgentResponses;
+exports.scrubRequestPathParams = scrubRequestPathParams;
+exports.scrubRequestPath = scrubRequestPath;
+exports.isScoutTag = isScoutTag;
+exports.waitMs = waitMs;
 const enum_1 = require("./enum");
 const snake_case_1 = require("snake-case");
-const Constants = require("../constants");
+const Constants = __importStar(require("../constants"));
 function convertCamelCaseToEnvVar(prop) {
-    return `SCOUT_${snake_case_1.snakeCase(prop).toUpperCase()}`;
+    return `SCOUT_${(0, snake_case_1.snakeCase)(prop).toUpperCase()}`;
 }
-exports.convertCamelCaseToEnvVar = convertCamelCaseToEnvVar;
 exports.LOG_LEVEL_VALUE = {
     [enum_1.LogLevel.Error]: 0,
     [enum_1.LogLevel.Warn]: 1,
@@ -23,7 +65,6 @@ function isIgnoredLogMessage(applicationLevel, messageLevel) {
     }
     return exports.LOG_LEVEL_VALUE[messageLevel] > exports.LOG_LEVEL_VALUE[applicationLevel];
 }
-exports.isIgnoredLogMessage = isIgnoredLogMessage;
 /**
  * Default implementation for logging simple messages to console
  *
@@ -51,7 +92,6 @@ function consoleLogFn(message, level) {
             console.log(msg); // tslint:disable-line no-console
     }
 }
-exports.consoleLogFn = consoleLogFn;
 /**
  * Implementation for winston loggers
  *
@@ -81,7 +121,6 @@ function buildWinstonLogFn(logger) {
     fn.logger = logger;
     return fn;
 }
-exports.buildWinstonLogFn = buildWinstonLogFn;
 /**
  * Check if a given data buffer contains more than one message
  *
@@ -119,7 +158,6 @@ function splitAgentResponses(buf) {
     }
     return { framed, remaining };
 }
-exports.splitAgentResponses = splitAgentResponses;
 /**
  * Scrub the parameters of a given URL
  * this function modifies the provided URL object in-place.
@@ -142,7 +180,6 @@ function scrubRequestPathParams(path, lookup) {
     });
     return `${pieces[0]}?${decodeURI(parsedParams.toString())}`;
 }
-exports.scrubRequestPathParams = scrubRequestPathParams;
 /**
  * Scrub a URL down to only it's path (removing all query parameters)
  * this function modifies the provided URL object in-place.
@@ -153,11 +190,9 @@ exports.scrubRequestPathParams = scrubRequestPathParams;
 function scrubRequestPath(path) {
     return path.split("?")[0];
 }
-exports.scrubRequestPath = scrubRequestPath;
 function isScoutTag(obj) {
     return obj && "name" in obj && "value" in obj;
 }
-exports.isScoutTag = isScoutTag;
 function waitMs(ms) {
     return new Promise(resolve => {
         setTimeout(() => {
@@ -165,4 +200,3 @@ function waitMs(ms) {
         }, ms);
     });
 }
-exports.waitMs = waitMs;

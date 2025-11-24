@@ -1,19 +1,87 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const path = require("path");
-const tmp = require("tmp-promise");
-const express = require("express");
-const net = require("net");
+exports.TestContainerStartOpts = exports.MEMORY_LEAK_TEST_TIMEOUT_MS = exports.DASHBOARD_SEND_TIMEOUT_MS = exports.MYSQL_TEST_TIMEOUT_MS = exports.PG_TEST_TIMEOUT_MS = exports.EXPRESS_TEST_TIMEOUT_MS = void 0;
+exports.bootstrapExternalProcessAgent = bootstrapExternalProcessAgent;
+exports.initializeAgent = initializeAgent;
+exports.waitMs = waitMs;
+exports.waitMinutes = waitMinutes;
+exports.cleanup = cleanup;
+exports.waitForAgentBufferFlush = waitForAgentBufferFlush;
+exports.shutdownScout = shutdownScout;
+exports.simpleExpressApp = simpleExpressApp;
+exports.simpleDynamicSegmentExpressApp = simpleDynamicSegmentExpressApp;
+exports.simpleErrorApp = simpleErrorApp;
+exports.simpleHTML5BoilerplateApp = simpleHTML5BoilerplateApp;
+exports.simpleInstrumentApp = simpleInstrumentApp;
+exports.appWithGETSynchronousError = appWithGETSynchronousError;
+exports.appWithHTTPProxyMiddleware = appWithHTTPProxyMiddleware;
+exports.queryAndRenderRandomNumbers = queryAndRenderRandomNumbers;
+exports.appWithRouterGET = appWithRouterGET;
+exports.testConfigurationOverlay = testConfigurationOverlay;
+exports.buildCoreAgentSocketResponse = buildCoreAgentSocketResponse;
+exports.buildTestScoutInstance = buildTestScoutInstance;
+exports.startContainer = startContainer;
+exports.killContainer = killContainer;
+exports.startContainerizedPostgresTest = startContainerizedPostgresTest;
+exports.stopContainerizedInstanceTest = stopContainerizedInstanceTest;
+exports.stopContainerizedPostgresTest = stopContainerizedPostgresTest;
+exports.makeConnectedPGClient = makeConnectedPGClient;
+exports.makePGConnectionString = makePGConnectionString;
+exports.createClientCollectingServer = createClientCollectingServer;
+exports.startContainerizedMySQLTest = startContainerizedMySQLTest;
+exports.stopContainerizedMySQLTest = stopContainerizedMySQLTest;
+exports.makeConnectedMySQLConnection = makeConnectedMySQLConnection;
+exports.makeConnectedMySQL2Connection = makeConnectedMySQL2Connection;
+exports.minimal = minimal;
+const path = __importStar(require("path"));
+const tmp = __importStar(require("tmp-promise"));
+const express_1 = __importDefault(require("express"));
+const net = __importStar(require("net"));
 const randomstring_1 = require("randomstring");
 const promise_timeout_1 = require("promise-timeout");
 const child_process_1 = require("child_process");
 const pg_1 = require("pg");
 const mysql_1 = require("mysql");
 const mysql2_1 = require("mysql2");
-const ConnectionConfig = require("mysql2/lib/connection_config");
-const Constants = require("../lib/constants");
-const external_process_1 = require("../lib/agents/external-process");
-const web_1 = require("../lib/agent-downloaders/web");
+const Constants = __importStar(require("../lib/constants"));
+const external_process_1 = __importDefault(require("../lib/agents/external-process"));
+const web_1 = __importDefault(require("../lib/agent-downloaders/web"));
 const types_1 = require("../lib/types");
 const scout_1 = require("../lib/scout");
 const config_1 = require("../lib/types/config");
@@ -60,7 +128,6 @@ function bootstrapExternalProcessAgent(t, rawVersion, opts) {
         return new external_process_1.default(procOpts, opts && opts.logFn ? opts.logFn : undefined);
     });
 }
-exports.bootstrapExternalProcessAgent = bootstrapExternalProcessAgent;
 // Helper for initializing a bootstrapped agent
 function initializeAgent(t, agent, appName, agentKey, appVersion, apiVersion = types_1.APIVersion.V1) {
     t.comment(`initializing agent with appName [${appName}]`);
@@ -69,7 +136,6 @@ function initializeAgent(t, agent, appName, agentKey, appVersion, apiVersion = t
         .then(() => agent.send(new requests_1.V1Register(appName, agentKey, apiVersion)))
         .then(() => agent);
 }
-exports.initializeAgent = initializeAgent;
 function waitMs(ms, t) {
     return new Promise(resolve => {
         setTimeout(() => {
@@ -80,18 +146,15 @@ function waitMs(ms, t) {
         }, ms);
     });
 }
-exports.waitMs = waitMs;
 function waitMinutes(mins, t) {
     return waitMs(mins * 60 * 1000, t);
 }
-exports.waitMinutes = waitMinutes;
 // Helper function for cleaning up an agent processe and passing/failing a test
 function cleanup(t, agent, err) {
     return agent.getProcess()
         .then(process => process.kill())
         .then(() => t.end(err));
 }
-exports.cleanup = cleanup;
 // Helper that waits for agent buffer to flush
 function waitForAgentBufferFlush(t) {
     const interval = Constants.AGENT_BUFFER_TIME_MS;
@@ -100,7 +163,6 @@ function waitForAgentBufferFlush(t) {
     }
     return waitMs(interval);
 }
-exports.waitForAgentBufferFlush = waitForAgentBufferFlush;
 // Helper function to clean up an official (user-facing) scout instance
 function shutdownScout(t, scout, err) {
     return scout.shutdown()
@@ -111,11 +173,10 @@ function shutdownScout(t, scout, err) {
         t.end(err);
     });
 }
-exports.shutdownScout = shutdownScout;
 // Make a simple express application that just returns
 // some JSON ({status: "success"}) after waiting a certain amount of milliseconds if provided
 function simpleExpressApp(middleware, delayMs = 0) {
-    const app = express();
+    const app = (0, express_1.default)();
     if (middleware) {
         app.use(middleware);
     }
@@ -125,11 +186,10 @@ function simpleExpressApp(middleware, delayMs = 0) {
     });
     return app;
 }
-exports.simpleExpressApp = simpleExpressApp;
 // Make an express app with a route with a dynamic segment which returns
 // some JSON ({status: "success", segment: <what you sent>}) after waiting a certain amount of milliseconds if provided
 function simpleDynamicSegmentExpressApp(middleware, delayMs = 0) {
-    const app = express();
+    const app = (0, express_1.default)();
     if (middleware) {
         app.use(middleware);
     }
@@ -153,26 +213,24 @@ function simpleDynamicSegmentExpressApp(middleware, delayMs = 0) {
     });
     return app;
 }
-exports.simpleDynamicSegmentExpressApp = simpleDynamicSegmentExpressApp;
 // An express application which errors on the /
 function simpleErrorApp(middleware, delayMs = 0) {
-    const app = express();
+    const app = (0, express_1.default)();
     app.use(middleware);
     app.get("/", (req, res) => {
         throw new Error("Expected application error (simpleErrorApp)");
     });
     return app;
 }
-exports.simpleErrorApp = simpleErrorApp;
 // An express application which performs a simple template render
 function simpleHTML5BoilerplateApp(middleware, templateEngine) {
-    const app = express();
+    const app = (0, express_1.default)();
     app.use(middleware);
     if (templateEngine === "mustache") {
         app.engine("mustache", require("mustache-express")());
     }
     // Expect all the views to be in the same fixtures/files path
-    const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
+    const VIEWS_DIR = path.join((0, app_root_dir_1.get)(), "test/fixtures/files");
     app.set("views", VIEWS_DIR);
     app.set("view engine", templateEngine);
     app.get("/", (req, res) => {
@@ -184,10 +242,9 @@ function simpleHTML5BoilerplateApp(middleware, templateEngine) {
     });
     return app;
 }
-exports.simpleHTML5BoilerplateApp = simpleHTML5BoilerplateApp;
 // An express application which performs an instrumentation in GET /
 function simpleInstrumentApp(middleware) {
-    const app = express();
+    const app = (0, express_1.default)();
     app.use(middleware);
     app.get("/", (req, res) => {
         if (!req.scout || !req.scout.instance) {
@@ -201,18 +258,16 @@ function simpleInstrumentApp(middleware) {
     });
     return app;
 }
-exports.simpleInstrumentApp = simpleInstrumentApp;
 function appWithGETSynchronousError(middleware, expressFnTransform) {
-    const app = expressFnTransform(express)();
+    const app = expressFnTransform(express_1.default)();
     app.use(middleware);
     app.get("/", (req, res) => {
         throw new Error("Expected application error (appWithGETSynchronousError)");
     });
     return app;
 }
-exports.appWithGETSynchronousError = appWithGETSynchronousError;
 function appWithHTTPProxyMiddleware(middleware, proxyTarget) {
-    const app = express();
+    const app = (0, express_1.default)();
     app.use(middleware);
     const { createProxyMiddleware } = require("http-proxy-middleware");
     app.get("/", createProxyMiddleware({
@@ -224,16 +279,15 @@ function appWithHTTPProxyMiddleware(middleware, proxyTarget) {
     }));
     return app;
 }
-exports.appWithHTTPProxyMiddleware = appWithHTTPProxyMiddleware;
 // An express application which performs a bunch of trivial SQL queries and renders a template that uses the reuslts
 function queryAndRenderRandomNumbers(middleware, templateEngine, dbClient) {
-    const app = express();
+    const app = (0, express_1.default)();
     app.use(middleware);
     if (templateEngine === "mustache") {
         app.engine("mustache", require("mustache-express")());
     }
     // Expect all the views to be in the same fixtures/files path
-    const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
+    const VIEWS_DIR = path.join((0, app_root_dir_1.get)(), "test/fixtures/files");
     app.set("views", VIEWS_DIR);
     app.set("view engine", templateEngine);
     app.get("/", (req, res) => {
@@ -246,12 +300,11 @@ function queryAndRenderRandomNumbers(middleware, templateEngine, dbClient) {
     });
     return app;
 }
-exports.queryAndRenderRandomNumbers = queryAndRenderRandomNumbers;
 function appWithRouterGET(middleware, expressFnTransform) {
-    const app = expressFnTransform(express)();
+    const app = expressFnTransform(express_1.default)();
     app.use(middleware);
     // Create first level router & endpoint
-    const r1 = express.Router();
+    const r1 = express_1.default.Router();
     r1.get("/echo/:name", (req, res) => {
         res.send({ status: "success", name: req.params.name });
     });
@@ -260,7 +313,7 @@ function appWithRouterGET(middleware, expressFnTransform) {
         res.send({ status: "success", name: req.params.name });
     });
     // Create level 2 router & endpoint
-    const r2 = express.Router();
+    const r2 = express_1.default.Router();
     r2.get("/echo/:name", (req, res) => {
         res.send({ status: "success", name: req.params.name });
     });
@@ -276,13 +329,12 @@ function appWithRouterGET(middleware, expressFnTransform) {
     app.use("/mounted", r1);
     return app;
 }
-exports.appWithRouterGET = appWithRouterGET;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;
-    const envKey = types_1.convertCamelCaseToEnvVar(appKey);
+    const envKey = (0, types_1.convertCamelCaseToEnvVar)(appKey);
     const envValueIsSet = envKey in process.env;
-    const defaultConfig = types_1.buildScoutConfiguration();
+    const defaultConfig = (0, types_1.buildScoutConfiguration)();
     t.assert(defaultConfig, "defaultConfig was generated");
     // Only perform this check if we're not currently overriding the value in ENV *during* this test
     // it won't be the default, because we've set it to be so
@@ -292,7 +344,7 @@ function testConfigurationOverlay(t, opts) {
     // Set key at the application level
     const appConfig = {};
     appConfig[appKey] = expectedValue;
-    const appOnlyConfig = types_1.buildScoutConfiguration(appConfig);
+    const appOnlyConfig = (0, types_1.buildScoutConfiguration)(appConfig);
     t.assert(appOnlyConfig, "appOnlyConfig was generated");
     // Only perform this check if we're not currently overriding the value in ENV *during* this test
     // ENV overrides the app so it won't be the app value
@@ -305,7 +357,7 @@ function testConfigurationOverlay(t, opts) {
     process.env[envKey] = envValue;
     // FUTURE: we could also *simulate* process.env here by passing in {env: {...}} to buildScoutConfiguration
     // since we're not trying to do parallel tests yet (env will be changed and reset serially), it's fine
-    const envOverrideConfig = types_1.buildScoutConfiguration(appConfig);
+    const envOverrideConfig = (0, types_1.buildScoutConfiguration)(appConfig);
     t.assert(envOverrideConfig, "envOverrideConfig was generated");
     t.deepEquals(envOverrideConfig[appKey], expectedValue, `config [${appKey}] matches app value when set by app`);
     // Reset the env value
@@ -317,7 +369,6 @@ function testConfigurationOverlay(t, opts) {
         delete process.env[envKey];
     }
 }
-exports.testConfigurationOverlay = testConfigurationOverlay;
 function buildCoreAgentSocketResponse(json) {
     const buf = Buffer.concat([
         Buffer.allocUnsafe(4),
@@ -326,12 +377,10 @@ function buildCoreAgentSocketResponse(json) {
     buf.writeUInt32BE(json.length, 0);
     return buf;
 }
-exports.buildCoreAgentSocketResponse = buildCoreAgentSocketResponse;
 function buildTestScoutInstance(configOverride, options) {
-    const cfg = types_1.buildScoutConfiguration(Object.assign({ allowShutdown: true, monitor: true }, configOverride));
+    const cfg = (0, types_1.buildScoutConfiguration)(Object.assign({ allowShutdown: true, monitor: true }, configOverride));
     return new scout_1.Scout(cfg, options);
 }
-exports.buildTestScoutInstance = buildTestScoutInstance;
 class TestContainerStartOpts {
     constructor(opts) {
         this.dockerBinPath = process.env.DOCKER_BIN_PATH || "/usr/bin/docker";
@@ -373,7 +422,7 @@ class TestContainerStartOpts {
         }
         // Generate a random container name if one wasn't provided
         if (!this.containerName) {
-            this.containerName = `test-${this.imageName}-${randomstring_1.generate(5)}`;
+            this.containerName = `test-${this.imageName}-${(0, randomstring_1.generate)(5)}`;
         }
     }
     imageWithTag() {
@@ -415,20 +464,19 @@ function startContainer(t, optOverrides) {
     ];
     // Spawn the docker container
     t.comment(`spawning container [${opts.imageName}:${opts.tagName}] with name [${opts.containerName}]...`);
-    const containerProcess = child_process_1.spawn(opts.dockerBinPath, args, { detached: true, stdio: "pipe" });
+    const containerProcess = (0, child_process_1.spawn)(opts.dockerBinPath, args, { detached: true, stdio: "pipe" });
     opts.setExecutedStartCommand(`${opts.dockerBinPath} ${args.join(" ")}`);
     let resolved = false;
     let stdoutListener;
     let stderrListener;
     const makeListener = (type, emitter, expected, resolve, reject) => {
-        var _a;
         if (!emitter) {
             return () => reject(new Error(`[${type}] pipe was not Readable`));
         }
         if (expected.times && expected.times <= 0) {
             return () => reject(new Error(`[${type}] invalid waitFor: expected.times <= 0`));
         }
-        let times = (_a = expected.times, (_a !== null && _a !== void 0 ? _a : 1));
+        let times = expected.times ?? 1;
         return (line) => {
             line = line.toString();
             if (!line.includes(expected.phrase)) {
@@ -523,7 +571,7 @@ function startContainer(t, optOverrides) {
             resolve({ containerProcess, opts });
         });
     });
-    return promise_timeout_1.timeout(promise, opts.startTimeoutMs)
+    return (0, promise_timeout_1.timeout)(promise, opts.startTimeoutMs)
         .catch(err => {
         // If we timed out clean up some waiting stuff, shutdown the process
         // since none of the listeners may have triggered, clean them up
@@ -540,21 +588,19 @@ function startContainer(t, optOverrides) {
         throw err;
     });
 }
-exports.startContainer = startContainer;
 // Kill a running container
 function killContainer(t, opts) {
     const args = ["kill", opts.containerName];
     // Spawn the docker container
     t.comment(`attempting to kill [${opts.containerName}]...`);
-    const dockerKillProcess = child_process_1.spawn(opts.dockerBinPath, args, { detached: true, stdio: "ignore" });
+    const dockerKillProcess = (0, child_process_1.spawn)(opts.dockerBinPath, args, { detached: true, stdio: "ignore" });
     const promise = new Promise((resolve, reject) => {
         dockerKillProcess.on("close", code => {
             resolve(code);
         });
     });
-    return promise_timeout_1.timeout(promise, opts.killTimeoutMs);
+    return (0, promise_timeout_1.timeout)(promise, opts.killTimeoutMs);
 }
-exports.killContainer = killContainer;
 const POSTGRES_IMAGE_NAME = "postgres";
 const POSTGRES_IMAGE_TAG = "12.2-alpine";
 const POSTGRES_CONTAINER_DEFAULT_ENV = {
@@ -595,7 +641,6 @@ function startContainerizedPostgresTest(test, cb, containerEnv, tagName) {
         });
     });
 }
-exports.startContainerizedPostgresTest = startContainerizedPostgresTest;
 // Generic function for making a test that stops a containered instance of some dependency
 function stopContainerizedInstanceTest(test, provider, name) {
     test(`Stopping containerized ${name} instance...`, (t) => {
@@ -610,12 +655,10 @@ function stopContainerizedInstanceTest(test, provider, name) {
             .catch(err => t.end(err));
     });
 }
-exports.stopContainerizedInstanceTest = stopContainerizedInstanceTest;
 // Utility function to stop a postgres instance
 function stopContainerizedPostgresTest(test, provider) {
     stopContainerizedInstanceTest(test, provider, "postgres");
 }
-exports.stopContainerizedPostgresTest = stopContainerizedPostgresTest;
 function makeConnectedPGClient(provider) {
     const cao = provider();
     if (!cao) {
@@ -633,7 +676,6 @@ function makeConnectedPGClient(provider) {
     return client.connect()
         .then(() => client);
 }
-exports.makeConnectedPGClient = makeConnectedPGClient;
 // Utility function to create a connection string
 function makePGConnectionString(provider) {
     const cao = provider();
@@ -643,7 +685,6 @@ function makePGConnectionString(provider) {
     const port = cao.opts.portBinding[5432];
     return Promise.resolve(`postgres://postgres:postgres@localhost:${port}/postgres`);
 }
-exports.makePGConnectionString = makePGConnectionString;
 // A server that does nothing but collect the clients that connect to it
 function createClientCollectingServer() {
     const clients = [];
@@ -658,7 +699,6 @@ function createClientCollectingServer() {
     };
     return [server, shutdown];
 }
-exports.createClientCollectingServer = createClientCollectingServer;
 const MYSQL_IMAGE_NAME = "mysql";
 const MYSQL_IMAGE_TAG = "5.7.29";
 // mysql takes this long to start up, can't wait for output because
@@ -738,12 +778,10 @@ function startContainerizedMySQLTest(test, cb, opts) {
         });
     });
 }
-exports.startContainerizedMySQLTest = startContainerizedMySQLTest;
 // Utility function to stop a mysql instance
 function stopContainerizedMySQLTest(test, provider) {
     stopContainerizedInstanceTest(test, provider, "msyql");
 }
-exports.stopContainerizedMySQLTest = stopContainerizedMySQLTest;
 // Helper for creating a connected connection for MySQL
 function makeConnectedMySQLConnection(provider) {
     const cao = provider();
@@ -751,7 +789,7 @@ function makeConnectedMySQLConnection(provider) {
         return Promise.reject(new Error("no CAO in provider"));
     }
     const port = cao.opts.portBinding[3306];
-    const conn = mysql_1.createConnection({
+    const conn = (0, mysql_1.createConnection)({
         user: "root",
         password: "mysql",
         host: "localhost",
@@ -767,22 +805,21 @@ function makeConnectedMySQLConnection(provider) {
         });
     });
 }
-exports.makeConnectedMySQLConnection = makeConnectedMySQLConnection;
 // Helper for creating a connected connection for MySQL
 function makeConnectedMySQL2Connection(provider) {
     const cao = provider();
     if (!cao) {
         return Promise.reject(new Error("no CAO in provider"));
     }
-    const config = new ConnectionConfig({
+    const config = {
         user: "root",
         password: "mysql",
         host: "localhost",
         port: cao.opts.portBinding[3306],
         // Connect timeout to enable using this as a check in waitFor
         connectTimeout: 9999,
-    });
-    const conn = new mysql2_1.Connection({ config });
+    };
+    const conn = (0, mysql2_1.createConnection)(config);
     // We have to ignore errors that are emitted by the mysl2 Connection object
     // because they will crash the node runtime otherwise.
     // Unsucessful creation attempts will hang until they crash
@@ -798,11 +835,10 @@ function makeConnectedMySQL2Connection(provider) {
             });
         });
     }
-    catch (_a) {
+    catch {
         return Promise.reject(new Error("connect failed"));
     }
 }
-exports.makeConnectedMySQL2Connection = makeConnectedMySQL2Connection;
 // Create a minimal object for easy printing (or util.inspecting) of scout requests/spans
 function minimal(reqOrSpan) {
     if (reqOrSpan instanceof scout_1.ScoutRequest) {
@@ -826,4 +862,3 @@ function minimal(reqOrSpan) {
     }
     throw new Error("Invalid object, neither ScoutReqOrRequest nor ScoutSpan");
 }
-exports.minimal = minimal;

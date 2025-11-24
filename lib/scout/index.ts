@@ -1,13 +1,13 @@
 import { EventEmitter } from "events";
+import { AsyncLocalStorage } from "async_hooks";
 import * as path from "path";
 import * as process from "process";
 import { v4 as uuidv4 } from "uuid";
-import * as cls from "cls-hooked";
 import * as semver from "semver";
 import { pathExists } from "fs-extra";
 import { instrument as instrumentTrace } from "stacktrace-js";
 import { check as tcpPortUsed } from "tcp-port-used";
-import * as getCPUUsage from "cpu-percentage";
+import getCPUUsage from "cpu-percentage";
 
 import {
     APIVersion,
@@ -94,8 +94,13 @@ export type SpanCallback = (info: CallbackInfo) => any;
 export type RequestCallback = (info: CallbackInfo) => any;
 
 const ASYNC_NS = "scout";
-const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
-const ASYNC_NS_SPAN = `${ASYNC_NS}.span`;
+const ASYNC_NS_REQUEST = "request";
+const ASYNC_NS_SPAN = "span";
+
+interface AsyncStore {
+    [ASYNC_NS_REQUEST]?: ScoutRequest;
+    [ASYNC_NS_SPAN]?: ScoutSpan;
+}
 
 export class Scout extends EventEmitter {
     private readonly config: Partial<ScoutConfiguration>;
@@ -111,7 +116,7 @@ export class Scout extends EventEmitter {
     private processOptions: ProcessOptions;
     private applicationMetadata: ApplicationMetadata;
 
-    private asyncNamespace: any;
+    private asyncLocalStorage: AsyncLocalStorage<AsyncStore>;
     private syncCurrentRequest: ScoutRequest | null = null;
     private syncCurrentSpan: ScoutSpan | null = null;
 
@@ -158,8 +163,8 @@ export class Scout extends EventEmitter {
             this.config.logLevel = parseLogLevel(this.logFn.logger.level);
         }
 
-        // Create async namespace if it does not exist
-        this.createAsyncNamespace();
+        // Create AsyncLocalStorage instance
+        this.asyncLocalStorage = new AsyncLocalStorage<AsyncStore>();
     }
 
     public log(message: string, level: LogLevel = LogLevel.Info) {
@@ -538,21 +543,23 @@ export class Scout extends EventEmitter {
 
         return new Promise((resolve, reject) => {
             // Create a new async context for the instrumentation
-            this.asyncNamespace.run(() => {
+            this.asyncLocalStorage.run({}, () => {
                 // Create a done function that will clear the entry and stop the span
                 const doneFn = () => {
                     // Set the parent for other sibling/same-level spans
-                    if (parentIsSpan) {
-                        // If the parent of this span is a span, then we want other spans in this namespace
-                        // to be children of that parent span, so save the parent
-                        this.asyncNamespace.set(ASYNC_NS_SPAN, parent);
-                    } else {
-                        // If the parent of this span *not* a span,
-                        // then the parent of sibling spans should be the request,
-                        // so we can clear the current span entry
-                        this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
-
-                        this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
+                    const store = this.asyncLocalStorage.getStore();
+                    if (store) {
+                        if (parentIsSpan) {
+                            // If the parent of this span is a span, then we want other spans in this namespace
+                            // to be children of that parent span, so save the parent
+                            store[ASYNC_NS_SPAN] = parent as ScoutSpan;
+                        } else {
+                            // If the parent of this span *not* a span,
+                            // then the parent of sibling spans should be the request,
+                            // so we can clear the current span entry
+                            this.clearAsyncStorageEntry(ASYNC_NS_SPAN);
+                            this.clearAsyncStorageEntry(ASYNC_NS_REQUEST);
+                        }
                     }
 
                     // If we never made the span object then don't do anything
@@ -575,9 +582,12 @@ export class Scout extends EventEmitter {
                     .startChildSpan(operation)
                     .then(s => span = s)
                     .then(() => {
-                        // Set the span & request on the namespace
-                        this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
-                        this.asyncNamespace.set(ASYNC_NS_SPAN, span);
+                        // Set the span & request on the store
+                        const store = this.asyncLocalStorage.getStore();
+                        if (store) {
+                            store[ASYNC_NS_REQUEST] = request;
+                            store[ASYNC_NS_SPAN] = span;
+                        }
 
                         // Set function to call on finish
                         span.setOnStop(() => {
@@ -694,7 +704,8 @@ export class Scout extends EventEmitter {
      */
     public getCurrentRequest(): ScoutRequest | null {
         try {
-            const req = this.asyncNamespace.get(ASYNC_NS_REQUEST);
+            const store = this.asyncLocalStorage.getStore();
+            const req = store?.[ASYNC_NS_REQUEST];
             return req || this.syncCurrentRequest;
         } catch {
             return null;
@@ -708,7 +719,8 @@ export class Scout extends EventEmitter {
      */
     public getCurrentSpan(): ScoutSpan | null {
         try {
-            const span = this.asyncNamespace.get(ASYNC_NS_SPAN);
+            const store = this.asyncLocalStorage.getStore();
+            const span = store?.[ASYNC_NS_SPAN];
             return span || this.syncCurrentSpan;
         } catch {
             return null;
@@ -745,17 +757,20 @@ export class Scout extends EventEmitter {
     }
 
     /**
-     * Attempt to clear an async name space entry
+     * Attempt to clear an async storage entry
      *
-     * this.asyncNamespace.set can fail if the async context ID is already gone
+     * Setting values in the store can fail if the async context is already gone
      * before someone tries to clear it. This can happen if some caller moves calls to
      * another async context or if it's cleaned up suddenly
      */
-    private clearAsyncNamespaceEntry(key: string) {
+    private clearAsyncStorageEntry(key: string) {
         try {
-            this.asyncNamespace.set(key, undefined);
+            const store = this.asyncLocalStorage.getStore();
+            if (store) {
+                delete store[key];
+            }
         } catch {
-            this.logFn("failed to clear async namespace", LogLevel.Debug);
+            this.logFn("failed to clear async storage", LogLevel.Debug);
         }
     }
 
@@ -845,17 +860,6 @@ export class Scout extends EventEmitter {
             });
     }
 
-    /**
-     * Create an async namespace internally for use with tracking if not already present
-     */
-    private createAsyncNamespace() {
-        this.asyncNamespace = cls.getNamespace(ASYNC_NS);
-
-        // Create if it doesn't exist
-        if (!this.asyncNamespace) {
-            this.asyncNamespace = cls.createNamespace(ASYNC_NS);
-        }
-    }
 
     /**
      * Perform some action within a context
@@ -867,8 +871,8 @@ export class Scout extends EventEmitter {
             let request: ScoutRequest;
             let ranCb = false;
 
-            // Run in the async namespace
-            this.asyncNamespace.run(() => {
+            // Run in the async local storage
+            this.asyncLocalStorage.run({}, () => {
 
                 // Make done function that will run after
                 const doneFn = () => {
@@ -876,8 +880,8 @@ export class Scout extends EventEmitter {
                     if (!request) { return Promise.resolve(); }
 
                     this.log(`[scout] Finishing and sending request with ID [${request.id}]`, LogLevel.Debug);
-                    this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
-                    this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
+                    this.clearAsyncStorageEntry(ASYNC_NS_REQUEST);
+                    this.clearAsyncStorageEntry(ASYNC_NS_SPAN);
 
                     // Finish and send
                     return request.finishAndSend()
@@ -893,30 +897,26 @@ export class Scout extends EventEmitter {
 
                 };
 
-                this.log(`[scout] Starting request in async namespace...`, LogLevel.Debug);
-
-                // Bind the cb to this namespace
-                cb = this.asyncNamespace.bind(cb);
+                this.log(`[scout] Starting request in async storage...`, LogLevel.Debug);
 
                 // Start the request
                 this.startRequest()
                     .then(r => request = r)
-                // Update async namespace, run function
+                // Update async storage, run function
                     .then(() => {
                         this.log(`[scout] Request started w/ ID [${request.id}]`, LogLevel.Debug);
-                        this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
+                        const store = this.asyncLocalStorage.getStore();
+                        if (store) {
+                            store[ASYNC_NS_REQUEST] = request;
+                        }
 
                         // Set function to call on finish
-                        // NOTE: at least *two* async contexts will be created for each request -- one for the request
-                        // and one for every span started inside the request. this.asyncNamespace is almost certain
-                        // to be different by the time that stopFn is run -- we need to bind the stopFn to ensure
-                        // the right async namespace gets cleared.
                         const stopFn = () => {
                             const result = doneFn();
                             if (request) { request.clearOnStop(); }
                             return result;
                         };
-                        request.setOnStop(this.asyncNamespace.bind(stopFn));
+                        request.setOnStop(stopFn);
 
                         ranCb = true;
                         result = cb(() => request.stop(), {request});

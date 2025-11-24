@@ -1,7 +1,7 @@
 import { hostname } from "os";
 import * as os from "os";
 import * as path from "path";
-import * as test from "tape";
+import test from "tape";
 import { Test } from "tape";
 import { version as processVersion } from "process";
 import { get as getRootDir } from "app-root-dir";

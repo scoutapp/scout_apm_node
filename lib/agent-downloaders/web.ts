@@ -1,4 +1,4 @@
-import * as download from "download";
+import download from "download";
 import * as path from "path";
 import * as tmp from "tmp-promise";
 import { Readable } from "stream";
