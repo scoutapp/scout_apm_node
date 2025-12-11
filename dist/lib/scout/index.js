@@ -47,7 +47,6 @@ exports.sendThroughAgent = sendThroughAgent;
 const events_1 = require("events");
 const async_hooks_1 = require("async_hooks");
 const path = __importStar(require("path"));
-const process = __importStar(require("process"));
 const semver = __importStar(require("semver"));
 const fs_extra_1 = require("fs-extra");
 const tcp_port_used_1 = require("tcp-port-used");

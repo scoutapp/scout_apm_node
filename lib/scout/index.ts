@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import { AsyncLocalStorage } from "async_hooks";
 import * as path from "path";
-import * as process from "process";
+// Note: Using global process instead of importing it to preserve inherited EventEmitter methods
 import { v4 as uuidv4 } from "uuid";
 import * as semver from "semver";
 import { pathExists } from "fs-extra";

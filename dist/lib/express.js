@@ -42,9 +42,82 @@ const types_1 = require("./types");
 const Constants = __importStar(require("./constants"));
 const global_1 = require("./global");
 const path_to_regexp_1 = require("path-to-regexp");
-const listExpressEndpoints = require("express-list-endpoints");
+const listExpressEndpointsLib = require("express-list-endpoints");
 const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
+/**
+ * List all endpoints registered on an Express app.
+ * Works with both Express 4 and Express 5.
+ *
+ * Express 5 changed the internal router structure:
+ * - app.router instead of app._router
+ * - layer.matchers[] instead of layer.regexp
+ *
+ * The express-list-endpoints library doesn't support Express 5,
+ * so we implement our own walker for Express 5 and fall back to the library for Express 4.
+ */
+function listExpressEndpoints(app) {
+    // Try express-list-endpoints first (works for Express 4)
+    const libResult = listExpressEndpointsLib(app);
+    if (libResult && libResult.length > 0) {
+        return libResult;
+    }
+    // Express 5: walk the router stack ourselves
+    const endpoints = [];
+    // Get the router (Express 5 uses app.router, Express 4 uses app._router)
+    const router = app.router || app._router;
+    if (!router || !router.stack) {
+        return endpoints;
+    }
+    function walkStack(stack, basePath = "") {
+        for (const layer of stack) {
+            // Direct route on the app/router
+            if (layer.route) {
+                const methods = Object.keys(layer.route.methods)
+                    .filter((m) => layer.route.methods[m])
+                    .map((m) => m.toUpperCase());
+                endpoints.push({
+                    path: basePath + layer.route.path,
+                    methods,
+                    middleware: [],
+                });
+            }
+            // Nested router (app.use('/prefix', router))
+            else if (layer.name === "router" && layer.handle && layer.handle.stack) {
+                let prefix = "";
+                // Express 5: check layer.path directly
+                if (layer.path) {
+                    prefix = layer.path;
+                }
+                // Express 5: extract prefix from matcher by testing common path patterns
+                else if (layer.matchers && layer.matchers.length > 0) {
+                    // The matcher function returns { path: '/matched/prefix', params: {} } or false
+                    const probeResults = [
+                        layer.matchers[0]("/"),
+                        layer.matchers[0]("/api"),
+                        layer.matchers[0]("/v1"),
+                        layer.matchers[0]("/v2"),
+                        layer.matchers[0]("/admin"),
+                        layer.matchers[0]("/auth"),
+                    ].filter((r) => r !== false);
+                    if (probeResults.length > 0) {
+                        prefix = probeResults[0].path;
+                    }
+                }
+                // Express 4: layer.regexp
+                else if (layer.regexp) {
+                    const match = layer.regexp.source.match(/^\^\\\/([^\\\/\?\*\+\[\]]+)/);
+                    if (match) {
+                        prefix = "/" + match[1];
+                    }
+                }
+                walkStack(layer.handle.stack, basePath + prefix);
+            }
+        }
+    }
+    walkStack(router.stack);
+    return endpoints;
+}
 // Support common request queue time headers
 // https://github.com/scoutapp/scout_apm_node/issues/68
 const REQUEST_QUEUE_TIME_HEADERS = ["x-queue-start", "x-request-start"];
@@ -124,19 +197,42 @@ function scoutMiddleware(opts) {
         // The query of the URL needs to be  stripped before attempting to test it against express regexps
         // i.e. all route regexps end in /..\?$/
         const preQueryUrl = reqUrl.split("?")[0];
-        let matchedRouteMiddleware = commonRouteMiddlewares.find((m) => m.regexp.test(preQueryUrl));
+        // Helper to check if a middleware matches the URL
+        // Express 4 uses .regexp, Express 5 uses .matchers array of functions
+        const middlewareMatchesUrl = (m, url) => {
+            if (!m) {
+                return false;
+            }
+            // Express 4: use regexp.test()
+            if (m.regexp && typeof m.regexp.test === "function") {
+                return m.regexp.test(url);
+            }
+            // Express 5: use matchers[0]() which returns false or { path, params }
+            if (m.matchers && m.matchers.length > 0 && typeof m.matchers[0] === "function") {
+                return m.matchers[0](url) !== false;
+            }
+            return false;
+        };
+        let matchedRouteMiddleware = commonRouteMiddlewares.find((m) => middlewareMatchesUrl(m, preQueryUrl));
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
-        if (!routePath) {
+        // Express 5 uses app.router, Express 4 uses app._router
+        const appRouter = req.app.router || req.app._router;
+        if (!routePath && appRouter && appRouter.stack) {
             // Find routes that match the current URL
-            matchedRouteMiddleware = req.app._router.stack
+            matchedRouteMiddleware = appRouter.stack
                 .filter((middleware) => {
-                // We can recognize a middleware as a route if .route & .regexp are present
-                if (!middleware || !middleware.route || !middleware.regexp) {
+                // We can recognize a middleware as a route if .route is present
+                // Express 4 also requires .regexp, Express 5 uses .matchers instead
+                if (!middleware || !middleware.route) {
+                    return false;
+                }
+                const hasRouteMatcher = middleware.regexp || (middleware.matchers && middleware.matchers.length > 0);
+                if (!hasRouteMatcher) {
                     return false;
                 }
                 // Check if the URL matches the route
-                const isMatch = middleware.regexp.test(preQueryUrl);
+                const isMatch = middlewareMatchesUrl(middleware, preQueryUrl);
                 // Add matches in the hope that common routes will be faster than searching everything
                 if (isMatch) {
                     commonRouteMiddlewares.push(middleware);
