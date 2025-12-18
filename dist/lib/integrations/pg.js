@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PGIntegration = void 0;
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // Hook into the express and mongodb module
@@ -13,7 +14,7 @@ class PGIntegration extends integrations_1.RequireIntegration {
         pgExport = this.shimPGConnect(pgExport);
         pgExport = this.shimPGQuery(pgExport);
         // Add the integration symbol to the client class itself
-        pgExport.Client[integrations_1.getIntegrationSymbol()] = this;
+        pgExport.Client[(0, integrations_1.getIntegrationSymbol)()] = this;
         return pgExport;
     }
     /**

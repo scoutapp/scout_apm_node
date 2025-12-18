@@ -1,15 +1,52 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const download = require("download");
-const path = require("path");
+exports.WebAgentDownloader = void 0;
+const download_1 = __importDefault(require("download"));
+const path = __importStar(require("path"));
 const types_1 = require("../types");
-const fs = require("fs-extra");
+const fs = __importStar(require("fs-extra"));
 // tslint:disable-next-line no-var-requires
 const hasha = require("hasha");
 const types_2 = require("../types");
-const Errors = require("../errors");
-const Constants = require("../constants");
-const download_configs_1 = require("../download-configs");
+const Errors = __importStar(require("../errors"));
+const Constants = __importStar(require("../constants"));
+const download_configs_1 = __importDefault(require("../download-configs"));
 class WebAgentDownloader {
     constructor(opts) {
         this.logFn = opts && opts.logFn ? opts.logFn : () => undefined;
@@ -82,7 +119,7 @@ class WebAgentDownloader {
             }
             // Perform download
             this.logFn(`[scout/agent-downloader/web] Downloading from URL [${url}]`, types_2.LogLevel.Debug);
-            return download(url, downloadDir, { extract: true })
+            return (0, download_1.default)(url, downloadDir, { extract: true })
                 // Ensure file download succeeded
                 .then(() => fs.pathExists(expectedBinPath))
                 .then(exists => {
@@ -103,7 +140,7 @@ class WebAgentDownloader {
      * @returns {Promise<string>} A promise that resolves to a valid cached binary (if found)
      */
     getCachedBinaryPath(baseDir, v, adc) {
-        return types_1.detectPlatformTriple()
+        return (0, types_1.detectPlatformTriple)()
             .then(platform => {
             const subdir = `scout_apm_core-v${v.raw}-${platform}`;
             const versionedPath = path.join(baseDir, subdir, Constants.CORE_AGENT_BIN_FILE_NAME);
@@ -129,7 +166,7 @@ class WebAgentDownloader {
         let adc;
         let platform;
         // Retrieve the hard-coded download config for the given version
-        return types_1.detectPlatformTriple()
+        return (0, types_1.detectPlatformTriple)()
             .then(p => platform = p)
             .then(() => this.getDownloadConfigs(v))
             .then(configs => {
@@ -158,7 +195,7 @@ class WebAgentDownloader {
             if (opts && opts.disallowDownload) {
                 throw new Errors.ExternalDownloadDisallowed();
             }
-            return download(adc.url, downloadDir, options);
+            return (0, download_1.default)(adc.url, downloadDir, options);
         })
             // Ensure file download succeeded
             .then(() => fs.pathExists(expectedBinPath))

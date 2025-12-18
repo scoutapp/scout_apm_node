@@ -54,7 +54,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
     private ignored: boolean = false;
 
-    private onStop: () => Promise<void>;
+    private onStop?: () => Promise<void>;
 
     constructor(opts?: ScoutRequestOptions) {
         this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_REQUEST_PREFIX}${uuidv4()}`;

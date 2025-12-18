@@ -1,30 +1,73 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Scout = exports.ScoutSpan = exports.ScoutRequest = void 0;
+exports.sendStartRequest = sendStartRequest;
+exports.sendStopRequest = sendStopRequest;
+exports.sendTagRequest = sendTagRequest;
+exports.sendStartSpan = sendStartSpan;
+exports.sendTagSpan = sendTagSpan;
+exports.sendStopSpan = sendStopSpan;
+exports.sendThroughAgent = sendThroughAgent;
 const events_1 = require("events");
-const path = require("path");
-const process = require("process");
-const cls = require("cls-hooked");
-const semver = require("semver");
+const async_hooks_1 = require("async_hooks");
+const path = __importStar(require("path"));
+const semver = __importStar(require("semver"));
 const fs_extra_1 = require("fs-extra");
 const tcp_port_used_1 = require("tcp-port-used");
-const getCPUUsage = require("cpu-percentage");
+const cpu_percentage_1 = __importDefault(require("cpu-percentage"));
 const types_1 = require("../types");
 const global_1 = require("../global");
 const integrations_1 = require("../integrations");
-const web_1 = require("../agent-downloaders/web");
-const external_process_1 = require("../agents/external-process");
-const Requests = require("../protocol/v1/requests");
-const Constants = require("../constants");
-const Errors = require("../errors");
+const web_1 = __importDefault(require("../agent-downloaders/web"));
+const external_process_1 = __importDefault(require("../agents/external-process"));
+const Requests = __importStar(require("../protocol/v1/requests"));
+const Constants = __importStar(require("../constants"));
+const Errors = __importStar(require("../errors"));
 var request_1 = require("./request");
-exports.ScoutRequest = request_1.default;
+Object.defineProperty(exports, "ScoutRequest", { enumerable: true, get: function () { return __importDefault(request_1).default; } });
 var span_1 = require("./span");
-exports.ScoutSpan = span_1.default;
-const request_2 = require("./request");
+Object.defineProperty(exports, "ScoutSpan", { enumerable: true, get: function () { return __importDefault(span_1).default; } });
+const request_2 = __importDefault(require("./request"));
 const DONE_NOTHING = () => undefined;
 const ASYNC_NS = "scout";
-const ASYNC_NS_REQUEST = `${ASYNC_NS}.request`;
-const ASYNC_NS_SPAN = `${ASYNC_NS}.span`;
+const ASYNC_NS_REQUEST = "request";
+const ASYNC_NS_SPAN = "span";
 class Scout extends events_1.EventEmitter {
     constructor(config, opts) {
         super();
@@ -32,8 +75,8 @@ class Scout extends events_1.EventEmitter {
         this.slowRequestThresholdMs = Constants.DEFAULT_SLOW_REQUEST_THRESHOLD_MS;
         this.syncCurrentRequest = null;
         this.syncCurrentSpan = null;
-        this.cpuUsageStart = getCPUUsage();
-        this.config = config || types_1.buildScoutConfiguration();
+        this.cpuUsageStart = (0, cpu_percentage_1.default)();
+        this.config = config || (0, types_1.buildScoutConfiguration)();
         if (opts) {
             if (opts.logFn) {
                 this.logFn = opts.logFn;
@@ -54,15 +97,15 @@ class Scout extends events_1.EventEmitter {
             version = version.slice(1);
         }
         // Build expected bin & socket path based on current version
-        const triple = types_1.generateTriple();
+        const triple = (0, types_1.generateTriple)();
         this.binPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, `scout_apm_core-v${version}-${triple}`, Constants.CORE_AGENT_BIN_FILE_NAME);
         // If the passed-in logging function (saved @ logFn) has a 'logger' property which has a correposnding level
         // attempt to set the log level to the passed in logger's level
-        if (this.logFn && this.logFn.logger && this.logFn.logger.level && types_1.isLogLevel(this.logFn.logger.level)) {
-            this.config.logLevel = types_1.parseLogLevel(this.logFn.logger.level);
+        if (this.logFn && this.logFn.logger && this.logFn.logger.level && (0, types_1.isLogLevel)(this.logFn.logger.level)) {
+            this.config.logLevel = (0, types_1.parseLogLevel)(this.logFn.logger.level);
         }
-        // Create async namespace if it does not exist
-        this.createAsyncNamespace();
+        // Create AsyncLocalStorage instance
+        this.asyncLocalStorage = new async_hooks_1.AsyncLocalStorage();
     }
     log(message, level = types_1.LogLevel.Info) {
         if (!this.logFn) {
@@ -71,7 +114,7 @@ class Scout extends events_1.EventEmitter {
         if (!this.config || !this.config.logLevel) {
             return;
         }
-        if (types_1.isIgnoredLogMessage(this.config.logLevel, level)) {
+        if ((0, types_1.isIgnoredLogMessage)(this.config.logLevel, level)) {
             return;
         }
         return this.logFn(message, level);
@@ -117,8 +160,8 @@ class Scout extends events_1.EventEmitter {
             const memoryUsageMB = process.memoryUsage().rss / (1024 * 1024);
             this.agent.sendAsync(new Requests.V1ApplicationEvent(`Pid: ${pid}`, types_1.ApplicationEventType.MemoryUsageMB, memoryUsageMB));
             // Calculate the CPU usage since last measurement, send percentage
-            const cpuUsagePercent = getCPUUsage(this.cpuUsageStart).percent * 100;
-            this.cpuUsageStart = getCPUUsage();
+            const cpuUsagePercent = (0, cpu_percentage_1.default)(this.cpuUsageStart).percent * 100;
+            this.cpuUsageStart = (0, cpu_percentage_1.default)();
             this.agent.sendAsync(new Requests.V1ApplicationEvent(`Pid: ${pid}`, types_1.ApplicationEventType.CPUUtilizationPercent, cpuUsagePercent));
         }, this.statsIntervalMS || Constants.DEFAULT_STATS_INTERVAL_MS);
     }
@@ -222,7 +265,7 @@ class Scout extends events_1.EventEmitter {
             process.on("uncaughtException", this.uncaughtExceptionListenerFn);
         })
             // Set up this scout instance as the global one, if there isn't already one
-            .then(() => global_1.setActiveGlobalScoutInstance(this))
+            .then(() => (0, global_1.setActiveGlobalScoutInstance)(this))
             // Start the statistics sending interval
             .then(() => this.startSendingStatistics())
             .then(() => this);
@@ -289,9 +332,9 @@ class Scout extends events_1.EventEmitter {
     filterRequestPath(path) {
         switch (this.config.uriReporting) {
             case types_1.URIReportingLevel.FilteredParams:
-                return types_1.scrubRequestPathParams(path);
+                return (0, types_1.scrubRequestPathParams)(path);
             case types_1.URIReportingLevel.Path:
-                return types_1.scrubRequestPath(path);
+                return (0, types_1.scrubRequestPath)(path);
             default:
                 return path;
         }
@@ -374,21 +417,24 @@ class Scout extends events_1.EventEmitter {
         let span;
         return new Promise((resolve, reject) => {
             // Create a new async context for the instrumentation
-            this.asyncNamespace.run(() => {
+            this.asyncLocalStorage.run({}, () => {
                 // Create a done function that will clear the entry and stop the span
                 const doneFn = () => {
                     // Set the parent for other sibling/same-level spans
-                    if (parentIsSpan) {
-                        // If the parent of this span is a span, then we want other spans in this namespace
-                        // to be children of that parent span, so save the parent
-                        this.asyncNamespace.set(ASYNC_NS_SPAN, parent);
-                    }
-                    else {
-                        // If the parent of this span *not* a span,
-                        // then the parent of sibling spans should be the request,
-                        // so we can clear the current span entry
-                        this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
-                        this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
+                    const store = this.asyncLocalStorage.getStore();
+                    if (store) {
+                        if (parentIsSpan) {
+                            // If the parent of this span is a span, then we want other spans in this namespace
+                            // to be children of that parent span, so save the parent
+                            store[ASYNC_NS_SPAN] = parent;
+                        }
+                        else {
+                            // If the parent of this span *not* a span,
+                            // then the parent of sibling spans should be the request,
+                            // so we can clear the current span entry
+                            this.clearAsyncStorageEntry(ASYNC_NS_SPAN);
+                            this.clearAsyncStorageEntry(ASYNC_NS_REQUEST);
+                        }
                     }
                     // If we never made the span object then don't do anything
                     if (!span) {
@@ -408,9 +454,12 @@ class Scout extends events_1.EventEmitter {
                     .startChildSpan(operation)
                     .then(s => span = s)
                     .then(() => {
-                    // Set the span & request on the namespace
-                    this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
-                    this.asyncNamespace.set(ASYNC_NS_SPAN, span);
+                    // Set the span & request on the store
+                    const store = this.asyncLocalStorage.getStore();
+                    if (store) {
+                        store[ASYNC_NS_REQUEST] = request;
+                        store[ASYNC_NS_SPAN] = span;
+                    }
                     // Set function to call on finish
                     span.setOnStop(() => {
                         const result = doneFn();
@@ -504,10 +553,11 @@ class Scout extends events_1.EventEmitter {
      */
     getCurrentRequest() {
         try {
-            const req = this.asyncNamespace.get(ASYNC_NS_REQUEST);
+            const store = this.asyncLocalStorage.getStore();
+            const req = store?.[ASYNC_NS_REQUEST];
             return req || this.syncCurrentRequest;
         }
-        catch (_a) {
+        catch {
             return null;
         }
     }
@@ -518,17 +568,18 @@ class Scout extends events_1.EventEmitter {
      */
     getCurrentSpan() {
         try {
-            const span = this.asyncNamespace.get(ASYNC_NS_SPAN);
+            const store = this.asyncLocalStorage.getStore();
+            const span = store?.[ASYNC_NS_SPAN];
             return span || this.syncCurrentSpan;
         }
-        catch (_a) {
+        catch {
             return null;
         }
     }
     // Setup integrations
     setupIntegrations() {
         Object.keys(global_1.EXPORT_BAG)
-            .map(packageName => integrations_1.getIntegrationForPackage(packageName))
+            .map(packageName => (0, integrations_1.getIntegrationForPackage)(packageName))
             .forEach(integration => integration.setScoutInstance(this));
     }
     /**
@@ -539,28 +590,31 @@ class Scout extends events_1.EventEmitter {
     agentIsRunning(socketPath) {
         const socketType = this.getSocketType();
         if (socketType === types_1.AgentSocketType.Unix) {
-            return fs_extra_1.pathExists(socketPath);
+            return (0, fs_extra_1.pathExists)(socketPath);
         }
         if (socketType === types_1.AgentSocketType.TCP) {
             const [_, __, portRaw] = socketPath.split(":");
             const port = parseInt(portRaw, 10);
-            return tcp_port_used_1.check(port);
+            return (0, tcp_port_used_1.check)(port);
         }
         return Promise.reject(new Errors.UnknownSocketType());
     }
     /**
-     * Attempt to clear an async name space entry
+     * Attempt to clear an async storage entry
      *
-     * this.asyncNamespace.set can fail if the async context ID is already gone
+     * Setting values in the store can fail if the async context is already gone
      * before someone tries to clear it. This can happen if some caller moves calls to
      * another async context or if it's cleaned up suddenly
      */
-    clearAsyncNamespaceEntry(key) {
+    clearAsyncStorageEntry(key) {
         try {
-            this.asyncNamespace.set(key, undefined);
+            const store = this.asyncLocalStorage.getStore();
+            if (store) {
+                delete store[key];
+            }
         }
-        catch (_a) {
-            this.logFn("failed to clear async namespace", types_1.LogLevel.Debug);
+        catch {
+            this.logFn("failed to clear async storage", types_1.LogLevel.Debug);
         }
     }
     // Helper for creating an ExternalProcessAgent for an existing, listening agent
@@ -576,7 +630,7 @@ class Scout extends events_1.EventEmitter {
         })
             // Build process options and agent
             .then(() => {
-            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
+            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), (0, types_1.buildProcessOptions)(this.config));
             return new external_process_1.default(this.processOptions, this.log);
         })
             .then(agent => this.setupAgent(agent));
@@ -596,7 +650,7 @@ class Scout extends events_1.EventEmitter {
         this.downloaderOptions = Object.assign({
             cacheDir: path.dirname(this.binPath),
             updateCache: true,
-        }, this.downloaderOptions, types_1.buildDownloadOptions(this.config));
+        }, this.downloaderOptions, (0, types_1.buildDownloadOptions)(this.config));
         // Download the appropriate binary
         return this.downloader
             .download(this.coreAgentVersion, this.downloaderOptions)
@@ -606,7 +660,7 @@ class Scout extends events_1.EventEmitter {
         })
             // Build options for the agent and create the agent
             .then(() => {
-            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
+            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), (0, types_1.buildProcessOptions)(this.config));
             const agent = new external_process_1.default(this.processOptions, this.log);
             if (!agent) {
                 throw new Errors.NoAgentPresent();
@@ -631,16 +685,6 @@ class Scout extends events_1.EventEmitter {
         });
     }
     /**
-     * Create an async namespace internally for use with tracking if not already present
-     */
-    createAsyncNamespace() {
-        this.asyncNamespace = cls.getNamespace(ASYNC_NS);
-        // Create if it doesn't exist
-        if (!this.asyncNamespace) {
-            this.asyncNamespace = cls.createNamespace(ASYNC_NS);
-        }
-    }
-    /**
      * Perform some action within a context
      *
      */
@@ -649,8 +693,8 @@ class Scout extends events_1.EventEmitter {
             let result;
             let request;
             let ranCb = false;
-            // Run in the async namespace
-            this.asyncNamespace.run(() => {
+            // Run in the async local storage
+            this.asyncLocalStorage.run({}, () => {
                 // Make done function that will run after
                 const doneFn = () => {
                     // Finish if the request itself is no longer present
@@ -658,8 +702,8 @@ class Scout extends events_1.EventEmitter {
                         return Promise.resolve();
                     }
                     this.log(`[scout] Finishing and sending request with ID [${request.id}]`, types_1.LogLevel.Debug);
-                    this.clearAsyncNamespaceEntry(ASYNC_NS_REQUEST);
-                    this.clearAsyncNamespaceEntry(ASYNC_NS_SPAN);
+                    this.clearAsyncStorageEntry(ASYNC_NS_REQUEST);
+                    this.clearAsyncStorageEntry(ASYNC_NS_SPAN);
                     // Finish and send
                     return request.finishAndSend()
                         .then(() => {
@@ -669,21 +713,18 @@ class Scout extends events_1.EventEmitter {
                         this.log(`[scout] Failed to finish and send request [${request.id}]:\n ${err}`, types_1.LogLevel.Error);
                     });
                 };
-                this.log(`[scout] Starting request in async namespace...`, types_1.LogLevel.Debug);
-                // Bind the cb to this namespace
-                cb = this.asyncNamespace.bind(cb);
+                this.log(`[scout] Starting request in async storage...`, types_1.LogLevel.Debug);
                 // Start the request
                 this.startRequest()
                     .then(r => request = r)
-                    // Update async namespace, run function
+                    // Update async storage, run function
                     .then(() => {
                     this.log(`[scout] Request started w/ ID [${request.id}]`, types_1.LogLevel.Debug);
-                    this.asyncNamespace.set(ASYNC_NS_REQUEST, request);
+                    const store = this.asyncLocalStorage.getStore();
+                    if (store) {
+                        store[ASYNC_NS_REQUEST] = request;
+                    }
                     // Set function to call on finish
-                    // NOTE: at least *two* async contexts will be created for each request -- one for the request
-                    // and one for every span started inside the request. this.asyncNamespace is almost certain
-                    // to be different by the time that stopFn is run -- we need to bind the stopFn to ensure
-                    // the right async namespace gets cleared.
                     const stopFn = () => {
                         const result = doneFn();
                         if (request) {
@@ -691,7 +732,7 @@ class Scout extends events_1.EventEmitter {
                         }
                         return result;
                     };
-                    request.setOnStop(this.asyncNamespace.bind(stopFn));
+                    request.setOnStop(stopFn);
                     ranCb = true;
                     result = cb(() => request.stop(), { request });
                     // Ensure that the result is a promise
@@ -796,7 +837,6 @@ function sendStartRequest(scout, req) {
         return req;
     });
 }
-exports.sendStartRequest = sendStartRequest;
 /**
  * Send the StopRequest message to the agent
  *
@@ -821,7 +861,6 @@ function sendStopRequest(scout, req) {
         return req;
     });
 }
-exports.sendStopRequest = sendStopRequest;
 /**
  * Send the TagRequest message to the agent for a single tag
  *
@@ -844,7 +883,6 @@ function sendTagRequest(scout, req, name, value) {
         scout.log("[scout] failed to send tag request", types_1.LogLevel.Error);
     });
 }
-exports.sendTagRequest = sendTagRequest;
 /**
  * Send the StartSpan message to the agent
  *
@@ -871,7 +909,6 @@ function sendStartSpan(scout, span) {
         return span;
     });
 }
-exports.sendStartSpan = sendStartSpan;
 /**
  * Send the TagSpan message to the agent message to the agent
  *
@@ -895,7 +932,6 @@ function sendTagSpan(scout, span, name, value) {
         return undefined;
     });
 }
-exports.sendTagSpan = sendTagSpan;
 /**
  * Send the StopSpan message to the agent
  *
@@ -917,7 +953,6 @@ function sendStopSpan(scout, span) {
         return span;
     });
 }
-exports.sendStopSpan = sendStopSpan;
 /**
  * Helper function for sending a given request through the agent
  *
@@ -946,4 +981,3 @@ function sendThroughAgent(scout, msg, opts) {
     }
     return agent.send(msg);
 }
-exports.sendThroughAgent = sendThroughAgent;

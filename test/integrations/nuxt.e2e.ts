@@ -1,5 +1,5 @@
-import * as test from "tape";
-import * as request from "supertest";
+import test from "tape";
+import request from "supertest";
 import { Express, Application } from "express";
 
 import {

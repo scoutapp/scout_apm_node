@@ -1,9 +1,45 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const test = require("tape");
-const TestUtil = require("./util");
-const Constants = require("../lib/constants");
-const request = require("supertest");
+const tape_1 = __importDefault(require("tape"));
+const TestUtil = __importStar(require("./util"));
+const Constants = __importStar(require("../lib/constants"));
+const supertest_1 = __importDefault(require("supertest"));
 const express_1 = require("../lib/express");
 const types_1 = require("../lib/types");
 const scout_1 = require("../lib/scout");
@@ -12,20 +48,20 @@ const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
 const global_1 = require("../lib/global");
 const TEST_OPTS = { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS };
-lib_1.setupRequireIntegrations(["pug", "ejs", "mustache"]);
-test("Simple operation", t => {
+(0, lib_1.setupRequireIntegrations)(["pug", "ejs", "mustache"]);
+(0, tape_1.default)("Simple operation", t => {
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
-        config: types_1.buildScoutConfiguration({
+    const app = TestUtil.simpleExpressApp((0, express_1.scoutMiddleware)({
+        config: (0, types_1.buildScoutConfiguration)({
             allowShutdown: true,
             monitor: true,
         }),
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     let scout;
     // Send a request to the application (which should trigger setup of scout)
-    request(app)
+    (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /json/)
         .expect(200)
@@ -50,7 +86,7 @@ test("Simple operation", t => {
         // Set up listener on the agent
         scout.on(types_1.AgentEvent.RequestFinished, listener);
         // Make another request to the application
-        request(app)
+        (0, supertest_1.default)(app)
             .get("/")
             .expect("Content-Type", /json/)
             .expect(200)
@@ -58,20 +94,20 @@ test("Simple operation", t => {
     })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("Dynamic segment routes (uses global instance)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+(0, tape_1.default)("Dynamic segment routes (uses global instance)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
-        config: types_1.buildScoutConfiguration({
+    const app = TestUtil.simpleDynamicSegmentExpressApp((0, express_1.scoutMiddleware)({
+        config: (0, types_1.buildScoutConfiguration)({
             allowShutdown: true,
             monitor: true,
         }),
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     let scout;
     const expectedRootSpan = "Controller/GET /dynamic/:segment";
     // Send a request to the application (which should trigger setup of scout)
-    request(app)
+    (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /json/)
         .expect(200)
@@ -107,7 +143,7 @@ test("Dynamic segment routes (uses global instance)", { timeout: TestUtil.EXPRES
         // Set up listener on the agent
         scout.on(types_1.AgentEvent.RequestSent, listener);
         // Make another request to the application
-        request(app)
+        (0, supertest_1.default)(app)
             .get("/dynamic/1234")
             .expect("Content-Type", /json/)
             .expect(200)
@@ -116,19 +152,19 @@ test("Dynamic segment routes (uses global instance)", { timeout: TestUtil.EXPRES
     })
         .catch(t.end);
 });
-test("Application which errors (uses global scout instance)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+(0, tape_1.default)("Application which errors (uses global scout instance)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleErrorApp(express_1.scoutMiddleware({
-        config: types_1.buildScoutConfiguration({
+    const app = TestUtil.simpleErrorApp((0, express_1.scoutMiddleware)({
+        config: (0, types_1.buildScoutConfiguration)({
             allowShutdown: true,
             monitor: true,
         }),
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     let scout;
     // Send a request to the application (which should trigger setup of scout)
-    request(app)
+    (0, supertest_1.default)(app)
         .get("/")
         .expect(500)
         .then(res => {
@@ -142,17 +178,17 @@ test("Application which errors (uses global scout instance)", { timeout: TestUti
         .then(() => TestUtil.shutdownScout(t, scout))
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("express ignores a path (exact path, with dynamic segments)", TEST_OPTS, t => {
+(0, tape_1.default)("express ignores a path (exact path, with dynamic segments)", TEST_OPTS, t => {
     const path = "/dynamic/:segment";
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         ignore: [path],
     }));
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleDynamicSegmentExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
@@ -164,23 +200,23 @@ test("express ignores a path (exact path, with dynamic segments)", TEST_OPTS, t 
     };
     scout.on(types_1.ScoutEvent.IgnoredPathDetected, listener);
     // Send a request to the application (which should trigger setup of scout)
-    request(app)
+    (0, supertest_1.default)(app)
         .get("/dynamic/1234")
         .expect("Content-Type", /json/)
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("express ignores a path (exact path, static)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+(0, tape_1.default)("express ignores a path (exact path, static)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/";
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         ignore: [path],
     }));
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleDynamicSegmentExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
@@ -192,24 +228,24 @@ test("express ignores a path (exact path, static)", { timeout: TestUtil.EXPRESS_
     };
     scout.on(types_1.ScoutEvent.IgnoredPathDetected, listener);
     // Send a request to the application (which should trigger setup of scout)
-    request(app)
+    (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /json/)
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("express ignores a path (prefix, with dynamic segments)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+(0, tape_1.default)("express ignores a path (prefix, with dynamic segments)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/dynamic/:segment";
     const prefix = "/dynamic";
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         ignore: [prefix],
     }));
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleDynamicSegmentExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
@@ -222,24 +258,24 @@ test("express ignores a path (prefix, with dynamic segments)", { timeout: TestUt
     };
     scout.on(types_1.ScoutEvent.IgnoredPathDetected, listener);
     // Send a request to the application (which should trigger setup of scout)
-    request(app)
+    (0, supertest_1.default)(app)
         .get("/dynamic/1234")
         .expect("Content-Type", /json/)
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("express ignores a path (prefix, static)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+(0, tape_1.default)("express ignores a path (prefix, static)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/echo-by-post";
     const prefix = "/echo";
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         ignore: [prefix],
     }));
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleDynamicSegmentExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
@@ -252,22 +288,22 @@ test("express ignores a path (prefix, static)", { timeout: TestUtil.EXPRESS_TEST
     };
     scout.on(types_1.ScoutEvent.IgnoredPathDetected, listener);
     // Send a request to the application (which should trigger setup of scout)
-    request(app)
+    (0, supertest_1.default)(app)
         .post(path)
         .send("hello")
         .expect("Content-Type", /json/)
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleDynamicSegmentExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
@@ -288,23 +324,23 @@ test("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
     // Send a request to the application (which should trigger setup of scout)
-    request(app)
+    (0, supertest_1.default)(app)
         .post("/echo-by-post?password=test")
         .send("hello")
         .expect("Content-Type", /json/)
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
         uriReporting: types_1.URIReportingLevel.Path,
     }));
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleDynamicSegmentExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     // Set up a listener that should *not* fire
@@ -325,7 +361,7 @@ test("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS },
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
     // Send a request to the application (which should trigger setup of scout)
-    request(app)
+    (0, supertest_1.default)(app)
         .post("/echo-by-post?password=test")
         .send("hello")
         .expect("Content-Type", /json/)
@@ -333,15 +369,15 @@ test("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS },
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/82
-test("Pug integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("Pug integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
     // Create an application that's set up to use pug templating
-    const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleHTML5BoilerplateApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }), "pug");
     // Set up a listener that should fire when the request is finished
@@ -370,7 +406,7 @@ test("Pug integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t =
         TestUtil.shutdownScout(t, scout);
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
-    return request(app)
+    return (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /html/)
         .expect(200)
@@ -380,15 +416,15 @@ test("Pug integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t =
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/82
-test("ejs integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("ejs integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
     // Create an application that's set up to use ejs templating
-    const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleHTML5BoilerplateApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }), "ejs");
     // Set up a listener that should fire when the request is finished
@@ -417,7 +453,7 @@ test("ejs integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t =
         TestUtil.shutdownScout(t, scout);
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
-    return request(app)
+    return (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /html/)
         .expect(200)
@@ -427,15 +463,15 @@ test("ejs integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t =
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/82
-test("mustache integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("mustache integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
     // Create an application that's set up to use mustache templating
-    const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleHTML5BoilerplateApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }), "mustache");
     // Set up a listener that should fire when the request is finished
@@ -464,7 +500,7 @@ test("mustache integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }
         TestUtil.shutdownScout(t, scout);
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
-    return request(app)
+    return (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /html/)
         .expect(200)
@@ -474,15 +510,15 @@ test("mustache integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/129
-test("Nested spans on the top level controller have parent ID specified", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("Nested spans on the top level controller have parent ID specified", t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
     // Create an application that's set up to do a simple instrumentation
-    const app = TestUtil.simpleInstrumentApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleInstrumentApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     // Set up a listener that should fire when the request is finished
@@ -514,22 +550,22 @@ test("Nested spans on the top level controller have parent ID specified", t => {
         TestUtil.shutdownScout(t, scout);
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
-    return request(app)
+    return (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /json/)
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/150
-test("Unknown routes should not be recorded", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("Unknown routes should not be recorded", t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
     // Create an application that's set up to do a simple instrumentation
-    const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     // Set up a listener that should fire when the request is finished
@@ -545,7 +581,7 @@ test("Unknown routes should not be recorded", t => {
     scout
         .setup()
         .then(() => {
-        return request(app)
+        return (0, supertest_1.default)(app)
             .get("/nope")
             .expect("Content-Type", /html/)
             .expect(404)
@@ -554,15 +590,15 @@ test("Unknown routes should not be recorded", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/68
-test("Request queue time should be recorded", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("Request queue time should be recorded", t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
     // Create an application that's set up to do a simple instrumentation
-    const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     let preRequestTimeNS;
@@ -587,7 +623,7 @@ test("Request queue time should be recorded", t => {
         // Take the time before making the request
         preRequestTimeNS = new BigNumber(getNanoTime());
         // Send a request that has recognized headers set
-        return request(app)
+        return (0, supertest_1.default)(app)
             .get("/")
             .set("X-QUEUE-START", `t=${preRequestTimeNS.toString()}`)
             .expect("Content-Type", /json/)
@@ -597,8 +633,8 @@ test("Request queue time should be recorded", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // Cleanup the global isntance(s) that get created
-test("Shutdown the global instance", t => {
-    const inst = global_1.getActiveGlobalScoutInstance();
+(0, tape_1.default)("Shutdown the global instance", t => {
+    const inst = (0, global_1.getActiveGlobalScoutInstance)();
     if (inst) {
         return TestUtil.shutdownScout(t, inst);
     }

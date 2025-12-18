@@ -1,4 +1,4 @@
-import * as test from "tape";
+import test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 
@@ -101,7 +101,7 @@ test("SELECT query during a request is recorded", t => {
         .setup()
     // Connect to the mysql2
         .then(() => TestUtil.makeConnectedMySQL2Connection(() => MYSQL2_CONTAINER_AND_OPTS))
-        .then(c => conn = c)
+        .then(c => conn = c as any)
     // Start a scout transaction & perform a query
         .then(() => scout.transaction("Controller/select-now-test", finishTransaction => {
             return new Promise((resolve, reject) => {

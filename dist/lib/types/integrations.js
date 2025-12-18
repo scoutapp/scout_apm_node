@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Hook = require("require-in-the-middle");
+exports.doNothingRequireIntegration = exports.RequireIntegration = void 0;
+exports.getIntegrationSymbol = getIntegrationSymbol;
+const require_in_the_middle_1 = require("require-in-the-middle");
 const enum_1 = require("../types/enum");
 const global_1 = require("../global");
 let SYMBOL;
@@ -11,7 +13,6 @@ function getIntegrationSymbol() {
     SYMBOL = Symbol("scout");
     return SYMBOL;
 }
-exports.getIntegrationSymbol = getIntegrationSymbol;
 class RequireIntegration {
     constructor() {
         this.logFn = () => undefined;
@@ -30,11 +31,11 @@ class RequireIntegration {
      * @param {ExportBag} exportBag - The bag of exports that have been shimmed by scout already
      */
     ritmHook(exportBag) {
-        Hook([this.getPackageName()], (exports, name, basedir) => {
+        new require_in_the_middle_1.Hook([this.getPackageName()], (exports, name, basedir) => {
             // Set the scout instsance to the global one if there is one
             // this is needed in cases where require()s are run dynamically, long after scout.setup()
             // we assume that scout.setup() will set *one* instance of scout to be the global one
-            const globalScoutInstance = global_1.getActiveGlobalScoutInstance();
+            const globalScoutInstance = (0, global_1.getActiveGlobalScoutInstance)();
             if (globalScoutInstance) {
                 this.setScoutInstance(globalScoutInstance);
             }
@@ -44,12 +45,12 @@ class RequireIntegration {
                 }
             }
             // If the shim has already been run, then finish
-            if (!exports || getIntegrationSymbol() in exports) {
+            if (!exports || (typeof exports === 'object' && getIntegrationSymbol() in exports)) {
                 return exports;
             }
             const sym = getIntegrationSymbol();
             // Check if the shim has already been performed
-            if (sym in exports) {
+            if (typeof exports === 'object' && sym in exports) {
                 return exports;
             }
             // Make changes to the mysql2 package to enable integration
@@ -94,7 +95,7 @@ class RequireIntegration {
         if (this.scoutInstance) {
             return this.scoutInstance;
         }
-        return global_1.getActiveGlobalScoutInstance();
+        return (0, global_1.getActiveGlobalScoutInstance)();
     }
 }
 exports.RequireIntegration = RequireIntegration;

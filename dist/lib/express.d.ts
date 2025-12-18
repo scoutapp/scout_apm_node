@@ -4,7 +4,7 @@ import { Request } from "express";
 export interface ApplicationWithScout {
     scout?: Scout;
 }
-declare type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
+type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
 export interface ExpressMiddlewareOptions {
     config?: Partial<ScoutConfiguration>;
     logFn?: LogFn;
@@ -18,7 +18,7 @@ export interface ExpressScoutInfo {
     request?: ScoutRequest;
     rootSpan?: ScoutSpan;
 }
-export declare type ExpressRequestWithScout = Request & ExpressScoutInfo;
+export type ExpressRequestWithScout = Request & ExpressScoutInfo;
 /**
  * Middleware for using scout, this should be
  * attached to the application object using app.use(...)

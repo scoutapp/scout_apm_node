@@ -1,12 +1,48 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const uuid_1 = require("uuid");
 const types_1 = require("../types");
-const span_1 = require("./span");
+const span_1 = __importDefault(require("./span"));
 const index_1 = require("./index");
 const types_2 = require("../types");
-const Constants = require("../constants");
-const Errors = require("../errors");
+const Constants = __importStar(require("../constants"));
+const Errors = __importStar(require("../errors"));
 class ScoutRequest {
     constructor(opts) {
         this.started = false;
@@ -16,7 +52,7 @@ class ScoutRequest {
         this.tags = {};
         this.ignored = false;
         this.logFn = () => undefined;
-        this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_REQUEST_PREFIX}${uuid_1.v4()}`;
+        this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_REQUEST_PREFIX}${(0, uuid_1.v4)()}`;
         if (opts) {
             if (opts.logFn) {
                 this.logFn = opts.logFn;
@@ -213,14 +249,14 @@ class ScoutRequest {
             inst.emit(types_2.ScoutEvent.IgnoredRequestProcessingSkipped, this);
             return Promise.resolve(this);
         }
-        this.sending = index_1.sendStartRequest(inst, this)
+        this.sending = (0, index_1.sendStartRequest)(inst, this)
             // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
             // Send tags
             .then(() => Promise.all(Object.entries(this.tags)
-            .map(([name, value]) => index_1.sendTagRequest(inst, this, name, value))))
+            .map(([name, value]) => (0, index_1.sendTagRequest)(inst, this, name, value))))
             // End the span
-            .then(() => index_1.sendStopRequest(inst, this))
+            .then(() => (0, index_1.sendStopRequest)(inst, this))
             .then(() => this.sent = true)
             .then(() => this)
             .catch(err => {

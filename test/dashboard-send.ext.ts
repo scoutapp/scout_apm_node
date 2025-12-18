@@ -9,8 +9,8 @@
  * cleanup happens at the end after waiting a certain amount of time to ensure the traces are sent.
  */
 
-import * as test from "tape";
-import * as request from "supertest";
+import test from "tape";
+import request from "supertest";
 import { generate as generateRandomString } from "randomstring";
 
 import {

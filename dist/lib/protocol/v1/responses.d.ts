@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { BaseAgentResponse, AgentResponseType, CoreAgentVersion } from "../../types";
 export declare class V1AgentResponse extends BaseAgentResponse {
     /** @see AgentResponse */

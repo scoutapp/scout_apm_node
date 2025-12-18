@@ -6,7 +6,7 @@ setupRequireIntegrations(["pg"]);
 import { Client } from "pg";
 import { Sequelize, QueryTypes } from "sequelize";
 
-import * as test from "tape";
+import test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 

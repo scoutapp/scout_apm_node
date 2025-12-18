@@ -1,7 +1,7 @@
-/// <reference types="node" />
 import { Options as GenericPoolOptions } from "generic-pool";
 import { AgentRequestType, AgentResponseType, AgentType, LogLevel } from "./enum";
 import { JSONValue } from "./util";
+import { Buffer } from "buffer";
 /**
  * Scout APM Agent which handles communicating with a local/remote Scout Core Agent process
  * to relay performance and monitoring information
@@ -102,8 +102,8 @@ export interface HashDigests {
     sha256?: string;
     sha512?: string;
 }
-export declare type AgentOptions = ProcessOptions;
-export declare type ConnectionPoolOptions = Partial<GenericPoolOptions>;
+export type AgentOptions = ProcessOptions;
+export type ConnectionPoolOptions = Partial<GenericPoolOptions>;
 /**
  * Options for agents that are in a separate process not managed by this one
  */

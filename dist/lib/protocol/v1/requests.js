@@ -1,7 +1,41 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.V1ApplicationEvent = exports.V1TagSpan = exports.V1StopSpan = exports.V1StartSpan = exports.V1TagRequest = exports.V1FinishRequest = exports.V1StartRequest = exports.V1Register = exports.V1GetVersionRequest = void 0;
 const uuid_1 = require("uuid");
-const Constants = require("../../constants");
+const Constants = __importStar(require("../../constants"));
 const types_1 = require("../../types");
 class V1GetVersionRequest extends types_1.BaseAgentRequest {
     constructor() {
@@ -31,7 +65,7 @@ class V1StartRequest extends types_1.BaseAgentRequest {
         this.type = types_1.AgentRequestType.V1StartRequest;
         const prefix = Constants.DEFAULT_REQUEST_PREFIX;
         this.timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
-        this.requestId = opts && opts.requestId ? opts.requestId : `${prefix}${uuid_1.v4()}`;
+        this.requestId = opts && opts.requestId ? opts.requestId : `${prefix}${(0, uuid_1.v4)()}`;
         this.json = {
             StartRequest: {
                 request_id: this.requestId,
@@ -81,7 +115,7 @@ class V1StartSpan extends types_1.BaseAgentRequest {
         this.operation = operation;
         this.parentId = opts && opts.parentId ? opts.parentId : undefined;
         const prefix = Constants.DEFAULT_SPAN_PREFIX;
-        this.spanId = opts && opts.spanId ? opts.spanId : `${prefix}${uuid_1.v4()}`;
+        this.spanId = opts && opts.spanId ? opts.spanId : `${prefix}${(0, uuid_1.v4)()}`;
         this.timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
         this.json = {
             StartSpan: {

@@ -1,2 +1,2 @@
 import { Application } from "express";
-export declare type ExpressFn = () => Application;
+export type ExpressFn = () => Application;
