@@ -1,0 +1,118 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+      - run: yarn lint
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Node 12
+          - node: 12
+            express: "^4.16.0"
+
+          # Node 14
+          - node: 14
+            express: "^4.16.0"
+          - node: 14
+            express: "^4.18.0"
+
+          # Node 16
+          - node: 16
+            express: "^4.16.0"
+          - node: 16
+            express: "^4.18.0"
+
+          # Node 18
+          - node: 18
+            express: "^4.16.0"
+          - node: 18
+            express: "^4.18.0"
+
+          # Node 20
+          - node: 20
+            express: "^4.16.0"
+          - node: 20
+            express: "^4.18.0"
+          - node: 20
+            express: "^4.19.0"
+
+          # Node 22
+          - node: 22
+            express: "^4.18.0"
+          - node: 22
+            express: "^4.19.0"
+
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: scout_apm_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: scout_apm_test
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 3306:3306
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install specific Express version
+        if: matrix.express
+        run: yarn add --dev express@${{ matrix.express }}
+
+      - name: Build
+        run: yarn build
+
+      - name: Run tests
+        run: yarn test
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: scout_apm_test
+          MYSQL_HOST: localhost
+          MYSQL_PORT: 3306
+          MYSQL_USER: root
+          MYSQL_PASSWORD: root
+          MYSQL_DATABASE: scout_apm_test
