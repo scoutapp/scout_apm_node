@@ -1,7 +1,43 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const test = require("tape");
-const request = require("supertest");
+const tape_1 = __importDefault(require("tape"));
+const supertest_1 = __importDefault(require("supertest"));
 const randomstring_1 = require("randomstring");
 const types_1 = require("../../lib/types");
 const lib_1 = require("../../lib");
@@ -9,31 +45,31 @@ const scout_1 = require("../../lib/scout");
 // The hook for http has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
 // *NOTE* this must be here since express is used from TestUtil
-lib_1.setupRequireIntegrations(["express"]);
-const TestUtil = require("../util");
+(0, lib_1.setupRequireIntegrations)(["express"]);
+const TestUtil = __importStar(require("../util"));
 const integrations_1 = require("../../lib/types/integrations");
-const express_1 = require("../../lib/integrations/express");
+const express_1 = __importDefault(require("../../lib/integrations/express"));
 const express_2 = require("../../lib/express");
 const types_2 = require("../../lib/types");
-test("the shim works", t => {
-    t.assert(integrations_1.getIntegrationSymbol() in require("express"), "express export has the integration symbol");
+(0, tape_1.default)("the shim works", t => {
+    t.assert((0, integrations_1.getIntegrationSymbol)() in require("express"), "express export has the integration symbol");
     t.end();
 });
-test("express object still has native props", t => {
+(0, tape_1.default)("express object still has native props", t => {
     const express = require("express");
     t.assert("static" in express, "express.static is still present");
     t.end();
 });
 // https://github.com/scoutapp/scout_apm_node/issues/127
-test("errors in controller functions trigger context updates", t => {
-    const config = types_1.buildScoutConfiguration({
+(0, tape_1.default)("errors in controller functions trigger context updates", t => {
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     });
     const scout = new scout_1.Scout(config);
-    const app = TestUtil.appWithGETSynchronousError(express_2.scoutMiddleware({
+    const app = TestUtil.appWithGETSynchronousError((0, express_2.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }), (fn) => express_1.default.shimExpressFn(fn));
     // Set up a listener for the scout request that will be after the controller error is thrown
     // Express should catch the error (https://expressjs.com/en/guide/error-handling.html)
@@ -53,7 +89,7 @@ test("errors in controller functions trigger context updates", t => {
         .setup()
         // Send a request to trigger the controller-function error
         .then(() => {
-        return request(app)
+        return (0, supertest_1.default)(app)
             .get("/")
             .expect("Content-Type", /html/)
             .expect(500)
@@ -63,18 +99,18 @@ test("errors in controller functions trigger context updates", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/238
-test("express Routers are recorded (one level)", t => {
-    const config = types_1.buildScoutConfiguration({
+(0, tape_1.default)("express Routers are recorded (one level)", t => {
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     });
     const scout = new scout_1.Scout(config);
-    const app = TestUtil.appWithRouterGET(express_2.scoutMiddleware({
+    const app = TestUtil.appWithRouterGET((0, express_2.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }), (fn) => express_1.default.shimExpressFn(fn));
     // Create a name to use the echo router
-    const reqName = randomstring_1.generate(5);
+    const reqName = (0, randomstring_1.generate)(5);
     // Set up a listener for the scout request that will be after the Router-hosted GET is hit
     const listener = (data) => {
         if (!data || !data.request) {
@@ -107,7 +143,7 @@ test("express Routers are recorded (one level)", t => {
         .then(() => {
         const url = `/mounted/echo/${reqName}`;
         t.comment(`sending request to [${url}]`);
-        return request(app)
+        return (0, supertest_1.default)(app)
             .get(url)
             .expect("Content-Type", /json/)
             .expect(200)
@@ -117,18 +153,18 @@ test("express Routers are recorded (one level)", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/238
-test("express Routers are recorded (two levels)", t => {
-    const config = types_1.buildScoutConfiguration({
+(0, tape_1.default)("express Routers are recorded (two levels)", t => {
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     });
     const scout = new scout_1.Scout(config);
-    const app = TestUtil.appWithRouterGET(express_2.scoutMiddleware({
+    const app = TestUtil.appWithRouterGET((0, express_2.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }), (fn) => express_1.default.shimExpressFn(fn));
     // Create a name to use the echo router
-    const reqName = randomstring_1.generate(5);
+    const reqName = (0, randomstring_1.generate)(5);
     // Set up a listener for the scout request that will be after the Router-hosted GET is hit
     const listener = (data) => {
         if (!data || !data.request) {
@@ -161,7 +197,7 @@ test("express Routers are recorded (two levels)", t => {
         .then(() => {
         const url = `/mounted/level-2/echo/${reqName}`;
         t.comment(`sending request to [${url}]`);
-        return request(app)
+        return (0, supertest_1.default)(app)
             .get(url)
             .expect("Content-Type", /json/)
             .expect(200)

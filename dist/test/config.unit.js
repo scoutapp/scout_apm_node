@@ -1,17 +1,53 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const os = require("os");
-const path = require("path");
-const test = require("tape");
+const os = __importStar(require("os"));
+const path = __importStar(require("path"));
+const tape_1 = __importDefault(require("tape"));
 const process_1 = require("process");
 const app_root_dir_1 = require("app-root-dir");
 const types_1 = require("../lib/types");
 const scout_1 = require("../lib/scout");
-const TestConstants = require("./constants");
+const TestConstants = __importStar(require("./constants"));
 const util_1 = require("./util");
-test("ScoutConfiguration builds with minimal passed ENV", t => {
+(0, tape_1.default)("ScoutConfiguration builds with minimal passed ENV", t => {
     // This env mimics what would be passed in from process.env
-    const config = types_1.buildScoutConfiguration({}, {
+    const config = (0, types_1.buildScoutConfiguration)({}, {
         env: {
             SCOUT_NAME: "app",
             SCOUT_HOSTNAME: "hostname",
@@ -26,40 +62,40 @@ test("ScoutConfiguration builds with minimal passed ENV", t => {
 });
 // // WARNING: This test must be run with some isolation or serially,
 // // since it touches process.env (even though it resets it)
-test("ScoutConfiguration overrides correctly for every config value", (t) => {
-    util_1.testConfigurationOverlay(t, { appKey: "name", envValue: "test", expectedValue: "test" });
-    util_1.testConfigurationOverlay(t, { appKey: "appServer", envValue: "test-server", expectedValue: "test-server" });
-    util_1.testConfigurationOverlay(t, {
+(0, tape_1.default)("ScoutConfiguration overrides correctly for every config value", (t) => {
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "name", envValue: "test", expectedValue: "test" });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "appServer", envValue: "test-server", expectedValue: "test-server" });
+    (0, util_1.testConfigurationOverlay)(t, {
         appKey: "applicationRoot",
         envValue: "/var/app/root",
         expectedValue: "/var/app/root"
     });
-    util_1.testConfigurationOverlay(t, { appKey: "coreAgentDir", envValue: "/tmp/dir", expectedValue: "/tmp/dir" });
-    util_1.testConfigurationOverlay(t, { appKey: "coreAgentDownload", envValue: "true", expectedValue: true });
-    util_1.testConfigurationOverlay(t, { appKey: "coreAgentLaunch", envValue: "false", expectedValue: false });
-    util_1.testConfigurationOverlay(t, { appKey: "coreAgentLogLevel", envValue: "info", expectedValue: types_1.LogLevel.Info });
-    util_1.testConfigurationOverlay(t, { appKey: "coreAgentPermissions", envValue: "700", expectedValue: 700 });
-    util_1.testConfigurationOverlay(t, { appKey: "coreAgentversion", envValue: "v1.2.4", expectedValue: "v1.2.4" });
-    util_1.testConfigurationOverlay(t, {
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "coreAgentDir", envValue: "/tmp/dir", expectedValue: "/tmp/dir" });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "coreAgentDownload", envValue: "true", expectedValue: true });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "coreAgentLaunch", envValue: "false", expectedValue: false });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "coreAgentLogLevel", envValue: "info", expectedValue: types_1.LogLevel.Info });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "coreAgentPermissions", envValue: "700", expectedValue: 700 });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "coreAgentversion", envValue: "v1.2.4", expectedValue: "v1.2.4" });
+    (0, util_1.testConfigurationOverlay)(t, {
         appKey: "disabledInstruments",
         envValue: "instrument_1,instrument_2",
         expectedValue: ["instrument_1", "instrument_2"],
     });
-    util_1.testConfigurationOverlay(t, { appKey: "downloadUrl", envValue: "example.org", expectedValue: "example.org" });
-    util_1.testConfigurationOverlay(t, { appKey: "framework", envValue: "fw_value", expectedValue: "fw_value" });
-    util_1.testConfigurationOverlay(t, { appKey: "frameworkversion", envValue: "v1", expectedValue: "v1" });
-    util_1.testConfigurationOverlay(t, { appKey: "hostname", envValue: "test-hostname", expectedValue: "test-hostname" });
-    util_1.testConfigurationOverlay(t, {
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "downloadUrl", envValue: "example.org", expectedValue: "example.org" });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "framework", envValue: "fw_value", expectedValue: "fw_value" });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "frameworkversion", envValue: "v1", expectedValue: "v1" });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "hostname", envValue: "test-hostname", expectedValue: "test-hostname" });
+    (0, util_1.testConfigurationOverlay)(t, {
         appKey: "ignore",
         envValue: "/api/v1/example,/api/v1/test",
         expectedValue: ["/api/v1/example", "/api/v1/test"],
     });
-    util_1.testConfigurationOverlay(t, { appKey: "key", envValue: "123456789", expectedValue: "123456789" });
-    util_1.testConfigurationOverlay(t, { appKey: "logLevel", envValue: "warn", expectedValue: types_1.LogLevel.Warn });
-    util_1.testConfigurationOverlay(t, { appKey: "monitor", envValue: "true", expectedValue: true });
-    util_1.testConfigurationOverlay(t, { appKey: "revisionSha", envValue: "51ab8123", expectedValue: "51ab8123" });
-    util_1.testConfigurationOverlay(t, { appKey: "scmSubdirectory", envValue: "/var/code", expectedValue: "/var/code" });
-    util_1.testConfigurationOverlay(t, {
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "key", envValue: "123456789", expectedValue: "123456789" });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "logLevel", envValue: "warn", expectedValue: types_1.LogLevel.Warn });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "monitor", envValue: "true", expectedValue: true });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "revisionSha", envValue: "51ab8123", expectedValue: "51ab8123" });
+    (0, util_1.testConfigurationOverlay)(t, { appKey: "scmSubdirectory", envValue: "/var/code", expectedValue: "/var/code" });
+    (0, util_1.testConfigurationOverlay)(t, {
         appKey: "socketPath",
         envValue: "/var/path/to/socket.sock",
         expectedValue: "/var/path/to/socket.sock",
@@ -67,7 +103,7 @@ test("ScoutConfiguration overrides correctly for every config value", (t) => {
     t.end();
 });
 // https://github.com/scoutapp/scout_apm_node/issues/61
-test("application metadata is correctly generated", (t) => {
+(0, tape_1.default)("application metadata is correctly generated", (t) => {
     const env = {
         SCOUT_NAME: "app",
         SCOUT_HOSTNAME: "hostname",
@@ -79,7 +115,7 @@ test("application metadata is correctly generated", (t) => {
         SCOUT_APPLICATION_ROOT: "/var/app",
         SCOUT_REVISION_SHA: "12345678",
     };
-    const config = types_1.buildScoutConfiguration({}, { env });
+    const config = (0, types_1.buildScoutConfiguration)({}, { env });
     const appMetadata = new types_1.ApplicationMetadata(config);
     t.assert(appMetadata, "app metadata was generated");
     t.equals(appMetadata.language, "nodejs", `[language] matches [${appMetadata.language}]`);
@@ -101,48 +137,48 @@ test("application metadata is correctly generated", (t) => {
     t.end();
 });
 // https://github.com/scoutapp/scout_apm_node/issues/124
-test("core agent dir matches python (pre-TCP-by-default, v1.2.9)", (t) => {
-    const config = types_1.buildScoutConfiguration({
+(0, tape_1.default)("core agent dir matches python (pre-TCP-by-default, v1.2.9)", (t) => {
+    const config = (0, types_1.buildScoutConfiguration)({
         coreAgentVersion: "v1.2.9",
     });
     const scout = new scout_1.Scout(config);
     const expectedCoreAgentDir = path.join(os.tmpdir(), "scout_apm_core");
-    const expectedSocketPath = path.join(expectedCoreAgentDir, `scout_apm_core-v1.2.9-${types_1.generateTriple()}`, "core-agent.sock");
+    const expectedSocketPath = path.join(expectedCoreAgentDir, `scout_apm_core-v1.2.9-${(0, types_1.generateTriple)()}`, "core-agent.sock");
     t.equals(config.coreAgentDir, expectedCoreAgentDir, "core agent directory matches the expected value");
     t.equals(scout.getSocketPath(), `unix://${expectedSocketPath}`, "socket path matches expected value");
     t.end();
 });
 // https://github.com/scoutapp/scout_apm_node/issues/233
-test("core agent dir matches python (post-TCP v.1.3.0+)", (t) => {
-    const config = types_1.buildScoutConfiguration({ coreAgentVersion: TestConstants.TEST_APP_VERSION });
+(0, tape_1.default)("core agent dir matches python (post-TCP v.1.3.0+)", (t) => {
+    const config = (0, types_1.buildScoutConfiguration)({ coreAgentVersion: TestConstants.TEST_APP_VERSION });
     const scout = new scout_1.Scout(config);
     const expectedCoreAgentDir = path.join(os.tmpdir(), "scout_apm_core");
-    const expectedSocketPath = path.join(expectedCoreAgentDir, `scout_apm_core-${TestConstants.TEST_APP_VERSION}-${types_1.generateTriple()}`, "core-agent.sock");
+    const expectedSocketPath = path.join(expectedCoreAgentDir, `scout_apm_core-${TestConstants.TEST_APP_VERSION}-${(0, types_1.generateTriple)()}`, "core-agent.sock");
     t.equals(config.coreAgentDir, expectedCoreAgentDir, "core agent directory matches the expected value");
     t.equals(scout.getSocketPath(), `tcp://127.0.0.1:6590`, "TCP uri matches expected value");
     t.end();
 });
 // https://github.com/scoutapp/scout_apm_node/issues/169
-test("application root is present in default", (t) => {
-    const config = types_1.buildScoutConfiguration();
+(0, tape_1.default)("application root is present in default", (t) => {
+    const config = (0, types_1.buildScoutConfiguration)();
     // Application root is supposed to be the folder *above* the project's folder
-    const expectedApplicationRoot = path.dirname(app_root_dir_1.get());
+    const expectedApplicationRoot = path.dirname((0, app_root_dir_1.get)());
     t.equals(config.applicationRoot, expectedApplicationRoot, `root dir matches expected [${expectedApplicationRoot}]`);
     t.end();
 });
-test("log level accepts both upper and lower case", (t) => {
+(0, tape_1.default)("log level accepts both upper and lower case", (t) => {
     // Upper, lower, weird cases
-    t.equals(types_1.parseLogLevel("DEBUG"), types_1.LogLevel.Debug);
-    t.equals(types_1.parseLogLevel("debug"), types_1.LogLevel.Debug);
-    t.equals(types_1.parseLogLevel("DEbUG"), types_1.LogLevel.Debug);
-    t.equals(types_1.parseLogLevel("INFO"), types_1.LogLevel.Info);
-    t.equals(types_1.parseLogLevel("info"), types_1.LogLevel.Info);
-    t.equals(types_1.parseLogLevel("InfO"), types_1.LogLevel.Info);
-    t.equals(types_1.parseLogLevel("WARN"), types_1.LogLevel.Warn);
-    t.equals(types_1.parseLogLevel("warn"), types_1.LogLevel.Warn);
-    t.equals(types_1.parseLogLevel("wARn"), types_1.LogLevel.Warn);
-    t.equals(types_1.parseLogLevel("ERROR"), types_1.LogLevel.Error);
-    t.equals(types_1.parseLogLevel("error"), types_1.LogLevel.Error);
-    t.equals(types_1.parseLogLevel("Error"), types_1.LogLevel.Error);
+    t.equals((0, types_1.parseLogLevel)("DEBUG"), types_1.LogLevel.Debug);
+    t.equals((0, types_1.parseLogLevel)("debug"), types_1.LogLevel.Debug);
+    t.equals((0, types_1.parseLogLevel)("DEbUG"), types_1.LogLevel.Debug);
+    t.equals((0, types_1.parseLogLevel)("INFO"), types_1.LogLevel.Info);
+    t.equals((0, types_1.parseLogLevel)("info"), types_1.LogLevel.Info);
+    t.equals((0, types_1.parseLogLevel)("InfO"), types_1.LogLevel.Info);
+    t.equals((0, types_1.parseLogLevel)("WARN"), types_1.LogLevel.Warn);
+    t.equals((0, types_1.parseLogLevel)("warn"), types_1.LogLevel.Warn);
+    t.equals((0, types_1.parseLogLevel)("wARn"), types_1.LogLevel.Warn);
+    t.equals((0, types_1.parseLogLevel)("ERROR"), types_1.LogLevel.Error);
+    t.equals((0, types_1.parseLogLevel)("error"), types_1.LogLevel.Error);
+    t.equals((0, types_1.parseLogLevel)("Error"), types_1.LogLevel.Error);
     t.end();
 });

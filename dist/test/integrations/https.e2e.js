@@ -1,24 +1,60 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const test = require("tape");
-const request = require("supertest");
+const tape_1 = __importDefault(require("tape"));
+const supertest_1 = __importDefault(require("supertest"));
 const types_1 = require("../../lib/types");
 const lib_1 = require("../../lib");
 const scout_1 = require("../../lib/scout");
-const TestUtil = require("../util");
+const TestUtil = __importStar(require("../util"));
 const integrations_1 = require("../../lib/types/integrations");
 const express_1 = require("../../lib/express");
 const types_2 = require("../../lib/types");
 // The hook for https has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
-lib_1.setupRequireIntegrations(["https"]);
+(0, lib_1.setupRequireIntegrations)(["https"]);
 const https = require("https");
-test("the shim works", t => {
-    t.assert(integrations_1.getIntegrationSymbol() in https, "https export has the integration symbol");
+(0, tape_1.default)("the shim works", t => {
+    t.assert((0, integrations_1.getIntegrationSymbol)() in https, "https export has the integration symbol");
     t.end();
 });
-test("https.get triggers proper span creation", t => {
-    const config = types_1.buildScoutConfiguration({
+(0, tape_1.default)("https.get triggers proper span creation", t => {
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     });
@@ -70,8 +106,8 @@ test("https.get triggers proper span creation", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/209
-test("An endpoint using http-proxy-middleware should capture proxied requests", t => {
-    const config = types_1.buildScoutConfiguration({
+(0, tape_1.default)("An endpoint using http-proxy-middleware should capture proxied requests", t => {
+    const config = (0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     });
@@ -80,7 +116,7 @@ test("An endpoint using http-proxy-middleware should capture proxied requests", 
     const proxyTarget = "https://www.scoutapm.com";
     const app = TestUtil.appWithHTTPProxyMiddleware(
     // we disable request timeout to stop test from hanging
-    express_1.scoutMiddleware({ scout, requestTimeoutMs: 0 }), proxyTarget);
+    (0, express_1.scoutMiddleware)({ scout, requestTimeoutMs: 0 }), proxyTarget);
     let expectedReqId;
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data) => {
@@ -118,7 +154,7 @@ test("An endpoint using http-proxy-middleware should capture proxied requests", 
         }
         expectedReqId = info.request.id;
         // Send a request to the application
-        return request(app)
+        return (0, supertest_1.default)(app)
             .get("/")
             .expect("Content-Type", /json/)
             .expect(200)

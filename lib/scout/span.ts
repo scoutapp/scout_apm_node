@@ -84,7 +84,7 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
 
     private traceFrames: ScoutStackFrame[] = [];
 
-    private onStop: () => Promise<void>;
+    private onStop?: () => Promise<void>;
 
     private ignored: boolean = false;
 

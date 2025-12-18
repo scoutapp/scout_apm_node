@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { EventEmitter } from "events";
 import { Socket } from "net";
 import { ChildProcess } from "child_process";
@@ -14,7 +13,7 @@ export interface ExtraSocketInfo {
     chunks?: Buffer;
     onFailure?: () => void;
 }
-export declare type ScoutSocket = Socket & ExtraSocketInfo;
+export type ScoutSocket = Socket & ExtraSocketInfo;
 export default class ExternalProcessAgent extends EventEmitter implements Agent {
     private readonly agentType;
     private readonly opts;

@@ -1,18 +1,17 @@
-/// <reference types="node" />
 import { LogLevel } from "./enum";
 import * as winston from "winston";
 export interface LogFn {
     (message: string, level?: LogLevel): void;
     logger?: winston.Logger;
 }
-export declare type JSONValue = object | string | number | boolean;
+export type JSONValue = object | string | number | boolean;
 export declare function convertCamelCaseToEnvVar(prop: string): string;
 export declare const LOG_LEVEL_VALUE: {
-    [LogLevel.Error]: number;
-    [LogLevel.Warn]: number;
-    [LogLevel.Info]: number;
-    [LogLevel.Debug]: number;
-    [LogLevel.Trace]: number;
+    error: number;
+    warn: number;
+    info: number;
+    debug: number;
+    trace: number;
 };
 export declare function isIgnoredLogMessage(applicationLevel: LogLevel, messageLevel: LogLevel): boolean;
 /**

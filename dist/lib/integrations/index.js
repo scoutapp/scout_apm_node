@@ -1,15 +1,19 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const pg_1 = require("./pg");
-const mysql_1 = require("./mysql");
-const mysql2_1 = require("./mysql2");
-const pug_1 = require("./pug");
-const mustache_1 = require("./mustache");
-const ejs_1 = require("./ejs");
-const http_1 = require("./http");
-const express_1 = require("./express");
-const nuxt_1 = require("./nuxt");
-const https_1 = require("./https");
+exports.getIntegrationForPackage = getIntegrationForPackage;
+const pg_1 = __importDefault(require("./pg"));
+const mysql_1 = __importDefault(require("./mysql"));
+const mysql2_1 = __importDefault(require("./mysql2"));
+const pug_1 = __importDefault(require("./pug"));
+const mustache_1 = __importDefault(require("./mustache"));
+const ejs_1 = __importDefault(require("./ejs"));
+const http_1 = __importDefault(require("./http"));
+const express_1 = __importDefault(require("./express"));
+const nuxt_1 = __importDefault(require("./nuxt"));
+const https_1 = __importDefault(require("./https"));
 const integrations_1 = require("../types/integrations");
 function getIntegrationForPackage(pkg) {
     switch (pkg) {
@@ -26,4 +30,3 @@ function getIntegrationForPackage(pkg) {
         default: return integrations_1.doNothingRequireIntegration;
     }
 }
-exports.getIntegrationForPackage = getIntegrationForPackage;

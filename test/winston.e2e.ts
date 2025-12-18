@@ -1,4 +1,4 @@
-import * as test from "tape";
+import test from "tape";
 import * as winston from "winston";
 
 const tempfile = require("tempfile");
@@ -53,7 +53,7 @@ test("Winston logger is successfully logged to", t => {
 
                     // Winston query results are of the form {file: [...]}
                     t.assert(results.file.length > 0, "results were returned from querying logger");
-                    resolve();
+                    resolve(undefined);
                 });
         }))
     // Teardown and end test

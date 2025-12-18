@@ -1,13 +1,49 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const test = require("tape");
-const path = require("path");
-const fs = require("fs-extra");
-const tmp = require("tmp-promise");
-const Constants = require("../../lib/constants");
+const tape_1 = __importDefault(require("tape"));
+const path = __importStar(require("path"));
+const fs = __importStar(require("fs-extra"));
+const tmp = __importStar(require("tmp-promise"));
+const Constants = __importStar(require("../../lib/constants"));
 const types_1 = require("../../lib/types");
 const web_1 = require("../../lib/agent-downloaders/web");
-test("download works (v1.1.8)", t => {
+(0, tape_1.default)("download works (v1.1.8)", t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     downloader
@@ -16,7 +52,7 @@ test("download works (v1.1.8)", t => {
         .then(() => t.end())
         .catch(t.end);
 });
-test("cache is updated by download (v1.1.8)", t => {
+(0, tape_1.default)("cache is updated by download (v1.1.8)", t => {
     const opts = {
         cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
         updateCache: true,
@@ -26,7 +62,7 @@ test("cache is updated by download (v1.1.8)", t => {
     let subdir = `scout_apm_core-v${version.raw}`;
     let expectedDirPath;
     let expectedBinPath;
-    types_1.detectPlatformTriple()
+    (0, types_1.detectPlatformTriple)()
         .then(platform => subdir = `${subdir}-${platform}`)
         .then(() => downloader.download(version, opts))
         .then(() => {
@@ -45,7 +81,7 @@ test("cache is updated by download (v1.1.8)", t => {
         .then(() => t.end())
         .catch(t.end);
 });
-test("cache is used by second download (v1.1.8)", t => {
+(0, tape_1.default)("cache is used by second download (v1.1.8)", t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     const opts = { updateCache: true };
@@ -74,7 +110,7 @@ test("cache is used by second download (v1.1.8)", t => {
         .catch(t.end);
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
-test("download works with a custom root URL + agent full name", t => {
+(0, tape_1.default)("download works with a custom root URL + agent full name", t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     const opts = {
@@ -92,7 +128,7 @@ test("download works with a custom root URL + agent full name", t => {
         .catch(t.end);
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
-test("download fails with invalid custom URL", t => {
+(0, tape_1.default)("download fails with invalid custom URL", t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     const coreAgentDir = "/tmp/scout_apm_core";

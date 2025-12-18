@@ -1,16 +1,55 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ScoutConfigurationProxy = exports.DEFAULT_SCOUT_CONFIGURATION = exports.ApplicationMetadata = void 0;
+exports.detectPlatformTriple = detectPlatformTriple;
+exports.generateTriple = generateTriple;
+exports.buildScoutConfiguration = buildScoutConfiguration;
+exports.buildDownloadOptions = buildDownloadOptions;
+exports.buildProcessOptions = buildProcessOptions;
 const os_1 = require("os");
 const process_1 = require("process");
-const os = require("os");
-const fs = require("fs");
-const path = require("path");
+const os = __importStar(require("os"));
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 const app_root_path_1 = require("app-root-path");
-const semver = require("semver");
+const semver = __importStar(require("semver"));
 const enum_1 = require("./enum");
 const util_1 = require("./util");
 const enum_2 = require("./enum");
-const Constants = require("../constants");
+const Constants = __importStar(require("../constants"));
 const errors_1 = require("../errors");
 const CONFIG_MODULE_INSIDE_NODE_MODULES = [
     "node_modules",
@@ -109,7 +148,7 @@ class ApplicationMetadata {
                         const depsWithVersions = Object.entries(pkgJson.dependencies);
                         this.libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
                     }
-                    catch (_a) {
+                    catch {
                         // If the require has failed or package.json is malformed
                         // tslint:disable-next-line:no-console
                         console.log(`package.json at [${pkgJsonPath}] is malformed/couldn't be read`);
@@ -135,7 +174,7 @@ class ApplicationMetadata {
                         const depsWithVersions = Object.entries(pkgJson.dependencies);
                         this.libraries = depsWithVersions.sort((a, b) => a[0].localeCompare(b[0]));
                     }
-                    catch (_b) {
+                    catch {
                         // If the require has failed or package.json is malformed
                         // tslint:disable-next-line:no-console
                         console.log(`package.json at [${pkgJsonPath}] is malformed/couldn't be read`);
@@ -181,7 +220,7 @@ exports.DEFAULT_SCOUT_CONFIGURATION = {
     coreAgentLaunch: true,
     coreAgentLogLevel: enum_1.LogLevel.Error,
     coreAgentPermissions: 700,
-    coreAgentVersion: "v1.3.0",
+    coreAgentVersion: "v1.3.0", // can be exact tag name, or 'latest'
     disabledInstruments: [],
     downloadUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
     framework: "",
@@ -234,7 +273,7 @@ class EnvConfigSource {
         if (typeof prop === "symbol") {
             return this.env[prop];
         }
-        const envVar = util_1.convertCamelCaseToEnvVar(prop);
+        const envVar = (0, util_1.convertCamelCaseToEnvVar)(prop);
         let val = this.env[envVar];
         if (typeof val !== "undefined" && envVar in ENV_TRANSFORMS) {
             val = ENV_TRANSFORMS[envVar](val);
@@ -294,7 +333,7 @@ class DerivedConfigSource {
 }
 // Detect the machine architecture
 function detectArch() {
-    switch (os_1.arch()) {
+    switch ((0, os_1.arch)()) {
         case "x64": return enum_1.Architecture.X86_64;
         case "x32": return enum_1.Architecture.I686;
         default:
@@ -305,7 +344,7 @@ function detectArch() {
 function detectPlatform() {
     // Default to Musl Linux, even on glibc-enabled distros
     // https://github.com/scoutapp/scout_apm_node/issues/174
-    switch (os_1.platform()) {
+    switch ((0, os_1.platform)()) {
         case "linux": return enum_1.Platform.LinuxMusl;
         case "darwin": return enum_1.Platform.Darwin;
         default:
@@ -319,12 +358,10 @@ function detectPlatformTriple() {
     }
     return Promise.resolve(triple);
 }
-exports.detectPlatformTriple = detectPlatformTriple;
 // Generate the architecture/platform triple
 function generateTriple() {
     return `${detectArch()}-${detectPlatform()}`;
 }
-exports.generateTriple = generateTriple;
 // Check if a triple is valid
 function isValidTriple(triple) {
     if (!triple) {
@@ -390,7 +427,6 @@ exports.ScoutConfigurationProxy = ScoutConfigurationProxy;
 function buildScoutConfiguration(initialNodeConfig, opts) {
     return new Proxy({}, new ScoutConfigurationProxy(initialNodeConfig, opts));
 }
-exports.buildScoutConfiguration = buildScoutConfiguration;
 /**
  * Build download options to be used with an AgentDownloader,
  * based on the options provided to Scout at the top level.
@@ -405,7 +441,6 @@ function buildDownloadOptions(config) {
         downloadUrl: config.downloadUrl,
     };
 }
-exports.buildDownloadOptions = buildDownloadOptions;
 /**
  * Build download options to be used with an AgentDownloader,
  * based on the options provided to Scout at the top level.
@@ -419,4 +454,3 @@ function buildProcessOptions(config) {
         logLevel: config.logLevel || config.coreAgentLogLevel,
     };
 }
-exports.buildProcessOptions = buildProcessOptions;

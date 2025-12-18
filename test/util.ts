@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as tmp from "tmp-promise";
-import * as express from "express";
+import express from "express";
 import * as net from "net";
 import { Express, Application, Request, Response } from "express";
 import { generate as generateRandomString } from "randomstring";
@@ -13,8 +13,7 @@ import { Client } from "pg";
 
 import { Connection, createConnection as createMySQLConnection } from "mysql";
 
-import { Connection as MySQL2Connection, createConnection as createMySQL2Connection } from "mysql2";
-import * as ConnectionConfig from "mysql2/lib/connection_config";
+import { type Connection as MySQL2Connection, createConnection as createMySQL2Connection } from "mysql2";
 
 import * as Constants from "../lib/constants";
 import ExternalProcessAgent from "../lib/agents/external-process";
@@ -950,15 +949,15 @@ export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts |
     const cao = provider();
     if (!cao) { return Promise.reject(new Error("no CAO in provider")); }
 
-    const config = new ConnectionConfig({
+    const config = {
         user: "root",
         password: "mysql",
         host: "localhost",
         port: cao.opts.portBinding[3306],
         // Connect timeout to enable using this as a check in waitFor
         connectTimeout: 9999,
-    });
-    const conn = new MySQL2Connection({config});
+    };
+    const conn = createMySQL2Connection(config);
 
     // We have to ignore errors that are emitted by the mysl2 Connection object
     // because they will crash the node runtime otherwise.
@@ -973,7 +972,7 @@ export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts |
                     return;
                 }
 
-                resolve(conn);
+                resolve(conn as any);
             });
         });
     } catch {

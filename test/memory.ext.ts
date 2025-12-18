@@ -10,8 +10,8 @@
  */
 
 import * as path from "path";
-import * as test from "tape";
-import * as request from "supertest";
+import test from "tape";
+import request from "supertest";
 import { generate as generateRandomString } from "randomstring";
 import { fork } from "child_process";
 
@@ -78,8 +78,8 @@ test("no large memory leaks", {timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS}, a
     t.comment(`app without scout started (PID: [${expressProcess.pid}])`);
     expressProcess.on("message", payload => {
         if (!payload) { return; }
-        if (typeof payload === "object" && payload.msgType === "memory-usage-report") {
-            stats.express.memoryUsage = JSON.parse(payload.memoryUsageJSON);
+        if (typeof payload === "object" && 'msgType' in payload && (payload as any).msgType === "memory-usage-report") {
+            stats.express.memoryUsage = JSON.parse((payload as any).memoryUsageJSON);
         }
     });
 
@@ -95,8 +95,8 @@ test("no large memory leaks", {timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS}, a
     t.comment(`app with scout started (PID: [${expressWithScoutProcess.pid}])`);
     expressWithScoutProcess.on("message", payload => {
         if (!payload) { return; }
-        if (typeof payload === "object" && payload.msgType === "memory-usage-report") {
-            stats.expressWithScout.memoryUsage = JSON.parse(payload.memoryUsageJSON);
+        if (typeof payload === "object" && 'msgType' in payload && (payload as any).msgType === "memory-usage-report") {
+            stats.expressWithScout.memoryUsage = JSON.parse((payload as any).memoryUsageJSON);
         }
     });
 

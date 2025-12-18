@@ -1,4 +1,4 @@
-import * as test from "tape";
+import test from "tape";
 import * as TestUtil from "../util";
 import * as Constants from "../../lib/constants";
 

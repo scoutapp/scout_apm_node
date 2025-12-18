@@ -1,4 +1,4 @@
-import * as test from "tape";
+import test from "tape";
 import { ChildProcess } from "child_process";
 import { mkdtemp } from "fs-extra";
 import * as path from "path";

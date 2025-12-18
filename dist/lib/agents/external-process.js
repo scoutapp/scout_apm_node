@@ -1,8 +1,41 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
-const Errors = require("../errors");
-const Constants = require("../constants");
+const Errors = __importStar(require("../errors"));
+const Constants = __importStar(require("../constants"));
 const fs_extra_1 = require("fs-extra");
 const net_1 = require("net");
 const child_process_1 = require("child_process");
@@ -219,7 +252,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 this.emit(types_1.AgentEvent.RequestSent, msg);
             });
         });
-        return promise_timeout_1.timeout(sendPromise, this.opts.sendTimeoutMs);
+        return (0, promise_timeout_1.timeout)(sendPromise, this.opts.sendTimeoutMs);
     }
     /**
      * Check if the process is present
@@ -242,13 +275,13 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             this.stopped = true;
             // The process tree itself must be killed
             // otherwise instances of core-agent may be leaked.
-            if (process.platform === "linux") {
+            if (process.platform === "linux" && p.pid) {
                 process.kill(-1 * p.pid);
             }
             p.kill();
         })
             // Remove the socket path
-            .then(() => fs_extra_1.remove(this.getSocketPath()))
+            .then(() => (0, fs_extra_1.remove)(this.getSocketPath()))
             .catch(err => {
             this.logFn(`[scout/external-process] Process stop failed:\n${err}`, types_1.LogLevel.Error);
         });
@@ -271,10 +304,10 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      */
     peerRunning() {
         if (this.opts.isDomainSocket()) {
-            return fs_extra_1.pathExists(this.getSocketPath());
+            return (0, fs_extra_1.pathExists)(this.getSocketPath());
         }
         if (this.opts.isTCPSocket()) {
-            return tcp_port_used_1.check(Constants.CORE_AGENT_TCP_DEFAULT_PORT);
+            return (0, tcp_port_used_1.check)(Constants.CORE_AGENT_TCP_DEFAULT_PORT);
         }
         return Promise.reject(new Errors.UnknownSocketType());
     }
@@ -287,12 +320,12 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if (!this.opts.isValidSocket()) {
             return Promise.reject(new Errors.NotSupported("Only domain (file:// | unix://) or TCP (tcp://) sockets are supported"));
         }
-        this.pool = generic_pool_1.createPool({
+        this.pool = (0, generic_pool_1.createPool)({
             create: () => {
                 // If there is at least one pool error, let's wait a bit between creating domain sockets
                 let maybeWait = () => Promise.resolve();
                 if (this.poolErrors.length > DOMAIN_SOCKET_CREATE_ERR_THRESHOLD) {
-                    maybeWait = () => types_1.waitMs(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
+                    maybeWait = () => (0, types_1.waitMs)(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
                 }
                 return maybeWait().then(() => this.createSocket());
             },
@@ -300,7 +333,8 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 // Ensure the socket is not used again
                 socket.doNotUse = true;
                 socket.end();
-                return Promise.resolve(socket.destroy());
+                socket.destroy();
+                return Promise.resolve();
             },
             validate: (socket) => Promise.resolve(!socket.destroyed),
         });
@@ -332,12 +366,12 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             };
             // Perform the right connection based on the type of socket
             if (this.opts.isDomainSocket()) {
-                socket = net_1.createConnection(this.getSocketPath(), cb);
+                socket = (0, net_1.createConnection)(this.getSocketPath(), cb);
             }
             else if (this.opts.isTCPSocket()) {
                 const [host, portRaw] = this.getSocketPath().split(":");
                 const port = parseInt(portRaw, 10);
-                socket = net_1.createConnection(port, host, cb);
+                socket = (0, net_1.createConnection)(port, host, cb);
             }
             else {
                 reject(new Error("Unrecognized connection, neither domain nor TCP"));
@@ -422,13 +456,13 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         }
         let framed = [];
         // Parse the buffer to return zero or more well-framed agent responses
-        const { framed: newFramed, remaining: newRemaining } = types_1.splitAgentResponses(data);
+        const { framed: newFramed, remaining: newRemaining } = (0, types_1.splitAgentResponses)(data);
         framed = framed.concat(newFramed);
         // Add the remaining to the partial response buffer we're keeping
         socket.chunks = Buffer.concat([socket.chunks, newRemaining]);
         // Attempt to extract any *just* completed messages
         // Update the partial response for any remaining
-        const { framed: chunkFramed, remaining: chunkRemaining } = types_1.splitAgentResponses(socket.chunks);
+        const { framed: chunkFramed, remaining: chunkRemaining } = (0, types_1.splitAgentResponses)(socket.chunks);
         framed = framed.concat(chunkFramed);
         socket.chunks = chunkRemaining;
         // Read all (likely) fully formed, correctly framed messages
@@ -516,7 +550,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         }
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, types_1.LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, types_1.LogLevel.Debug);
-        this.detachedProcess = child_process_1.spawn(this.opts.binPath, args, {
+        this.detachedProcess = (0, child_process_1.spawn)(this.opts.binPath, args, {
             detached: true,
             stdio: "ignore",
         });

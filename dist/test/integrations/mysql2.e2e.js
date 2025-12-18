@@ -1,7 +1,43 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const test = require("tape");
-const TestUtil = require("../util");
+const tape_1 = __importDefault(require("tape"));
+const TestUtil = __importStar(require("../util"));
 const integrations_1 = require("../../lib/types/integrations");
 const types_1 = require("../../lib/types");
 const lib_1 = require("../../lib");
@@ -10,7 +46,7 @@ const types_2 = require("../../lib/types");
 const fixtures_1 = require("../fixtures");
 // The hook for mysql2 has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
-lib_1.setupRequireIntegrations([
+(0, lib_1.setupRequireIntegrations)([
     "mysql2",
 ]);
 // The hook for MYSQL2 has to be triggered this way in a typescript context
@@ -18,18 +54,18 @@ lib_1.setupRequireIntegrations([
 const mysql2 = require("mysql2");
 let MYSQL2_CONTAINER_AND_OPTS = null;
 // Pseudo test that will start a containerized mysql2 instance
-TestUtil.startContainerizedMySQLTest(test, cao => { MYSQL2_CONTAINER_AND_OPTS = cao; }, { mysqlPackageName: "mysql2" });
+TestUtil.startContainerizedMySQLTest(tape_1.default, cao => { MYSQL2_CONTAINER_AND_OPTS = cao; }, { mysqlPackageName: "mysql2" });
 // NOTE: This test must be run after mysql starts up, since create mysql2's create connection fails intantly
-test("the shim works", t => {
+(0, tape_1.default)("the shim works", t => {
     TestUtil.makeConnectedMySQL2Connection(() => MYSQL2_CONTAINER_AND_OPTS)
         .then(conn => {
-        t.assert(integrations_1.getIntegrationSymbol() in conn, "created connection has the integration symbol");
+        t.assert((0, integrations_1.getIntegrationSymbol)() in conn, "created connection has the integration symbol");
     })
         .then(() => t.end())
         .catch(err => t.end(err));
 });
-test("SELECT query during a request is recorded", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("SELECT query during a request is recorded", t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
     }));
@@ -88,4 +124,4 @@ test("SELECT query during a request is recorded", t => {
     });
 });
 // Pseudo test that will stop a containerized mysql2 instance that was started
-TestUtil.stopContainerizedMySQLTest(test, () => MYSQL2_CONTAINER_AND_OPTS);
+TestUtil.stopContainerizedMySQLTest(tape_1.default, () => MYSQL2_CONTAINER_AND_OPTS);

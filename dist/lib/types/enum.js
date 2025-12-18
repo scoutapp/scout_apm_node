@@ -1,18 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ScoutSpanOperation = exports.ScoutContextName = exports.ScoutEvent = exports.PlatformTriple = exports.Platform = exports.Architecture = exports.ConfigSourceName = exports.AgentResponseType = exports.AgentRequestType = exports.AgentEvent = exports.ApplicationEventType = exports.LogLevel = exports.AgentType = exports.URIReportingLevel = exports.APIVersion = void 0;
+exports.isLogLevel = isLogLevel;
+exports.parseLogLevel = parseLogLevel;
 var APIVersion;
 (function (APIVersion) {
     APIVersion["V1"] = "1.0";
-})(APIVersion = exports.APIVersion || (exports.APIVersion = {}));
+})(APIVersion || (exports.APIVersion = APIVersion = {}));
 var URIReportingLevel;
 (function (URIReportingLevel) {
     URIReportingLevel["FilteredParams"] = "filtered-params";
     URIReportingLevel["Path"] = "path";
-})(URIReportingLevel = exports.URIReportingLevel || (exports.URIReportingLevel = {}));
+})(URIReportingLevel || (exports.URIReportingLevel = URIReportingLevel = {}));
 var AgentType;
 (function (AgentType) {
     AgentType["Process"] = "process";
-})(AgentType = exports.AgentType || (exports.AgentType = {}));
+})(AgentType || (exports.AgentType = AgentType = {}));
 var LogLevel;
 (function (LogLevel) {
     LogLevel["Info"] = "info";
@@ -20,13 +23,13 @@ var LogLevel;
     LogLevel["Debug"] = "debug";
     LogLevel["Trace"] = "trace";
     LogLevel["Error"] = "error";
-})(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
+})(LogLevel || (exports.LogLevel = LogLevel = {}));
 var ApplicationEventType;
 (function (ApplicationEventType) {
     ApplicationEventType["ScoutMetadata"] = "scout.metadata";
     ApplicationEventType["CPUUtilizationPercent"] = "CPU/Utilization";
     ApplicationEventType["MemoryUsageMB"] = "Memory/Physical";
-})(ApplicationEventType = exports.ApplicationEventType || (exports.ApplicationEventType = {}));
+})(ApplicationEventType || (exports.ApplicationEventType = ApplicationEventType = {}));
 var AgentEvent;
 (function (AgentEvent) {
     AgentEvent["SocketResponseReceived"] = "agent-event-socket-response-received";
@@ -41,7 +44,7 @@ var AgentEvent;
     AgentEvent["SpanStarted"] = "agent-event-span-started";
     AgentEvent["SpanStopped"] = "agent-event-span-stopped";
     AgentEvent["ApplicationEventReported"] = "agent-event-application-event-reported";
-})(AgentEvent = exports.AgentEvent || (exports.AgentEvent = {}));
+})(AgentEvent || (exports.AgentEvent = AgentEvent = {}));
 var AgentRequestType;
 (function (AgentRequestType) {
     AgentRequestType["V1GetVersion"] = "v1-get-version";
@@ -53,7 +56,7 @@ var AgentRequestType;
     AgentRequestType["V1StopSpan"] = "v1-stop-span";
     AgentRequestType["V1TagSpan"] = "v1-tag-span";
     AgentRequestType["V1ApplicationEvent"] = "v1-application-event";
-})(AgentRequestType = exports.AgentRequestType || (exports.AgentRequestType = {}));
+})(AgentRequestType || (exports.AgentRequestType = AgentRequestType = {}));
 var AgentResponseType;
 (function (AgentResponseType) {
     AgentResponseType["Unknown"] = "unknown";
@@ -67,12 +70,11 @@ var AgentResponseType;
     AgentResponseType["V1TagSpan"] = "v1-tag-span-response";
     AgentResponseType["V1ApplicationEvent"] = "v1-application-event-response";
     AgentResponseType["V1Failure"] = "v1-failure-response";
-})(AgentResponseType = exports.AgentResponseType || (exports.AgentResponseType = {}));
+})(AgentResponseType || (exports.AgentResponseType = AgentResponseType = {}));
 // Check if a given string is a valid log level
 function isLogLevel(lvl) {
     return Object.values(LogLevel).includes(lvl);
 }
-exports.isLogLevel = isLogLevel;
 /**
  * Parse a string into a log level
  *
@@ -86,34 +88,33 @@ function parseLogLevel(lvl) {
     }
     return lvl;
 }
-exports.parseLogLevel = parseLogLevel;
 var ConfigSourceName;
 (function (ConfigSourceName) {
     ConfigSourceName["Env"] = "env";
     ConfigSourceName["Node"] = "node";
     ConfigSourceName["Derived"] = "derived";
     ConfigSourceName["Default"] = "default";
-})(ConfigSourceName = exports.ConfigSourceName || (exports.ConfigSourceName = {}));
+})(ConfigSourceName || (exports.ConfigSourceName = ConfigSourceName = {}));
 var Architecture;
 (function (Architecture) {
     Architecture["X86_64"] = "x86_64";
     Architecture["I686"] = "i686";
     Architecture["Unknown"] = "unknown";
-})(Architecture = exports.Architecture || (exports.Architecture = {}));
+})(Architecture || (exports.Architecture = Architecture = {}));
 var Platform;
 (function (Platform) {
     Platform["LinuxGNU"] = "unknown-linux-gnu";
     Platform["LinuxMusl"] = "unknown-linux-musl";
     Platform["Darwin"] = "apple-darwin";
     Platform["Unknown"] = "unknown";
-})(Platform = exports.Platform || (exports.Platform = {}));
+})(Platform || (exports.Platform = Platform = {}));
 var PlatformTriple;
 (function (PlatformTriple) {
     PlatformTriple["GNULinux32"] = "i686-unknown-linux-gnu";
     PlatformTriple["GNULinux64"] = "x86_64-unknown-linux-gnu";
     PlatformTriple["MuslLinux64"] = "x86_64-unknown-linux-musl";
     PlatformTriple["AppleDarwin64"] = "x86_64-apple-darwin";
-})(PlatformTriple = exports.PlatformTriple || (exports.PlatformTriple = {}));
+})(PlatformTriple || (exports.PlatformTriple = PlatformTriple = {}));
 var ScoutEvent;
 (function (ScoutEvent) {
     ScoutEvent["IgnoredPathDetected"] = "scout-event-ignored-path-detected";
@@ -121,7 +122,7 @@ var ScoutEvent;
     ScoutEvent["IgnoredRequestProcessingSkipped"] = "ignored-request-processing-skipped";
     ScoutEvent["UnknownRequestPathSkipped"] = "unknown-request-path-skipped";
     ScoutEvent["Shutdown"] = "scout-event-shutdown";
-})(ScoutEvent = exports.ScoutEvent || (exports.ScoutEvent = {}));
+})(ScoutEvent || (exports.ScoutEvent = ScoutEvent = {}));
 var ScoutContextName;
 (function (ScoutContextName) {
     ScoutContextName["Traceback"] = "stack";
@@ -133,7 +134,7 @@ var ScoutContextName;
     ScoutContextName["Timeout"] = "timeout";
     ScoutContextName["IgnoreTransaction"] = "ignore_transaction";
     ScoutContextName["QueueTimeNS"] = "scout.queue_time_ns";
-})(ScoutContextName = exports.ScoutContextName || (exports.ScoutContextName = {}));
+})(ScoutContextName || (exports.ScoutContextName = ScoutContextName = {}));
 var ScoutSpanOperation;
 (function (ScoutSpanOperation) {
     ScoutSpanOperation["SQLQuery"] = "SQL/Query";
@@ -143,4 +144,4 @@ var ScoutSpanOperation;
     ScoutSpanOperation["HTTPDelete"] = "HTTP/DELETE";
     ScoutSpanOperation["HTTPPut"] = "HTTP/PUT";
     ScoutSpanOperation["HTTPPatch"] = "HTTP/PATCH";
-})(ScoutSpanOperation = exports.ScoutSpanOperation || (exports.ScoutSpanOperation = {}));
+})(ScoutSpanOperation || (exports.ScoutSpanOperation = ScoutSpanOperation = {}));

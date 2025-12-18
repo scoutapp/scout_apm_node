@@ -1,5 +1,38 @@
 "use strict";
-const Errors = require("./errors");
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+const Errors = __importStar(require("./errors"));
 const express_1 = require("./express");
 const types_1 = require("./types");
 const integrations_1 = require("./integrations");
@@ -10,7 +43,7 @@ const global_1 = require("./global");
 function setupRequireIntegrations(packages, scoutConfig) {
     packages = packages || [];
     packages.forEach(name => {
-        const integration = integrations_1.getIntegrationForPackage(name);
+        const integration = (0, integrations_1.getIntegrationForPackage)(name);
         if (integration) {
             integration.ritmHook(global_1.EXPORT_BAG);
         }
@@ -47,7 +80,7 @@ const API = {
     install: global_1.getOrCreateActiveGlobalScoutInstance,
     // instrument
     instrument(op, cb, scout) {
-        return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateActiveGlobalScoutInstance())
+        return (scout ? Promise.resolve(scout.setup()) : (0, global_1.getOrCreateActiveGlobalScoutInstance)())
             .then(scout => {
             return scout.instrument(op, (finishSpan, info) => {
                 return cb(finishSpan, info);
@@ -56,7 +89,7 @@ const API = {
     },
     // instrument
     instrumentSync(op, cb, scout) {
-        return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateActiveGlobalScoutInstance())
+        return (scout ? Promise.resolve(scout.setup()) : (0, global_1.getOrCreateActiveGlobalScoutInstance)())
             .then(scout => scout.instrumentSync(op, cb));
     },
     // API
@@ -64,7 +97,7 @@ const API = {
         WebTransaction: {
             run(op, cb, scout) {
                 const name = `Controller/${op}`;
-                return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateActiveGlobalScoutInstance())
+                return (scout ? Promise.resolve(scout.setup()) : (0, global_1.getOrCreateActiveGlobalScoutInstance)())
                     .then(scout => scout.transaction(name, (finishRequest, other) => {
                     return scout.instrument(name, (finishSpan, info) => {
                         return cb(finishRequest, info);
@@ -73,7 +106,7 @@ const API = {
             },
             runSync(op, cb, scout) {
                 const name = `Controller/${op}`;
-                scout = scout || global_1.getActiveGlobalScoutInstance() || undefined;
+                scout = scout || (0, global_1.getActiveGlobalScoutInstance)() || undefined;
                 if (!scout) {
                     return;
                 }
@@ -85,7 +118,7 @@ const API = {
         BackgroundTransaction: {
             run(op, cb, scout) {
                 const name = `Job/${op}`;
-                return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateActiveGlobalScoutInstance())
+                return (scout ? Promise.resolve(scout.setup()) : (0, global_1.getOrCreateActiveGlobalScoutInstance)())
                     .then(scout => scout.transaction(name, (finishRequest, other) => {
                     return scout.instrument(name, (finishSpan, info) => {
                         return cb(finishRequest, info);
@@ -94,7 +127,7 @@ const API = {
             },
             runSync(op, cb, scout) {
                 const name = `Job/${op}`;
-                scout = scout || global_1.getActiveGlobalScoutInstance() || undefined;
+                scout = scout || (0, global_1.getActiveGlobalScoutInstance)() || undefined;
                 if (!scout) {
                     return;
                 }
@@ -104,22 +137,22 @@ const API = {
             },
         },
         instrument(op, cb, scout) {
-            return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateActiveGlobalScoutInstance())
+            return (scout ? Promise.resolve(scout.setup()) : (0, global_1.getOrCreateActiveGlobalScoutInstance)())
                 .then(scout => scout.instrument(op, (finishSpan, info) => {
                 return cb(finishSpan, info);
             }));
         },
         instrumentSync(operation, fn, scout) {
-            return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateActiveGlobalScoutInstance())
+            return (scout ? Promise.resolve(scout.setup()) : (0, global_1.getOrCreateActiveGlobalScoutInstance)())
                 .then(scout => scout.instrumentSync(operation, fn));
         },
         get Config() {
-            const scout = global_1.getActiveGlobalScoutInstance();
+            const scout = (0, global_1.getActiveGlobalScoutInstance)();
             return scout ? scout.getConfig() : undefined;
         },
         Context: {
             add(name, value, scout) {
-                return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateActiveGlobalScoutInstance())
+                return (scout ? Promise.resolve(scout.setup()) : (0, global_1.getOrCreateActiveGlobalScoutInstance)())
                     .then(scout => {
                     const req = scout.getCurrentRequest();
                     if (!req) {
@@ -129,7 +162,7 @@ const API = {
                 });
             },
             addSync(name, value, scout) {
-                scout = scout || global_1.getActiveGlobalScoutInstance() || undefined;
+                scout = scout || (0, global_1.getActiveGlobalScoutInstance)() || undefined;
                 if (!scout) {
                     return;
                 }
@@ -141,7 +174,7 @@ const API = {
             },
         },
         ignoreTransaction(scout) {
-            return (scout ? Promise.resolve(scout.setup()) : global_1.getOrCreateActiveGlobalScoutInstance())
+            return (scout ? Promise.resolve(scout.setup()) : (0, global_1.getOrCreateActiveGlobalScoutInstance)())
                 .then(scout => {
                 const req = scout.getCurrentRequest();
                 if (!req) {
@@ -151,7 +184,7 @@ const API = {
             });
         },
         ignoreTransactionSync(scout) {
-            scout = scout || global_1.getActiveGlobalScoutInstance() || undefined;
+            scout = scout || (0, global_1.getActiveGlobalScoutInstance)() || undefined;
             if (!scout) {
                 return;
             }

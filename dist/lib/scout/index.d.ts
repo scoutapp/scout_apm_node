@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { EventEmitter } from "events";
 import { AgentDownloadOptions, ApplicationMetadata, BaseAgentRequest, BaseAgentResponse, CoreAgentVersion, JSONValue, LogFn, LogLevel, ScoutConfiguration, AgentSocketType } from "../types";
 import ExternalProcessAgent from "../agents/external-process";
@@ -21,9 +20,9 @@ export interface CallbackInfo {
     parent?: ScoutSpan | ScoutRequest;
     request?: ScoutRequest;
 }
-export declare type DoneCallback = (done: () => void, info: CallbackInfo) => any;
-export declare type SpanCallback = (info: CallbackInfo) => any;
-export declare type RequestCallback = (info: CallbackInfo) => any;
+export type DoneCallback = (done: () => void, info: CallbackInfo) => any;
+export type SpanCallback = (info: CallbackInfo) => any;
+export type RequestCallback = (info: CallbackInfo) => any;
 export declare class Scout extends EventEmitter {
     private readonly config;
     private downloader;
@@ -35,7 +34,7 @@ export declare class Scout extends EventEmitter {
     private agent;
     private processOptions;
     private applicationMetadata;
-    private asyncNamespace;
+    private asyncLocalStorage;
     private syncCurrentRequest;
     private syncCurrentSpan;
     private uncaughtExceptionListenerFn;
@@ -149,19 +148,15 @@ export declare class Scout extends EventEmitter {
      */
     agentIsRunning(socketPath: any): Promise<boolean>;
     /**
-     * Attempt to clear an async name space entry
+     * Attempt to clear an async storage entry
      *
-     * this.asyncNamespace.set can fail if the async context ID is already gone
+     * Setting values in the store can fail if the async context is already gone
      * before someone tries to clear it. This can happen if some caller moves calls to
      * another async context or if it's cleaned up suddenly
      */
-    private clearAsyncNamespaceEntry;
+    private clearAsyncStorageEntry;
     private createAgentForExistingSocket;
     private downloadAndLaunchAgent;
-    /**
-     * Create an async namespace internally for use with tracking if not already present
-     */
-    private createAsyncNamespace;
     /**
      * Perform some action within a context
      *
