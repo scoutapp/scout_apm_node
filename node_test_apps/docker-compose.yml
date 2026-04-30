@@ -17,7 +17,8 @@ services:
 
   express-v4:
     build:
-      context: ./express-v4
+      context: ..
+      dockerfile: node_test_apps/express-v4/Dockerfile
     ports:
       - "3000:3000"
     environment:
@@ -39,7 +40,8 @@ services:
 
   express-v5:
     build:
-      context: ./express-v5
+      context: ..
+      dockerfile: node_test_apps/express-v5/Dockerfile
     ports:
       - "3001:3001"
     environment:
