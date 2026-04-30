@@ -7,7 +7,6 @@ WORKDIR /app
 # via the absolute file: path declared in package.json.
 COPY dist/ /scout-agent/dist/
 COPY package.json /scout-agent/package.json
-COPY index.d.ts /scout-agent/index.d.ts
 
 # Install app dependencies (resolves /scout-agent from above)
 COPY node_test_apps/express-v5/package.json .
