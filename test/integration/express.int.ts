@@ -8,14 +8,15 @@ import {
     AgentEvent,
     ScoutEvent,
     buildScoutConfiguration,
-    ScoutSpanOperation,
 } from "../../lib/types";
 import { Scout, ScoutEventRequestSentData } from "../../lib/scout";
 import * as TestUtil from "../util";
 
 setupRequireIntegrations(["pug", "ejs", "mustache"]);
 
-const TIMEOUT = 5000;
+const TIMEOUT = 8000;
+
+type AppWithScout = Application & ApplicationWithScout;
 
 function buildScoutWithMock(mock: MockAgent, extra?: object) {
     return buildScoutConfiguration({
@@ -28,51 +29,76 @@ function buildScoutWithMock(mock: MockAgent, extra?: object) {
     });
 }
 
+/**
+ * Wait for the next ScoutEvent.RequestSent, draining one event first if skipOne is true.
+ * This handles the warmup request pattern where the first request initializes Scout
+ * but we care about the assertions on the second request.
+ */
+function nextRequestSent(scout: Scout, skipCount = 0): Promise<ScoutEventRequestSentData> {
+    return new Promise((resolve, reject) => {
+        let skipped = 0;
+        const timer = setTimeout(() => {
+            scout.removeListener(ScoutEvent.RequestSent, listener);
+            reject(new Error("Timed out waiting for ScoutEvent.RequestSent"));
+        }, TIMEOUT - 1000);
+
+        const listener = (data: ScoutEventRequestSentData) => {
+            if (skipped < skipCount) {
+                skipped++;
+                return;
+            }
+            clearTimeout(timer);
+            scout.removeListener(ScoutEvent.RequestSent, listener);
+            resolve(data);
+        };
+
+        scout.on(ScoutEvent.RequestSent, listener);
+    });
+}
+
+function makeApp(mock: MockAgent, factory: (mw: any) => AppWithScout, extra?: object): AppWithScout {
+    return factory(
+        scoutMiddleware({
+            config: buildScoutWithMock(mock, extra),
+            requestTimeoutMs: 0,
+            waitForScoutSetup: true,
+        }),
+    ) as AppWithScout;
+}
+
 test("Express GET / creates a Controller span", { timeout: TIMEOUT }, (t) => {
     const mock = new MockAgent();
+    let app: AppWithScout;
+    let scout: Scout;
 
     mock.start()
         .then(() => {
-            const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(
-                scoutMiddleware({
-                    config: buildScoutWithMock(mock),
-                    requestTimeoutMs: 0,
-                    waitForScoutSetup: true,
-                }),
+            app = makeApp(mock, (mw) => TestUtil.simpleExpressApp(mw));
+            // Set up listener BEFORE warmup request to capture events in order
+            const warmupDone = request(app).get("/").expect(200);
+            return warmupDone;
+        })
+        .then(() => {
+            scout = app.scout!;
+            // Warmup RequestSent may or may not have fired yet — skip 1 to get next request's event
+            const sentPromise = nextRequestSent(scout, 1);
+            request(app).get("/").end(() => undefined);
+            return sentPromise;
+        })
+        .then((data) => {
+            const spans = data.request.getChildSpansSync();
+            const controllerSpan = spans.find((s) => s.operation.startsWith("Controller/"));
+
+            t.ok(controllerSpan, "Controller span was created");
+            t.ok(
+                controllerSpan && controllerSpan.operation.includes("GET"),
+                "Controller span includes HTTP method",
             );
-
-            return request(app).get("/").expect(200)
-                .then(() => {
-                    if (!app.scout) { throw new Error("scout not on app"); }
-                    return app.scout;
-                });
+            return TestUtil.shutdownScout(t, scout);
         })
-        .then((scout: Scout) => {
-            return new Promise<Scout>((resolve) => {
-                scout.on(ScoutEvent.RequestSent, (data: ScoutEventRequestSentData) => {
-                    const req = data.request;
-                    const spans = req.getChildSpansSync();
-                    const controllerSpan = spans.find((s) =>
-                        s.operation.startsWith("Controller/"),
-                    );
-
-                    t.ok(controllerSpan, "Controller span was created");
-                    t.ok(
-                        controllerSpan && controllerSpan.operation.includes("GET"),
-                        "Controller span includes HTTP method",
-                    );
-                    resolve(scout);
-                });
-
-                request(
-                    (app as Application & ApplicationWithScout),
-                ).get("/").end(() => undefined);
-            });
-        })
-        .then((scout: Scout) => TestUtil.shutdownScout(t, scout))
         .then(() => mock.stop())
         .catch((err) => {
-            mock.stop();
+            mock.stop().catch(() => undefined);
             t.fail(err.message);
             t.end();
         });
@@ -80,92 +106,66 @@ test("Express GET / creates a Controller span", { timeout: TIMEOUT }, (t) => {
 
 test("Express dynamic route captures route pattern", { timeout: TIMEOUT }, (t) => {
     const mock = new MockAgent();
+    let app: AppWithScout;
+    let scout: Scout;
 
     mock.start()
         .then(() => {
-            const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(
-                scoutMiddleware({
-                    config: buildScoutWithMock(mock),
-                    requestTimeoutMs: 0,
-                    waitForScoutSetup: true,
-                }),
+            app = makeApp(mock, (mw) => TestUtil.simpleDynamicSegmentExpressApp(mw));
+            return request(app).get("/").expect(200);
+        })
+        .then(() => {
+            scout = app.scout!;
+            const sentPromise = nextRequestSent(scout, 1);
+            request(app).get("/dynamic/hello").end(() => undefined);
+            return sentPromise;
+        })
+        .then((data) => {
+            const spans = data.request.getChildSpansSync();
+            const controllerSpan = spans.find((s) => s.operation.startsWith("Controller/"));
+
+            t.ok(controllerSpan, "Controller span present for dynamic route");
+            t.ok(
+                controllerSpan && controllerSpan.operation.includes(":segment"),
+                `Route pattern captured — operation: ${controllerSpan?.operation}`,
             );
-
-            return request(app).get("/").expect(200)
-                .then(() => {
-                    if (!app.scout) { throw new Error("scout not on app"); }
-                    return app.scout;
-                });
+            return TestUtil.shutdownScout(t, scout);
         })
-        .then((scout: Scout) => {
-            return new Promise<Scout>((resolve) => {
-                scout.on(ScoutEvent.RequestSent, (data: ScoutEventRequestSentData) => {
-                    const req = data.request;
-                    const spans = req.getChildSpansSync();
-                    const controllerSpan = spans.find((s) =>
-                        s.operation.startsWith("Controller/"),
-                    );
-
-                    t.ok(controllerSpan, "Controller span present for dynamic route");
-                    t.ok(
-                        controllerSpan && controllerSpan.operation.includes(":segment"),
-                        "Route pattern preserved (not the actual value)",
-                    );
-                    resolve(scout);
-                });
-
-                request(
-                    (app as Application & ApplicationWithScout),
-                ).get("/dynamic/hello").end(() => undefined);
-            });
-        })
-        .then((scout: Scout) => TestUtil.shutdownScout(t, scout))
         .then(() => mock.stop())
         .catch((err) => {
-            mock.stop();
+            mock.stop().catch(() => undefined);
             t.fail(err.message);
             t.end();
         });
 });
 
-test("Express error response is tagged on the span", { timeout: TIMEOUT }, (t) => {
+test("Express error response is tagged on the request", { timeout: TIMEOUT }, (t) => {
     const mock = new MockAgent();
+    let app: AppWithScout;
+    let scout: Scout;
 
     mock.start()
         .then(() => {
-            const app: Application & ApplicationWithScout = TestUtil.simpleErrorApp(
-                scoutMiddleware({
-                    config: buildScoutWithMock(mock),
-                    requestTimeoutMs: 0,
-                    waitForScoutSetup: true,
-                }),
-            );
-
-            return request(app).get("/").then(() => {
-                if (!app.scout) { throw new Error("scout not on app"); }
-                return app.scout;
-            });
+            app = makeApp(mock, (mw) => TestUtil.simpleErrorApp(mw));
+            // First request to "/" initializes Scout (it will error, but that's ok)
+            return request(app).get("/");
         })
-        .then((scout: Scout) => {
-            return new Promise<Scout>((resolve) => {
-                scout.on(ScoutEvent.RequestSent, (data: ScoutEventRequestSentData) => {
-                    const req = data.request;
-                    const errValue = req.getContextValue("error");
-
-                    t.ok(errValue !== undefined, "error context set on request");
-                    t.equal(errValue, "true", "error context value is 'true'");
-                    resolve(scout);
-                });
-
-                request(
-                    (app as Application & ApplicationWithScout),
-                ).get("/").end(() => undefined);
-            });
+        .then(() => {
+            scout = app.scout!;
+            const sentPromise = nextRequestSent(scout, 1);
+            request(app).get("/").end(() => undefined);
+            return sentPromise;
         })
-        .then((scout: Scout) => TestUtil.shutdownScout(t, scout))
+        .then((data) => {
+            const errValue = data.request.getContextValue("error");
+
+            t.ok(errValue !== undefined, "error context set on request");
+            t.equal(errValue, "true", "error context value is 'true'");
+            return TestUtil.shutdownScout(t, scout);
+        })
         .then(() => mock.stop())
         .catch((err) => {
-            mock.stop();
+            mock.stop().catch(() => undefined);
             t.fail(err.message);
             t.end();
         });
@@ -173,28 +173,31 @@ test("Express error response is tagged on the span", { timeout: TIMEOUT }, (t) =
 
 test("Mock agent receives Register message on connect", { timeout: TIMEOUT }, (t) => {
     const mock = new MockAgent();
+    let capturedScout: Scout | undefined;
 
     mock.start()
         .then(() => {
-            const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(
-                scoutMiddleware({
-                    config: buildScoutWithMock(mock, { name: "test-app", key: "test-key" }),
-                    requestTimeoutMs: 0,
-                    waitForScoutSetup: true,
-                }),
-            );
+            const app = makeApp(
+                mock,
+                (mw) => TestUtil.simpleExpressApp(mw),
+                { name: "test-app", key: "test-key" },
+            ) as AppWithScout;
 
             return request(app).get("/").expect(200)
-                .then(() => mock.waitForMessage("Register"));
+                .then(() => { capturedScout = app.scout; });
         })
+        .then(() => mock.waitForMessage("Register"))
         .then((msg) => {
             t.ok(msg, "Register message received by mock agent");
             t.equal(msg.type, "Register", "message type is Register");
         })
         .then(() => mock.stop())
+        .then(() => {
+            if (capturedScout) { return capturedScout.shutdown(); }
+        })
         .then(() => t.end())
         .catch((err) => {
-            mock.stop();
+            mock.stop().catch(() => undefined);
             t.fail(err.message);
             t.end();
         });

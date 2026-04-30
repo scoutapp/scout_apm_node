@@ -19,6 +19,8 @@
   "include": [
     "./index.ts",
     "./lib/**/*",
-    "./test/**/*.unit.ts"
+    "./test/**/*.unit.ts",
+    "./test/util.ts",
+    "./test/integration/**/*"
   ]
 }

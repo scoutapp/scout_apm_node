@@ -1,6 +1,12 @@
 import * as net from "net";
 import { EventEmitter } from "events";
 
+// Scout protocol responses use the same outer key as the request message type.
+// Special case: GetVersion responses use "CoreAgentVersion" as the key.
+const RESPONSE_OVERRIDE: Record<string, object> = {
+    GetVersion: { CoreAgentVersion: "v1.3.0" },
+};
+
 export interface ParsedMessage {
     type: string;
     raw: object;
@@ -12,12 +18,17 @@ export interface ParsedMessage {
  */
 export class MockAgent extends EventEmitter {
     private server: net.Server;
+    private sockets: Set<net.Socket> = new Set();
     private messages: ParsedMessage[] = [];
     public port: number = 0;
 
     constructor() {
         super();
-        this.server = net.createServer((socket) => this.handleConnection(socket));
+        this.server = net.createServer((socket) => {
+            this.sockets.add(socket);
+            socket.once("close", () => this.sockets.delete(socket));
+            this.handleConnection(socket);
+        });
     }
 
     public start(): Promise<void> {
@@ -32,8 +43,11 @@ export class MockAgent extends EventEmitter {
     }
 
     public stop(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.server.close((err) => err ? reject(err) : resolve());
+        // Destroy all open sockets so the server can close immediately
+        this.sockets.forEach((s) => s.destroy());
+        this.sockets.clear();
+        return new Promise((resolve) => {
+            this.server.close(() => resolve());
         });
     }
 
@@ -71,28 +85,26 @@ export class MockAgent extends EventEmitter {
     }
 
     private handleConnection(socket: net.Socket): void {
-        let buf = Buffer.alloc(0);
+        const chunks: Buffer[] = [];
 
         socket.on("data", (chunk: Buffer) => {
-            buf = Buffer.concat([buf, chunk]);
-            this.processBuffer(buf, socket, (remaining) => { buf = remaining; });
+            chunks.push(chunk);
+            const buf: Buffer = Buffer.concat(chunks);
+            chunks.length = 0;
+            const remaining = this.processBuffer(buf, socket);
+            if (remaining.length > 0) { chunks.push(remaining); }
         });
 
         socket.on("error", () => socket.destroy());
     }
 
-    private processBuffer(
-        buf: Buffer,
-        socket: net.Socket,
-        updateBuf: (b: Buffer) => void,
-    ): void {
+    private processBuffer(buf: Buffer, socket: net.Socket): Buffer {
         while (buf.length >= 4) {
             const msgLen = buf.readUInt32BE(0);
             if (buf.length < 4 + msgLen) { break; }
 
-            const msgBytes = buf.slice(4, 4 + msgLen);
-            buf = buf.slice(4 + msgLen);
-            updateBuf(buf);
+            const msgBytes = buf.subarray(4, 4 + msgLen);
+            buf = buf.subarray(4 + msgLen) as Buffer;
 
             try {
                 const parsed = JSON.parse(msgBytes.toString("utf8"));
@@ -107,6 +119,7 @@ export class MockAgent extends EventEmitter {
                 // ignore parse errors in mock
             }
         }
+        return buf;
     }
 
     private extractMessageType(parsed: any): string {
@@ -119,23 +132,15 @@ export class MockAgent extends EventEmitter {
     }
 
     private sendResponse(socket: net.Socket, type: string): void {
-        let resp: object;
-
-        switch (type) {
-            case "Register":
-                resp = { RegisterResponse: { result: "Success" } };
-                break;
-            case "GetVersion":
-                resp = { GetVersionResponse: { version: "1.3.0" } };
-                break;
-            default:
-                return; // no response needed for most messages
-        }
+        // Scout's ExternalProcessAgent waits for SocketResponseReceived after every send.
+        // Response format mirrors the request: outer key = message type, value = result object.
+        // Exception: GetVersion uses "CoreAgentVersion" as the response key.
+        const resp = RESPONSE_OVERRIDE[type] || { [type]: { result: "Success" } };
 
         const json = JSON.stringify(resp);
-        const buf = Buffer.allocUnsafe(4 + json.length);
-        buf.writeUInt32BE(json.length, 0);
-        buf.write(json, 4, "utf8");
-        socket.write(buf);
+        const jsonBuf = Buffer.from(json, "utf8");
+        const lenBuf = Buffer.allocUnsafe(4);
+        lenBuf.writeUInt32BE(jsonBuf.length, 0);
+        socket.write(Buffer.concat([lenBuf, jsonBuf]));
     }
 }
