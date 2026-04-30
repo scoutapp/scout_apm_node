@@ -38,6 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.scoutMiddleware = scoutMiddleware;
 const on_finished_1 = __importDefault(require("on-finished"));
+const async_hooks_1 = require("async_hooks");
 const types_1 = require("./types");
 const Constants = __importStar(require("./constants"));
 const global_1 = require("./global");
@@ -382,8 +383,9 @@ function scoutMiddleware(opts) {
                         const rootSpan = scout.getCurrentSpan();
                         // Add the span to the request object
                         req.scout.rootSpan = rootSpan;
-                        // Setup of the transaction and instrumentation succeeded
-                        next();
+                        // AsyncResource.bind re-enters our Scout context after any
+                        // setImmediate dispatch Express 5's router package uses.
+                        async_hooks_1.AsyncResource.bind(next)();
                     });
                 });
             });
