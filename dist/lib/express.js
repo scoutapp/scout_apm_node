@@ -64,8 +64,8 @@ function listExpressEndpoints(app) {
     }
     // Express 5: walk the router stack ourselves
     const endpoints = [];
-    // Get the router (Express 5 uses app.router, Express 4 uses app._router)
-    const router = app.router || app._router;
+    // Express 4 uses app._router; Express 5 uses app.router (which throws on v4)
+    const router = app._router || app.router;
     if (!router || !router.stack) {
         return endpoints;
     }
@@ -216,8 +216,8 @@ function scoutMiddleware(opts) {
         let matchedRouteMiddleware = commonRouteMiddlewares.find((m) => middlewareMatchesUrl(m, preQueryUrl));
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
-        // Express 5 uses app.router, Express 4 uses app._router
-        const appRouter = req.app.router || req.app._router;
+        // Express 4 uses app._router; Express 5 uses app.router (which throws on v4)
+        const appRouter = req.app._router || req.app.router;
         if (!routePath && appRouter && appRouter.stack) {
             // Find routes that match the current URL
             matchedRouteMiddleware = appRouter.stack

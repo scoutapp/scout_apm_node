@@ -1,16 +1,22 @@
-FROM node:20-alpine
+# Stage 1: pack the scout-apm package from the pre-built dist
+# Using npm pack ensures the installed package is copied (not symlinked)
+# into node_modules, so require() resolution works correctly.
+FROM node:20-alpine AS packer
+WORKDIR /scout
+COPY dist/ dist/
+COPY package.json .
+RUN npm pack && mv *.tgz /scout-apm.tgz
 
+# Stage 2: app
+FROM node:20-alpine
 WORKDIR /app
 
-# Build context is the repo root.
-# Copy the built scout-apm package into /scout-agent so npm can install it
-# via the absolute file: path declared in package.json.
-COPY dist/ /scout-agent/dist/
-COPY package.json /scout-agent/package.json
-
-# Install app dependencies (resolves /scout-agent from above)
+# Install app dependencies; point scout-apm at the tarball from stage 1
+COPY --from=packer /scout-apm.tgz .
 COPY node_test_apps/express-v5/package.json .
-RUN npm install
+RUN npm config set strict-ssl false && \
+    sed -i 's|"file:/scout-agent"|"./scout-apm.tgz"|' package.json && \
+    npm install
 
 # App source
 COPY node_test_apps/express-v5/app.js .

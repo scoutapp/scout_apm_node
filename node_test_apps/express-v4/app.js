@@ -16,7 +16,7 @@ const express     = require("express");
 const http        = require("http");
 const mustache    = require("mustache");
 const mustacheExp = require("mustache-express");
-const { scoutMiddleware, buildScoutConfiguration } = require("@scout_apm/scout-apm");
+const { expressMiddleware: scoutMiddleware, buildScoutConfiguration } = require("@scout_apm/scout-apm");
 const { CaptureAgent } = require("./capture-agent");
 const { initDb, getLastRequestMessages } = require("./store");
 
