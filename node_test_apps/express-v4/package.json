@@ -1,0 +1,13 @@
+{
+  "name": "scout-express-v4-test-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node app.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "@scout_apm/scout-apm": "file:../..",
+    "express": "^4.21.0"
+  }
+}

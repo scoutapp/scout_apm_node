@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  express-v4:
+    build:
+      context: ./express-v4
+    ports:
+      - "3000:3000"
+    environment:
+      SCOUT_CORE_AGENT_DOWNLOAD: "false"
+      SCOUT_CORE_AGENT_LAUNCH: "false"
+      SCOUT_MONITOR: "false"
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  express-v5:
+    build:
+      context: ./express-v5
+    ports:
+      - "3001:3001"
+    environment:
+      SCOUT_CORE_AGENT_DOWNLOAD: "false"
+      SCOUT_CORE_AGENT_LAUNCH: "false"
+      SCOUT_MONITOR: "false"
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
