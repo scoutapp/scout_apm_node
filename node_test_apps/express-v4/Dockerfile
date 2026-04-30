@@ -11,7 +11,10 @@ COPY package.json .
 RUN npm install
 
 COPY app.js .
+COPY capture-agent.js .
+COPY store.js .
 COPY healthcheck.js .
+COPY views/ views/
 
 ENV PORT=3000
 ENV SCOUT_CORE_AGENT_DOWNLOAD=false

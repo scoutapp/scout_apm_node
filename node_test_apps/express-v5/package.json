@@ -8,6 +8,9 @@
   },
   "dependencies": {
     "@scout_apm/scout-apm": "file:../..",
-    "express": "^5.0.0"
+    "express": "^5.0.0",
+    "mustache": "^4.2.0",
+    "mustache-express": "^1.3.2",
+    "pg": "^8.13.0"
   }
 }
