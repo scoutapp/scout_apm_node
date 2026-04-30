@@ -1,4 +1,6 @@
+import * as fs from "fs";
 import * as net from "net";
+import * as path from "path";
 import { EventEmitter } from "events";
 
 // Scout protocol responses use the same outer key as the request message type.
@@ -57,6 +59,13 @@ export class MockAgent extends EventEmitter {
 
     public getMessagesByType(type: string): ParsedMessage[] {
         return this.messages.filter((m) => m.type === type);
+    }
+
+    /** Write all captured messages to a JSON file for inspection. Creates parent dirs as needed. */
+    public dumpToFile(filePath: string): void {
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) { fs.mkdirSync(dir, { recursive: true }); }
+        fs.writeFileSync(filePath, JSON.stringify(this.messages, null, 2), "utf8");
     }
 
     public waitForMessage(type: string, timeoutMs: number = 3000): Promise<ParsedMessage> {
