@@ -98,12 +98,17 @@ captureAgent.start()
 
         app.get("/diagnostics", async (_req, res) => {
             const rows = await getLastRequestMessages();
-            const messages = rows.map((r, i) => ({
-                index: i + 1,
-                type: r.type,
-                captured_at: r.captured_at,
-                payload: JSON.stringify(r.raw, null, 2),
-            }));
+            const messages = rows.map((r, i) => {
+                const body = r.raw && typeof r.raw === "object" ? r.raw : {};
+                const inner = body[r.type] || {};
+                return {
+                    index: i + 1,
+                    type: r.type,
+                    operation: inner.operation || "",
+                    captured_at: r.captured_at,
+                    payload: JSON.stringify(r.raw, null, 2),
+                };
+            });
             const requestId = rows.length > 0 ? (rows[0].request_id || "—") : "—";
             res.render("diagnostics", {
                 requestId,
