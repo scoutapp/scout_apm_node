@@ -19,3 +19,4 @@ target
 
 # NPM
 /.npmrc
+dist/test/integration/payloads/

@@ -20,7 +20,16 @@
     "./index.ts",
     "./lib/**/*",
     "./test/**/*.unit.ts",
+    "./test/**/*.e2e.ts",
+    "./test/**/*.int.ts",
+    "./test/**/*.ext.ts",
     "./test/util.ts",
-    "./test/integration/**/*"
+    "./test/integration/**/*",
+    "./test/fixtures/**/*",
+    "./test/constants.ts",
+    "./test/agents/**/*",
+    "./test/agent-downloaders/**/*",
+    "./test/scout/**/*",
+    "./test/integrations/**/*"
   ]
 }

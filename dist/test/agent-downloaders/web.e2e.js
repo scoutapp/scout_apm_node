@@ -43,7 +43,8 @@ const tmp = __importStar(require("tmp-promise"));
 const Constants = __importStar(require("../../lib/constants"));
 const types_1 = require("../../lib/types");
 const web_1 = require("../../lib/agent-downloaders/web");
-(0, tape_1.default)("download works (v1.1.8)", t => {
+const SKIP_DOWNLOAD_TESTS = process.env.ENABLE_BINARY_TESTS !== "true";
+(0, tape_1.default)("download works (v1.1.8)", { skip: SKIP_DOWNLOAD_TESTS }, t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     downloader
@@ -52,7 +53,7 @@ const web_1 = require("../../lib/agent-downloaders/web");
         .then(() => t.end())
         .catch(t.end);
 });
-(0, tape_1.default)("cache is updated by download (v1.1.8)", t => {
+(0, tape_1.default)("cache is updated by download (v1.1.8)", { skip: SKIP_DOWNLOAD_TESTS }, t => {
     const opts = {
         cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
         updateCache: true,
@@ -81,7 +82,7 @@ const web_1 = require("../../lib/agent-downloaders/web");
         .then(() => t.end())
         .catch(t.end);
 });
-(0, tape_1.default)("cache is used by second download (v1.1.8)", t => {
+(0, tape_1.default)("cache is used by second download (v1.1.8)", { skip: SKIP_DOWNLOAD_TESTS }, t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     const opts = { updateCache: true };
@@ -110,7 +111,7 @@ const web_1 = require("../../lib/agent-downloaders/web");
         .catch(t.end);
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
-(0, tape_1.default)("download works with a custom root URL + agent full name", t => {
+(0, tape_1.default)("download works with a custom root URL + agent full name", { skip: SKIP_DOWNLOAD_TESTS }, t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     const opts = {
@@ -128,7 +129,7 @@ const web_1 = require("../../lib/agent-downloaders/web");
         .catch(t.end);
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
-(0, tape_1.default)("download fails with invalid custom URL", t => {
+(0, tape_1.default)("download fails with invalid custom URL", { skip: SKIP_DOWNLOAD_TESTS }, t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     const coreAgentDir = "/tmp/scout_apm_core";
