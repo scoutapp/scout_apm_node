@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scout Demo — Node {{nodeVersion}} + Express</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    pre  { background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow-x: auto; }
+    a.btn { display: inline-block; margin-top: 1.5rem; padding: .5rem 1.2rem;
+            background: #4f46e5; color: #fff; border-radius: 4px; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h1>Scout APM Demo <small>(Node {{nodeVersion}} + Express)</small></h1>
+
+  <h2>Database ping</h2>
+  <pre>{{dbResult}}</pre>
+
+  <h2>Internal API response</h2>
+  <pre>{{apiResult}}</pre>
+
+  <p>Every request above is traced by Scout APM using the
+     <strong>pg</strong>, <strong>http</strong>, and <strong>mustache</strong> integrations.</p>
+
+  <a class="btn" href="/diagnostics">View Scout protocol messages &rarr;</a>
+</body>
+</html>

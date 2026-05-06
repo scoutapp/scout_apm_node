@@ -117,13 +117,22 @@ jobs:
         run: yarn test-unit && yarn test-int
 
   node-test-apps:
-    name: Node test apps (Express ${{ matrix.version }})
+    name: Node test apps (${{ matrix.name }})
     runs-on: ubuntu-latest
     needs: lint
     strategy:
       fail-fast: false
       matrix:
-        version: [4, 5]
+        include:
+          - name: "Express 4"
+            dockerfile: node_test_apps/express-v4/Dockerfile
+            image: scout-express-v4-test
+          - name: "Express 5"
+            dockerfile: node_test_apps/express-v5/Dockerfile
+            image: scout-express-v5-test
+          - name: "Node 24 + Express"
+            dockerfile: node_test_apps/node_24/express/Dockerfile
+            image: scout-node24-express-test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -132,13 +141,11 @@ jobs:
           cache: yarn
       - run: yarn install --frozen-lockfile
       - run: yarn build
-      - name: Build and test Express ${{ matrix.version }} app
-        if: hashFiles(format('node_test_apps/express-v{0}/Dockerfile', matrix.version)) != ''
+      - name: Build and test ${{ matrix.name }} app
+        if: hashFiles(matrix.dockerfile) != ''
         run: |
-          docker build -t scout-express-v${{ matrix.version }}-test \
-            -f node_test_apps/express-v${{ matrix.version }}/Dockerfile \
-            .
-          docker run -d --name scout-app scout-express-v${{ matrix.version }}-test
+          docker build -t ${{ matrix.image }} -f ${{ matrix.dockerfile }} .
+          docker run -d --name scout-app ${{ matrix.image }}
           timeout 60 sh -c 'until [ "$(docker inspect -f {{.State.Health.Status}} scout-app 2>/dev/null)" = "healthy" ]; do sleep 2; done'
           STATUS=$(docker inspect -f '{{.State.Health.Status}}' scout-app)
           docker rm -f scout-app

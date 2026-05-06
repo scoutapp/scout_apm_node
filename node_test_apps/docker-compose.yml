@@ -60,3 +60,26 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  node24-express:
+    build:
+      context: ..
+      dockerfile: node_test_apps/node_24/express/Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      SCOUT_CORE_AGENT_DOWNLOAD: "false"
+      SCOUT_CORE_AGENT_LAUNCH: "false"
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: scout_demo
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
