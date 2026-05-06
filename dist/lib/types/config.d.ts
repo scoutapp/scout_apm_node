@@ -16,7 +16,7 @@ export declare class ApplicationMetadata {
     readonly databaseEngine: string;
     readonly databaseAdapter: string;
     readonly applicationName: string;
-    readonly libraries: Array<[string, any]>;
+    readonly libraries: [string, any][];
     readonly paas: string;
     readonly gitSHA: string;
     readonly applicationRoot: string;
