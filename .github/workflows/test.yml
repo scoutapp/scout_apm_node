@@ -138,8 +138,8 @@ jobs:
           docker build -t scout-express-v${{ matrix.version }}-test \
             -f node_test_apps/express-v${{ matrix.version }}/Dockerfile \
             .
-          docker run --rm \
-            -e SCOUT_CORE_AGENT_DOWNLOAD=false \
-            -e SCOUT_CORE_AGENT_LAUNCH=false \
-            scout-express-v${{ matrix.version }}-test \
-            node healthcheck.js
+          docker run -d --name scout-app scout-express-v${{ matrix.version }}-test
+          timeout 60 sh -c 'until [ "$(docker inspect -f {{.State.Health.Status}} scout-app 2>/dev/null)" = "healthy" ]; do sleep 2; done'
+          STATUS=$(docker inspect -f '{{.State.Health.Status}}' scout-app)
+          docker rm -f scout-app
+          [ "$STATUS" = "healthy" ]
