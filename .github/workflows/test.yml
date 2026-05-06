@@ -126,11 +126,18 @@ jobs:
         version: [4, 5]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
       - name: Build and test Express ${{ matrix.version }} app
         if: hashFiles(format('node_test_apps/express-v{0}/Dockerfile', matrix.version)) != ''
-        working-directory: node_test_apps/express-v${{ matrix.version }}
         run: |
-          docker build -t scout-express-v${{ matrix.version }}-test .
+          docker build -t scout-express-v${{ matrix.version }}-test \
+            -f node_test_apps/express-v${{ matrix.version }}/Dockerfile \
+            .
           docker run --rm \
             -e SCOUT_CORE_AGENT_DOWNLOAD=false \
             -e SCOUT_CORE_AGENT_LAUNCH=false \
