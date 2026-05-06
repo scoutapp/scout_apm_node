@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scout Diagnostics — Node {{nodeVersion}} + NestJS</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    h2   { margin-top: 2rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f9fafb; font-weight: 600; }
+    pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
+    .empty { color: #6b7280; font-style: italic; }
+    a { color: #e0234e; }
+  </style>
+</head>
+<body>
+  <h1>Scout Protocol Messages</h1>
+  <p>Messages captured from the most recent request (request_id: <code>{{requestId}}</code>).</p>
+  <p><a href="/">&larr; Back to home</a></p>
+
+  {{#hasMessages}}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Type</th>
+        <th>Operation</th>
+        <th>Captured at</th>
+        <th>Raw payload</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#messages}}
+      <tr>
+        <td>{{index}}</td>
+        <td><strong>{{type}}</strong></td>
+        <td>{{operation}}</td>
+        <td>{{captured_at}}</td>
+        <td><pre>{{payload}}</pre></td>
+      </tr>
+      {{/messages}}
+    </tbody>
+  </table>
+  {{/hasMessages}}
+
+  {{^hasMessages}}
+  <p class="empty">No messages captured yet. Try hitting the <a href="/">home page</a> first.</p>
+  {{/hasMessages}}
+</body>
+</html>

@@ -133,6 +133,9 @@ jobs:
           - name: "Node 24 + Express"
             dockerfile: node_test_apps/node_24/express/Dockerfile
             image: scout-node24-express-test
+          - name: "Node 24 + NestJS"
+            dockerfile: node_test_apps/node_24/nest/Dockerfile
+            image: scout-node24-nest-test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

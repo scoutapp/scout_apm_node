@@ -1,5 +1,6 @@
 import * as Errors from "./errors";
 import { scoutMiddleware as expressMiddleware } from "./express";
+import { nestMiddleware as nestMiddlewareImpl } from "./nest";
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
 import { getOrCreateActiveGlobalScoutInstance } from "./global";
@@ -9,6 +10,7 @@ declare const API: {
     Errors: typeof Errors;
     setupRequireIntegrations: typeof setupRequireIntegrations;
     expressMiddleware: typeof expressMiddleware;
+    nestMiddleware: typeof nestMiddlewareImpl;
     consoleLogFn: typeof consoleLogFn;
     buildWinstonLogFn: typeof buildWinstonLogFn;
     install: typeof getOrCreateActiveGlobalScoutInstance;
