@@ -123,47 +123,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - version: 4
-            port: 3000
-          - version: 5
-            port: 3001
+        version: [4, 5]
     steps:
       - uses: actions/checkout@v4
-      - name: Build scout-apm
+      - name: Build and test Express ${{ matrix.version }} app
         if: hashFiles(format('node_test_apps/express-v{0}/Dockerfile', matrix.version)) != ''
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: yarn
-      - name: Install and build
-        if: hashFiles(format('node_test_apps/express-v{0}/Dockerfile', matrix.version)) != ''
-        run: yarn install --frozen-lockfile && yarn build
-      - name: Build Docker image
-        if: hashFiles(format('node_test_apps/express-v{0}/Dockerfile', matrix.version)) != ''
+        working-directory: node_test_apps/express-v${{ matrix.version }}
         run: |
-          docker build \
-            -f node_test_apps/express-v${{ matrix.version }}/Dockerfile \
-            -t scout-express-v${{ matrix.version }}-test \
-            .
-      - name: Smoke test Express ${{ matrix.version }} app
-        if: hashFiles(format('node_test_apps/express-v{0}/Dockerfile', matrix.version)) != ''
-        env:
-          APP_PORT: ${{ matrix.port }}
-        run: |
-          docker run -d --name scout-test-v${{ matrix.version }} \
-            -p ${APP_PORT}:${APP_PORT} \
+          docker build -t scout-express-v${{ matrix.version }}-test .
+          docker run --rm \
             -e SCOUT_CORE_AGENT_DOWNLOAD=false \
             -e SCOUT_CORE_AGENT_LAUNCH=false \
-            -e PORT=${APP_PORT} \
-            scout-express-v${{ matrix.version }}-test
-          # Poll until the app is ready (max 30s)
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:${APP_PORT}/; then break; fi
-            echo "Waiting... attempt $i"
-            sleep 1
-          done
-          curl -sf http://localhost:${APP_PORT}/
-          curl -sf http://localhost:${APP_PORT}/diagnostics
-          docker stop scout-test-v${{ matrix.version }}
-          docker rm scout-test-v${{ matrix.version }}
+            scout-express-v${{ matrix.version }}-test \
+            node healthcheck.js

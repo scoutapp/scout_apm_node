@@ -25,8 +25,9 @@ import * as Requests from "../../lib/protocol/v1/requests";
 import * as TestConstants from "../constants";
 
 const TEST_AGENT_KEY = process.env.TEST_AGENT_KEY || "fake-agent-key";
+const SKIP_BINARY_TESTS = process.env.ENABLE_BINARY_TESTS !== "true";
 
-test(`external process can be launched locally (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`external process can be launched locally (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     let agent: ExternalProcessAgent;
     let process: ChildProcess;
 
@@ -43,7 +44,7 @@ test(`external process can be launched locally (v${TestConstants.TEST_APP_VERSIO
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`manual async GetVersion message works (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`manual async GetVersion message works (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     let agent: ExternalProcessAgent;
 
     // Create the external process agent
@@ -82,7 +83,7 @@ test(`manual async GetVersion message works (v${TestConstants.TEST_APP_VERSION})
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`GetVersion message works (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`GetVersion message works (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     let agent: ExternalProcessAgent;
 
     // Create the external process agent
@@ -101,7 +102,7 @@ test(`GetVersion message works (v${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`Register message works (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`Register message works (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     let agent: ExternalProcessAgent;
 
     // Ensure agent key is present (fed in from ENV)
@@ -128,7 +129,7 @@ test(`Register message works (v${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`StartRequest message works (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`StartRequest message works (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -151,7 +152,7 @@ test(`StartRequest message works (v${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`FinishRequest message works (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`FinishRequest message works (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
@@ -180,7 +181,7 @@ test(`FinishRequest message works (v${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`TagRequest message works (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`TagRequest message works (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
@@ -216,7 +217,7 @@ test(`TagRequest message works (v${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`StartSpan message works for leaf span (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`StartSpan message works for leaf span (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
     let start: Requests.V1StartRequest;
@@ -251,7 +252,7 @@ test(`StartSpan message works for leaf span (v${TestConstants.TEST_APP_VERSION})
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`StopSpan works for leaf span (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`StopSpan works for leaf span (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -294,7 +295,7 @@ test(`StopSpan works for leaf span (v${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`TagSpan works for leaf span (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`TagSpan works for leaf span (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -342,7 +343,7 @@ test(`TagSpan works for leaf span (v${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`ApplicationEvent for application metadata works (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`ApplicationEvent for application metadata works (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -366,7 +367,7 @@ test(`ApplicationEvent for application metadata works (v${TestConstants.TEST_APP
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`ApplicationEvent for sampling works (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`ApplicationEvent for sampling works (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -396,7 +397,7 @@ test(`ApplicationEvent for sampling works (v${TestConstants.TEST_APP_VERSION})`,
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`Nested spans work (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`Nested spans work (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -447,7 +448,7 @@ test(`Nested spans work (v${TestConstants.TEST_APP_VERSION})`, t => {
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`Nested spans work in the wrong close order (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`Nested spans work in the wrong close order (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -498,7 +499,7 @@ test(`Nested spans work in the wrong close order (v${TestConstants.TEST_APP_VERS
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`Request with 'Controller' span works, after waiting for flush (v${TestConstants.TEST_APP_VERSION})`, t => {
+test(`Request with 'Controller' span works, after waiting for flush (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -535,7 +536,7 @@ test(`Request with 'Controller' span works, after waiting for flush (v${TestCons
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test("Support starting scout with a completely external core-agent", t => {
+test("Support starting scout with a completely external core-agent", {skip: SKIP_BINARY_TESTS}, t => {
     // Create the external process agent, with special function for building the proc opts with
     TestUtil.bootstrapExternalProcessAgent(
         t,
@@ -560,7 +561,7 @@ test("Support starting scout with a completely external core-agent", t => {
         });
 });
 
-test("Timeout agent messages", t => {
+test("Timeout agent messages", {skip: SKIP_BINARY_TESTS}, t => {
     let agent: ExternalProcessAgent;
 
     // When the server receives a message, it should increment the count

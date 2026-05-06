@@ -19,3 +19,5 @@ target
 
 # NPM
 /.npmrc
+dist/test/integration/payloads/
+package-lock.json
