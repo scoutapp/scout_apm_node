@@ -21,3 +21,4 @@ target
 /.npmrc
 dist/test/integration/payloads/
 package-lock.json
+scout_apm-*.tgz
