@@ -25,7 +25,7 @@ export class IORedisIntegration extends RequireIntegration {
             }
 
             const commandName = (command.name || "command").toUpperCase();
-            const op = `Cache/${commandName}`;
+            const op = `Redis/${commandName}`;
 
             return integration.scout.instrument(op, done => {
                 if (!integration.scout) {

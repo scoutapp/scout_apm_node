@@ -28,7 +28,7 @@ class IORedisIntegration extends integrations_1.RequireIntegration {
                 return originalSendCommand.apply(this, [command, ...rest]);
             }
             const commandName = (command.name || "command").toUpperCase();
-            const op = `Cache/${commandName}`;
+            const op = `Redis/${commandName}`;
             return integration.scout.instrument(op, done => {
                 if (!integration.scout) {
                     return originalSendCommand.apply(this, [command, ...rest]).then(() => done());

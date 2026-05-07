@@ -56,7 +56,7 @@ const sharedMock = new mock_agent_1.MockAgent();
     t.ok(ioredis_1.default[(0, integrations_1.getIntegrationSymbol)()], "Redis class has integration symbol");
     t.end();
 });
-(0, tape_1.default)("Cache/SET span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
+(0, tape_1.default)("Redis/SET span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
@@ -67,12 +67,12 @@ const sharedMock = new mock_agent_1.MockAgent();
     const client = new ioredis_1.default({ host: REDIS_HOST, port: REDIS_PORT, lazyConnect: true });
     const listener = (data) => {
         const spans = data.request.getChildSpansSync();
-        const setSpan = spans.find((s) => s.operation === "Cache/SET");
+        const setSpan = spans.find((s) => s.operation === "Redis/SET");
         if (!setSpan) {
             return;
         }
         scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
-        t.ok(setSpan, "Cache/SET span present");
+        t.ok(setSpan, "Redis/SET span present");
         t.ok(setSpan.getContextValue("db.statement"), "db.statement context set");
         client.quit()
             .then(() => TestUtil.shutdownScout(t, scout))
@@ -90,7 +90,7 @@ const sharedMock = new mock_agent_1.MockAgent();
         TestUtil.shutdownScout(t, scout, err);
     });
 });
-(0, tape_1.default)("Cache/GET span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
+(0, tape_1.default)("Redis/GET span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         allowShutdown: true,
         monitor: true,
@@ -101,12 +101,12 @@ const sharedMock = new mock_agent_1.MockAgent();
     const client = new ioredis_1.default({ host: REDIS_HOST, port: REDIS_PORT, lazyConnect: true });
     const listener = (data) => {
         const spans = data.request.getChildSpansSync();
-        const getSpan = spans.find((s) => s.operation === "Cache/GET");
+        const getSpan = spans.find((s) => s.operation === "Redis/GET");
         if (!getSpan) {
             return;
         }
         scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
-        t.ok(getSpan, "Cache/GET span present");
+        t.ok(getSpan, "Redis/GET span present");
         const stmt = getSpan.getContextValue("db.statement");
         t.ok(stmt && stmt.startsWith("GET "), `db.statement starts with GET, got: ${stmt}`);
         client.quit()
