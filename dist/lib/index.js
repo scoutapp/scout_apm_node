@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 const Errors = __importStar(require("./errors"));
 const express_1 = require("./express");
+const nest_1 = require("./nest");
 const types_1 = require("./types");
 const integrations_1 = require("./integrations");
 const global_1 = require("./global");
@@ -73,6 +74,7 @@ const API = {
     // Ingetrations
     setupRequireIntegrations,
     expressMiddleware: express_1.scoutMiddleware,
+    nestMiddleware: nest_1.nestMiddleware,
     // Logging
     consoleLogFn: types_1.consoleLogFn,
     buildWinstonLogFn: types_1.buildWinstonLogFn,

@@ -42,7 +42,8 @@
     "test-integration-mustache": "tape 'dist/test/integrations/mustache.e2e.js'",
     "test-integration-ejs": "tape 'dist/test/integrations/ejs.e2e.js'",
     "test-integration-express": "tape 'dist/test/integrations/express.e2e.js'",
-    "test-integration-nuxt": "tape 'dist/test/integrations/nuxt.e2e.js'"
+    "test-integration-nuxt": "tape 'dist/test/integrations/nuxt.e2e.js'",
+    "test-integration-ioredis": "tape 'dist/test/integrations/ioredis.e2e.js'"
   },
   "types": "dist/lib/index.d.ts",
   "files": [
@@ -72,6 +73,7 @@
     "sequelize": "^6.37.5",
     "sha256-file": "^1.0.0",
     "supertest": "^7.0.0",
+    "ioredis": "^5.0.0",
     "tape": "^5.9.0",
     "tempfile": "^5.0.0",
     "tslint": "^6.1.3",

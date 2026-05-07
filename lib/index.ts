@@ -1,6 +1,7 @@
 import * as Errors from "./errors";
 
 import { scoutMiddleware as expressMiddleware } from "./express";
+import { nestMiddleware as nestMiddlewareImpl } from "./nest";
 
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
@@ -51,6 +52,7 @@ const API = {
     // Ingetrations
     setupRequireIntegrations,
     expressMiddleware,
+    nestMiddleware: nestMiddlewareImpl,
 
     // Logging
     consoleLogFn,
