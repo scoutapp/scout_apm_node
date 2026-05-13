@@ -9,6 +9,7 @@ import expressIntegration from "./express";
 import nuxtIntegration from "./nuxt";
 import httpsIntegration from "./https";
 import ioredisIntegration from "./ioredis";
+import prismaIntegration from "./prisma";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
 
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
@@ -24,6 +25,7 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case nuxtIntegration.getPackageName(): return nuxtIntegration;
         case httpsIntegration.getPackageName(): return httpsIntegration;
         case ioredisIntegration.getPackageName(): return ioredisIntegration;
+        case prismaIntegration.getPackageName(): return prismaIntegration;
         default: return doNothingRequireIntegration;
     }
 }

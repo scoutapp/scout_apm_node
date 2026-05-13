@@ -15,6 +15,7 @@ const express_1 = __importDefault(require("./express"));
 const nuxt_1 = __importDefault(require("./nuxt"));
 const https_1 = __importDefault(require("./https"));
 const ioredis_1 = __importDefault(require("./ioredis"));
+const prisma_1 = __importDefault(require("./prisma"));
 const integrations_1 = require("../types/integrations");
 function getIntegrationForPackage(pkg) {
     switch (pkg) {
@@ -29,6 +30,7 @@ function getIntegrationForPackage(pkg) {
         case nuxt_1.default.getPackageName(): return nuxt_1.default;
         case https_1.default.getPackageName(): return https_1.default;
         case ioredis_1.default.getPackageName(): return ioredis_1.default;
+        case prisma_1.default.getPackageName(): return prisma_1.default;
         default: return integrations_1.doNothingRequireIntegration;
     }
 }
