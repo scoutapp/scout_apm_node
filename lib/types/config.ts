@@ -556,5 +556,6 @@ export function buildProcessOptions(config: Partial<ScoutConfiguration>): Partia
         disallowLaunch: !config.coreAgentLaunch,
         logFilePath: config.logFilePath,
         logLevel: config.logLevel || config.coreAgentLogLevel,
+        proxyUrl: config.httpProxy,
     };
 }

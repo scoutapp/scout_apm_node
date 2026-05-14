@@ -452,5 +452,6 @@ function buildProcessOptions(config) {
         disallowLaunch: !config.coreAgentLaunch,
         logFilePath: config.logFilePath,
         logLevel: config.logLevel || config.coreAgentLogLevel,
+        proxyUrl: config.httpProxy,
     };
 }
