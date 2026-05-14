@@ -36,6 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.listExpressEndpoints = listExpressEndpoints;
 exports.scoutMiddleware = scoutMiddleware;
 const on_finished_1 = __importDefault(require("on-finished"));
 const async_hooks_1 = require("async_hooks");

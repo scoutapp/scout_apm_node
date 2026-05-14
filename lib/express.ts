@@ -27,7 +27,7 @@ const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
 
 // Partial endpoint info returned by listExpressEndpoints (regex added later by caller)
-interface EndpointInfo {
+export interface EndpointInfo {
     path: string;
     methods: string[];
     middleware?: string[];
@@ -45,7 +45,7 @@ interface EndpointInfo {
  * The express-list-endpoints library doesn't support Express 5,
  * so we implement our own walker for Express 5 and fall back to the library for Express 4.
  */
-function listExpressEndpoints(app: any): EndpointInfo[] {
+export function listExpressEndpoints(app: any): EndpointInfo[] {
     // Try express-list-endpoints first (works for Express 4)
     const libResult = listExpressEndpointsLib(app);
     if (libResult && libResult.length > 0) {
