@@ -17,6 +17,7 @@ const https_1 = __importDefault(require("./https"));
 const ioredis_1 = __importDefault(require("./ioredis"));
 const prisma_1 = __importDefault(require("./prisma"));
 const fetch_1 = __importDefault(require("./fetch"));
+const redis_1 = __importDefault(require("./redis"));
 const integrations_1 = require("../types/integrations");
 function getIntegrationForPackage(pkg) {
     switch (pkg) {
@@ -33,6 +34,7 @@ function getIntegrationForPackage(pkg) {
         case ioredis_1.default.getPackageName(): return ioredis_1.default;
         case prisma_1.default.getPackageName(): return prisma_1.default;
         case fetch_1.default.getPackageName(): return fetch_1.default;
+        case redis_1.default.getPackageName(): return redis_1.default;
         default: return integrations_1.doNothingRequireIntegration;
     }
 }
