@@ -12,6 +12,7 @@ import ioredisIntegration from "./ioredis";
 import prismaIntegration from "./prisma";
 import fetchIntegration from "./fetch";
 import redisIntegration from "./redis";
+import mongodbIntegration from "./mongodb";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
 
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
@@ -30,6 +31,7 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case prismaIntegration.getPackageName(): return prismaIntegration;
         case fetchIntegration.getPackageName(): return fetchIntegration;
         case redisIntegration.getPackageName(): return redisIntegration;
+        case mongodbIntegration.getPackageName(): return mongodbIntegration;
         default: return doNothingRequireIntegration;
     }
 }
