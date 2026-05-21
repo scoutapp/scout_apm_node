@@ -38,21 +38,28 @@ class FetchIntegration extends integrations_1.RequireIntegration {
                 return;
             }
             const method = (request.method || "GET").toUpperCase();
-            // CONNECT is a proxy tunnel setup request, not an application HTTP call.
-            // Instrumenting it would produce a garbled URL (proxy host + tunnel target
-            // concatenated) and a misleading HTTP/CONNECT span in APM.
-            if (method === "CONNECT") {
-                return;
-            }
-            const rawUrl = `${request.origin}${request.path}`;
+            // When using a ProxyAgent for HTTPS, undici fires undici:request:create
+            // for the CONNECT tunnel setup but NOT for the actual tunneled request.
+            // We reconstruct the target URL from the CONNECT path ("host:port") and
+            // emit it as HTTP/GET so APM sees the real destination.
             let url;
-            try {
-                url = new URL(rawUrl).toString();
+            let spanMethod;
+            if (method === "CONNECT") {
+                const host = (request.path || "").split(":")[0];
+                url = host ? `https://${host}/` : "Unknown";
+                spanMethod = "GET";
             }
-            catch {
-                url = rawUrl || "Unknown";
+            else {
+                const rawUrl = `${request.origin}${request.path}`;
+                try {
+                    url = new URL(rawUrl).toString();
+                }
+                catch {
+                    url = rawUrl || "Unknown";
+                }
+                spanMethod = method;
             }
-            integration.scout.instrument(`HTTP/${method}`, (done, { span }) => {
+            integration.scout.instrument(`HTTP/${spanMethod}`, (done, { span }) => {
                 integration.pending.set(request, { done, span: span ?? null });
                 if (span) {
                     span.addContext(types_1.ScoutContextName.URL, url);
