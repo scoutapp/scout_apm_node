@@ -38,6 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.listExpressEndpoints = listExpressEndpoints;
 exports.scoutMiddleware = scoutMiddleware;
+exports.errorMiddleware = errorMiddleware;
 const on_finished_1 = __importDefault(require("on-finished"));
 const async_hooks_1 = require("async_hooks");
 const types_1 = require("./types");
@@ -398,5 +399,27 @@ function scoutMiddleware(opts) {
             }
             next();
         });
+    };
+}
+/**
+ * Express 4-arg error-handling middleware.
+ * Place after all other app.use()/routes so Express routes errors through it.
+ * Captures the error to Scout error monitoring, then calls next(err) so the
+ * default Express error handler (or any downstream handler) still runs.
+ */
+function errorMiddleware() {
+    return (err, req, res, next) => {
+        if (err) {
+            const { captureError } = require("./error-monitor");
+            const error = err instanceof Error ? err : new Error(String(err));
+            const requestInfo = req ? {
+                id: req.scout && req.scout.request ? req.scout.request.requestId : undefined,
+                url: req.originalUrl || req.url,
+                params: req.query || req.body ? Object.assign({}, req.query, req.body) : undefined,
+                session: req.session || undefined,
+            } : undefined;
+            captureError(error, { request: requestInfo });
+        }
+        next(err);
     };
 }

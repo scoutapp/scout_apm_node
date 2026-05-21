@@ -977,7 +977,8 @@ function sendThroughAgent(scout, msg, opts) {
         return Promise.reject(new Errors.MonitoringDisabled());
     }
     if (config.logPayloadContent) {
-        scout.log(`[scout/payload] ${msg.constructor.name}: ${JSON.stringify(msg.json)}`, types_1.LogLevel.Info);
+        // Use console.log directly — scout.log() is a no-op when no logFn is configured.
+        console.log(`[scout/payload] ${msg.constructor.name}: ${JSON.stringify(msg.json)}`); // tslint:disable-line no-console
     }
     if (opts && opts.async) {
         return agent.sendAsync(msg);

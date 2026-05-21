@@ -59,6 +59,11 @@ export interface ScoutConfiguration {
     uriReporting: URIReportingLevel;
     disabledInstruments: string[];
     logPayloadContent: boolean;
+    errorsEnabled: boolean;
+    errorsHost: string;
+    errorsBatchSize: number;
+    errorsIgnoredExceptions: string[];
+    environment: string;
     coreAgentTriple: string;
     coreAgentFullName: string;
 }

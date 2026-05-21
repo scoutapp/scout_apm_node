@@ -225,6 +225,11 @@ exports.DEFAULT_SCOUT_CONFIGURATION = {
     disabledInstruments: [],
     logPayloadContent: false,
     downloadUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
+    errorsEnabled: true,
+    errorsHost: "https://errors.scoutapm.com",
+    errorsBatchSize: 5,
+    errorsIgnoredExceptions: [],
+    environment: "",
     framework: "",
     frameworkVersion: "",
     hostname: null,
@@ -261,6 +266,9 @@ const ENV_TRANSFORMS = {
     SCOUT_IGNORE: v => v.split(","),
     SCOUT_MONITOR: v => v.toLowerCase() === "true",
     SCOUT_LOG_PAYLOAD_CONTENT: v => v.toLowerCase() === "true",
+    SCOUT_ERRORS_ENABLED: v => v.toLowerCase() === "true",
+    SCOUT_ERRORS_BATCH_SIZE: v => parseInt(v, 10),
+    SCOUT_ERRORS_IGNORED_EXCEPTIONS: v => v.split(",").map((s) => s.trim()).filter(Boolean),
 };
 /**
  * EnvConfigSource returns the values set from the environment
