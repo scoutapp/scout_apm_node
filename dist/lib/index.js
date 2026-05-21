@@ -66,6 +66,7 @@ setupRequireIntegrations([
     // NodeJS internals
     "http",
     "https",
+    "fetch",
 ]);
 const API = {
     // Configuration building
