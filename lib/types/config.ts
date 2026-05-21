@@ -230,6 +230,7 @@ export interface ScoutConfiguration {
 
     // Misc
     disabledInstruments: string[];
+    logPayloadContent: boolean;
 
     // Derived
     coreAgentTriple: string;
@@ -249,6 +250,7 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     coreAgentVersion: "v1.3.0", // can be exact tag name, or 'latest'
 
     disabledInstruments: [],
+    logPayloadContent: false,
     downloadUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
 
     framework: "",
@@ -312,6 +314,7 @@ const ENV_TRANSFORMS = {
     SCOUT_DISABLED_INSTRUMENTS: v => v.split(","),
     SCOUT_IGNORE: v => v.split(","),
     SCOUT_MONITOR: v => v.toLowerCase() === "true",
+    SCOUT_LOG_PAYLOAD_CONTENT: v => v.toLowerCase() === "true",
 };
 
 /**
