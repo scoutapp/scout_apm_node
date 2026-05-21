@@ -42,8 +42,20 @@ export class FetchIntegration extends RequireIntegration {
             const { request } = msg;
             if (!integration.scout || !request) { return; }
 
-            const url = `${request.origin}${request.path}`;
             const method = (request.method || "GET").toUpperCase();
+
+            // CONNECT is a proxy tunnel setup request, not an application HTTP call.
+            // Instrumenting it would produce a garbled URL (proxy host + tunnel target
+            // concatenated) and a misleading HTTP/CONNECT span in APM.
+            if (method === "CONNECT") { return; }
+
+            const rawUrl = `${request.origin}${request.path}`;
+            let url: string;
+            try {
+                url = new URL(rawUrl).toString();
+            } catch {
+                url = rawUrl || "Unknown";
+            }
 
             integration.scout.instrument(`HTTP/${method}`, (done, { span }) => {
                 integration.pending.set(request, { done, span: span ?? null });
