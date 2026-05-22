@@ -121,7 +121,7 @@ export function captureError(
 
 function isIgnored(err: Error): boolean {
     if (ignoredExceptions.length === 0) { return false; }
-    let ctor = err.constructor as Function | null;
+    let ctor = err.constructor as (new (...args: any[]) => any) | null;
     while (ctor && ctor.name) {
         if (ignoredExceptions.includes(ctor.name)) { return true; }
         const parent = Object.getPrototypeOf(ctor);

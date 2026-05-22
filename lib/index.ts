@@ -1,7 +1,7 @@
 import * as Errors from "./errors";
 
 import { scoutMiddleware as expressMiddleware, errorMiddleware } from "./express";
-import { nestMiddleware as nestMiddlewareImpl } from "./nest";
+import { nestMiddleware as nestMiddlewareImpl, nestErrorFilter as nestErrorFilterImpl } from "./nest";
 import { captureError } from "./error-monitor";
 
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
@@ -56,6 +56,7 @@ const API = {
     expressMiddleware,
     errorMiddleware,
     nestMiddleware: nestMiddlewareImpl,
+    nestErrorFilter: nestErrorFilterImpl,
 
     // Error monitoring
     captureError,
