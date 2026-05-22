@@ -88,6 +88,10 @@ class ErrorService {
             root: this.config.applicationRoot || "",
             problems: errors,
         });
+        if (this.config.logPayloadContent) {
+            // tslint:disable-next-line no-console
+            console.log(`[scout/error-payload] ${body}`);
+        }
         zlib.gzip(Buffer.from(body, "utf8"), (gzipErr, compressed) => {
             if (gzipErr) {
                 return;
