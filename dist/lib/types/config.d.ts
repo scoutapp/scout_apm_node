@@ -61,7 +61,6 @@ export interface ScoutConfiguration {
     logPayloadContent: boolean;
     errorsEnabled: boolean;
     errorsHost: string;
-    errorsBatchSize: number;
     errorsIgnoredExceptions: string[];
     environment: string;
     coreAgentTriple: string;

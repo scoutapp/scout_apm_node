@@ -235,7 +235,6 @@ export interface ScoutConfiguration {
     // Error monitoring
     errorsEnabled: boolean;
     errorsHost: string;
-    errorsBatchSize: number;
     errorsIgnoredExceptions: string[];
     environment: string;
 
@@ -262,7 +261,6 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
 
     errorsEnabled: true,
     errorsHost: "https://errors.scoutapm.com",
-    errorsBatchSize: 5,
     errorsIgnoredExceptions: [],
     environment: "",
 
@@ -329,7 +327,6 @@ const ENV_TRANSFORMS = {
     SCOUT_MONITOR: v => v.toLowerCase() === "true",
     SCOUT_LOG_PAYLOAD_CONTENT: v => v.toLowerCase() === "true",
     SCOUT_ERRORS_ENABLED: v => v.toLowerCase() === "true",
-    SCOUT_ERRORS_BATCH_SIZE: v => parseInt(v, 10),
     SCOUT_ERRORS_IGNORED_EXCEPTIONS: v => v.split(",").map((s: string) => s.trim()).filter(Boolean),
 };
 

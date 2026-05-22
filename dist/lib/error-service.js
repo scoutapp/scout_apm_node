@@ -75,9 +75,7 @@ class ErrorService {
         if (this.queue.length === 0) {
             return;
         }
-        const batchSize = typeof this.config.errorsBatchSize === "number" ? this.config.errorsBatchSize : 5;
-        const batch = this.queue.splice(0, batchSize);
-        this.send(batch);
+        this.send(this.queue.splice(0));
     }
     send(errors) {
         const host = this.config.errorsHost || "https://errors.scoutapm.com";
