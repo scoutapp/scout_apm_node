@@ -51,6 +51,10 @@
     "generate": "prisma generate"
   },
   "types": "dist/lib/index.d.ts",
+  "exports": {
+    ".": "./dist/lib/index.js",
+    "./preload": "./dist/lib/preload.js"
+  },
   "files": [
     "index.d.ts",
     "dist/lib/**/*"

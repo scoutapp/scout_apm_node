@@ -15,6 +15,24 @@ import redisIntegration from "./redis";
 import mongodbIntegration from "./mongodb";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
 
+export const KNOWN_PACKAGES: string[] = [
+    pgIntegration.getPackageName(),
+    mysqlIntegration.getPackageName(),
+    mysql2Integration.getPackageName(),
+    pugIntegration.getPackageName(),
+    mustacheIntegration.getPackageName(),
+    ejsIntegration.getPackageName(),
+    httpIntegration.getPackageName(),
+    expressIntegration.getPackageName(),
+    nuxtIntegration.getPackageName(),
+    httpsIntegration.getPackageName(),
+    ioredisIntegration.getPackageName(),
+    prismaIntegration.getPackageName(),
+    fetchIntegration.getPackageName(),
+    redisIntegration.getPackageName(),
+    mongodbIntegration.getPackageName(),
+];
+
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
     switch (pkg) {
         case pgIntegration.getPackageName(): return pgIntegration;
