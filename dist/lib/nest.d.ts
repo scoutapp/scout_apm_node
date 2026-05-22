@@ -1,20 +1,17 @@
-import { ExpressMiddlewareOptions } from "./express";
-/**
- * Scout APM middleware for NestJS.
- *
- * Register in main.ts before app.listen():
- *   app.use(nestMiddleware({ config }));
- *
- * Or with a class-based consumer:
- *   @Injectable()
- *   export class ScoutMiddleware implements NestMiddleware {
- *     use(req, res, next) { nestMiddleware()(req, res, next); }
- *   }
- */
-export declare function nestMiddleware(opts?: ExpressMiddlewareOptions): (req: any, res: any, next: () => void) => void;
+import { LogFn, ScoutConfiguration } from "./types";
+import { Scout } from "./scout";
+export type NestMiddlewareOptions = {
+    config?: Partial<ScoutConfiguration>;
+    logFn?: LogFn;
+    requestTimeoutMs?: number;
+    statisticsIntervalMS?: number;
+    scout?: Scout;
+    waitForScoutSetup?: boolean;
+};
+type NestMiddleware = (req: any, res: any, next: () => void) => void;
+export declare function nestMiddleware(opts?: NestMiddlewareOptions): NestMiddleware;
 /**
  * Class-based Scout middleware for use with NestJS's MiddlewareConsumer.
- * Satisfies NestMiddleware<Request, Response> without importing @nestjs/common.
  *
  * Example:
  *   @Module({})
@@ -26,6 +23,7 @@ export declare function nestMiddleware(opts?: ExpressMiddlewareOptions): (req: a
  */
 export declare class ScoutNestMiddleware {
     private readonly _inner;
-    constructor(opts?: ExpressMiddlewareOptions);
+    constructor(opts?: NestMiddlewareOptions);
     use(req: any, res: any, next: () => void): void;
 }
+export {};

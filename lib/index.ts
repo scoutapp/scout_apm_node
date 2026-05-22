@@ -6,16 +6,16 @@ import { captureError } from "./error-monitor";
 
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
-import { getIntegrationForPackage } from "./integrations";
+import { getIntegrationForPackage, KNOWN_PACKAGES } from "./integrations";
 import { getActiveGlobalScoutInstance, getOrCreateActiveGlobalScoutInstance, EXPORT_BAG } from "./global";
 
-// Set up PG integration
-// This is needed for use in Typescript projects since `import` will not
-// run global code unless you do a whole-file import
-function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<ScoutConfiguration>) {
-    packages = packages || [];
-
-    packages.forEach(name => {
+// When called with no arguments, registers hooks for every known package.
+// When called with a list, registers only those packages.
+// Hooks are no-ops until the package is actually required — safe to call for
+// packages that aren't installed.
+function setupRequireIntegrations(packages?: string[]) {
+    const list = packages ?? KNOWN_PACKAGES;
+    list.forEach(name => {
         const integration = getIntegrationForPackage(name);
         if (integration) {
             integration.ritmHook(EXPORT_BAG);
@@ -23,27 +23,10 @@ function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<Scou
     });
 }
 
-// For pure NodeJS contexts this will be run automatically
-setupRequireIntegrations([
-    // Databases
-    "pg",
-    "mysql",
-    "mysql2",
-
-    // Templating
-    "pug",
-    "mustache",
-    "ejs",
-
-    // Web frameworks
-    "express",
-    "nuxt",
-
-    // NodeJS internals
-    "http",
-    "https",
-    "fetch",
-]);
+// Auto-register all known integrations when the module is first loaded.
+// CJS users who require('@scout_apm/scout-apm') before other packages get
+// automatic instrumentation with no further setup.
+setupRequireIntegrations();
 
 const API = {
     // Configuration building
@@ -67,6 +50,15 @@ const API = {
 
     // Install scout
     install: getOrCreateActiveGlobalScoutInstance,
+
+    // init() — preferred single-call setup.
+    // Registers all RITM hooks synchronously (same as require('@scout_apm/scout-apm')
+    // at the top of your file), then kicks off async Scout setup.
+    // Use this instead of a separate setupRequireIntegrations() + install() pair.
+    init(config: Partial<ScoutConfiguration>): Promise<Scout> {
+        setupRequireIntegrations();
+        return getOrCreateActiveGlobalScoutInstance(config);
+    },
 
     // instrument
     instrument(op: string, cb: DoneCallback, scout?: Scout): Promise<any> {

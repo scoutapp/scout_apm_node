@@ -75,6 +75,11 @@ function nextRequestSent(scout, skipCount = 0) {
             reject(new Error("Timed out waiting for ScoutEvent.RequestSent"));
         }, TIMEOUT - 2000);
         const listener = (data) => {
+            // Ignore HTTP integration transactions (no Controller/ span) — they fire
+            // for supertest's outbound http.request() calls and would throw off skipCount.
+            if (!data.request.getChildSpansSync().some((s) => s.operation.startsWith("Controller/"))) {
+                return;
+            }
             if (skipped < skipCount) {
                 skipped++;
                 return;
