@@ -470,31 +470,35 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 /**
  * Express 4-arg error-handling middleware.
  * Place after all other app.use()/routes so Express routes errors through it.
- * Captures the error to Scout error monitoring, then calls next(err) so the
- * default Express error handler (or any downstream handler) still runs.
+ * Captures the error to Scout error monitoring with location auto-detected from
+ * the request, then calls next(err) so downstream handlers still run.
+ *
+ * @example
+ * app.use(errorMiddleware())
  */
 export function errorMiddleware(): ExpressErrorMiddleware {
     return (err: any, req: any, res: any, next: (err?: any) => void) => {
         if (err) {
             const { captureError } = require("./error-monitor");
-            const error = err instanceof Error ? err : new Error(String(err));
 
-            const requestInfo = req ? {
-                id: req.scout && req.scout.request ? req.scout.request.requestId : undefined,
-                url: req.originalUrl || req.url,
-                params: req.query || req.body ? Object.assign({}, req.query, req.body) : undefined,
-                session: req.session || undefined,
-            } : undefined;
-
-            // controller = matched route pattern (e.g. "/users/:id"), action = HTTP method.
-            // module is not a meaningful concept in Express so we leave it null.
-            const requestComponents = req ? {
-                module: null,
-                controller: (req.route && req.route.path) || req.path || null,
-                action: req.method ? req.method.toUpperCase() : null,
-            } : null;
-
-            captureError(error, { request: requestInfo, requestComponents: requestComponents || undefined });
+            captureError(
+                err,
+                undefined,
+                req ? {
+                    // Location — auto-detected from the matched route; users can override
+                    // by wrapping errorMiddleware or calling captureError directly.
+                    controller: (req.route && req.route.path) || req.path || null,
+                    action: req.method ? req.method.toUpperCase() : null,
+                    module: null,
+                    // Request envelope
+                    requestId: req.scout && req.scout.request ? req.scout.request.requestId : undefined,
+                    requestUrl: req.originalUrl || req.url,
+                    requestParams: (req.query || req.body)
+                        ? Object.assign({}, req.query, req.body)
+                        : undefined,
+                    requestSession: req.session || undefined,
+                } : undefined,
+            );
         }
         next(err);
     };

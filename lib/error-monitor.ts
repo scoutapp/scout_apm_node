@@ -1,6 +1,6 @@
 import * as os from "os";
 import { ScoutConfiguration } from "./types";
-import { ErrorService, RequestComponents } from "./error-service";
+import { ErrorService } from "./error-service";
 
 let service: ErrorService | null = null;
 let ignoredExceptions: string[] = [];
@@ -23,57 +23,102 @@ export function setupErrorMonitoring(config: Partial<ScoutConfiguration>): void 
 
         process.on("uncaughtException", (err: Error) => {
             captureError(err);
-            // Re-throw so Node's default handler can run (prints stack, exits with code 1)
             throw err;
         });
 
         process.on("unhandledRejection", (reason: any) => {
-            const err = reason instanceof Error ? reason : new Error(String(reason));
-            captureError(err);
+            captureError(reason instanceof Error ? reason : new Error(String(reason)));
         });
     }
 }
 
-export interface CaptureErrorOptions {
-    request?: {
-        id?: string;
-        url?: string;
-        params?: object;
-        session?: object;
-    };
-    requestComponents?: RequestComponents;
-    context?: object;
-    environment?: object;
+/**
+ * Options for captureError. Mirrors the Ruby agent's ScoutApm::Error.capture signature:
+ *   capture(error, context = {}, env: nil, name: nil)
+ *
+ * - controller / action / module: where the error "lives" (shown as location in APM).
+ *   Express middleware fills these in automatically; pass overrides here to change them.
+ * - name: override the exception class name shown in APM (useful for string errors or
+ *   when you want a stable grouping name regardless of the class).
+ * - requestId / requestUrl / requestParams / requestSession: request envelope data.
+ *   Express middleware populates these from req; you can supply them manually too.
+ */
+export interface CaptureOptions {
+    // Location — where the error lives in the app
+    controller?: string | null;
+    action?: string | null;
+    module?: string | null;
+    // Override the exception_class name shown in APM
+    name?: string;
+    // Request envelope (populated automatically by Express middleware)
+    requestId?: string;
+    requestUrl?: string;
+    requestParams?: object;
+    requestSession?: object;
 }
 
-export function captureError(error: Error | any, opts?: CaptureErrorOptions): void {
+/**
+ * Report an error to Scout APM.
+ *
+ * @param error  - An Error object or a plain string message.
+ * @param context - Flat key-value object of custom context data (shown alongside the error).
+ * @param opts   - Optional location override and request envelope.
+ *
+ * @example
+ * // Simple
+ * captureError(new Error("Payment failed"))
+ *
+ * // With custom context
+ * captureError(new Error("Payment failed"), { userId: req.user.id, plan: "pro" })
+ *
+ * // With explicit location (e.g. from a background job or non-Express handler)
+ * captureError(new Error("Payment failed"), { orderId: 42 }, {
+ *   controller: "CheckoutController",
+ *   action: "process",
+ * })
+ */
+export function captureError(
+    error: Error | string | any,
+    context?: Record<string, any>,
+    opts?: CaptureOptions,
+): void {
     if (!service || !currentConfig) { return; }
 
-    const err = error instanceof Error ? error : new Error(String(error));
-    const className = err.constructor ? err.constructor.name : "Error";
+    const err = typeof error === "string"
+        ? new Error(error)
+        : error instanceof Error ? error : new Error(String(error));
 
-    // Walk the prototype chain so subclasses of ignored exceptions are also suppressed,
-    // matching Python's isinstance() behavior.
+    // If a string was passed, give it a stable default class name matching Ruby's convention
+    const className = opts && opts.name
+        ? opts.name
+        : err.constructor && err.constructor.name
+            ? err.constructor.name
+            : "Error";
+
     if (isIgnored(err)) { return; }
+
+    const hasLocation = opts && (opts.controller != null || opts.action != null || opts.module != null);
 
     service.enqueue({
         exception_class: className,
         message: err.message || String(err),
-        request_id: opts && opts.request ? opts.request.id : undefined,
-        request_uri: opts && opts.request ? opts.request.url : undefined,
-        request_params: (opts && opts.request && opts.request.params) ? opts.request.params : null,
-        request_session: (opts && opts.request && opts.request.session) ? opts.request.session : null,
-        environment: (opts && opts.environment) ? opts.environment : null,
+        request_id: opts ? opts.requestId : undefined,
+        request_uri: opts ? opts.requestUrl : undefined,
+        request_params: (opts && opts.requestParams) ? opts.requestParams : null,
+        request_session: (opts && opts.requestSession) ? opts.requestSession : null,
+        environment: null,
         trace: parseStack(err),
-        request_components: (opts && opts.requestComponents) ? opts.requestComponents : null,
-        context: opts ? opts.context : undefined,
+        request_components: hasLocation ? {
+            module: (opts && opts.module) ?? null,
+            controller: (opts && opts.controller) ?? null,
+            action: (opts && opts.action) ?? null,
+        } : null,
+        context: context || undefined,
         host: (currentConfig.hostname as string) || os.hostname(),
         revision_sha: currentConfig.revisionSHA,
     });
 }
 
-// Walk the prototype chain so subclasses of ignored types are suppressed,
-// matching Python's isinstance() behavior.
 function isIgnored(err: Error): boolean {
     if (ignoredExceptions.length === 0) { return false; }
     let ctor = err.constructor as Function | null;
@@ -89,20 +134,16 @@ function isIgnored(err: Error): boolean {
 function parseStack(error: Error): string[] {
     if (!error.stack) { return []; }
 
-    // Skip the first line ("Error: message") and parse each "at" frame into
-    // the Python convention: "file:line:in function", dropping node_modules frames.
     return error.stack
         .split("\n")
         .slice(1)
         .filter(line => !line.includes("node_modules"))
         .map(line => {
             const trimmed = line.trim();
-            // "at functionName (file:line:col)" or "at Object.method (file:line:col)"
             const namedMatch = trimmed.match(/^at (.+?) \((.+?):(\d+):\d+\)$/);
             if (namedMatch) {
                 return `${namedMatch[2]}:${namedMatch[3]}:in ${namedMatch[1]}`;
             }
-            // "at file:line:col" (anonymous)
             const anonMatch = trimmed.match(/^at (.+?):(\d+):\d+$/);
             if (anonMatch) {
                 return `${anonMatch[1]}:${anonMatch[2]}:in <anonymous>`;

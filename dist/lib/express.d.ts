@@ -50,8 +50,11 @@ export declare function scoutMiddleware(opts?: ExpressMiddlewareOptions): Expres
 /**
  * Express 4-arg error-handling middleware.
  * Place after all other app.use()/routes so Express routes errors through it.
- * Captures the error to Scout error monitoring, then calls next(err) so the
- * default Express error handler (or any downstream handler) still runs.
+ * Captures the error to Scout error monitoring with location auto-detected from
+ * the request, then calls next(err) so downstream handlers still run.
+ *
+ * @example
+ * app.use(errorMiddleware())
  */
 export declare function errorMiddleware(): ExpressErrorMiddleware;
 export {};
