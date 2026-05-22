@@ -1239,10 +1239,8 @@ export function sendThroughAgent<T extends BaseAgentRequest, R extends BaseAgent
     }
 
     if (config.logPayloadContent) {
-        scout.log(
-            `[scout/payload] ${msg.constructor.name}: ${JSON.stringify(msg.json)}`,
-            LogLevel.Info,
-        );
+        // Use console.log directly — scout.log() is a no-op when no logFn is configured.
+        console.log(`[scout/payload] ${msg.constructor.name}: ${JSON.stringify(msg.json)}`); // tslint:disable-line no-console
     }
 
     if (opts && opts.async) {
