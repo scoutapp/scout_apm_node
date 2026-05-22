@@ -27,7 +27,7 @@ const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
 
 // Partial endpoint info returned by listExpressEndpoints (regex added later by caller)
-interface EndpointInfo {
+export interface EndpointInfo {
     path: string;
     methods: string[];
     middleware?: string[];
@@ -45,7 +45,7 @@ interface EndpointInfo {
  * The express-list-endpoints library doesn't support Express 5,
  * so we implement our own walker for Express 5 and fall back to the library for Express 4.
  */
-function listExpressEndpoints(app: any): EndpointInfo[] {
+export function listExpressEndpoints(app: any): EndpointInfo[] {
     // Try express-list-endpoints first (works for Express 4)
     const libResult = listExpressEndpointsLib(app);
     if (libResult && libResult.length > 0) {
@@ -55,8 +55,11 @@ function listExpressEndpoints(app: any): EndpointInfo[] {
     // Express 5: walk the router stack ourselves
     const endpoints: EndpointInfo[] = [];
 
-    // Express 4 uses app._router; Express 5 uses app.router (which throws on v4)
-    const router = app._router || app.router;
+    // Express 4 uses app._router; Express 5 uses app.router (a getter that throws on Express 4)
+    let router = app._router;
+    if (!router) {
+        try { router = app.router; } catch { /* Express 4 getter throws */ }
+    }
     if (!router || !router.stack) {
         return endpoints;
     }
@@ -266,8 +269,11 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
-        // Express 4 uses app._router; Express 5 uses app.router (which throws on v4)
-        const appRouter = req.app._router || req.app.router;
+        // Express 4 uses _router; Express 5 uses router (a getter that throws on Express 4)
+        let appRouter = req.app._router;
+        if (!appRouter) {
+            try { appRouter = req.app.router; } catch { /* Express 4 getter throws */ }
+        }
         if (!routePath && appRouter && appRouter.stack) {
             // Find routes that match the current URL
             matchedRouteMiddleware = appRouter.stack
@@ -464,23 +470,35 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 /**
  * Express 4-arg error-handling middleware.
  * Place after all other app.use()/routes so Express routes errors through it.
- * Captures the error to Scout error monitoring, then calls next(err) so the
- * default Express error handler (or any downstream handler) still runs.
+ * Captures the error to Scout error monitoring with location auto-detected from
+ * the request, then calls next(err) so downstream handlers still run.
+ *
+ * @example
+ * app.use(errorMiddleware())
  */
 export function errorMiddleware(): ExpressErrorMiddleware {
     return (err: any, req: any, res: any, next: (err?: any) => void) => {
         if (err) {
             const { captureError } = require("./error-monitor");
-            const error = err instanceof Error ? err : new Error(String(err));
 
-            const requestInfo = req ? {
-                id: req.scout && req.scout.request ? req.scout.request.requestId : undefined,
-                url: req.originalUrl || req.url,
-                params: req.query || req.body ? Object.assign({}, req.query, req.body) : undefined,
-                session: req.session || undefined,
-            } : undefined;
-
-            captureError(error, { request: requestInfo });
+            captureError(
+                err,
+                undefined,
+                req ? {
+                    // Location — auto-detected from the matched route; users can override
+                    // by wrapping errorMiddleware or calling captureError directly.
+                    controller: (req.route && req.route.path) || req.path || null,
+                    action: req.method ? req.method.toUpperCase() : null,
+                    module: null,
+                    // Request envelope
+                    requestId: req.scout && req.scout.request ? req.scout.request.requestId : undefined,
+                    requestUrl: req.originalUrl || req.url,
+                    requestParams: (req.query || req.body)
+                        ? Object.assign({}, req.query, req.body)
+                        : undefined,
+                    requestSession: req.session || undefined,
+                } : undefined,
+            );
         }
         next(err);
     };

@@ -36,6 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.listExpressEndpoints = listExpressEndpoints;
 exports.scoutMiddleware = scoutMiddleware;
 exports.errorMiddleware = errorMiddleware;
 const on_finished_1 = __importDefault(require("on-finished"));
@@ -66,8 +67,14 @@ function listExpressEndpoints(app) {
     }
     // Express 5: walk the router stack ourselves
     const endpoints = [];
-    // Express 4 uses app._router; Express 5 uses app.router (which throws on v4)
-    const router = app._router || app.router;
+    // Express 4 uses app._router; Express 5 uses app.router (a getter that throws on Express 4)
+    let router = app._router;
+    if (!router) {
+        try {
+            router = app.router;
+        }
+        catch { /* Express 4 getter throws */ }
+    }
     if (!router || !router.stack) {
         return endpoints;
     }
@@ -218,8 +225,14 @@ function scoutMiddleware(opts) {
         let matchedRouteMiddleware = commonRouteMiddlewares.find((m) => middlewareMatchesUrl(m, preQueryUrl));
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
-        // Express 4 uses app._router; Express 5 uses app.router (which throws on v4)
-        const appRouter = req.app._router || req.app.router;
+        // Express 4 uses _router; Express 5 uses router (a getter that throws on Express 4)
+        let appRouter = req.app._router;
+        if (!appRouter) {
+            try {
+                appRouter = req.app.router;
+            }
+            catch { /* Express 4 getter throws */ }
+        }
         if (!routePath && appRouter && appRouter.stack) {
             // Find routes that match the current URL
             matchedRouteMiddleware = appRouter.stack
@@ -391,21 +404,30 @@ function scoutMiddleware(opts) {
 /**
  * Express 4-arg error-handling middleware.
  * Place after all other app.use()/routes so Express routes errors through it.
- * Captures the error to Scout error monitoring, then calls next(err) so the
- * default Express error handler (or any downstream handler) still runs.
+ * Captures the error to Scout error monitoring with location auto-detected from
+ * the request, then calls next(err) so downstream handlers still run.
+ *
+ * @example
+ * app.use(errorMiddleware())
  */
 function errorMiddleware() {
     return (err, req, res, next) => {
         if (err) {
             const { captureError } = require("./error-monitor");
-            const error = err instanceof Error ? err : new Error(String(err));
-            const requestInfo = req ? {
-                id: req.scout && req.scout.request ? req.scout.request.requestId : undefined,
-                url: req.originalUrl || req.url,
-                params: req.query || req.body ? Object.assign({}, req.query, req.body) : undefined,
-                session: req.session || undefined,
-            } : undefined;
-            captureError(error, { request: requestInfo });
+            captureError(err, undefined, req ? {
+                // Location — auto-detected from the matched route; users can override
+                // by wrapping errorMiddleware or calling captureError directly.
+                controller: (req.route && req.route.path) || req.path || null,
+                action: req.method ? req.method.toUpperCase() : null,
+                module: null,
+                // Request envelope
+                requestId: req.scout && req.scout.request ? req.scout.request.requestId : undefined,
+                requestUrl: req.originalUrl || req.url,
+                requestParams: (req.query || req.body)
+                    ? Object.assign({}, req.query, req.body)
+                    : undefined,
+                requestSession: req.session || undefined,
+            } : undefined);
         }
         next(err);
     };
