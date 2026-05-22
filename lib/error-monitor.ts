@@ -72,10 +72,11 @@ function parseStack(error: Error): string[] {
     if (!error.stack) { return []; }
 
     // Skip the first line ("Error: message") and parse each "at" frame into
-    // the Python convention: "file:line:in function"
+    // the Python convention: "file:line:in function", dropping node_modules frames.
     return error.stack
         .split("\n")
         .slice(1)
+        .filter(line => !line.includes("node_modules"))
         .map(line => {
             const trimmed = line.trim();
             // "at functionName (file:line:col)" or "at Object.method (file:line:col)"
