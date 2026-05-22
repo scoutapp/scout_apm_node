@@ -52,7 +52,9 @@ export function captureError(error: Error | any, opts?: CaptureErrorOptions): vo
     const err = error instanceof Error ? error : new Error(String(error));
     const className = err.constructor ? err.constructor.name : "Error";
 
-    if (ignoredExceptions.includes(className)) { return; }
+    // Walk the prototype chain so subclasses of ignored exceptions are also suppressed,
+    // matching Python's isinstance() behavior.
+    if (isIgnored(err)) { return; }
 
     service.enqueue({
         exception_class: className,
@@ -68,6 +70,20 @@ export function captureError(error: Error | any, opts?: CaptureErrorOptions): vo
         host: (currentConfig.hostname as string) || os.hostname(),
         revision_sha: currentConfig.revisionSHA,
     });
+}
+
+// Walk the prototype chain so subclasses of ignored types are suppressed,
+// matching Python's isinstance() behavior.
+function isIgnored(err: Error): boolean {
+    if (ignoredExceptions.length === 0) { return false; }
+    let ctor = err.constructor as Function | null;
+    while (ctor && ctor.name) {
+        if (ignoredExceptions.includes(ctor.name)) { return true; }
+        const parent = Object.getPrototypeOf(ctor);
+        if (!parent || parent === ctor) { break; }
+        ctor = parent;
+    }
+    return false;
 }
 
 function parseStack(error: Error): string[] {
