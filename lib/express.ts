@@ -486,7 +486,15 @@ export function errorMiddleware(): ExpressErrorMiddleware {
                 session: req.session || undefined,
             } : undefined;
 
-            captureError(error, { request: requestInfo });
+            // controller = matched route pattern (e.g. "/users/:id"), action = HTTP method.
+            // module is not a meaningful concept in Express so we leave it null.
+            const requestComponents = req ? {
+                module: null,
+                controller: (req.route && req.route.path) || req.path || null,
+                action: req.method ? req.method.toUpperCase() : null,
+            } : null;
+
+            captureError(error, { request: requestInfo, requestComponents: requestComponents || undefined });
         }
         next(err);
     };

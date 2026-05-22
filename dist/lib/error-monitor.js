@@ -86,6 +86,7 @@ function captureError(error, opts) {
         request_session: (opts && opts.request && opts.request.session) ? opts.request.session : null,
         environment: (opts && opts.environment) ? opts.environment : null,
         trace: parseStack(err),
+        request_components: (opts && opts.requestComponents) ? opts.requestComponents : null,
         context: opts ? opts.context : undefined,
         host: currentConfig.hostname || os.hostname(),
         revision_sha: currentConfig.revisionSHA,

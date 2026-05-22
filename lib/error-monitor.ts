@@ -1,6 +1,6 @@
 import * as os from "os";
 import { ScoutConfiguration } from "./types";
-import { ErrorService } from "./error-service";
+import { ErrorService, RequestComponents } from "./error-service";
 
 let service: ErrorService | null = null;
 let ignoredExceptions: string[] = [];
@@ -41,6 +41,7 @@ export interface CaptureErrorOptions {
         params?: object;
         session?: object;
     };
+    requestComponents?: RequestComponents;
     context?: object;
     environment?: object;
 }
@@ -62,6 +63,7 @@ export function captureError(error: Error | any, opts?: CaptureErrorOptions): vo
         request_session: (opts && opts.request && opts.request.session) ? opts.request.session : null,
         environment: (opts && opts.environment) ? opts.environment : null,
         trace: parseStack(err),
+        request_components: (opts && opts.requestComponents) ? opts.requestComponents : null,
         context: opts ? opts.context : undefined,
         host: (currentConfig.hostname as string) || os.hostname(),
         revision_sha: currentConfig.revisionSHA,

@@ -1,4 +1,5 @@
 import { ScoutConfiguration } from "./types";
+import { RequestComponents } from "./error-service";
 export declare function setupErrorMonitoring(config: Partial<ScoutConfiguration>): void;
 export interface CaptureErrorOptions {
     request?: {
@@ -7,6 +8,7 @@ export interface CaptureErrorOptions {
         params?: object;
         session?: object;
     };
+    requestComponents?: RequestComponents;
     context?: object;
     environment?: object;
 }

@@ -8,6 +8,12 @@ import { ScoutConfiguration } from "./types";
 const MAX_QUEUE = 500;
 const FLUSH_INTERVAL_MS = 1000;
 
+export interface RequestComponents {
+    module?: string | null;
+    controller?: string | null;
+    action?: string | null;
+}
+
 export interface ErrorPayload {
     exception_class: string;
     message: string;
@@ -17,6 +23,7 @@ export interface ErrorPayload {
     request_session?: object | null;
     environment?: object | null;
     trace: string[];
+    request_components?: RequestComponents | null;
     context?: object;
     host: string;
     revision_sha?: string;
