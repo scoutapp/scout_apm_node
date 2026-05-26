@@ -177,6 +177,7 @@ exports.DEFAULT_SCOUT_CONFIGURATION = {
     key: "",
     name: "",
     appServer: "",
+    host: "",
     coreAgentDownload: true,
     coreAgentLaunch: true,
     coreAgentLogLevel: enum_1.LogLevel.Error,
@@ -418,6 +419,7 @@ function buildProcessOptions(config) {
         logFilePath: config.logFilePath,
         logLevel: config.logLevel || config.coreAgentLogLevel,
         proxyUrl: config.httpProxy,
+        ingestUrl: config.host || undefined,
     };
 }
 exports.buildProcessOptions = buildProcessOptions;

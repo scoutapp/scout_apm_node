@@ -202,6 +202,9 @@ export interface ScoutConfiguration {
     allowShutdown: boolean;
     monitor: boolean;
 
+    // Scout ingest host — passed to core-agent as --ingest-url (reads SCOUT_HOST env var)
+    host: string;
+
     // Framework
     framework: string;
     frameworkVersion: string;
@@ -237,6 +240,7 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     key: "",
     name: "",
     appServer: "",
+    host: "",
 
     coreAgentDownload: true,
     coreAgentLaunch: true,
@@ -557,5 +561,6 @@ export function buildProcessOptions(config: Partial<ScoutConfiguration>): Partia
         logFilePath: config.logFilePath,
         logLevel: config.logLevel || config.coreAgentLogLevel,
         proxyUrl: config.httpProxy,
+        ingestUrl: config.host || undefined,
     };
 }

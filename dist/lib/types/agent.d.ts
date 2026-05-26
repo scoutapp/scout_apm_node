@@ -122,6 +122,7 @@ export declare class ProcessOptions {
     readonly configFilePath?: string;
     readonly disallowLaunch?: boolean;
     readonly proxyUrl?: string;
+    readonly ingestUrl?: string;
     readonly sendTimeoutMs: number;
     readonly socketTimeoutMs: number;
     readonly connPoolOpts?: ConnectionPoolOptions;
