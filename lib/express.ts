@@ -1,4 +1,5 @@
 import onFinished from "on-finished";
+import { AsyncResource } from "async_hooks";
 import {
     LogFn,
     LogLevel,
@@ -54,8 +55,11 @@ function listExpressEndpoints(app: any): EndpointInfo[] {
     // Express 5: walk the router stack ourselves
     const endpoints: EndpointInfo[] = [];
 
-    // Get the router (Express 5 uses app.router, Express 4 uses app._router)
-    const router = app.router || app._router;
+    // Express 4 uses app._router; Express 5 uses app.router (a getter that throws on Express 4)
+    let router = app._router;
+    if (!router) {
+        try { router = app.router; } catch { /* Express 4 getter throws */ }
+    }
     if (!router || !router.stack) {
         return endpoints;
     }
@@ -264,8 +268,11 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
-        // Express 5 uses app.router, Express 4 uses app._router
-        const appRouter = req.app.router || req.app._router;
+        // Express 4 uses _router; Express 5 uses router (a getter that throws on Express 4)
+        let appRouter = req.app._router;
+        if (!appRouter) {
+            try { appRouter = req.app.router; } catch { /* Express 4 getter throws */ }
+        }
         if (!routePath && appRouter && appRouter.stack) {
             // Find routes that match the current URL
             matchedRouteMiddleware = appRouter.stack
@@ -440,8 +447,9 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                                 // Add the span to the request object
                                 req.scout.rootSpan = rootSpan;
 
-                                // Setup of the transaction and instrumentation succeeded
-                                next();
+                                // AsyncResource.bind re-enters our Scout context after any
+                                // setImmediate dispatch Express 5's router package uses.
+                                AsyncResource.bind(next)();
                             });
 
                         });

@@ -62,7 +62,7 @@ test("SELECT query during a request is recorded", t => {
     }));
 
     // Setup a MYSQL2 Connection that we'll use later
-    let conn: Connection;
+    let conn: any;
 
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data: ScoutEventRequestSentData) => {

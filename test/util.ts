@@ -34,6 +34,7 @@ import { ScoutOptions, Scout, ScoutRequest, ScoutSpan } from "../lib/scout";
 import { DEFAULT_SCOUT_CONFIGURATION } from "../lib/types/config";
 import { V1Register } from "../lib/protocol/v1/requests";
 import { Test } from "tape";
+import { MockAgent } from "./integration/mock-agent";
 
 import { FILE_PATHS } from "./fixtures";
 
@@ -42,7 +43,8 @@ import { get as getRootDir } from "app-root-dir";
 const getPort = require("get-port");
 
 // Wait a little longer for requests that use express
-export const EXPRESS_TEST_TIMEOUT_MS = 3000;
+// HTTP integration overhead (supertest triggers http shim) adds ~2-3s per request
+export const EXPRESS_TEST_TIMEOUT_MS = 10000;
 // The timeouts for PG & MSQL assume an instance is *already running*
 // for control over the amount of start time alotted see `startTimeoutMs`
 export const PG_TEST_TIMEOUT_MS = 10000;
@@ -126,6 +128,7 @@ export function waitMinutes(mins: number, t?: Test): Promise<void> {
 
 // Helper function for cleaning up an agent processe and passing/failing a test
 export function cleanup(t: Test, agent: ExternalProcessAgent, err?: Error): Promise<void> {
+    if (!agent) { t.end(err); return Promise.resolve(); }
     return agent.getProcess()
         .then(process => process.kill())
         .then(() => t.end(err));
@@ -142,11 +145,20 @@ export function waitForAgentBufferFlush(t?: Test): Promise<void> {
 
 // Helper function to clean up an official (user-facing) scout instance
 export function shutdownScout(t: Test, scout: Scout, err?: Error): Promise<void> {
+    if (!scout) { t.end(err); return Promise.resolve(); }
     return scout.shutdown()
         .then(() => {
             if (err) { console.log("ERROR:", err); } // tslint:disable-line no-console
             t.end(err);
-        });
+        })
+        .catch(() => t.end(err));
+}
+
+// Helper to shut down scout and a mock agent together
+export function shutdownScoutAndMock(t: Test, scout: Scout, mockAgent: MockAgent, err?: Error): Promise<void> {
+    return shutdownScout(t, scout, err)
+        .then(() => mockAgent ? mockAgent.stop() : Promise.resolve())
+        .catch(() => mockAgent ? mockAgent.stop() : Promise.resolve());
 }
 
 // Make a simple express application that just returns
@@ -439,6 +451,38 @@ export function buildTestScoutInstance(
         Object.assign({allowShutdown: true, monitor: true}, configOverride),
     );
     return new Scout(cfg, options);
+}
+
+// Module-level shared MockAgent for tests that need a real socket
+let _sharedMock: MockAgent | undefined;
+let _sharedMockReady: Promise<MockAgent> | undefined;
+
+export function getOrStartSharedMock(): Promise<MockAgent> {
+    if (!_sharedMock) {
+        _sharedMock = new MockAgent();
+        _sharedMockReady = _sharedMock.start().then(() => _sharedMock!);
+    }
+    return _sharedMockReady!;
+}
+
+// Async helper: starts a fresh MockAgent for one test, creates a Scout pointed at it
+export async function buildTestScoutInstanceWithMock(
+    configOverride?: Partial<ScoutConfiguration>,
+    options?: Partial<ScoutOptions>,
+): Promise<{scout: Scout, mockAgent: MockAgent}> {
+    const mockAgent = new MockAgent();
+    await mockAgent.start();
+    const cfg = buildScoutConfiguration(Object.assign(
+        {
+            allowShutdown: true,
+            monitor: true,
+            coreAgentLaunch: false,
+            coreAgentDownload: false,
+            socketPath: mockAgent.socketPath(),
+        },
+        configOverride,
+    ));
+    return {scout: new Scout(cfg, options), mockAgent};
 }
 
 export interface WaitForConfigFn {
