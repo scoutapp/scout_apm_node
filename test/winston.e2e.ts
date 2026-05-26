@@ -38,7 +38,7 @@ test("Winston logger is successfully logged to", t => {
                 (err: any, results: any) => {
                     if (err || !results) {
                         t.fail("no results returned from querying the logger");
-                        reject();
+                        reject(undefined);
                         return;
                     }
 

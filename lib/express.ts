@@ -22,7 +22,7 @@ import {
 
 import { pathToRegexp } from "path-to-regexp";
 
-const listExpressEndpoints = require("express-list-endpoints");
+const listExpressEndpointsLib = require("express-list-endpoints");
 const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
 
@@ -299,7 +299,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                         .forEach(r => {
                             // Enrich endpoint list with regexes for the full match
                             r.regex = pathToRegexp(r.path);
-                            ROUTE_INFO_LOOKUP[r.path] = r;
+                            ROUTE_INFO_LOOKUP[r.path] = { ...r, middleware: r.middleware || [], regex: r.regex };
                         });
 
                     // Search again after adding to the cache
