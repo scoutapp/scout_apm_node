@@ -1238,6 +1238,13 @@ export function sendThroughAgent<T extends BaseAgentRequest, R extends BaseAgent
         return Promise.reject(new Errors.MonitoringDisabled());
     }
 
+    if (config.logPayloadContent) {
+        scout.log(
+            `[scout/payload] ${msg.constructor.name}: ${JSON.stringify(msg.json)}`,
+            LogLevel.Info,
+        );
+    }
+
     if (opts && opts.async) {
         return agent.sendAsync(msg);
     }

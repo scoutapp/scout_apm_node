@@ -58,6 +58,7 @@ export interface ScoutConfiguration {
     collectRemoteIP: boolean;
     uriReporting: URIReportingLevel;
     disabledInstruments: string[];
+    logPayloadContent: boolean;
     coreAgentTriple: string;
     coreAgentFullName: string;
 }

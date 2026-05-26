@@ -941,6 +941,9 @@ function sendThroughAgent(scout, msg, opts) {
         scout.log("[scout] monitoring disabled, not sending tag request", types_1.LogLevel.Warn);
         return Promise.reject(new Errors.MonitoringDisabled());
     }
+    if (config.logPayloadContent) {
+        scout.log(`[scout/payload] ${msg.constructor.name}: ${JSON.stringify(msg.json)}`, types_1.LogLevel.Info);
+    }
     if (opts && opts.async) {
         return agent.sendAsync(msg);
     }
