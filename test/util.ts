@@ -1002,7 +1002,7 @@ export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts |
         // Connect timeout to enable using this as a check in waitFor
         connectTimeout: 9999,
     });
-    const conn = new MySQL2Connection({config});
+    const conn = new MySQL2Connection(config as any);
 
     // We have to ignore errors that are emitted by the mysl2 Connection object
     // because they will crash the node runtime otherwise.
@@ -1017,7 +1017,7 @@ export function makeConnectedMySQL2Connection(provider: () => ContainerAndOpts |
                     return;
                 }
 
-                resolve(conn);
+                resolve(conn as any);
             });
         });
     } catch {
