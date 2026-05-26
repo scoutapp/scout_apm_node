@@ -8,19 +8,32 @@ const express_1 = require("../lib/express");
 const types_1 = require("../lib/types");
 const scout_1 = require("../lib/scout");
 const lib_1 = require("../lib");
+const mock_agent_1 = require("./integration/mock-agent");
 const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
 const global_1 = require("../lib/global");
 const TEST_OPTS = { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS };
-lib_1.setupRequireIntegrations(["pug", "ejs", "mustache"]);
-test("Simple operation", t => {
+(0, lib_1.setupRequireIntegrations)(["pug", "ejs", "mustache"]);
+// Shared mock agent for all express tests
+const sharedMock = new mock_agent_1.MockAgent();
+function withMock(extras = {}) {
+    return Object.assign({
+        coreAgentLaunch: false,
+        coreAgentDownload: false,
+        socketPath: sharedMock.socketPath(),
+    }, extras);
+}
+(0, tape_1.default)("setup: start shared mock agent", t => {
+    sharedMock.start().then(() => t.end()).catch(t.end);
+});
+(0, tape_1.default)("Simple operation", t => {
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
-        config: types_1.buildScoutConfiguration({
+    const app = TestUtil.simpleExpressApp((0, express_1.scoutMiddleware)({
+        config: (0, types_1.buildScoutConfiguration)(withMock({
             allowShutdown: true,
             monitor: true,
-        }),
-        requestTimeoutMs: 0,
+        })),
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     let scout;
@@ -60,12 +73,12 @@ test("Simple operation", t => {
 });
 test("Dynamic segment routes (uses global instance)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
-        config: types_1.buildScoutConfiguration({
+    const app = TestUtil.simpleDynamicSegmentExpressApp((0, express_1.scoutMiddleware)({
+        config: (0, types_1.buildScoutConfiguration)(withMock({
             allowShutdown: true,
             monitor: true,
-        }),
-        requestTimeoutMs: 0,
+        })),
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     let scout;
@@ -118,12 +131,12 @@ test("Dynamic segment routes (uses global instance)", { timeout: TestUtil.EXPRES
 });
 test("Application which errors (uses global scout instance)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     // Create an application and setup scout middleware
-    const app = TestUtil.simpleErrorApp(express_1.scoutMiddleware({
-        config: types_1.buildScoutConfiguration({
+    const app = TestUtil.simpleErrorApp((0, express_1.scoutMiddleware)({
+        config: (0, types_1.buildScoutConfiguration)(withMock({
             allowShutdown: true,
             monitor: true,
-        }),
-        requestTimeoutMs: 0,
+        })),
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         waitForScoutSetup: true,
     }));
     let scout;
@@ -144,11 +157,11 @@ test("Application which errors (uses global scout instance)", { timeout: TestUti
 });
 test("express ignores a path (exact path, with dynamic segments)", TEST_OPTS, t => {
     const path = "/dynamic/:segment";
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
         ignore: [path],
-    }));
+    })));
     // Create an application and setup scout middleware
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
@@ -172,11 +185,11 @@ test("express ignores a path (exact path, with dynamic segments)", TEST_OPTS, t 
 });
 test("express ignores a path (exact path, static)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/";
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
         ignore: [path],
-    }));
+    })));
     // Create an application and setup scout middleware
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
@@ -201,11 +214,11 @@ test("express ignores a path (exact path, static)", { timeout: TestUtil.EXPRESS_
 test("express ignores a path (prefix, with dynamic segments)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/dynamic/:segment";
     const prefix = "/dynamic";
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
         ignore: [prefix],
-    }));
+    })));
     // Create an application and setup scout middleware
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
@@ -231,11 +244,11 @@ test("express ignores a path (prefix, with dynamic segments)", { timeout: TestUt
 test("express ignores a path (prefix, static)", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
     const path = "/echo-by-post";
     const prefix = "/echo";
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
         ignore: [prefix],
-    }));
+    })));
     // Create an application and setup scout middleware
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
@@ -259,11 +272,11 @@ test("express ignores a path (prefix, static)", { timeout: TestUtil.EXPRESS_TEST
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
     // Create an application and setup scout middleware
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
@@ -295,12 +308,12 @@ test("URI params are filtered", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-test("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
         uriReporting: types_1.URIReportingLevel.Path,
-    }));
+    })));
     // Create an application and setup scout middleware
     const app = TestUtil.simpleDynamicSegmentExpressApp(express_1.scoutMiddleware({
         scout,
@@ -333,11 +346,11 @@ test("URI filtered down to path", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS },
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/82
-test("Pug integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("Pug integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
     // Create an application that's set up to use pug templating
     const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
         scout,
@@ -370,7 +383,7 @@ test("Pug integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t =
         TestUtil.shutdownScout(t, scout);
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
-    return request(app)
+    (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /html/)
         .expect(200)
@@ -380,11 +393,11 @@ test("Pug integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t =
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/82
-test("ejs integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("ejs integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
     // Create an application that's set up to use ejs templating
     const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
         scout,
@@ -417,7 +430,7 @@ test("ejs integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t =
         TestUtil.shutdownScout(t, scout);
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
-    return request(app)
+    (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /html/)
         .expect(200)
@@ -427,11 +440,11 @@ test("ejs integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t =
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/82
-test("mustache integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("mustache integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
     // Create an application that's set up to use mustache templating
     const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
         scout,
@@ -464,7 +477,7 @@ test("mustache integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }
         TestUtil.shutdownScout(t, scout);
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
-    return request(app)
+    (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /html/)
         .expect(200)
@@ -474,11 +487,11 @@ test("mustache integration works", { timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS }
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/129
-test("Nested spans on the top level controller have parent ID specified", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("Nested spans on the top level controller have parent ID specified", TEST_OPTS, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
     // Create an application that's set up to do a simple instrumentation
     const app = TestUtil.simpleInstrumentApp(express_1.scoutMiddleware({
         scout,
@@ -514,18 +527,18 @@ test("Nested spans on the top level controller have parent ID specified", t => {
         TestUtil.shutdownScout(t, scout);
     };
     scout.on(types_1.ScoutEvent.RequestSent, listener);
-    return request(app)
+    (0, supertest_1.default)(app)
         .get("/")
         .expect("Content-Type", /json/)
         .expect(200)
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/150
-test("Unknown routes should not be recorded", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("Unknown routes should not be recorded", TEST_OPTS, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
     // Create an application that's set up to do a simple instrumentation
     const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
         scout,
@@ -548,17 +561,16 @@ test("Unknown routes should not be recorded", t => {
         return request(app)
             .get("/nope")
             .expect("Content-Type", /html/)
-            .expect(404)
-            .then(() => t.pass("unknown route was visited"));
+            .expect(404);
     })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/68
-test("Request queue time should be recorded", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
+(0, tape_1.default)("Request queue time should be recorded", TEST_OPTS, t => {
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
     // Create an application that's set up to do a simple instrumentation
     const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
         scout,
@@ -603,4 +615,7 @@ test("Shutdown the global instance", t => {
         return TestUtil.shutdownScout(t, inst);
     }
     t.end();
+});
+(0, tape_1.default)("teardown: stop shared mock agent", t => {
+    sharedMock.stop().then(() => t.end()).catch(t.end);
 });

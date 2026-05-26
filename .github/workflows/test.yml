@@ -1,0 +1,138 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+      - run: yarn lint
+
+  unit:
+    name: Unit tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+      - run: yarn test-unit
+
+  integration:
+    name: Integration (Node ${{ matrix.node }}, Express ${{ matrix.express }})
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node: 18
+            express: "^4.0.0"
+          - node: 18
+            express: "^5.0.0"
+          - node: 20
+            express: "^4.0.0"
+          - node: 20
+            express: "^5.0.0"
+          - node: 22
+            express: "^4.0.0"
+          - node: 22
+            express: "^5.0.0"
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: scout_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: scout_test
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 3306:3306
+
+    env:
+      SCOUT_CORE_AGENT_DOWNLOAD: "false"
+      SCOUT_CORE_AGENT_LAUNCH: "false"
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: scout_test
+      MYSQL_HOST: localhost
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: scout_test
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - name: Install Express ${{ matrix.express }}
+        run: npm install --no-save express@"${{ matrix.express }}"
+      - run: yarn build
+      - name: Run unit + integration tests
+        run: yarn test-unit && yarn test-int
+
+  node-test-apps:
+    name: Node test apps (Express ${{ matrix.version }})
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [4, 5]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test Express ${{ matrix.version }} app
+        if: hashFiles(format('node_test_apps/express-v{0}/Dockerfile', matrix.version)) != ''
+        working-directory: node_test_apps/express-v${{ matrix.version }}
+        run: |
+          docker build -t scout-express-v${{ matrix.version }}-test .
+          docker run --rm \
+            -e SCOUT_CORE_AGENT_DOWNLOAD=false \
+            -e SCOUT_CORE_AGENT_LAUNCH=false \
+            scout-express-v${{ matrix.version }}-test \
+            node healthcheck.js
