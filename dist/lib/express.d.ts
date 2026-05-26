@@ -4,7 +4,8 @@ import { Request } from "express";
 export interface ApplicationWithScout {
     scout?: Scout;
 }
-declare type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
+type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
+type ExpressErrorMiddleware = (err: any, req: any, res: any, next: (err?: any) => void) => void;
 export interface ExpressMiddlewareOptions {
     config?: Partial<ScoutConfiguration>;
     logFn?: LogFn;
@@ -28,4 +29,11 @@ export declare type ExpressRequestWithScout = Request & ExpressScoutInfo;
  * @returns {Function} a middleware function for use with express
  */
 export declare function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddleware;
+/**
+ * Express 4-arg error-handling middleware.
+ * Place after all other app.use()/routes so Express routes errors through it.
+ * Captures the error to Scout error monitoring, then calls next(err) so the
+ * default Express error handler (or any downstream handler) still runs.
+ */
+export declare function errorMiddleware(): ExpressErrorMiddleware;
 export {};

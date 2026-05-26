@@ -232,6 +232,12 @@ export interface ScoutConfiguration {
     disabledInstruments: string[];
     logPayloadContent: boolean;
 
+    // Error monitoring
+    errorsEnabled: boolean;
+    errorsHost: string;
+    errorsIgnoredExceptions: string[];
+    environment: string;
+
     // Derived
     coreAgentTriple: string;
     coreAgentFullName: string;
@@ -252,6 +258,11 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     disabledInstruments: [],
     logPayloadContent: false,
     downloadUrl: "https://s3-us-west-1.amazonaws.com/scout-public-downloads/apm_core_agent/release",
+
+    errorsEnabled: true,
+    errorsHost: "https://errors.scoutapm.com",
+    errorsIgnoredExceptions: [],
+    environment: "",
 
     framework: "",
     frameworkVersion: "",
@@ -315,6 +326,8 @@ const ENV_TRANSFORMS = {
     SCOUT_IGNORE: v => v.split(","),
     SCOUT_MONITOR: v => v.toLowerCase() === "true",
     SCOUT_LOG_PAYLOAD_CONTENT: v => v.toLowerCase() === "true",
+    SCOUT_ERRORS_ENABLED: v => v.toLowerCase() === "true",
+    SCOUT_ERRORS_IGNORED_EXCEPTIONS: v => v.split(",").map((s: string) => s.trim()).filter(Boolean),
 };
 
 /**
