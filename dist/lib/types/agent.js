@@ -94,6 +94,9 @@ class ProcessOptions {
             if (opts.disallowLaunch) {
                 this.disallowLaunch = opts.disallowLaunch;
             }
+            if (opts.proxyUrl) {
+                this.proxyUrl = opts.proxyUrl;
+            }
             if (opts.sendTimeoutMs) {
                 this.sendTimeoutMs = opts.sendTimeoutMs;
             }
