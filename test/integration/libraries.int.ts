@@ -92,7 +92,7 @@ test("Mustache render creates a Template/Render span", { timeout: TIMEOUT }, (t)
             const app = makeApp(mock, (mw) => {
                 const a = express();
                 a.use(mw);
-                a.get("/", (_req: Request, res: Response) => {
+                a.get("/", (req: Request, res: Response) => {
                     // require() here so the RITM shim is active at call time
                     const mustache = require("mustache");
                     res.send(mustache.render("Hello {{name}}!", { name: "Scout" }));
@@ -139,7 +139,7 @@ test("EJS render creates a Template/Render span", { timeout: TIMEOUT }, (t) => {
             const app = makeApp(mock, (mw) => {
                 const a = express();
                 a.use(mw);
-                a.get("/", (_req: Request, res: Response) => {
+                a.get("/", (req: Request, res: Response) => {
                     const ejs = require("ejs");
                     res.send(ejs.render("<h1><%= title %></h1>", { title: "Scout" }));
                 });
@@ -186,7 +186,7 @@ test("Pug renderFile creates a Template/Render span with a file path", { timeout
             const app = makeApp(mock, (mw) => {
                 const a = express();
                 a.use(mw);
-                a.get("/", (_req: Request, res: Response) => {
+                a.get("/", (req: Request, res: Response) => {
                     const pug = require("pug");
                     res.send(pug.renderFile(fixture, { title: "Scout" }));
                 });
@@ -252,7 +252,7 @@ test("PG query creates a SQL/Query span with db.statement", { timeout: TIMEOUT }
             const app = makeApp(mock, (mw) => {
                 const a = express();
                 a.use(mw);
-                a.get("/", (_req: Request, res: Response) => {
+                a.get("/", (req: Request, res: Response) => {
                     client.query("SELECT 1 AS result")
                         .then(() => res.send({ status: "ok" }))
                         .catch((err: Error) => res.status(500).send({ error: err.message }));

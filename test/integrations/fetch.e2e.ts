@@ -24,7 +24,7 @@ test("setup: start shared mock agent", (t) => {
 });
 
 test("setup: start local HTTP target server", (t) => {
-    testServer = http.createServer((_req, res) => {
+    testServer = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "text/plain" });
         res.end("ok");
     });

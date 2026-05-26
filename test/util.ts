@@ -455,15 +455,15 @@ export function buildTestScoutInstance(
 }
 
 // Module-level shared MockAgent for tests that need a real socket
-let _sharedMock: MockAgent | undefined;
-let _sharedMockReady: Promise<MockAgent> | undefined;
+let sharedMock: MockAgent | undefined;
+let sharedMockReady: Promise<MockAgent> | undefined;
 
 export function getOrStartSharedMock(): Promise<MockAgent> {
-    if (!_sharedMock) {
-        _sharedMock = new MockAgent();
-        _sharedMockReady = _sharedMock.start().then(() => _sharedMock!);
+    if (!sharedMock) {
+        sharedMock = new MockAgent();
+        sharedMockReady = sharedMock.start().then(() => sharedMock!);
     }
-    return _sharedMockReady!;
+    return sharedMockReady!;
 }
 
 // Async helper: starts a fresh MockAgent for one test, creates a Scout pointed at it

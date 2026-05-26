@@ -53,7 +53,7 @@ export class ApplicationMetadata {
     public readonly databaseEngine: string;
     public readonly databaseAdapter: string;
     public readonly applicationName: string;
-    public readonly libraries: [string, any][];
+    public readonly libraries: Array<[string, any]>;
     public readonly paas: string;
     public readonly gitSHA: string;
     public readonly applicationRoot: string;
