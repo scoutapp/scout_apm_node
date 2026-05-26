@@ -1,4 +1,5 @@
 import onFinished from "on-finished";
+import { AsyncResource } from "async_hooks";
 import {
     LogFn,
     LogLevel,
@@ -446,8 +447,9 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                                 // Add the span to the request object
                                 req.scout.rootSpan = rootSpan;
 
-                                // Setup of the transaction and instrumentation succeeded
-                                next();
+                                // AsyncResource.bind re-enters our Scout context after any
+                                // setImmediate dispatch Express 5's router package uses.
+                                AsyncResource.bind(next)();
                             });
 
                         });
