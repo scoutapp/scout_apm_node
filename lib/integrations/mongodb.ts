@@ -16,7 +16,7 @@ interface InFlightEntry {
 }
 
 function scrubCommand(command: any): string {
-    return JSON.stringify(command, (_key, value) => {
+    return JSON.stringify(command, (key, value) => {
         if (value === null || typeof value !== "object") { return "?"; }
         return value;
     });

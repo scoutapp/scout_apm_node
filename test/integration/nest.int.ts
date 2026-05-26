@@ -17,16 +17,16 @@ const TIMEOUT = 12000;
 @Controller()
 class TestController {
     @Get("/")
-    home() { return { status: "ok" }; }
+    public home() { return { status: "ok" }; }
 
     @Get("/dynamic/:segment")
-    dynamic() { return { status: "ok" }; }
+    public dynamic() { return { status: "ok" }; }
 }
 
 @Controller("api")
 class ApiController {
     @Get("hello")
-    hello() { return { message: "hello" }; }
+    public hello() { return { message: "hello" }; }
 }
 
 @Module({ controllers: [TestController, ApiController] })

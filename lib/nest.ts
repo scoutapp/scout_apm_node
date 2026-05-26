@@ -22,14 +22,14 @@ import { pathToRegexp } from "path-to-regexp";
 const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
 
-export type NestMiddlewareOptions = {
+export interface NestMiddlewareOptions {
     config?: Partial<ScoutConfiguration>;
     logFn?: LogFn;
     requestTimeoutMs?: number;
     statisticsIntervalMS?: number;
     scout?: Scout;
     waitForScoutSetup?: boolean;
-};
+}
 
 // NestJS-specific route cache — separate from the Express middleware's cache so
 // the two don't interfere when both are used in the same process.
@@ -222,14 +222,14 @@ export function nestMiddleware(opts?: NestMiddlewareOptions): NestMiddleware {
  *   }
  */
 export class ScoutNestMiddleware {
-    private readonly _inner: NestMiddleware;
+    private readonly inner: NestMiddleware;
 
     constructor(opts?: NestMiddlewareOptions) {
-        this._inner = nestMiddleware(opts);
+        this.inner = nestMiddleware(opts);
     }
 
-    use(req: any, res: any, next: () => void): void {
-        this._inner(req, res, next);
+    public use(req: any, res: any, next: () => void): void {
+        this.inner(req, res, next);
     }
 }
 

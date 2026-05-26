@@ -72,7 +72,7 @@ export class PrismaIntegration extends RequireIntegration {
             // (stored in AsyncLocalStorage by runInChildSpan) so the Rust engine
             // enables its internal tracing and trace() returns spans with db.statement.
             // Outside of an active operation we return the no-op sentinel.
-            getTraceParent: (_ctx?: unknown): string => {
+            getTraceParent: (ctx?: unknown): string => {
                 return storage.getStore()?.traceparent ?? "00-10-10-00";
             },
 
@@ -133,8 +133,10 @@ export class PrismaIntegration extends RequireIntegration {
             // Prisma 6.x used db.statement. Check both.
             dispatchEngineSpans(spans: EngineSpan[]): void {
                 const dbQuery = spans.find(s => s.name === "prisma:engine:db_query");
-                const sql = (dbQuery?.attributes?.["db.query.text"] ?? dbQuery?.attributes?.["db.statement"]) as string | undefined;
-                if (!sql) return;
+                const sql = (
+                    dbQuery?.attributes?.["db.query.text"] ?? dbQuery?.attributes?.["db.statement"]
+                ) as string | undefined;
+                if (!sql) { return; }
 
                 const store = storage.getStore();
                 if (store) { store.sql = sql; }

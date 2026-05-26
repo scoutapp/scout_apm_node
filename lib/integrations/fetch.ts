@@ -17,7 +17,7 @@ export class FetchIntegration extends RequireIntegration {
 
     // diagnostics_channel fires for all undici usage, including Node 18+ native fetch.
     // We override ritmHook to skip RITM entirely and subscribe at setup time instead.
-    public ritmHook(_exportBag: ExportBag): void {
+    public ritmHook(exportBag: ExportBag): void {
         const nodeMajor = parseInt(process.versions.node.split(".")[0], 10);
         if (nodeMajor < 18) {
             this.logFn("[scout/integrations/fetch] Node < 18, skipping", LogLevel.Debug);

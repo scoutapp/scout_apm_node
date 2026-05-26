@@ -76,17 +76,15 @@ export function listExpressEndpoints(app: any): EndpointInfo[] {
                     methods,
                     middleware: [],
                 });
-            }
-            // Nested router (app.use('/prefix', router))
-            else if (layer.name === "router" && layer.handle && layer.handle.stack) {
+            } else if (layer.name === "router" && layer.handle && layer.handle.stack) {
+                // Nested router (app.use('/prefix', router))
                 let prefix = "";
 
                 // Express 5: check layer.path directly
                 if (layer.path) {
                     prefix = layer.path;
-                }
-                // Express 5: extract prefix from matcher by testing common path patterns
-                else if (layer.matchers && layer.matchers.length > 0) {
+                } else if (layer.matchers && layer.matchers.length > 0) {
+                    // Express 5: extract prefix from matcher by testing common path patterns
                     // The matcher function returns { path: '/matched/prefix', params: {} } or false
                     const probeResults = [
                         layer.matchers[0]("/"),
@@ -100,9 +98,8 @@ export function listExpressEndpoints(app: any): EndpointInfo[] {
                     if (probeResults.length > 0) {
                         prefix = probeResults[0].path;
                     }
-                }
-                // Express 4: layer.regexp
-                else if (layer.regexp) {
+                } else if (layer.regexp) {
+                    // Express 4: layer.regexp
                     const match = layer.regexp.source.match(/^\^\\\/([^\\\/\?\*\+\[\]]+)/);
                     if (match) {
                         prefix = "/" + match[1];

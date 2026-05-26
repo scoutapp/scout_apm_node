@@ -19,10 +19,10 @@ const TIMEOUT = 15000;
 @Controller()
 class BasicController {
     @Get("/")
-    home() { return { status: "ok" }; }
+    public home() { return { status: "ok" }; }
 
     @Get("/items/:id")
-    item() { return { status: "ok" }; }
+    public item() { return { status: "ok" }; }
 }
 
 @Module({ controllers: [BasicController] })

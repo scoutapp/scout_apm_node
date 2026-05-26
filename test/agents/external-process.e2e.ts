@@ -343,7 +343,8 @@ test(`TagSpan works for leaf span (v${TestConstants.TEST_APP_VERSION})`, {skip: 
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`ApplicationEvent for application metadata works (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
+test(`ApplicationEvent for application metadata works (v${TestConstants.TEST_APP_VERSION})`,
+    {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -448,7 +449,8 @@ test(`Nested spans work (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINAR
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`Nested spans work in the wrong close order (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
+test(`Nested spans work in the wrong close order (v${TestConstants.TEST_APP_VERSION})`,
+    {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
@@ -499,7 +501,8 @@ test(`Nested spans work in the wrong close order (v${TestConstants.TEST_APP_VERS
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
 
-test(`Request with 'Controller' span works, after waiting for flush (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
+test(`Request with 'Controller' span works, after waiting for flush (v${TestConstants.TEST_APP_VERSION})`,
+    {skip: SKIP_BINARY_TESTS}, t => {
     const appVersion = new CoreAgentVersion(TestConstants.TEST_APP_VERSION);
     let agent: ExternalProcessAgent;
 
