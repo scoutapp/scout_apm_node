@@ -199,6 +199,7 @@ export class ProcessOptions {
     public readonly logFilePath?: string;
     public readonly configFilePath?: string;
     public readonly disallowLaunch?: boolean;
+    public readonly proxyUrl?: string;
 
     // Amount of time to wait before timing out messages
     public readonly sendTimeoutMs: number = Constants.DEFAULT_AGENT_SEND_TIMEOUT_MS;
@@ -219,6 +220,7 @@ export class ProcessOptions {
             if (opts.configFilePath) { this.configFilePath = opts.configFilePath; }
             if (opts.connPoolOpts) { this.connPoolOpts = opts.connPoolOpts; }
             if (opts.disallowLaunch) { this.disallowLaunch = opts.disallowLaunch; }
+            if (opts.proxyUrl) { this.proxyUrl = opts.proxyUrl; }
             if (opts.sendTimeoutMs) { this.sendTimeoutMs = opts.sendTimeoutMs; }
             if (opts.socketTimeoutMs) { this.socketTimeoutMs = opts.socketTimeoutMs; }
         }
