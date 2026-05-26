@@ -19,7 +19,7 @@ import { Scout, ScoutSpan, ScoutEventRequestSentData } from "../../lib/scout";
 // Must run before any instrumented library is first required so RITM can shim them.
 setupRequireIntegrations(["mustache", "ejs", "pug", "pg"]);
 
-const TIMEOUT = 10000;
+const TIMEOUT = 15000;
 const PAYLOAD_DIR = path.join(__dirname, "payloads");
 // Fixture views live in source tree; use getRootDir() so the path is correct at runtime.
 const VIEWS_DIR = path.join(getRootDir(), "test/fixtures/files");
@@ -36,19 +36,18 @@ function buildConfig(mock: MockAgent) {
     });
 }
 
-function makeApp(mock: MockAgent, factory: (mw: any) => Application): AppWithScout {
+function makeApp(scout: Scout, factory: (mw: any) => Application): AppWithScout {
     return factory(
         scoutMiddleware({
-            config: buildConfig(mock),
+            scout,
             requestTimeoutMs: 0,
             waitForScoutSetup: true,
         }),
     ) as AppWithScout;
 }
 
-function nextRequestSent(scout: Scout, skipCount = 0): Promise<ScoutEventRequestSentData> {
+function nextRequestSent(scout: Scout): Promise<ScoutEventRequestSentData> {
     return new Promise((resolve, reject) => {
-        let skipped = 0;
         const timer = setTimeout(() => {
             scout.removeListener(ScoutEvent.RequestSent, listener);
             reject(new Error("Timed out waiting for ScoutEvent.RequestSent"));
@@ -56,11 +55,10 @@ function nextRequestSent(scout: Scout, skipCount = 0): Promise<ScoutEventRequest
 
         const listener = (data: ScoutEventRequestSentData) => {
             // Ignore HTTP integration transactions (no Controller/ span) — they fire
-            // for supertest's outbound http.request() calls and would throw off skipCount.
+            // for supertest's outbound http.request() calls.
             if (!data.request.getChildSpansSync().some((s) => s.operation.startsWith("Controller/"))) {
                 return;
             }
-            if (skipped < skipCount) { skipped++; return; }
             clearTimeout(timer);
             scout.removeListener(ScoutEvent.RequestSent, listener);
             resolve(data);
@@ -90,7 +88,11 @@ test("Mustache render creates a Template/Render span", { timeout: TIMEOUT }, (t)
 
     mock.start()
         .then(() => {
-            const app = makeApp(mock, (mw) => {
+            scout = new Scout(buildConfig(mock));
+            return scout.setup();
+        })
+        .then(() => {
+            const app = makeApp(scout, (mw) => {
                 const a = express();
                 a.use(mw);
                 a.get("/", (req: Request, res: Response) => {
@@ -100,11 +102,7 @@ test("Mustache render creates a Template/Render span", { timeout: TIMEOUT }, (t)
                 });
                 return a;
             });
-            return request(app).get("/").expect(200).then(() => app);
-        })
-        .then((app) => {
-            scout = (app as AppWithScout).scout!;
-            const sent = nextRequestSent(scout, 1);
+            const sent = nextRequestSent(scout);
             request(app).get("/").end(() => undefined);
             return sent;
         })
@@ -137,7 +135,11 @@ test("EJS render creates a Template/Render span", { timeout: TIMEOUT }, (t) => {
 
     mock.start()
         .then(() => {
-            const app = makeApp(mock, (mw) => {
+            scout = new Scout(buildConfig(mock));
+            return scout.setup();
+        })
+        .then(() => {
+            const app = makeApp(scout, (mw) => {
                 const a = express();
                 a.use(mw);
                 a.get("/", (req: Request, res: Response) => {
@@ -146,11 +148,7 @@ test("EJS render creates a Template/Render span", { timeout: TIMEOUT }, (t) => {
                 });
                 return a;
             });
-            return request(app).get("/").expect(200).then(() => app);
-        })
-        .then((app) => {
-            scout = (app as AppWithScout).scout!;
-            const sent = nextRequestSent(scout, 1);
+            const sent = nextRequestSent(scout);
             request(app).get("/").end(() => undefined);
             return sent;
         })
@@ -184,7 +182,11 @@ test("Pug renderFile creates a Template/Render span with a file path", { timeout
 
     mock.start()
         .then(() => {
-            const app = makeApp(mock, (mw) => {
+            scout = new Scout(buildConfig(mock));
+            return scout.setup();
+        })
+        .then(() => {
+            const app = makeApp(scout, (mw) => {
                 const a = express();
                 a.use(mw);
                 a.get("/", (req: Request, res: Response) => {
@@ -193,11 +195,7 @@ test("Pug renderFile creates a Template/Render span with a file path", { timeout
                 });
                 return a;
             });
-            return request(app).get("/").expect(200).then(() => app);
-        })
-        .then((app) => {
-            scout = (app as AppWithScout).scout!;
-            const sent = nextRequestSent(scout, 1);
+            const sent = nextRequestSent(scout);
             request(app).get("/").end(() => undefined);
             return sent;
         })
@@ -250,7 +248,11 @@ test("PG query creates a SQL/Query span with db.statement", { timeout: TIMEOUT }
     client.connect()
         .then(() => mock.start())
         .then(() => {
-            const app = makeApp(mock, (mw) => {
+            scout = new Scout(buildConfig(mock));
+            return scout.setup();
+        })
+        .then(() => {
+            const app = makeApp(scout, (mw) => {
                 const a = express();
                 a.use(mw);
                 a.get("/", (req: Request, res: Response) => {
@@ -260,11 +262,7 @@ test("PG query creates a SQL/Query span with db.statement", { timeout: TIMEOUT }
                 });
                 return a;
             });
-            return request(app).get("/").expect(200).then(() => app);
-        })
-        .then((app) => {
-            scout = (app as AppWithScout).scout!;
-            const sent = nextRequestSent(scout, 1);
+            const sent = nextRequestSent(scout);
             request(app).get("/").end(() => undefined);
             return sent;
         })

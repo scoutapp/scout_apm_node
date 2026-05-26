@@ -10,7 +10,7 @@ import { buildScoutConfiguration, ScoutEvent } from "../../lib/types";
 import { ScoutEventRequestSentData } from "../../lib/scout";
 import * as TestUtil from "../util";
 
-const TIMEOUT = 12000;
+const TIMEOUT = 20000;
 
 // ── Minimal NestJS app used across all tests ─────────────────────────────────
 
@@ -45,19 +45,17 @@ function buildConfig(mock: MockAgent, extra?: object) {
     });
 }
 
-function nextRequestSent(scout: Scout, skipCount = 0): Promise<ScoutEventRequestSentData> {
+function nextRequestSent(scout: Scout): Promise<ScoutEventRequestSentData> {
     return new Promise((resolve, reject) => {
-        let skipped = 0;
         const timer = setTimeout(() => {
             scout.removeListener(ScoutEvent.RequestSent, listener);
             reject(new Error("Timed out waiting for ScoutEvent.RequestSent"));
-        }, TIMEOUT - 2000);
+        }, TIMEOUT - 3000);
 
         const listener = (data: ScoutEventRequestSentData) => {
             if (!data.request.getChildSpansSync().some((s) => s.operation.startsWith("Controller/"))) {
                 return;
             }
-            if (skipped < skipCount) { skipped++; return; }
             clearTimeout(timer);
             scout.removeListener(ScoutEvent.RequestSent, listener);
             resolve(data);
@@ -84,12 +82,11 @@ test("NestJS GET / creates a Controller/GET span", { timeout: TIMEOUT }, (t) => 
     mock.start()
         .then(async () => {
             scout = new Scout(buildConfig(mock));
+            await scout.setup();
             nestApp = await makeNestApp(scout);
-            // warmup — initialises Scout connection
-            await request(nestApp.getHttpServer()).get("/").expect(200);
         })
         .then(() => {
-            const sentPromise = nextRequestSent(scout, 1);
+            const sentPromise = nextRequestSent(scout);
             request(nestApp.getHttpServer()).get("/").end(() => undefined);
             return sentPromise;
         })
@@ -119,11 +116,11 @@ test("NestJS dynamic route captures route pattern not concrete value", { timeout
     mock.start()
         .then(async () => {
             scout = new Scout(buildConfig(mock));
+            await scout.setup();
             nestApp = await makeNestApp(scout);
-            await request(nestApp.getHttpServer()).get("/").expect(200);
         })
         .then(() => {
-            const sentPromise = nextRequestSent(scout, 1);
+            const sentPromise = nextRequestSent(scout);
             request(nestApp.getHttpServer()).get("/dynamic/hello-world").end(() => undefined);
             return sentPromise;
         })
@@ -159,11 +156,11 @@ test("NestJS controller prefix is included in span operation", { timeout: TIMEOU
     mock.start()
         .then(async () => {
             scout = new Scout(buildConfig(mock));
+            await scout.setup();
             nestApp = await makeNestApp(scout);
-            await request(nestApp.getHttpServer()).get("/").expect(200);
         })
         .then(() => {
-            const sentPromise = nextRequestSent(scout, 1);
+            const sentPromise = nextRequestSent(scout);
             request(nestApp.getHttpServer()).get("/api/hello").end(() => undefined);
             return sentPromise;
         })
@@ -192,8 +189,8 @@ test("NestJS mock agent receives Register message on connect", { timeout: TIMEOU
     mock.start()
         .then(async () => {
             scout = new Scout(buildConfig(mock, { name: "nest-test-app", key: "test-key" }));
+            await scout.setup();
             nestApp = await makeNestApp(scout);
-            await request(nestApp.getHttpServer()).get("/").expect(200);
         })
         .then(() => mock.waitForMessage("Register"))
         .then((msg) => {

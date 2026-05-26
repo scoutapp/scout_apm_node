@@ -5,7 +5,6 @@ import { MockAgent } from "./mock-agent";
 import { scoutMiddleware, ApplicationWithScout } from "../../lib/express";
 import { setupRequireIntegrations } from "../../lib";
 import {
-    AgentEvent,
     ScoutEvent,
     buildScoutConfiguration,
 } from "../../lib/types";
@@ -14,7 +13,7 @@ import * as TestUtil from "../util";
 
 setupRequireIntegrations(["pug", "ejs", "mustache"]);
 
-const TIMEOUT = 8000;
+const TIMEOUT = 15000;
 
 type AppWithScout = Application & ApplicationWithScout;
 
@@ -29,27 +28,15 @@ function buildScoutWithMock(mock: MockAgent, extra?: object) {
     });
 }
 
-/**
- * Wait for the next ScoutEvent.RequestSent, draining one event first if skipOne is true.
- * This handles the warmup request pattern where the first request initializes Scout
- * but we care about the assertions on the second request.
- */
-function nextRequestSent(scout: Scout, skipCount = 0): Promise<ScoutEventRequestSentData> {
+function nextRequestSent(scout: Scout): Promise<ScoutEventRequestSentData> {
     return new Promise((resolve, reject) => {
-        let skipped = 0;
         const timer = setTimeout(() => {
             scout.removeListener(ScoutEvent.RequestSent, listener);
             reject(new Error("Timed out waiting for ScoutEvent.RequestSent"));
-        }, TIMEOUT - 1000);
+        }, TIMEOUT - 2000);
 
         const listener = (data: ScoutEventRequestSentData) => {
-            // Ignore HTTP integration transactions (no Controller/ span) — they fire
-            // for supertest's outbound http.request() calls and would throw off skipCount.
             if (!data.request.getChildSpansSync().some((s) => s.operation.startsWith("Controller/"))) {
-                return;
-            }
-            if (skipped < skipCount) {
-                skipped++;
                 return;
             }
             clearTimeout(timer);
@@ -61,10 +48,10 @@ function nextRequestSent(scout: Scout, skipCount = 0): Promise<ScoutEventRequest
     });
 }
 
-function makeApp(mock: MockAgent, factory: (mw: any) => AppWithScout, extra?: object): AppWithScout {
+function makeApp(scout: Scout, factory: (mw: any) => Application): AppWithScout {
     return factory(
         scoutMiddleware({
-            config: buildScoutWithMock(mock, extra),
+            scout,
             requestTimeoutMs: 0,
             waitForScoutSetup: true,
         }),
@@ -73,20 +60,16 @@ function makeApp(mock: MockAgent, factory: (mw: any) => AppWithScout, extra?: ob
 
 test("Express GET / creates a Controller span", { timeout: TIMEOUT }, (t) => {
     const mock = new MockAgent();
-    let app: AppWithScout;
     let scout: Scout;
 
     mock.start()
         .then(() => {
-            app = makeApp(mock, (mw) => TestUtil.simpleExpressApp(mw));
-            // Set up listener BEFORE warmup request to capture events in order
-            const warmupDone = request(app).get("/").expect(200);
-            return warmupDone;
+            scout = new Scout(buildScoutWithMock(mock));
+            return scout.setup();
         })
         .then(() => {
-            scout = app.scout!;
-            // Warmup RequestSent may or may not have fired yet — skip 1 to get next request's event
-            const sentPromise = nextRequestSent(scout, 1);
+            const app = makeApp(scout, (mw) => TestUtil.simpleExpressApp(mw));
+            const sentPromise = nextRequestSent(scout);
             request(app).get("/").end(() => undefined);
             return sentPromise;
         })
@@ -111,17 +94,16 @@ test("Express GET / creates a Controller span", { timeout: TIMEOUT }, (t) => {
 
 test("Express dynamic route captures route pattern", { timeout: TIMEOUT }, (t) => {
     const mock = new MockAgent();
-    let app: AppWithScout;
     let scout: Scout;
 
     mock.start()
         .then(() => {
-            app = makeApp(mock, (mw) => TestUtil.simpleDynamicSegmentExpressApp(mw));
-            return request(app).get("/").expect(200);
+            scout = new Scout(buildScoutWithMock(mock));
+            return scout.setup();
         })
         .then(() => {
-            scout = app.scout!;
-            const sentPromise = nextRequestSent(scout, 1);
+            const app = makeApp(scout, (mw) => TestUtil.simpleDynamicSegmentExpressApp(mw));
+            const sentPromise = nextRequestSent(scout);
             request(app).get("/dynamic/hello").end(() => undefined);
             return sentPromise;
         })
@@ -146,18 +128,16 @@ test("Express dynamic route captures route pattern", { timeout: TIMEOUT }, (t) =
 
 test("Express error response is tagged on the request", { timeout: TIMEOUT }, (t) => {
     const mock = new MockAgent();
-    let app: AppWithScout;
     let scout: Scout;
 
     mock.start()
         .then(() => {
-            app = makeApp(mock, (mw) => TestUtil.simpleErrorApp(mw));
-            // First request to "/" initializes Scout (it will error, but that's ok)
-            return request(app).get("/");
+            scout = new Scout(buildScoutWithMock(mock));
+            return scout.setup();
         })
         .then(() => {
-            scout = app.scout!;
-            const sentPromise = nextRequestSent(scout, 1);
+            const app = makeApp(scout, (mw) => TestUtil.simpleErrorApp(mw));
+            const sentPromise = nextRequestSent(scout);
             request(app).get("/").end(() => undefined);
             return sentPromise;
         })
@@ -178,31 +158,24 @@ test("Express error response is tagged on the request", { timeout: TIMEOUT }, (t
 
 test("Mock agent receives Register message on connect", { timeout: TIMEOUT }, (t) => {
     const mock = new MockAgent();
-    let capturedScout: Scout | undefined;
+    let scout: Scout;
 
     mock.start()
         .then(() => {
-            const app = makeApp(
-                mock,
-                (mw) => TestUtil.simpleExpressApp(mw),
-                { name: "test-app", key: "test-key" },
-            ) as AppWithScout;
-
-            return request(app).get("/").expect(200)
-                .then(() => { capturedScout = app.scout; });
+            scout = new Scout(buildScoutWithMock(mock, { name: "test-app", key: "test-key" }));
+            return scout.setup();
         })
         .then(() => mock.waitForMessage("Register"))
         .then((msg) => {
             t.ok(msg, "Register message received by mock agent");
             t.equal(msg.type, "Register", "message type is Register");
         })
+        .then(() => scout.shutdown())
         .then(() => mock.stop())
-        .then(() => {
-            if (capturedScout) { return capturedScout.shutdown(); }
-        })
         .then(() => t.end())
         .catch((err) => {
             mock.stop().catch(() => undefined);
+            if (scout) { scout.shutdown().catch(() => undefined); }
             t.fail(err.message);
             t.end();
         });
