@@ -64,6 +64,11 @@ class HTTPIntegration extends integrations_1.RequireIntegration {
                 if (!protocol) {
                     protocol = urlOrObject.port === 443 ? "https" : "http";
                 }
+                // Node http options include a trailing colon (e.g. "https:"); strip it
+                // so the URL construction below doesn't produce "https:://host".
+                if (typeof protocol === "string" && protocol.endsWith(":")) {
+                    protocol = protocol.slice(0, -1);
+                }
                 // Determine port, only show port if it's a non-standard port
                 let port = urlOrObject.port;
                 if (typeof port === "string") {
