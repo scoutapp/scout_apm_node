@@ -2,7 +2,7 @@ import { setupRequireIntegrations } from "../../lib";
 setupRequireIntegrations(["ioredis"]);
 
 import Redis from "ioredis";
-import test from "tape";
+import * as test from "tape";
 import * as TestUtil from "../util";
 import { getIntegrationSymbol } from "../../lib/types/integrations";
 import { ScoutEvent, buildScoutConfiguration } from "../../lib/types";

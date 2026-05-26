@@ -2,7 +2,7 @@ import { setupRequireIntegrations } from "../../lib";
 setupRequireIntegrations(["@prisma/client"]);
 
 import { PrismaClient } from "@prisma/client";
-import test from "tape";
+import * as test from "tape";
 import * as TestUtil from "../util";
 import { ScoutEvent, buildScoutConfiguration } from "../../lib/types";
 import { Scout, ScoutEventRequestSentData } from "../../lib/scout";

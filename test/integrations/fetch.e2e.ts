@@ -3,7 +3,7 @@ setupRequireIntegrations(["fetch"]);
 
 import * as http from "http";
 import * as net from "net";
-import test from "tape";
+import * as test from "tape";
 import * as TestUtil from "../util";
 import { ScoutEvent, buildScoutConfiguration } from "../../lib/types";
 import { Scout, ScoutEventRequestSentData } from "../../lib/scout";

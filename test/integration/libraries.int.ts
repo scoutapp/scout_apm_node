@@ -1,6 +1,6 @@
-import test from "tape";
+import * as test from "tape";
 import * as path from "path";
-import request from "supertest";
+import * as request from "supertest";
 import express, { Application, Request, Response } from "express";
 import { get as getRootDir } from "app-root-dir";
 

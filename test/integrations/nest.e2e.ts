@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import test from "tape";
-import request from "supertest";
+import * as test from "tape";
+import * as request from "supertest";
 import { NestFactory } from "@nestjs/core";
 import { Module, Controller, Get, Res } from "@nestjs/common";
 import { setupRequireIntegrations } from "../../lib";
