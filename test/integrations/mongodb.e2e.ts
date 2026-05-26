@@ -2,7 +2,7 @@ import { setupRequireIntegrations } from "../../lib";
 setupRequireIntegrations(["mongodb"]);
 
 import { MongoClient } from "mongodb";
-import test from "tape";
+import * as test from "tape";
 import * as TestUtil from "../util";
 import { getIntegrationSymbol } from "../../lib/types/integrations";
 import { ScoutEvent, buildScoutConfiguration } from "../../lib/types";

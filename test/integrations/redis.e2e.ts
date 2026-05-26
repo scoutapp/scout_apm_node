@@ -2,7 +2,7 @@ import { setupRequireIntegrations } from "../../lib";
 setupRequireIntegrations(["redis"]);
 
 import { createClient } from "redis";
-import test from "tape";
+import * as test from "tape";
 import * as TestUtil from "../util";
 import { getIntegrationSymbol } from "../../lib/types/integrations";
 import { ScoutEvent, buildScoutConfiguration } from "../../lib/types";

@@ -1,5 +1,5 @@
-import test from "tape";
-import request from "supertest";
+import * as test from "tape";
+import * as request from "supertest";
 import { Application } from "express";
 import { MockAgent } from "./mock-agent";
 import { scoutMiddleware, ApplicationWithScout } from "../../lib/express";
