@@ -10,10 +10,28 @@ import nuxtIntegration from "./nuxt";
 import httpsIntegration from "./https";
 import ioredisIntegration from "./ioredis";
 import prismaIntegration from "./prisma";
-import redisIntegration from "./redis";
 import fetchIntegration from "./fetch";
+import redisIntegration from "./redis";
 import mongodbIntegration from "./mongodb";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
+
+export const KNOWN_PACKAGES: string[] = [
+    pgIntegration.getPackageName(),
+    mysqlIntegration.getPackageName(),
+    mysql2Integration.getPackageName(),
+    pugIntegration.getPackageName(),
+    mustacheIntegration.getPackageName(),
+    ejsIntegration.getPackageName(),
+    httpIntegration.getPackageName(),
+    expressIntegration.getPackageName(),
+    nuxtIntegration.getPackageName(),
+    httpsIntegration.getPackageName(),
+    ioredisIntegration.getPackageName(),
+    prismaIntegration.getPackageName(),
+    fetchIntegration.getPackageName(),
+    redisIntegration.getPackageName(),
+    mongodbIntegration.getPackageName(),
+];
 
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
     switch (pkg) {
@@ -29,8 +47,8 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case httpsIntegration.getPackageName(): return httpsIntegration;
         case ioredisIntegration.getPackageName(): return ioredisIntegration;
         case prismaIntegration.getPackageName(): return prismaIntegration;
-        case redisIntegration.getPackageName(): return redisIntegration;
         case fetchIntegration.getPackageName(): return fetchIntegration;
+        case redisIntegration.getPackageName(): return redisIntegration;
         case mongodbIntegration.getPackageName(): return mongodbIntegration;
         default: return doNothingRequireIntegration;
     }
