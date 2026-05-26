@@ -1,6 +1,8 @@
 import * as Errors from "./errors";
 
-import { scoutMiddleware as expressMiddleware } from "./express";
+import { scoutMiddleware as expressMiddleware, errorMiddleware } from "./express";
+import { nestMiddleware as nestMiddlewareImpl, nestErrorFilter as nestErrorFilterImpl } from "./nest";
+import { captureError } from "./error-monitor";
 
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
@@ -49,9 +51,15 @@ const API = {
 
     Errors,
 
-    // Ingetrations
+    // Integrations
     setupRequireIntegrations,
     expressMiddleware,
+    errorMiddleware,
+    nestMiddleware: nestMiddlewareImpl,
+    nestErrorFilter: nestErrorFilterImpl,
+
+    // Error monitoring
+    captureError,
 
     // Logging
     consoleLogFn,
