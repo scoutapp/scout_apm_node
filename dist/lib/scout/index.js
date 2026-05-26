@@ -1,40 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Scout = exports.ScoutSpan = exports.ScoutRequest = void 0;
 exports.sendStartRequest = sendStartRequest;
@@ -44,26 +8,27 @@ exports.sendStartSpan = sendStartSpan;
 exports.sendTagSpan = sendTagSpan;
 exports.sendStopSpan = sendStopSpan;
 exports.sendThroughAgent = sendThroughAgent;
+const tslib_1 = require("tslib");
 const events_1 = require("events");
 const async_hooks_1 = require("async_hooks");
-const path = __importStar(require("path"));
-const semver = __importStar(require("semver"));
+const path = tslib_1.__importStar(require("path"));
+const semver = tslib_1.__importStar(require("semver"));
 const fs_extra_1 = require("fs-extra");
 const tcp_port_used_1 = require("tcp-port-used");
-const cpu_percentage_1 = __importDefault(require("cpu-percentage"));
+const cpu_percentage_1 = tslib_1.__importDefault(require("cpu-percentage"));
 const types_1 = require("../types");
 const global_1 = require("../global");
 const integrations_1 = require("../integrations");
-const web_1 = __importDefault(require("../agent-downloaders/web"));
-const external_process_1 = __importDefault(require("../agents/external-process"));
-const Requests = __importStar(require("../protocol/v1/requests"));
-const Constants = __importStar(require("../constants"));
-const Errors = __importStar(require("../errors"));
+const web_1 = tslib_1.__importDefault(require("../agent-downloaders/web"));
+const external_process_1 = tslib_1.__importDefault(require("../agents/external-process"));
+const Requests = tslib_1.__importStar(require("../protocol/v1/requests"));
+const Constants = tslib_1.__importStar(require("../constants"));
+const Errors = tslib_1.__importStar(require("../errors"));
 var request_1 = require("./request");
-Object.defineProperty(exports, "ScoutRequest", { enumerable: true, get: function () { return __importDefault(request_1).default; } });
+Object.defineProperty(exports, "ScoutRequest", { enumerable: true, get: function () { return tslib_1.__importDefault(request_1).default; } });
 var span_1 = require("./span");
-Object.defineProperty(exports, "ScoutSpan", { enumerable: true, get: function () { return __importDefault(span_1).default; } });
-const request_2 = __importDefault(require("./request"));
+Object.defineProperty(exports, "ScoutSpan", { enumerable: true, get: function () { return tslib_1.__importDefault(span_1).default; } });
+const request_2 = tslib_1.__importDefault(require("./request"));
 const DONE_NOTHING = () => undefined;
 const ASYNC_NS = "scout";
 const ASYNC_NS_REQUEST = "request";
@@ -977,8 +942,7 @@ function sendThroughAgent(scout, msg, opts) {
         return Promise.reject(new Errors.MonitoringDisabled());
     }
     if (config.logPayloadContent) {
-        // Use console.log directly — scout.log() is a no-op when no logFn is configured.
-        console.log(`[scout/payload] ${msg.constructor.name}: ${JSON.stringify(msg.json)}`); // tslint:disable-line no-console
+        scout.log(`[scout/payload] ${msg.constructor.name}: ${JSON.stringify(msg.json)}`, types_1.LogLevel.Info);
     }
     if (opts && opts.async) {
         return agent.sendAsync(msg);

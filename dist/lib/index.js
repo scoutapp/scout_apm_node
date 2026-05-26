@@ -1,74 +1,29 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-const Errors = __importStar(require("./errors"));
+const tslib_1 = require("tslib");
+const Errors = tslib_1.__importStar(require("./errors"));
 const express_1 = require("./express");
 const nest_1 = require("./nest");
 const error_monitor_1 = require("./error-monitor");
 const types_1 = require("./types");
 const integrations_1 = require("./integrations");
 const global_1 = require("./global");
-// Set up PG integration
-// This is needed for use in Typescript projects since `import` will not
-// run global code unless you do a whole-file import
-function setupRequireIntegrations(packages, scoutConfig) {
-    packages = packages || [];
-    packages.forEach(name => {
+// When called with no arguments, registers hooks for every known package.
+// When called with a list, registers only those packages.
+// Hooks are no-ops until the package is actually required — safe to call for
+// packages that aren't installed.
+function setupRequireIntegrations(packages) {
+    const list = packages ?? integrations_1.KNOWN_PACKAGES;
+    list.forEach(name => {
         const integration = (0, integrations_1.getIntegrationForPackage)(name);
         if (integration) {
             integration.ritmHook(global_1.EXPORT_BAG);
         }
     });
 }
-// For pure NodeJS contexts this will be run automatically
-setupRequireIntegrations([
-    // Databases
-    "pg",
-    "mysql",
-    "mysql2",
-    // Templating
-    "pug",
-    "mustache",
-    "ejs",
-    // Web frameworks
-    "express",
-    "nuxt",
-    // NodeJS internals
-    "http",
-    "https",
-    "fetch",
-]);
+// Auto-register all known integrations when the module is first loaded.
+// CJS users who require('@scout_apm/scout-apm') before other packages get
+// automatic instrumentation with no further setup.
+setupRequireIntegrations();
 const API = {
     // Configuration building
     buildScoutConfiguration: types_1.buildScoutConfiguration,
@@ -78,6 +33,7 @@ const API = {
     expressMiddleware: express_1.scoutMiddleware,
     errorMiddleware: express_1.errorMiddleware,
     nestMiddleware: nest_1.nestMiddleware,
+    nestErrorFilter: nest_1.nestErrorFilter,
     // Error monitoring
     captureError: error_monitor_1.captureError,
     // Logging
@@ -85,6 +41,14 @@ const API = {
     buildWinstonLogFn: types_1.buildWinstonLogFn,
     // Install scout
     install: global_1.getOrCreateActiveGlobalScoutInstance,
+    // init() — preferred single-call setup.
+    // Registers all RITM hooks synchronously (same as require('@scout_apm/scout-apm')
+    // at the top of your file), then kicks off async Scout setup.
+    // Use this instead of a separate setupRequireIntegrations() + install() pair.
+    init(config) {
+        setupRequireIntegrations();
+        return (0, global_1.getOrCreateActiveGlobalScoutInstance)(config);
+    },
     // instrument
     instrument(op, cb, scout) {
         return (scout ? Promise.resolve(scout.setup()) : (0, global_1.getOrCreateActiveGlobalScoutInstance)())

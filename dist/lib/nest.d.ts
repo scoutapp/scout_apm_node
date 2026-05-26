@@ -26,4 +26,17 @@ export declare class ScoutNestMiddleware {
     constructor(opts?: NestMiddlewareOptions);
     use(req: any, res: any, next: () => void): void;
 }
+/**
+ * Returns a NestJS-compatible global exception filter that captures errors via Scout.
+ *
+ * Does not require @nestjs/common as a dependency — NestJS duck-types the catch() method.
+ *
+ * @example
+ * const { nestErrorFilter } = require("@scout_apm/scout-apm");
+ * // after NestFactory.create():
+ * app.useGlobalFilters(nestErrorFilter());
+ */
+export declare function nestErrorFilter(): {
+    catch(exception: any, host: any): void;
+};
 export {};

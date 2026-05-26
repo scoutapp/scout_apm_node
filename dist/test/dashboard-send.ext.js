@@ -9,53 +9,18 @@
  * NOTE - the tests in here do *NOT* properly shut down the scout instances they use right away,
  * cleanup happens at the end after waiting a certain amount of time to ensure the traces are sent.
  */
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const tape_1 = __importDefault(require("tape"));
-const supertest_1 = __importDefault(require("supertest"));
+const tslib_1 = require("tslib");
+const tape_1 = tslib_1.__importDefault(require("tape"));
+const supertest_1 = tslib_1.__importDefault(require("supertest"));
 const randomstring_1 = require("randomstring");
 const types_1 = require("../lib/types");
 const lib_1 = require("../lib");
 (0, lib_1.setupRequireIntegrations)(["pg", "ejs", "pug"]);
 const scout_1 = require("../lib/scout");
 const express_1 = require("../lib/express");
-const TestUtil = __importStar(require("./util"));
-const TestConstants = __importStar(require("./constants"));
+const TestUtil = tslib_1.__importStar(require("./util"));
+const TestConstants = tslib_1.__importStar(require("./constants"));
 const fixtures_1 = require("./fixtures");
 let PG_CONTAINER_AND_OPTS = null;
 let MYSQL_CONTAINER_AND_OPTS = null;

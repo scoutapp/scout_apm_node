@@ -1,9 +1,7 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const tape_1 = __importDefault(require("tape"));
+const tslib_1 = require("tslib");
+const tape_1 = tslib_1.__importDefault(require("tape"));
 const lib_1 = require("../../lib");
 // The hook for http has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code

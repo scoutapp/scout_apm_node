@@ -1,47 +1,13 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ScoutNestMiddleware = void 0;
 exports.nestMiddleware = nestMiddleware;
-const on_finished_1 = __importDefault(require("on-finished"));
+exports.nestErrorFilter = nestErrorFilter;
+const tslib_1 = require("tslib");
+const on_finished_1 = tslib_1.__importDefault(require("on-finished"));
 const async_hooks_1 = require("async_hooks");
 const types_1 = require("./types");
-const Constants = __importStar(require("./constants"));
+const Constants = tslib_1.__importStar(require("./constants"));
 const global_1 = require("./global");
 const express_1 = require("./express");
 const path_to_regexp_1 = require("path-to-regexp");
@@ -221,3 +187,47 @@ class ScoutNestMiddleware {
     }
 }
 exports.ScoutNestMiddleware = ScoutNestMiddleware;
+/**
+ * Returns a NestJS-compatible global exception filter that captures errors via Scout.
+ *
+ * Does not require @nestjs/common as a dependency — NestJS duck-types the catch() method.
+ *
+ * @example
+ * const { nestErrorFilter } = require("@scout_apm/scout-apm");
+ * // after NestFactory.create():
+ * app.useGlobalFilters(nestErrorFilter());
+ */
+function nestErrorFilter() {
+    return {
+        catch(exception, host) {
+            const { captureError } = require("./error-monitor");
+            const ctx = host.switchToHttp();
+            const req = ctx.getRequest();
+            const res = ctx.getResponse();
+            if (req) {
+                captureError(exception, undefined, {
+                    controller: (req.route && req.route.path) || req.path || null,
+                    action: req.method ? req.method.toUpperCase() : null,
+                    module: null,
+                    requestId: req.scout && req.scout.request ? req.scout.request.requestId : undefined,
+                    requestUrl: req.originalUrl || req.url,
+                    requestParams: (req.query || req.body)
+                        ? Object.assign({}, req.query, req.body)
+                        : undefined,
+                    requestSession: req.session || undefined,
+                });
+            }
+            else {
+                captureError(exception);
+            }
+            // Determine HTTP status — NestJS HttpException carries getStatus()
+            const status = exception && typeof exception.getStatus === "function"
+                ? exception.getStatus()
+                : 500;
+            const message = exception instanceof Error
+                ? exception.message
+                : typeof exception === "string" ? exception : "Internal server error";
+            res.status(status).json({ statusCode: status, message });
+        },
+    };
+}
