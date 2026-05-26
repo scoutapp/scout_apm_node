@@ -42,6 +42,7 @@ export interface ScoutConfiguration {
     httpProxy: string;
     allowShutdown: boolean;
     monitor: boolean;
+    host: string;
     framework: string;
     frameworkVersion: string;
     apiVersion: string;

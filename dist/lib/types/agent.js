@@ -97,6 +97,9 @@ class ProcessOptions {
             if (opts.proxyUrl) {
                 this.proxyUrl = opts.proxyUrl;
             }
+            if (opts.ingestUrl) {
+                this.ingestUrl = opts.ingestUrl;
+            }
             if (opts.sendTimeoutMs) {
                 this.sendTimeoutMs = opts.sendTimeoutMs;
             }
