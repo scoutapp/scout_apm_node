@@ -1,4 +1,4 @@
-import onFinished from "on-finished";
+import * as onFinished from "on-finished";
 import { AsyncResource } from "async_hooks";
 import {
     LogFn,
