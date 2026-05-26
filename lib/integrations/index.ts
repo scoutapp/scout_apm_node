@@ -11,6 +11,7 @@ import httpsIntegration from "./https";
 import ioredisIntegration from "./ioredis";
 import prismaIntegration from "./prisma";
 import redisIntegration from "./redis";
+import fetchIntegration from "./fetch";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
 
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
@@ -28,6 +29,7 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case ioredisIntegration.getPackageName(): return ioredisIntegration;
         case prismaIntegration.getPackageName(): return prismaIntegration;
         case redisIntegration.getPackageName(): return redisIntegration;
+        case fetchIntegration.getPackageName(): return fetchIntegration;
         default: return doNothingRequireIntegration;
     }
 }
