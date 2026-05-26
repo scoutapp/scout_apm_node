@@ -8,7 +8,7 @@
     "experimentalDecorators": true,
     "strict": true,
     "skipLibCheck": true,
-    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "strictPropertyInitialization": false,
     "noImplicitAny": false,
     "lib": [ "es2017", "dom" ]
