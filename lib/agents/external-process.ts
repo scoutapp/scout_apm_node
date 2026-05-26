@@ -626,6 +626,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (this.opts.configFilePath) { args.push("--config-file", this.opts.configFilePath); }
         if (this.opts.logLevel) { args.push("--log-level", this.opts.logLevel); }
         if (this.opts.proxyUrl) { args.push("--proxy", this.opts.proxyUrl); }
+        if (this.opts.ingestUrl) { args.push("--ingest-url", this.opts.ingestUrl); }
 
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, LogLevel.Debug);
