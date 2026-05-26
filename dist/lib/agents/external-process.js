@@ -548,6 +548,9 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if (this.opts.logLevel) {
             args.push("--log-level", this.opts.logLevel);
         }
+        if (this.opts.proxyUrl) {
+            args.push("--proxy", this.opts.proxyUrl);
+        }
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, types_1.LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, types_1.LogLevel.Debug);
         this.detachedProcess = (0, child_process_1.spawn)(this.opts.binPath, args, {
