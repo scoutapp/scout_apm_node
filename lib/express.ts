@@ -120,6 +120,7 @@ export interface ApplicationWithScout {
 }
 
 type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
+type ExpressErrorMiddleware = (err: any, req: any, res: any, next: (err?: any) => void) => void;
 
 export interface ExpressMiddlewareOptions {
     config?: Partial<ScoutConfiguration>;
@@ -438,5 +439,30 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
                 next();
             });
+    };
+}
+
+/**
+ * Express 4-arg error-handling middleware.
+ * Place after all other app.use()/routes so Express routes errors through it.
+ * Captures the error to Scout error monitoring, then calls next(err) so the
+ * default Express error handler (or any downstream handler) still runs.
+ */
+export function errorMiddleware(): ExpressErrorMiddleware {
+    return (err: any, req: any, res: any, next: (err?: any) => void) => {
+        if (err) {
+            const { captureError } = require("./error-monitor");
+            const error = err instanceof Error ? err : new Error(String(err));
+
+            const requestInfo = req ? {
+                id: req.scout && req.scout.request ? req.scout.request.requestId : undefined,
+                url: req.originalUrl || req.url,
+                params: req.query || req.body ? Object.assign({}, req.query, req.body) : undefined,
+                session: req.session || undefined,
+            } : undefined;
+
+            captureError(error, { request: requestInfo });
+        }
+        next(err);
     };
 }

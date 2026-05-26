@@ -2,6 +2,7 @@ import { Scout, ScoutOptions } from "./scout";
 import { buildScoutConfiguration, LogLevel, ScoutConfiguration, ScoutEvent } from "./types";
 import { ExportBag } from "./types/integrations";
 import * as Errors from "./errors";
+import { setupErrorMonitoring } from "./error-monitor";
 
 // Create an export bag which will contain exports modified by scout
 export const EXPORT_BAG: ExportBag = {};
@@ -81,8 +82,10 @@ export function getOrCreateActiveGlobalScoutInstance(
 
     if (!config && LAST_USED_CONFIG) { config = LAST_USED_CONFIG; }
 
-    const instance = new Scout(buildScoutConfiguration(config), opts);
+    const builtConfig = buildScoutConfiguration(config);
+    const instance = new Scout(builtConfig, opts);
     setActiveGlobalScoutInstance(instance);
+    setupErrorMonitoring(builtConfig);
 
     // Set up a listener if the global instance is ever shut down
     instance.on(ScoutEvent.Shutdown, () => {

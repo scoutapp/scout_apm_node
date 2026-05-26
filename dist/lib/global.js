@@ -2,7 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const scout_1 = require("./scout");
 const types_1 = require("./types");
-const Errors = require("./errors");
+const Errors = __importStar(require("./errors"));
+const error_monitor_1 = require("./error-monitor");
 // Create an export bag which will contain exports modified by scout
 exports.EXPORT_BAG = {};
 // Global scout instance
@@ -78,8 +79,10 @@ function getOrCreateActiveGlobalScoutInstance(config, opts) {
     if (!config && LAST_USED_CONFIG) {
         config = LAST_USED_CONFIG;
     }
-    const instance = new scout_1.Scout(types_1.buildScoutConfiguration(config), opts);
+    const builtConfig = (0, types_1.buildScoutConfiguration)(config);
+    const instance = new scout_1.Scout(builtConfig, opts);
     setActiveGlobalScoutInstance(instance);
+    (0, error_monitor_1.setupErrorMonitoring)(builtConfig);
     // Set up a listener if the global instance is ever shut down
     instance.on(types_1.ScoutEvent.Shutdown, () => {
         instance.log("[scout/global] The global instance has shut down, clearing global singleton", types_1.LogLevel.Warn);
