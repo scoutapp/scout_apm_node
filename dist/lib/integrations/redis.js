@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RedisIntegration = void 0;
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 // String key avoids TypeScript symbol-indexing friction across proto chain

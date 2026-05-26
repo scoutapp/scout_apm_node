@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PrismaIntegration = void 0;
+const tslib_1 = require("tslib");
 const async_hooks_1 = require("async_hooks");
 const crypto_1 = require("crypto");
 const integrations_1 = require("../types/integrations");
@@ -22,11 +22,12 @@ class PrismaIntegration extends integrations_1.RequireIntegration {
         return prismaExport;
     }
     getPrismaMajorVersion(prismaExport) {
+        var _a, _b, _c, _d;
         try {
-            const version = prismaExport?.Prisma?.prismaVersion?.client ?? "";
+            const version = (_d = (_c = (_b = (_a = prismaExport) === null || _a === void 0 ? void 0 : _a.Prisma) === null || _b === void 0 ? void 0 : _b.prismaVersion) === null || _c === void 0 ? void 0 : _c.client, (_d !== null && _d !== void 0 ? _d : ""));
             return parseInt(version.split(".")[0], 10) || 0;
         }
-        catch {
+        catch (_e) {
             return 0;
         }
     }
@@ -58,8 +59,9 @@ class PrismaIntegration extends integrations_1.RequireIntegration {
             // (stored in AsyncLocalStorage by runInChildSpan) so the Rust engine
             // enables its internal tracing and trace() returns spans with db.statement.
             // Outside of an active operation we return the no-op sentinel.
-            getTraceParent: (_ctx) => {
-                return storage.getStore()?.traceparent ?? "00-10-10-00";
+            getTraceParent: (ctx) => {
+                var _a, _b;
+                return _b = (_a = storage.getStore()) === null || _a === void 0 ? void 0 : _a.traceparent, (_b !== null && _b !== void 0 ? _b : "00-10-10-00");
             },
             // OTel context plumbing — not needed without an OTel SDK.
             getActiveContext: () => ({}),
@@ -73,17 +75,18 @@ class PrismaIntegration extends integrations_1.RequireIntegration {
                 // Generate a valid sampled W3C traceparent for this operation.
                 // This causes the Rust engine to collect internal spans and return
                 // them via trace(requestId), which feeds dispatchEngineSpans.
-                const traceparent = `00-${(0, crypto_1.randomBytes)(16).toString("hex")}-${(0, crypto_1.randomBytes)(8).toString("hex")}-01`;
+                const traceparent = `00-${crypto_1.randomBytes(16).toString("hex")}-${crypto_1.randomBytes(8).toString("hex")}-01`;
                 const sqlStore = { sql: null, traceparent };
-                return integration.scout.instrument(types_1.ScoutSpanOperation.SQLQuery, async (done) => {
-                    const span = integration.scout?.getCurrentSpan() ?? null;
+                return integration.scout.instrument(types_1.ScoutSpanOperation.SQLQuery, (done) => tslib_1.__awaiter(this, void 0, void 0, function* () {
+                    var _a, _b, _c;
+                    const span = (_b = (_a = integration.scout) === null || _a === void 0 ? void 0 : _a.getCurrentSpan(), (_b !== null && _b !== void 0 ? _b : null));
                     try {
                         // Run the Prisma operation inside the AsyncLocalStorage context.
                         // dispatchEngineSpans fires within this same Promise chain and
                         // writes the SQL back into sqlStore via storage.getStore().
-                        const result = await storage.run(sqlStore, () => callback());
+                        const result = yield storage.run(sqlStore, () => callback());
                         if (span) {
-                            await span.addContext(types_1.ScoutContextName.DBStatement, sqlStore.sql ?? "(unknown)");
+                            yield span.addContext(types_1.ScoutContextName.DBStatement, (_c = sqlStore.sql, (_c !== null && _c !== void 0 ? _c : "(unknown)")));
                         }
                         done();
                         integration.logFn(`[scout/integrations/prisma] operation completed`, types_1.LogLevel.Trace);
@@ -96,17 +99,19 @@ class PrismaIntegration extends integrations_1.RequireIntegration {
                         }
                         throw err;
                     }
-                });
+                }));
             },
             // Called by Prisma after the engine executes SQL. spans contains the
             // full trace tree; prisma:engine:db_query carries the raw parameterized
             // SQL. Prisma 6.19+ uses db.query.text (updated OTel semconv); older
             // Prisma 6.x used db.statement. Check both.
             dispatchEngineSpans(spans) {
+                var _a, _b, _c, _d, _e;
                 const dbQuery = spans.find(s => s.name === "prisma:engine:db_query");
-                const sql = (dbQuery?.attributes?.["db.query.text"] ?? dbQuery?.attributes?.["db.statement"]);
-                if (!sql)
+                const sql = (_c = (_b = (_a = dbQuery) === null || _a === void 0 ? void 0 : _a.attributes) === null || _b === void 0 ? void 0 : _b["db.query.text"], (_c !== null && _c !== void 0 ? _c : (_e = (_d = dbQuery) === null || _d === void 0 ? void 0 : _d.attributes) === null || _e === void 0 ? void 0 : _e["db.statement"]));
+                if (!sql) {
                     return;
+                }
                 const store = storage.getStore();
                 if (store) {
                     store.sql = sql;

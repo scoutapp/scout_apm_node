@@ -1,86 +1,42 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+const tslib_1 = require("tslib");
 require("reflect-metadata");
-const tape_1 = __importDefault(require("tape"));
-const supertest_1 = __importDefault(require("supertest"));
+const test = require("tape");
+const request = require("supertest");
 const core_1 = require("@nestjs/core");
 const common_1 = require("@nestjs/common");
 const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
 const scout_1 = require("../../lib/scout");
 const nest_1 = require("../../lib/nest");
-const TestUtil = __importStar(require("../util"));
-(0, lib_1.setupRequireIntegrations)(["mustache", "http"]);
+const TestUtil = require("../util");
+lib_1.setupRequireIntegrations(["mustache", "http"]);
 const TIMEOUT = 15000;
 // ── Shared test controllers ───────────────────────────────────────────────────
 let BasicController = class BasicController {
     home() { return { status: "ok" }; }
     item() { return { status: "ok" }; }
 };
-__decorate([
-    (0, common_1.Get)("/"),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+tslib_1.__decorate([
+    common_1.Get("/"),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", []),
+    tslib_1.__metadata("design:returntype", void 0)
 ], BasicController.prototype, "home", null);
-__decorate([
-    (0, common_1.Get)("/items/:id"),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+tslib_1.__decorate([
+    common_1.Get("/items/:id"),
+    tslib_1.__metadata("design:type", Function),
+    tslib_1.__metadata("design:paramtypes", []),
+    tslib_1.__metadata("design:returntype", void 0)
 ], BasicController.prototype, "item", null);
-BasicController = __decorate([
-    (0, common_1.Controller)()
+BasicController = tslib_1.__decorate([
+    common_1.Controller()
 ], BasicController);
 let BasicModule = class BasicModule {
 };
-BasicModule = __decorate([
-    (0, common_1.Module)({ controllers: [BasicController] })
+BasicModule = tslib_1.__decorate([
+    common_1.Module({ controllers: [BasicController] })
 ], BasicModule);
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function nextRequestSent(scout, skipCount = 0) {
@@ -106,67 +62,71 @@ function nextRequestSent(scout, skipCount = 0) {
     });
 }
 // ── Tests ─────────────────────────────────────────────────────────────────────
-(0, tape_1.default)("nestMiddleware is a function", (t) => {
+test("nestMiddleware is a function", (t) => {
     t.equal(typeof nest_1.nestMiddleware, "function", "nestMiddleware is exported");
-    t.equal(typeof (0, nest_1.nestMiddleware)(), "function", "nestMiddleware() returns a middleware function");
+    t.equal(typeof nest_1.nestMiddleware(), "function", "nestMiddleware() returns a middleware function");
     t.end();
 });
-(0, tape_1.default)("NestJS app instruments root route", { timeout: TIMEOUT }, (t) => {
-    const config = (0, types_1.buildScoutConfiguration)({ allowShutdown: true, monitor: true });
+test("NestJS app instruments root route", { timeout: TIMEOUT }, (t) => {
+    const config = types_1.buildScoutConfiguration({ allowShutdown: true, monitor: true });
     const scout = new scout_1.Scout(config);
     let nestApp;
     core_1.NestFactory.create(BasicModule, { logger: false })
         .then((app) => {
         nestApp = app;
-        app.use((0, nest_1.nestMiddleware)({ scout, requestTimeoutMs: 0, waitForScoutSetup: true }));
+        app.use(nest_1.nestMiddleware({ scout, requestTimeoutMs: 0, waitForScoutSetup: true }));
         return app.init();
     })
-        .then(() => (0, supertest_1.default)(nestApp.getHttpServer()).get("/").expect(200))
+        .then(() => request(nestApp.getHttpServer()).get("/").expect(200))
         .then(() => {
         const sentPromise = nextRequestSent(scout, 1);
-        (0, supertest_1.default)(nestApp.getHttpServer()).get("/").end(() => undefined);
+        request(nestApp.getHttpServer()).get("/").end(() => undefined);
         return sentPromise;
     })
         .then((data) => {
+        var _a;
         const spans = data.request.getChildSpansSync();
         const ctrl = spans.find((s) => s.operation.startsWith("Controller/GET"));
         t.ok(ctrl, "Controller/GET span present");
-        t.equal(ctrl?.operation, "Controller/GET /", "operation is Controller/GET /");
+        t.equal((_a = ctrl) === null || _a === void 0 ? void 0 : _a.operation, "Controller/GET /", "operation is Controller/GET /");
     })
         .then(() => nestApp.close())
         .then(() => TestUtil.shutdownScout(t, scout))
         .catch((err) => {
-        nestApp?.close().catch(() => undefined);
+        var _a;
+        (_a = nestApp) === null || _a === void 0 ? void 0 : _a.close().catch(() => undefined);
         TestUtil.shutdownScout(t, scout, err);
     });
 });
-(0, tape_1.default)("NestJS parameterised route captures pattern not value", { timeout: TIMEOUT }, (t) => {
-    const config = (0, types_1.buildScoutConfiguration)({ allowShutdown: true, monitor: true });
+test("NestJS parameterised route captures pattern not value", { timeout: TIMEOUT }, (t) => {
+    const config = types_1.buildScoutConfiguration({ allowShutdown: true, monitor: true });
     const scout = new scout_1.Scout(config);
     let nestApp;
     core_1.NestFactory.create(BasicModule, { logger: false })
         .then((app) => {
         nestApp = app;
-        app.use((0, nest_1.nestMiddleware)({ scout, requestTimeoutMs: 0, waitForScoutSetup: true }));
+        app.use(nest_1.nestMiddleware({ scout, requestTimeoutMs: 0, waitForScoutSetup: true }));
         return app.init();
     })
-        .then(() => (0, supertest_1.default)(nestApp.getHttpServer()).get("/").expect(200))
+        .then(() => request(nestApp.getHttpServer()).get("/").expect(200))
         .then(() => {
         const sentPromise = nextRequestSent(scout, 1);
-        (0, supertest_1.default)(nestApp.getHttpServer()).get("/items/42").end(() => undefined);
+        request(nestApp.getHttpServer()).get("/items/42").end(() => undefined);
         return sentPromise;
     })
         .then((data) => {
+        var _a, _b, _c;
         const spans = data.request.getChildSpansSync();
         const ctrl = spans.find((s) => s.operation.startsWith("Controller/GET"));
         t.ok(ctrl, "Controller span created");
-        t.ok(ctrl?.operation.includes(":id"), `includes :id pattern — got ${ctrl?.operation}`);
-        t.notOk(ctrl?.operation.includes("42"), "concrete value 42 not in operation");
+        t.ok((_a = ctrl) === null || _a === void 0 ? void 0 : _a.operation.includes(":id"), `includes :id pattern — got ${(_b = ctrl) === null || _b === void 0 ? void 0 : _b.operation}`);
+        t.notOk((_c = ctrl) === null || _c === void 0 ? void 0 : _c.operation.includes("42"), "concrete value 42 not in operation");
     })
         .then(() => nestApp.close())
         .then(() => TestUtil.shutdownScout(t, scout))
         .catch((err) => {
-        nestApp?.close().catch(() => undefined);
+        var _a;
+        (_a = nestApp) === null || _a === void 0 ? void 0 : _a.close().catch(() => undefined);
         TestUtil.shutdownScout(t, scout, err);
     });
 });

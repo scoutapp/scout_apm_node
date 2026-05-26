@@ -2,6 +2,7 @@
 import { Options as GenericPoolOptions } from "generic-pool";
 import { AgentRequestType, AgentResponseType, AgentType, LogLevel } from "./enum";
 import { JSONValue } from "./util";
+import { Buffer } from "buffer";
 /**
  * Scout APM Agent which handles communicating with a local/remote Scout Core Agent process
  * to relay performance and monitoring information

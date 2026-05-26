@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MongoDBIntegration = void 0;
 const integrations_1 = require("../types/integrations");
 const types_1 = require("../types");
 const SKIP_COMMANDS = new Set([
@@ -10,7 +9,7 @@ const SKIP_COMMANDS = new Set([
 // Max in-flight entries; prevents unbounded growth when connections die without emitting commandFailed.
 const MAX_IN_FLIGHT = 1000;
 function scrubCommand(command) {
-    return JSON.stringify(command, (_key, value) => {
+    return JSON.stringify(command, (key, value) => {
         if (value === null || typeof value !== "object") {
             return "?";
         }
@@ -34,7 +33,7 @@ class MongoDBIntegration extends integrations_1.RequireIntegration {
         const PatchedMongoClient = new Proxy(OriginalMongoClient, {
             construct(target, args) {
                 const [url, options, ...rest] = args;
-                const instance = new target(url, { ...options, monitorCommands: true }, ...rest);
+                const instance = new target(url, Object.assign(Object.assign({}, options), { monitorCommands: true }), ...rest);
                 integration.attachCommandMonitor(instance);
                 return instance;
             },
@@ -52,6 +51,7 @@ class MongoDBIntegration extends integrations_1.RequireIntegration {
         const inFlight = new Map();
         const integration = this;
         client.on("commandStarted", (event) => {
+            var _a;
             if (!integration.scout) {
                 return;
             }
@@ -67,7 +67,7 @@ class MongoDBIntegration extends integrations_1.RequireIntegration {
                 }
             }
             const key = `${event.connectionId}:${event.requestId}`;
-            const collection = String(event.command[event.commandName] ?? "unknown");
+            const collection = String((_a = event.command[event.commandName], (_a !== null && _a !== void 0 ? _a : "unknown")));
             const op = `MongoDB/${collection}/${event.commandName}`;
             const stmt = scrubCommand(event.command);
             integration.scout.instrument(op, (done) => {

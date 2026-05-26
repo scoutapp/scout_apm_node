@@ -8,7 +8,7 @@ const Constants = require("../../lib/constants");
 const types_1 = require("../../lib/types");
 const web_1 = require("../../lib/agent-downloaders/web");
 const SKIP_DOWNLOAD_TESTS = process.env.ENABLE_BINARY_TESTS !== "true";
-(0, tape_1.default)("download works (v1.1.8)", { skip: SKIP_DOWNLOAD_TESTS }, t => {
+test("download works (v1.1.8)", { skip: SKIP_DOWNLOAD_TESTS }, t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     downloader
@@ -17,7 +17,7 @@ const SKIP_DOWNLOAD_TESTS = process.env.ENABLE_BINARY_TESTS !== "true";
         .then(() => t.end())
         .catch(t.end);
 });
-(0, tape_1.default)("cache is updated by download (v1.1.8)", { skip: SKIP_DOWNLOAD_TESTS }, t => {
+test("cache is updated by download (v1.1.8)", { skip: SKIP_DOWNLOAD_TESTS }, t => {
     const opts = {
         cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
         updateCache: true,
@@ -46,7 +46,7 @@ const SKIP_DOWNLOAD_TESTS = process.env.ENABLE_BINARY_TESTS !== "true";
         .then(() => t.end())
         .catch(t.end);
 });
-(0, tape_1.default)("cache is used by second download (v1.1.8)", { skip: SKIP_DOWNLOAD_TESTS }, t => {
+test("cache is used by second download (v1.1.8)", { skip: SKIP_DOWNLOAD_TESTS }, t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     const opts = { updateCache: true };
@@ -75,7 +75,7 @@ const SKIP_DOWNLOAD_TESTS = process.env.ENABLE_BINARY_TESTS !== "true";
         .catch(t.end);
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
-(0, tape_1.default)("download works with a custom root URL + agent full name", { skip: SKIP_DOWNLOAD_TESTS }, t => {
+test("download works with a custom root URL + agent full name", { skip: SKIP_DOWNLOAD_TESTS }, t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     const opts = {
@@ -93,7 +93,7 @@ const SKIP_DOWNLOAD_TESTS = process.env.ENABLE_BINARY_TESTS !== "true";
         .catch(t.end);
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
-(0, tape_1.default)("download fails with invalid custom URL", { skip: SKIP_DOWNLOAD_TESTS }, t => {
+test("download fails with invalid custom URL", { skip: SKIP_DOWNLOAD_TESTS }, t => {
     const downloader = new web_1.WebAgentDownloader();
     const version = new types_1.CoreAgentVersion("1.1.8");
     const coreAgentDir = "/tmp/scout_apm_core";

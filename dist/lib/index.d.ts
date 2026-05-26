@@ -1,11 +1,11 @@
 import * as Errors from "./errors";
 import { scoutMiddleware as expressMiddleware, errorMiddleware } from "./express";
-import { nestMiddleware as nestMiddlewareImpl } from "./nest";
+import { nestMiddleware as nestMiddlewareImpl, nestErrorFilter as nestErrorFilterImpl } from "./nest";
 import { captureError } from "./error-monitor";
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
 import { getOrCreateActiveGlobalScoutInstance } from "./global";
-declare function setupRequireIntegrations(packages: string[], scoutConfig?: Partial<ScoutConfiguration>): void;
+declare function setupRequireIntegrations(packages?: string[]): void;
 declare const API: {
     buildScoutConfiguration: typeof buildScoutConfiguration;
     Errors: typeof Errors;
@@ -13,10 +13,12 @@ declare const API: {
     expressMiddleware: typeof expressMiddleware;
     errorMiddleware: typeof errorMiddleware;
     nestMiddleware: typeof nestMiddlewareImpl;
+    nestErrorFilter: typeof nestErrorFilterImpl;
     captureError: typeof captureError;
     consoleLogFn: typeof consoleLogFn;
     buildWinstonLogFn: typeof buildWinstonLogFn;
     install: typeof getOrCreateActiveGlobalScoutInstance;
+    init(config: Partial<ScoutConfiguration>): Promise<Scout>;
     instrument(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;
     instrumentSync(op: string, cb: SpanCallback, scout?: Scout | undefined): Promise<any>;
     api: {

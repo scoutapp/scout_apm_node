@@ -1,52 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TestContainerStartOpts = exports.MEMORY_LEAK_TEST_TIMEOUT_MS = exports.DASHBOARD_SEND_TIMEOUT_MS = exports.MYSQL_TEST_TIMEOUT_MS = exports.PG_TEST_TIMEOUT_MS = exports.EXPRESS_TEST_TIMEOUT_MS = void 0;
-exports.bootstrapExternalProcessAgent = bootstrapExternalProcessAgent;
-exports.initializeAgent = initializeAgent;
-exports.waitMs = waitMs;
-exports.waitMinutes = waitMinutes;
-exports.cleanup = cleanup;
-exports.waitForAgentBufferFlush = waitForAgentBufferFlush;
-exports.shutdownScout = shutdownScout;
-exports.shutdownScoutAndMock = shutdownScoutAndMock;
-exports.simpleExpressApp = simpleExpressApp;
-exports.simpleDynamicSegmentExpressApp = simpleDynamicSegmentExpressApp;
-exports.simpleErrorApp = simpleErrorApp;
-exports.simpleHTML5BoilerplateApp = simpleHTML5BoilerplateApp;
-exports.simpleInstrumentApp = simpleInstrumentApp;
-exports.appWithGETSynchronousError = appWithGETSynchronousError;
-exports.appWithHTTPProxyMiddleware = appWithHTTPProxyMiddleware;
-exports.queryAndRenderRandomNumbers = queryAndRenderRandomNumbers;
-exports.appWithRouterGET = appWithRouterGET;
-exports.testConfigurationOverlay = testConfigurationOverlay;
-exports.buildCoreAgentSocketResponse = buildCoreAgentSocketResponse;
-exports.buildTestScoutInstance = buildTestScoutInstance;
-exports.getOrStartSharedMock = getOrStartSharedMock;
-exports.buildTestScoutInstanceWithMock = buildTestScoutInstanceWithMock;
-exports.startContainer = startContainer;
-exports.killContainer = killContainer;
-exports.startContainerizedPostgresTest = startContainerizedPostgresTest;
-exports.stopContainerizedInstanceTest = stopContainerizedInstanceTest;
-exports.stopContainerizedPostgresTest = stopContainerizedPostgresTest;
-exports.makeConnectedPGClient = makeConnectedPGClient;
-exports.makePGConnectionString = makePGConnectionString;
-exports.createClientCollectingServer = createClientCollectingServer;
-exports.startContainerizedMySQLTest = startContainerizedMySQLTest;
-exports.stopContainerizedMySQLTest = stopContainerizedMySQLTest;
-exports.makeConnectedMySQLConnection = makeConnectedMySQLConnection;
-exports.makeConnectedMySQL2Connection = makeConnectedMySQL2Connection;
-exports.minimal = minimal;
-const path = __importStar(require("path"));
-const tmp = __importStar(require("tmp-promise"));
-const express_1 = __importDefault(require("express"));
-const net = __importStar(require("net"));
+const tslib_1 = require("tslib");
+const path = require("path");
+const tmp = require("tmp-promise");
+const express = require("express");
+const net = require("net");
 const randomstring_1 = require("randomstring");
 const promise_timeout_1 = require("promise-timeout");
 const child_process_1 = require("child_process");
 const pg_1 = require("pg");
 const mysql_1 = require("mysql");
 const mysql2_1 = require("mysql2");
-const ConnectionConfig = require("mysql2/lib/connection_config");
 const Constants = require("../lib/constants");
 const external_process_1 = require("../lib/agents/external-process");
 const web_1 = require("../lib/agent-downloaders/web");
@@ -158,13 +122,14 @@ function shutdownScout(t, scout, err) {
     })
         .catch(() => t.end(err));
 }
+exports.shutdownScout = shutdownScout;
 // Helper to shut down scout and a mock agent together
 function shutdownScoutAndMock(t, scout, mockAgent, err) {
     return shutdownScout(t, scout, err)
         .then(() => mockAgent ? mockAgent.stop() : Promise.resolve())
         .catch(() => mockAgent ? mockAgent.stop() : Promise.resolve());
 }
-exports.shutdownScout = shutdownScout;
+exports.shutdownScoutAndMock = shutdownScoutAndMock;
 // Make a simple express application that just returns
 // some JSON ({status: "success"}) after waiting a certain amount of milliseconds if provided
 function simpleExpressApp(middleware, delayMs = 0) {
@@ -384,29 +349,34 @@ function buildTestScoutInstance(configOverride, options) {
     const cfg = types_1.buildScoutConfiguration(Object.assign({ allowShutdown: true, monitor: true }, configOverride));
     return new scout_1.Scout(cfg, options);
 }
+exports.buildTestScoutInstance = buildTestScoutInstance;
 // Module-level shared MockAgent for tests that need a real socket
-let _sharedMock;
-let _sharedMockReady;
+let sharedMock;
+let sharedMockReady;
 function getOrStartSharedMock() {
-    if (!_sharedMock) {
-        _sharedMock = new mock_agent_1.MockAgent();
-        _sharedMockReady = _sharedMock.start().then(() => _sharedMock);
+    if (!sharedMock) {
+        sharedMock = new mock_agent_1.MockAgent();
+        sharedMockReady = sharedMock.start().then(() => sharedMock);
     }
-    return _sharedMockReady;
+    return sharedMockReady;
 }
+exports.getOrStartSharedMock = getOrStartSharedMock;
 // Async helper: starts a fresh MockAgent for one test, creates a Scout pointed at it
-async function buildTestScoutInstanceWithMock(configOverride, options) {
-    const mockAgent = new mock_agent_1.MockAgent();
-    await mockAgent.start();
-    const cfg = (0, types_1.buildScoutConfiguration)(Object.assign({
-        allowShutdown: true,
-        monitor: true,
-        coreAgentLaunch: false,
-        coreAgentDownload: false,
-        socketPath: mockAgent.socketPath(),
-    }, configOverride));
-    return { scout: new scout_1.Scout(cfg, options), mockAgent };
+function buildTestScoutInstanceWithMock(configOverride, options) {
+    return tslib_1.__awaiter(this, void 0, void 0, function* () {
+        const mockAgent = new mock_agent_1.MockAgent();
+        yield mockAgent.start();
+        const cfg = types_1.buildScoutConfiguration(Object.assign({
+            allowShutdown: true,
+            monitor: true,
+            coreAgentLaunch: false,
+            coreAgentDownload: false,
+            socketPath: mockAgent.socketPath(),
+        }, configOverride));
+        return { scout: new scout_1.Scout(cfg, options), mockAgent };
+    });
 }
+exports.buildTestScoutInstanceWithMock = buildTestScoutInstanceWithMock;
 class TestContainerStartOpts {
     constructor(opts) {
         this.dockerBinPath = process.env.DOCKER_BIN_PATH || "/usr/bin/docker";
@@ -849,15 +819,13 @@ function makeConnectedMySQL2Connection(provider) {
     if (!cao) {
         return Promise.reject(new Error("no CAO in provider"));
     }
-    const config = new ConnectionConfig({
+    const conn = mysql2_1.createConnection({
         user: "root",
         password: "mysql",
         host: "localhost",
         port: cao.opts.portBinding[3306],
-        // Connect timeout to enable using this as a check in waitFor
         connectTimeout: 9999,
     });
-    const conn = new mysql2_1.Connection({ config });
     // We have to ignore errors that are emitted by the mysl2 Connection object
     // because they will crash the node runtime otherwise.
     // Unsucessful creation attempts will hang until they crash
