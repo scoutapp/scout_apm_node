@@ -1,6 +1,24 @@
 import { LogFn, ScoutConfiguration } from "./types";
 import { Scout, ScoutRequest, ScoutSpan } from "./scout";
 import { Request } from "express";
+export interface EndpointInfo {
+    path: string;
+    methods: string[];
+    middleware?: string[];
+    regex?: RegExp;
+}
+/**
+ * List all endpoints registered on an Express app.
+ * Works with both Express 4 and Express 5.
+ *
+ * Express 5 changed the internal router structure:
+ * - app.router instead of app._router
+ * - layer.matchers[] instead of layer.regexp
+ *
+ * The express-list-endpoints library doesn't support Express 5,
+ * so we implement our own walker for Express 5 and fall back to the library for Express 4.
+ */
+export declare function listExpressEndpoints(app: any): EndpointInfo[];
 export interface ApplicationWithScout {
     scout?: Scout;
 }
@@ -32,8 +50,11 @@ export declare function scoutMiddleware(opts?: ExpressMiddlewareOptions): Expres
 /**
  * Express 4-arg error-handling middleware.
  * Place after all other app.use()/routes so Express routes errors through it.
- * Captures the error to Scout error monitoring, then calls next(err) so the
- * default Express error handler (or any downstream handler) still runs.
+ * Captures the error to Scout error monitoring with location auto-detected from
+ * the request, then calls next(err) so downstream handlers still run.
+ *
+ * @example
+ * app.use(errorMiddleware())
  */
 export declare function errorMiddleware(): ExpressErrorMiddleware;
 export {};
