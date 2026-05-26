@@ -1,7 +1,8 @@
 import * as test from "tape";
 import * as path from "path";
 import * as request from "supertest";
-import express, { Application, Request, Response } from "express";
+import * as express from "express";
+import { Application, Request, Response } from "express";
 import { get as getRootDir } from "app-root-dir";
 
 import { MockAgent } from "./mock-agent";
