@@ -19,7 +19,8 @@ jobs:
         with:
           node-version: 20
           cache: yarn
-      - run: yarn install --frozen-lockfile
+      - run: yarn install
+      - run: yarn generate
       - run: yarn build
       - run: yarn lint
 
@@ -37,7 +38,8 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
-      - run: yarn install --frozen-lockfile
+      - run: yarn install
+      - run: yarn generate
       - run: yarn build
       - run: yarn test-unit
 
@@ -109,7 +111,8 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
-      - run: yarn install --frozen-lockfile
+      - run: yarn install
+      - run: yarn generate
       - name: Install Express ${{ matrix.express }}
         run: npm install --no-save express@"${{ matrix.express }}"
       - run: yarn build
@@ -142,7 +145,8 @@ jobs:
         with:
           node-version: 20
           cache: yarn
-      - run: yarn install --frozen-lockfile
+      - run: yarn install
+      - run: yarn generate
       - run: yarn build
       - name: Build and test ${{ matrix.name }} app
         if: hashFiles(matrix.dockerfile) != ''
