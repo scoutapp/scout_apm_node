@@ -40,7 +40,12 @@
     "test-integration-ejs": "tape 'dist/test/integrations/ejs.e2e.js'",
     "test-integration-express": "tape 'dist/test/integrations/express.e2e.js'",
     "test-integration-nuxt": "tape 'dist/test/integrations/nuxt.e2e.js'",
-    "test-integration-nest": "tape 'dist/test/integrations/nest.e2e.js'"
+    "test-integration-ioredis": "tape 'dist/test/integrations/ioredis.e2e.js'",
+    "test-integration-nest": "tape 'dist/test/integrations/nest.e2e.js'",
+    "test-integration-prisma": "tape 'dist/test/integrations/prisma.e2e.js'",
+    "test-integration-redis": "tape 'dist/test/integrations/redis.e2e.js'",
+    "test-integration-mongodb": "tape 'dist/test/integrations/mongodb.e2e.js'",
+    "generate": "prisma generate"
   },
   "types": "dist/lib/index.d.ts",
   "files": [
@@ -63,6 +68,7 @@
     "http-proxy-middleware": "^2.0.7",
     "ioredis": "^5.0.0",
     "loadtest": "^8.0.9",
+    "mongodb": "^4.17.2",
     "mustache": "^4.2.0",
     "mustache-express": "^1.3.2",
     "mysql": "^2.18.1",
@@ -72,6 +78,7 @@
     "prisma": "^5.22.0",
     "pug": "^3.0.3",
     "randomstring": "^1.3.0",
+    "redis": "^5.0.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
     "sequelize": "^6.37.5",
