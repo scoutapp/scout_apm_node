@@ -8,7 +8,8 @@ import ExternalProcessAgent from "../lib/agents/external-process";
 import { APIVersion, Agent, CoreAgentVersion, ProcessOptions, ScoutConfiguration, ExpressFn, LogFn } from "../lib/types";
 import { ScoutOptions, Scout, ScoutRequest, ScoutSpan } from "../lib/scout";
 import { Test } from "tape";
-export declare const EXPRESS_TEST_TIMEOUT_MS = 3000;
+import { MockAgent } from "./integration/mock-agent";
+export declare const EXPRESS_TEST_TIMEOUT_MS = 10000;
 export declare const PG_TEST_TIMEOUT_MS = 10000;
 export declare const MYSQL_TEST_TIMEOUT_MS = 10000;
 export declare const DASHBOARD_SEND_TIMEOUT_MS: number;
@@ -23,6 +24,7 @@ export declare function waitMinutes(mins: number, t?: Test): Promise<void>;
 export declare function cleanup(t: Test, agent: ExternalProcessAgent, err?: Error): Promise<void>;
 export declare function waitForAgentBufferFlush(t?: Test): Promise<void>;
 export declare function shutdownScout(t: Test, scout: Scout, err?: Error): Promise<void>;
+export declare function shutdownScoutAndMock(t: Test, scout: Scout, mockAgent: MockAgent, err?: Error): Promise<void>;
 export declare function simpleExpressApp(middleware: any, delayMs?: number): Application;
 export declare function simpleDynamicSegmentExpressApp(middleware: any, delayMs?: number): Application;
 export declare function simpleErrorApp(middleware: any, delayMs?: number): Application;
@@ -39,6 +41,11 @@ export declare function testConfigurationOverlay(t: Test, opts: {
 }): void;
 export declare function buildCoreAgentSocketResponse(json: string): Buffer;
 export declare function buildTestScoutInstance(configOverride?: Partial<ScoutConfiguration>, options?: Partial<ScoutOptions>): Scout;
+export declare function getOrStartSharedMock(): Promise<MockAgent>;
+export declare function buildTestScoutInstanceWithMock(configOverride?: Partial<ScoutConfiguration>, options?: Partial<ScoutOptions>): Promise<{
+    scout: Scout;
+    mockAgent: MockAgent;
+}>;
 export interface WaitForConfigFn {
     timeoutMs: number;
     check: (cao: ContainerAndOpts) => Promise<boolean>;

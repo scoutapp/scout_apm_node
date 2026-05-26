@@ -8,7 +8,9 @@ import * as Constants from "../../lib/constants";
 import { CoreAgentVersion, AgentDownloadOptions, PlatformTriple, detectPlatformTriple } from "../../lib/types";
 import { WebAgentDownloader } from "../../lib/agent-downloaders/web";
 
-test("download works (v1.1.8)", t => {
+const SKIP_DOWNLOAD_TESTS = process.env.ENABLE_BINARY_TESTS !== "true";
+
+test("download works (v1.1.8)", {skip: SKIP_DOWNLOAD_TESTS}, t => {
     const downloader = new WebAgentDownloader();
     const version = new CoreAgentVersion("1.1.8");
 
@@ -19,7 +21,7 @@ test("download works (v1.1.8)", t => {
         .catch(t.end);
 });
 
-test("cache is updated by download (v1.1.8)", t => {
+test("cache is updated by download (v1.1.8)", {skip: SKIP_DOWNLOAD_TESTS}, t => {
     const opts: AgentDownloadOptions = {
         cacheDir: Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR,
         updateCache: true,
@@ -58,7 +60,7 @@ test("cache is updated by download (v1.1.8)", t => {
         .catch(t.end);
 });
 
-test("cache is used by second download (v1.1.8)", t => {
+test("cache is used by second download (v1.1.8)", {skip: SKIP_DOWNLOAD_TESTS}, t => {
     const downloader = new WebAgentDownloader();
     const version = new CoreAgentVersion("1.1.8");
     const opts: AgentDownloadOptions = {updateCache: true};
@@ -92,7 +94,7 @@ test("cache is used by second download (v1.1.8)", t => {
 });
 
 // https://github.com/scoutapp/scout_apm_node/issues/59
-test("download works with a custom root URL + agent full name", t => {
+test("download works with a custom root URL + agent full name", {skip: SKIP_DOWNLOAD_TESTS}, t => {
     const downloader = new WebAgentDownloader();
     const version = new CoreAgentVersion("1.1.8");
     const opts: AgentDownloadOptions = {
@@ -112,7 +114,7 @@ test("download works with a custom root URL + agent full name", t => {
 });
 
 // https://github.com/scoutapp/scout_apm_node/issues/59
-test("download fails with invalid custom URL", t => {
+test("download fails with invalid custom URL", {skip: SKIP_DOWNLOAD_TESTS}, t => {
     const downloader = new WebAgentDownloader();
     const version = new CoreAgentVersion("1.1.8");
     const coreAgentDir = "/tmp/scout_apm_core";

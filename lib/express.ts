@@ -1,4 +1,5 @@
-import * as onFinished from "on-finished";
+import onFinished from "on-finished";
+import { AsyncResource } from "async_hooks";
 import {
     LogFn,
     LogLevel,
@@ -24,6 +25,98 @@ import { pathToRegexp } from "path-to-regexp";
 const listExpressEndpoints = require("express-list-endpoints");
 const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
+
+// Partial endpoint info returned by listExpressEndpoints (regex added later by caller)
+interface EndpointInfo {
+    path: string;
+    methods: string[];
+    middleware?: string[];
+    regex?: RegExp;
+}
+
+/**
+ * List all endpoints registered on an Express app.
+ * Works with both Express 4 and Express 5.
+ *
+ * Express 5 changed the internal router structure:
+ * - app.router instead of app._router
+ * - layer.matchers[] instead of layer.regexp
+ *
+ * The express-list-endpoints library doesn't support Express 5,
+ * so we implement our own walker for Express 5 and fall back to the library for Express 4.
+ */
+function listExpressEndpoints(app: any): EndpointInfo[] {
+    // Try express-list-endpoints first (works for Express 4)
+    const libResult = listExpressEndpointsLib(app);
+    if (libResult && libResult.length > 0) {
+        return libResult;
+    }
+
+    // Express 5: walk the router stack ourselves
+    const endpoints: EndpointInfo[] = [];
+
+    // Express 4 uses app._router; Express 5 uses app.router (a getter that throws on Express 4)
+    let router = app._router;
+    if (!router) {
+        try { router = app.router; } catch { /* Express 4 getter throws */ }
+    }
+    if (!router || !router.stack) {
+        return endpoints;
+    }
+
+    function walkStack(stack: any[], basePath: string = ""): void {
+        for (const layer of stack) {
+            // Direct route on the app/router
+            if (layer.route) {
+                const methods = Object.keys(layer.route.methods)
+                    .filter((m: string) => layer.route.methods[m])
+                    .map((m: string) => m.toUpperCase());
+                endpoints.push({
+                    path: basePath + layer.route.path,
+                    methods,
+                    middleware: [],
+                });
+            }
+            // Nested router (app.use('/prefix', router))
+            else if (layer.name === "router" && layer.handle && layer.handle.stack) {
+                let prefix = "";
+
+                // Express 5: check layer.path directly
+                if (layer.path) {
+                    prefix = layer.path;
+                }
+                // Express 5: extract prefix from matcher by testing common path patterns
+                else if (layer.matchers && layer.matchers.length > 0) {
+                    // The matcher function returns { path: '/matched/prefix', params: {} } or false
+                    const probeResults = [
+                        layer.matchers[0]("/"),
+                        layer.matchers[0]("/api"),
+                        layer.matchers[0]("/v1"),
+                        layer.matchers[0]("/v2"),
+                        layer.matchers[0]("/admin"),
+                        layer.matchers[0]("/auth"),
+                    ].filter((r: any) => r !== false);
+
+                    if (probeResults.length > 0) {
+                        prefix = probeResults[0].path;
+                    }
+                }
+                // Express 4: layer.regexp
+                else if (layer.regexp) {
+                    const match = layer.regexp.source.match(/^\^\\\/([^\\\/\?\*\+\[\]]+)/);
+                    if (match) {
+                        prefix = "/" + match[1];
+                    }
+                }
+
+                walkStack(layer.handle.stack, basePath + prefix);
+            }
+        }
+    }
+
+    walkStack(router.stack);
+    return endpoints;
+}
 
 export interface ApplicationWithScout {
     scout?: Scout;
@@ -159,7 +252,12 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
 
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
-        if (!routePath) {
+        // Express 4 uses _router; Express 5 uses router (a getter that throws on Express 4)
+        let appRouter = req.app._router;
+        if (!appRouter) {
+            try { appRouter = req.app.router; } catch { /* Express 4 getter throws */ }
+        }
+        if (!routePath && appRouter && appRouter.stack) {
             // Find routes that match the current URL
             matchedRouteMiddleware = req.app._router.stack
                 .filter((middleware: any) => {
@@ -330,8 +428,9 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                                 // Add the span to the request object
                                 req.scout.rootSpan = rootSpan;
 
-                                // Setup of the transaction and instrumentation succeeded
-                                next();
+                                // AsyncResource.bind re-enters our Scout context after any
+                                // setImmediate dispatch Express 5's router package uses.
+                                AsyncResource.bind(next)();
                             });
 
                         });

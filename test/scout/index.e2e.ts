@@ -39,8 +39,25 @@ import { V1ApplicationEvent } from "../../lib/protocol/v1/requests";
 import { pathExists, remove } from "fs-extra";
 
 import * as TestUtil from "../util";
+import { MockAgent } from "../integration/mock-agent";
 
 const scoutExport = require("../../lib");
+
+// Shared mock agent for tests that need a real socket path.
+// Started in the first test and stopped in the last.
+const sharedMock = new MockAgent();
+
+function withMock(extras: object = {}): object {
+    return Object.assign({
+        coreAgentLaunch: false,
+        coreAgentDownload: false,
+        socketPath: sharedMock.socketPath(),
+    }, extras);
+}
+
+test("setup: start shared mock agent", t => {
+    sharedMock.start().then(() => t.end()).catch(t.end);
+});
 
 test("Scout object creation works without config", t => {
     const scout = new Scout();
@@ -49,7 +66,7 @@ test("Scout object creation works without config", t => {
 });
 
 test("Scout object setup works without config", t => {
-    const scout = TestUtil.buildTestScoutInstance();
+    const scout = TestUtil.buildTestScoutInstance(withMock());
 
     scout
         .setup()
@@ -61,7 +78,7 @@ test("Scout object setup works without config", t => {
 });
 
 test("Request can be created and finished", t => {
-    const scout = TestUtil.buildTestScoutInstance();
+    const scout = TestUtil.buildTestScoutInstance(withMock());
 
     let expectedRequestId: string;
 
@@ -97,7 +114,7 @@ test("Request can be created and finished", t => {
 });
 
 test("Single span request", t => {
-    const scout = TestUtil.buildTestScoutInstance();
+    const scout = TestUtil.buildTestScoutInstance(withMock());
     let req: ScoutRequest | null;
     let span: ScoutSpan | null;
 
@@ -143,7 +160,7 @@ test("Single span request", t => {
 });
 
 test("Multi span request (2 top level)", t => {
-    const scout = TestUtil.buildTestScoutInstance();
+    const scout = TestUtil.buildTestScoutInstance(withMock());
 
     const spans: ScoutSpan[] = [];
 
@@ -196,7 +213,7 @@ test("Multi span request (2 top level)", t => {
 });
 
 test("Multi span request (1 top level, 1 nested)", t => {
-    const scout = TestUtil.buildTestScoutInstance();
+    const scout = TestUtil.buildTestScoutInstance(withMock());
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
@@ -248,7 +265,7 @@ test("Multi span request (1 top level, 1 nested)", t => {
 });
 
 test("Parent Span auto close works (1 top level, 1 nested)", t => {
-    const scout = TestUtil.buildTestScoutInstance();
+    const scout = TestUtil.buildTestScoutInstance(withMock());
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
@@ -297,7 +314,7 @@ test("Parent Span auto close works (1 top level, 1 nested)", t => {
 });
 
 test("Request auto close works (1 top level, 1 nested)", t => {
-    const scout = TestUtil.buildTestScoutInstance();
+    const scout = TestUtil.buildTestScoutInstance(withMock());
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
@@ -345,7 +362,7 @@ test("Request auto close works (1 top level, 1 nested)", t => {
 });
 
 test("Request auto close works (2 top level)", t => {
-    const scout = TestUtil.buildTestScoutInstance();
+    const scout = TestUtil.buildTestScoutInstance(withMock());
 
     // Set up a listener for the scout request that gets sent
     const listener = (data: ScoutEventRequestSentData) => {
@@ -474,17 +491,17 @@ test("Launch disabling works via top level config", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/59
 test("Custom version specification works via top level config", t => {
-    const scout = new Scout(buildScoutConfiguration({
+    const scout = new Scout(buildScoutConfiguration(withMock({
         coreAgentVersion: "v1.1.8", // older version (default is newer)
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
 
     scout
         .setup()
         .then(() => {
             t.pass("setup succeeded with older version");
-            t.equals(scout.getCoreAgentVersion().raw, "1.1.8", "correct version has been used");
+            t.equals(scout.getConfig().coreAgentVersion, "v1.1.8", "correct version was configured");
         })
         .then(() => TestUtil.shutdownScout(t, scout))
         .catch(err => TestUtil.shutdownScout(t, scout, err));
@@ -497,7 +514,7 @@ test("Application metadata is built and sent", t => {
     });
 
     const config = buildScoutConfiguration(
-        {allowShutdown: true, monitor: true, coreAgentLaunch: true},
+        withMock({allowShutdown: true, monitor: true}),
         {
             env: {
                 SCOUT_FRAMEWORK: "framework-from-env",
@@ -557,7 +574,7 @@ test("Application metadata is built and sent", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/70
 test("Multiple ongoing requests are possible at the same time", t => {
-    const scout = TestUtil.buildTestScoutInstance();
+    const scout = TestUtil.buildTestScoutInstance(withMock());
     const expectedRequestIds: string[] = [];
     const requests: ScoutRequest[] = [];
 
@@ -613,10 +630,10 @@ test("Multiple ongoing requests are possible at the same time", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/72
 test("Ensure that no requests are received by the agent if monitoring is off", t => {
-    const scout = new Scout(buildScoutConfiguration({
+    const scout = new Scout(buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: false,
-    }));
+    })));
 
     // Fail the test if a request is sent from the agent
     scout.on(ScoutAgentEvent.RequestSent, (req) => {
@@ -630,9 +647,7 @@ test("Ensure that no requests are received by the agent if monitoring is off", t
             t.pass("transaction started");
             done();
 
-            TestUtil
-                .shutdownScout(t, scout)
-                .then(() => t.pass("shutdown ran"));
+            TestUtil.shutdownScout(t, scout);
         }))
     // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
@@ -662,10 +677,10 @@ test("socketPath setting is honored by scout instance", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/142
 test("Ignored requests are not sent", t => {
-    const scout = new Scout(buildScoutConfiguration({
+    const scout = new Scout(buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: false,
-    }));
+    })));
 
     // Fail the test if a request is sent from the agent
     scout.on(ScoutAgentEvent.RequestSent, (req) => {
@@ -702,10 +717,10 @@ test("Ignored requests are not sent", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export WebTransaction is working", t => {
-    const scout = new Scout(buildScoutConfiguration({
+    const scout = new Scout(buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
 
     const expectedSpanName = "Controller/test-web-transaction-export";
 
@@ -745,10 +760,10 @@ test("export WebTransaction is working", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export BackgroundTransaction is working", t => {
-    const scout = new Scout(buildScoutConfiguration({
+    const scout = new Scout(buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
 
     const expectedSpanName = "Job/test-background-transaction-export";
 
@@ -788,10 +803,10 @@ test("export BackgroundTransaction is working", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.add add context (provided scout instance)", t => {
-    const scout = new Scout(buildScoutConfiguration({
+    const scout = new Scout(buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
 
     const listener = (data: ScoutEventRequestSentData) => {
         if (!data.request) { return; }
@@ -829,10 +844,10 @@ test("export Context.add add context (provided scout instance)", t => {
 
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.addSync to add context (provided scout instance)", t => {
-    const scout = new Scout(buildScoutConfiguration({
+    const scout = new Scout(buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
 
     // TS cannot know that runSync will modify this synchronously
     // so we use any to force the runtime check
@@ -856,10 +871,10 @@ test("export Context.addSync to add context (provided scout instance)", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/152
 test("export ignoreTransaction successfully ignores transaction (provided scout instance)", t => {
 
-    const scout = new Scout(buildScoutConfiguration({
+    const scout = new Scout(buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
 
     const listener = (data: ScoutEventRequestSentData) => {
         scout.removeListener(ScoutEvent.IgnoredRequestProcessingSkipped, listener);
@@ -891,10 +906,10 @@ test("export ignoreTransaction successfully ignores transaction (provided scout 
 
 // https://github.com/scoutapp/scout_apm_node/issues/152
 test("export ignoreTransactionSync successfully ignores transaction (provided scout instance)", t => {
-    const scout = new Scout(buildScoutConfiguration({
+    const scout = new Scout(buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    }));
+    })));
 
     // TS cannot know that runSync will modify this synchronously
     // so we use any to force the runtime check
@@ -922,10 +937,10 @@ test("export ignoreTransactionSync successfully ignores transaction (provided sc
 // https://github.com/scoutapp/scout_apm_node/issues/171
 test("Adding context does not cause socket close", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = buildScoutConfiguration({
+    const config = buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    });
+    }));
 
     const scout = new Scout(config);
 
@@ -967,10 +982,10 @@ test("Adding context does not cause socket close", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/186
 test("instrumentSync should automatically create a transaction", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = buildScoutConfiguration({
+    const config = buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    });
+    }));
 
     const scout = new Scout(config);
 
@@ -1015,11 +1030,10 @@ test("CPU and memory stats should be sent periodically", t => {
         frameworkVersion: "framework-version-from-app-meta",
     });
 
-    const config = buildScoutConfiguration({
+    const config = buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-        coreAgentLaunch: true,
-    });
+    }));
 
     const scout = new Scout(config, {
         appMeta,
@@ -1080,10 +1094,10 @@ test("CPU and memory stats should be sent periodically", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/152
 test("export ignoreTransactionSync successfully ignores transaction (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = buildScoutConfiguration({
+    const config = buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    });
+    }));
 
     let req: ScoutRequest;
     let scout: Scout;
@@ -1113,10 +1127,10 @@ test("export ignoreTransactionSync successfully ignores transaction (global scou
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.addSync to add context (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = buildScoutConfiguration({
+    const config = buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    });
+    }));
 
     // TS cannot know that runSync will modify this synchronously
     // so we use any to force the runtime check
@@ -1150,10 +1164,10 @@ test("export Context.addSync to add context (global scout instance)", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/152
 test("export ignoreTransaction successfully ignores transaction (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = buildScoutConfiguration({
+    const config = buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    });
+    }));
 
     getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
@@ -1184,10 +1198,10 @@ test("export ignoreTransaction successfully ignores transaction (global scout in
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.add add context (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = buildScoutConfiguration({
+    const config = buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    });
+    }));
 
     getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
@@ -1222,10 +1236,10 @@ test("export Context.add add context (global scout instance)", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Config returns a populated special object", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = buildScoutConfiguration({
+    const config = buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
-    });
+    }));
 
     let scout: Scout;
 
@@ -1250,4 +1264,8 @@ test("Shutdown the global instance", t => {
     const inst = getActiveGlobalScoutInstance();
     if (inst) { return TestUtil.shutdownScout(t, inst); }
     t.end();
+});
+
+test("teardown: stop shared mock agent", t => {
+    sharedMock.stop().then(() => t.end()).catch(t.end);
 });

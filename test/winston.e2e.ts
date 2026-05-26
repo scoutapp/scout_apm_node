@@ -1,77 +1,64 @@
 import * as test from "tape";
 import * as winston from "winston";
 
-const tempfile = require("tempfile");
+const tmp = require("tmp");
 
 import {
-    buildScoutConfiguration,
     buildWinstonLogFn,
     LogLevel,
 } from "../lib/types";
 
-import {
-    Scout,
-    ScoutRequest,
-    ScoutSpan,
-} from "../lib/scout";
-
 import { ScoutConfiguration } from "../lib/types";
 
 import * as TestUtil from "./util";
+import { MockAgent } from "./integration/mock-agent";
 
 test("Winston logger is successfully logged to", t => {
-    let scout: Scout;
+    let scout: any;
+    let mockAgent: MockAgent;
     let logger: winston.Logger;
 
-    // Create a temp file for winston to log to
-    Promise.resolve(tempfile())
-        .then(filename => {
-            // Build the winston logger
+    Promise.resolve(tmp.fileSync().name)
+        .then((filename: string) => {
             logger = winston.createLogger({transports: [
                 new winston.transports.File({filename}),
             ]});
             const logFn = buildWinstonLogFn(logger);
-
-            // Build scout instance
-            scout = new Scout(
-                buildScoutConfiguration({allowShutdown: true, monitor: true}),
-                {logFn},
-            );
+            return TestUtil.buildTestScoutInstanceWithMock({}, {logFn});
         })
-    // Run scout setup (which should output log messages)
+        .then(({scout: s, mockAgent: ma}) => {
+            scout = s;
+            mockAgent = ma;
+        })
         .then(() => scout.setup())
-        .then(scout => t.assert(scout, "scout object was successfully set up"))
-    // Check that winston received some logs
+        .then((s: any) => t.assert(s, "scout object was successfully set up"))
         .then(() => new Promise((resolve, reject) => {
             logger.query(
                 {until: new Date(), limit: 10, fields: ["message"]},
-                (err, results) => {
+                (err: any, results: any) => {
                     if (err || !results) {
                         t.fail("no results returned from querying the logger");
                         reject();
+                        return;
                     }
 
-                    // Winston query results are of the form {file: [...]}
                     t.assert(results.file.length > 0, "results were returned from querying logger");
                     resolve();
                 });
         }))
-    // Teardown and end test
-        .then(() => TestUtil.shutdownScout(t, scout))
-        .catch(err => TestUtil.shutdownScout(t, scout, err));
+        .then(() => TestUtil.shutdownScoutAndMock(t, scout, mockAgent))
+        .catch((err: Error) => TestUtil.shutdownScoutAndMock(t, scout, mockAgent, err));
 });
 
 // https://github.com/scoutapp/scout_apm_node/issues/135
 test("Scout inherits winston logger level", t => {
-    let scout: Scout;
+    let scout: any;
+    let mockAgent: MockAgent;
     let logger: winston.Logger;
-
     let scoutConfig: Partial<ScoutConfiguration>;
 
-    // Create a temp file for winston to log to
-    Promise.resolve(tempfile())
-        .then(filename => {
-            // Build the winston logger
+    Promise.resolve(tmp.fileSync().name)
+        .then((filename: string) => {
             logger = winston.createLogger({
                 level: "debug",
                 transports: [
@@ -79,20 +66,19 @@ test("Scout inherits winston logger level", t => {
                 ],
             });
             const logFn = buildWinstonLogFn(logger);
-
-            // Build scout instance
-            scoutConfig = buildScoutConfiguration({allowShutdown: true, monitor: true});
+            scoutConfig = {allowShutdown: true, monitor: true};
             t.equals(scoutConfig.logLevel, undefined, "scout log level is initially undefined");
-            scout = new Scout(scoutConfig, {logFn});
+            return TestUtil.buildTestScoutInstanceWithMock(scoutConfig, {logFn});
         })
-    // Run scout setup (which should output log messages)
+        .then(({scout: s, mockAgent: ma}) => {
+            scout = s;
+            mockAgent = ma;
+        })
         .then(() => scout.setup())
-    // Check that scout's log level was updated to what winston's was set to (debug)
-        .then(scout => {
-            t.assert(scout, "scout object was successfully set up");
-            t.equals(scoutConfig.logLevel, LogLevel.Debug, "scout log level was updated to match winston");
+        .then((s: any) => {
+            t.assert(s, "scout object was successfully set up");
+            t.equals(scout.getConfig().logLevel, LogLevel.Debug, "scout log level was updated to match winston");
         })
-    // Teardown and end test
-        .then(() => TestUtil.shutdownScout(t, scout))
-        .catch(err => TestUtil.shutdownScout(t, scout, err));
+        .then(() => TestUtil.shutdownScoutAndMock(t, scout, mockAgent))
+        .catch((err: Error) => TestUtil.shutdownScoutAndMock(t, scout, mockAgent, err));
 });

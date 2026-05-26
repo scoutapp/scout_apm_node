@@ -1,9 +1,45 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const path = require("path");
-const tmp = require("tmp-promise");
-const express = require("express");
-const net = require("net");
+exports.TestContainerStartOpts = exports.MEMORY_LEAK_TEST_TIMEOUT_MS = exports.DASHBOARD_SEND_TIMEOUT_MS = exports.MYSQL_TEST_TIMEOUT_MS = exports.PG_TEST_TIMEOUT_MS = exports.EXPRESS_TEST_TIMEOUT_MS = void 0;
+exports.bootstrapExternalProcessAgent = bootstrapExternalProcessAgent;
+exports.initializeAgent = initializeAgent;
+exports.waitMs = waitMs;
+exports.waitMinutes = waitMinutes;
+exports.cleanup = cleanup;
+exports.waitForAgentBufferFlush = waitForAgentBufferFlush;
+exports.shutdownScout = shutdownScout;
+exports.shutdownScoutAndMock = shutdownScoutAndMock;
+exports.simpleExpressApp = simpleExpressApp;
+exports.simpleDynamicSegmentExpressApp = simpleDynamicSegmentExpressApp;
+exports.simpleErrorApp = simpleErrorApp;
+exports.simpleHTML5BoilerplateApp = simpleHTML5BoilerplateApp;
+exports.simpleInstrumentApp = simpleInstrumentApp;
+exports.appWithGETSynchronousError = appWithGETSynchronousError;
+exports.appWithHTTPProxyMiddleware = appWithHTTPProxyMiddleware;
+exports.queryAndRenderRandomNumbers = queryAndRenderRandomNumbers;
+exports.appWithRouterGET = appWithRouterGET;
+exports.testConfigurationOverlay = testConfigurationOverlay;
+exports.buildCoreAgentSocketResponse = buildCoreAgentSocketResponse;
+exports.buildTestScoutInstance = buildTestScoutInstance;
+exports.getOrStartSharedMock = getOrStartSharedMock;
+exports.buildTestScoutInstanceWithMock = buildTestScoutInstanceWithMock;
+exports.startContainer = startContainer;
+exports.killContainer = killContainer;
+exports.startContainerizedPostgresTest = startContainerizedPostgresTest;
+exports.stopContainerizedInstanceTest = stopContainerizedInstanceTest;
+exports.stopContainerizedPostgresTest = stopContainerizedPostgresTest;
+exports.makeConnectedPGClient = makeConnectedPGClient;
+exports.makePGConnectionString = makePGConnectionString;
+exports.createClientCollectingServer = createClientCollectingServer;
+exports.startContainerizedMySQLTest = startContainerizedMySQLTest;
+exports.stopContainerizedMySQLTest = stopContainerizedMySQLTest;
+exports.makeConnectedMySQLConnection = makeConnectedMySQLConnection;
+exports.makeConnectedMySQL2Connection = makeConnectedMySQL2Connection;
+exports.minimal = minimal;
+const path = __importStar(require("path"));
+const tmp = __importStar(require("tmp-promise"));
+const express_1 = __importDefault(require("express"));
+const net = __importStar(require("net"));
 const randomstring_1 = require("randomstring");
 const promise_timeout_1 = require("promise-timeout");
 const child_process_1 = require("child_process");
@@ -18,10 +54,12 @@ const types_1 = require("../lib/types");
 const scout_1 = require("../lib/scout");
 const config_1 = require("../lib/types/config");
 const requests_1 = require("../lib/protocol/v1/requests");
+const mock_agent_1 = require("./integration/mock-agent");
 const app_root_dir_1 = require("app-root-dir");
 const getPort = require("get-port");
 // Wait a little longer for requests that use express
-exports.EXPRESS_TEST_TIMEOUT_MS = 3000;
+// HTTP integration overhead (supertest triggers http shim) adds ~2-3s per request
+exports.EXPRESS_TEST_TIMEOUT_MS = 10000;
 // The timeouts for PG & MSQL assume an instance is *already running*
 // for control over the amount of start time alotted see `startTimeoutMs`
 exports.PG_TEST_TIMEOUT_MS = 10000;
@@ -87,6 +125,10 @@ function waitMinutes(mins, t) {
 exports.waitMinutes = waitMinutes;
 // Helper function for cleaning up an agent processe and passing/failing a test
 function cleanup(t, agent, err) {
+    if (!agent) {
+        t.end(err);
+        return Promise.resolve();
+    }
     return agent.getProcess()
         .then(process => process.kill())
         .then(() => t.end(err));
@@ -103,13 +145,24 @@ function waitForAgentBufferFlush(t) {
 exports.waitForAgentBufferFlush = waitForAgentBufferFlush;
 // Helper function to clean up an official (user-facing) scout instance
 function shutdownScout(t, scout, err) {
+    if (!scout) {
+        t.end(err);
+        return Promise.resolve();
+    }
     return scout.shutdown()
         .then(() => {
         if (err) {
             console.log("ERROR:", err);
         } // tslint:disable-line no-console
         t.end(err);
-    });
+    })
+        .catch(() => t.end(err));
+}
+// Helper to shut down scout and a mock agent together
+function shutdownScoutAndMock(t, scout, mockAgent, err) {
+    return shutdownScout(t, scout, err)
+        .then(() => mockAgent ? mockAgent.stop() : Promise.resolve())
+        .catch(() => mockAgent ? mockAgent.stop() : Promise.resolve());
 }
 exports.shutdownScout = shutdownScout;
 // Make a simple express application that just returns
@@ -331,7 +384,29 @@ function buildTestScoutInstance(configOverride, options) {
     const cfg = types_1.buildScoutConfiguration(Object.assign({ allowShutdown: true, monitor: true }, configOverride));
     return new scout_1.Scout(cfg, options);
 }
-exports.buildTestScoutInstance = buildTestScoutInstance;
+// Module-level shared MockAgent for tests that need a real socket
+let _sharedMock;
+let _sharedMockReady;
+function getOrStartSharedMock() {
+    if (!_sharedMock) {
+        _sharedMock = new mock_agent_1.MockAgent();
+        _sharedMockReady = _sharedMock.start().then(() => _sharedMock);
+    }
+    return _sharedMockReady;
+}
+// Async helper: starts a fresh MockAgent for one test, creates a Scout pointed at it
+async function buildTestScoutInstanceWithMock(configOverride, options) {
+    const mockAgent = new mock_agent_1.MockAgent();
+    await mockAgent.start();
+    const cfg = (0, types_1.buildScoutConfiguration)(Object.assign({
+        allowShutdown: true,
+        monitor: true,
+        coreAgentLaunch: false,
+        coreAgentDownload: false,
+        socketPath: mockAgent.socketPath(),
+    }, configOverride));
+    return { scout: new scout_1.Scout(cfg, options), mockAgent };
+}
 class TestContainerStartOpts {
     constructor(opts) {
         this.dockerBinPath = process.env.DOCKER_BIN_PATH || "/usr/bin/docker";
