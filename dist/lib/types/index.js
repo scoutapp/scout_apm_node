@@ -1,9 +1,7 @@
 "use strict";
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(require("./config"));
-__export(require("./agent"));
-__export(require("./enum"));
-__export(require("./util"));
+const tslib_1 = require("tslib");
+tslib_1.__exportStar(require("./config"), exports);
+tslib_1.__exportStar(require("./agent"), exports);
+tslib_1.__exportStar(require("./enum"), exports);
+tslib_1.__exportStar(require("./util"), exports);

@@ -1,58 +1,23 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const tape_1 = __importDefault(require("tape"));
-const path = __importStar(require("path"));
-const supertest_1 = __importDefault(require("supertest"));
-const express_1 = __importDefault(require("express"));
+const test = require("tape");
+const path = require("path");
+const request = require("supertest");
+const express = require("express");
 const app_root_dir_1 = require("app-root-dir");
 const mock_agent_1 = require("./mock-agent");
-const express_2 = require("../../lib/express");
+const express_1 = require("../../lib/express");
 const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
+const scout_1 = require("../../lib/scout");
 // Must run before any instrumented library is first required so RITM can shim them.
-(0, lib_1.setupRequireIntegrations)(["mustache", "ejs", "pug", "pg"]);
-const TIMEOUT = 10000;
+lib_1.setupRequireIntegrations(["mustache", "ejs", "pug", "pg"]);
+const TIMEOUT = 15000;
 const PAYLOAD_DIR = path.join(__dirname, "payloads");
 // Fixture views live in source tree; use getRootDir() so the path is correct at runtime.
-const VIEWS_DIR = path.join((0, app_root_dir_1.get)(), "test/fixtures/files");
+const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
 function buildConfig(mock) {
-    return (0, types_1.buildScoutConfiguration)({
+    return types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
@@ -60,28 +25,23 @@ function buildConfig(mock) {
         socketPath: mock.socketPath(),
     });
 }
-function makeApp(mock, factory) {
-    return factory((0, express_2.scoutMiddleware)({
-        config: buildConfig(mock),
+function makeApp(scout, factory) {
+    return factory(express_1.scoutMiddleware({
+        scout,
         requestTimeoutMs: 0,
         waitForScoutSetup: true,
     }));
 }
-function nextRequestSent(scout, skipCount = 0) {
+function nextRequestSent(scout) {
     return new Promise((resolve, reject) => {
-        let skipped = 0;
         const timer = setTimeout(() => {
             scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
             reject(new Error("Timed out waiting for ScoutEvent.RequestSent"));
         }, TIMEOUT - 2000);
         const listener = (data) => {
             // Ignore HTTP integration transactions (no Controller/ span) — they fire
-            // for supertest's outbound http.request() calls and would throw off skipCount.
+            // for supertest's outbound http.request() calls.
             if (!data.request.getChildSpansSync().some((s) => s.operation.startsWith("Controller/"))) {
-                return;
-            }
-            if (skipped < skipCount) {
-                skipped++;
                 return;
             }
             clearTimeout(timer);
@@ -107,27 +67,27 @@ function findSpan(spans, op) {
 // ---------------------------------------------------------------------------
 // Mustache
 // ---------------------------------------------------------------------------
-(0, tape_1.default)("Mustache render creates a Template/Render span", { timeout: TIMEOUT }, (t) => {
+test("Mustache render creates a Template/Render span", { timeout: TIMEOUT }, (t) => {
     const mock = new mock_agent_1.MockAgent();
     let scout;
     mock.start()
         .then(() => {
-        const app = makeApp(mock, (mw) => {
-            const a = (0, express_1.default)();
+        scout = new scout_1.Scout(buildConfig(mock));
+        return scout.setup();
+    })
+        .then(() => {
+        const app = makeApp(scout, (mw) => {
+            const a = express();
             a.use(mw);
-            a.get("/", (_req, res) => {
+            a.get("/", (req, res) => {
                 // require() here so the RITM shim is active at call time
                 const mustache = require("mustache");
                 res.send(mustache.render("Hello {{name}}!", { name: "Scout" }));
             });
             return a;
         });
-        return (0, supertest_1.default)(app).get("/").expect(200).then(() => app);
-    })
-        .then((app) => {
-        scout = app.scout;
-        const sent = nextRequestSent(scout, 1);
-        (0, supertest_1.default)(app).get("/").end(() => undefined);
+        const sent = nextRequestSent(scout);
+        request(app).get("/").end(() => undefined);
         return sent;
     })
         .then((data) => {
@@ -148,26 +108,26 @@ function findSpan(spans, op) {
 // ---------------------------------------------------------------------------
 // EJS
 // ---------------------------------------------------------------------------
-(0, tape_1.default)("EJS render creates a Template/Render span", { timeout: TIMEOUT }, (t) => {
+test("EJS render creates a Template/Render span", { timeout: TIMEOUT }, (t) => {
     const mock = new mock_agent_1.MockAgent();
     let scout;
     mock.start()
         .then(() => {
-        const app = makeApp(mock, (mw) => {
-            const a = (0, express_1.default)();
+        scout = new scout_1.Scout(buildConfig(mock));
+        return scout.setup();
+    })
+        .then(() => {
+        const app = makeApp(scout, (mw) => {
+            const a = express();
             a.use(mw);
-            a.get("/", (_req, res) => {
+            a.get("/", (req, res) => {
                 const ejs = require("ejs");
                 res.send(ejs.render("<h1><%= title %></h1>", { title: "Scout" }));
             });
             return a;
         });
-        return (0, supertest_1.default)(app).get("/").expect(200).then(() => app);
-    })
-        .then((app) => {
-        scout = app.scout;
-        const sent = nextRequestSent(scout, 1);
-        (0, supertest_1.default)(app).get("/").end(() => undefined);
+        const sent = nextRequestSent(scout);
+        request(app).get("/").end(() => undefined);
         return sent;
     })
         .then((data) => {
@@ -188,27 +148,27 @@ function findSpan(spans, op) {
 // ---------------------------------------------------------------------------
 // Pug
 // ---------------------------------------------------------------------------
-(0, tape_1.default)("Pug renderFile creates a Template/Render span with a file path", { timeout: TIMEOUT }, (t) => {
+test("Pug renderFile creates a Template/Render span with a file path", { timeout: TIMEOUT }, (t) => {
     const fixture = path.join(VIEWS_DIR, "html5-boilerplate.pug");
     const mock = new mock_agent_1.MockAgent();
     let scout;
     mock.start()
         .then(() => {
-        const app = makeApp(mock, (mw) => {
-            const a = (0, express_1.default)();
+        scout = new scout_1.Scout(buildConfig(mock));
+        return scout.setup();
+    })
+        .then(() => {
+        const app = makeApp(scout, (mw) => {
+            const a = express();
             a.use(mw);
-            a.get("/", (_req, res) => {
+            a.get("/", (req, res) => {
                 const pug = require("pug");
                 res.send(pug.renderFile(fixture, { title: "Scout" }));
             });
             return a;
         });
-        return (0, supertest_1.default)(app).get("/").expect(200).then(() => app);
-    })
-        .then((app) => {
-        scout = app.scout;
-        const sent = nextRequestSent(scout, 1);
-        (0, supertest_1.default)(app).get("/").end(() => undefined);
+        const sent = nextRequestSent(scout);
+        request(app).get("/").end(() => undefined);
         return sent;
     })
         .then((data) => {
@@ -230,7 +190,7 @@ function findSpan(spans, op) {
 // ---------------------------------------------------------------------------
 // PostgreSQL  (only runs when PGHOST is set — e.g. in CI with the DB service)
 // ---------------------------------------------------------------------------
-(0, tape_1.default)("PG query creates a SQL/Query span with db.statement", { timeout: TIMEOUT }, (t) => {
+test("PG query creates a SQL/Query span with db.statement", { timeout: TIMEOUT }, (t) => {
     if (!process.env.PGHOST) {
         t.skip("PGHOST not set — skipping pg integration test");
         t.end();
@@ -250,22 +210,22 @@ function findSpan(spans, op) {
     client.connect()
         .then(() => mock.start())
         .then(() => {
-        const app = makeApp(mock, (mw) => {
-            const a = (0, express_1.default)();
+        scout = new scout_1.Scout(buildConfig(mock));
+        return scout.setup();
+    })
+        .then(() => {
+        const app = makeApp(scout, (mw) => {
+            const a = express();
             a.use(mw);
-            a.get("/", (_req, res) => {
+            a.get("/", (req, res) => {
                 client.query("SELECT 1 AS result")
                     .then(() => res.send({ status: "ok" }))
                     .catch((err) => res.status(500).send({ error: err.message }));
             });
             return a;
         });
-        return (0, supertest_1.default)(app).get("/").expect(200).then(() => app);
-    })
-        .then((app) => {
-        scout = app.scout;
-        const sent = nextRequestSent(scout, 1);
-        (0, supertest_1.default)(app).get("/").end(() => undefined);
+        const sent = nextRequestSent(scout);
+        request(app).get("/").end(() => undefined);
         return sent;
     })
         .then((data) => {

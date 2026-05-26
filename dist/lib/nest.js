@@ -1,47 +1,9 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ScoutNestMiddleware = void 0;
-exports.nestMiddleware = nestMiddleware;
-const on_finished_1 = __importDefault(require("on-finished"));
+const onFinished = require("on-finished");
 const async_hooks_1 = require("async_hooks");
 const types_1 = require("./types");
-const Constants = __importStar(require("./constants"));
+const Constants = require("./constants");
 const global_1 = require("./global");
 const express_1 = require("./express");
 const path_to_regexp_1 = require("path-to-regexp");
@@ -67,17 +29,17 @@ function parseQueueTimeNS(value) {
 }
 function nestMiddleware(opts) {
     const overrides = opts && opts.config ? opts.config : {};
-    const config = (0, types_1.buildScoutConfiguration)(overrides);
+    const config = types_1.buildScoutConfiguration(overrides);
     const options = {
         logFn: opts && opts.logFn ? opts.logFn : undefined,
         statisticsIntervalMS: opts && opts.statisticsIntervalMS ? opts.statisticsIntervalMS : undefined,
     };
-    (0, global_1.setGlobalLastUsedConfiguration)(config);
-    (0, global_1.setGlobalLastUsedOptions)(options);
+    global_1.setGlobalLastUsedConfiguration(config);
+    global_1.setGlobalLastUsedOptions(options);
     return (req, res, next) => {
         const requestStartTimeNS = getNanoTime();
-        const scout = opts && opts.scout ? opts.scout : req.app.scout || (0, global_1.getActiveGlobalScoutInstance)();
-        const setupScout = () => (0, global_1.getOrCreateActiveGlobalScoutInstance)(config, options)
+        const scout = opts && opts.scout ? opts.scout : req.app.scout || global_1.getActiveGlobalScoutInstance();
+        const setupScout = () => global_1.getOrCreateActiveGlobalScoutInstance(config, options)
             .then(s => req.app.scout = s);
         const waitForScoutSetup = opts && opts.waitForScoutSetup;
         if (!scout && !waitForScoutSetup) {
@@ -102,11 +64,8 @@ function nestMiddleware(opts) {
             try {
                 let matchedRoute = Object.values(NEST_ROUTE_INFO_LOOKUP).find(r => r.regex.exec(preQueryUrl));
                 if (!matchedRoute) {
-                    (0, express_1.listExpressEndpoints)(req.app).forEach(r => {
-                        NEST_ROUTE_INFO_LOOKUP[r.path] = {
-                            ...r,
-                            regex: (0, path_to_regexp_1.pathToRegexp)(r.path),
-                        };
+                    express_1.listExpressEndpoints(req.app).forEach(r => {
+                        NEST_ROUTE_INFO_LOOKUP[r.path] = Object.assign(Object.assign({}, r), { regex: path_to_regexp_1.pathToRegexp(r.path) });
                     });
                     matchedRoute = Object.values(NEST_ROUTE_INFO_LOOKUP).find(r => r.regex.exec(preQueryUrl));
                 }
@@ -179,7 +138,7 @@ function nestMiddleware(opts) {
                                 });
                             }, requestTimeoutMs);
                         }
-                        (0, on_finished_1.default)(res, () => {
+                        onFinished(res, () => {
                             if (transactionTimeout) {
                                 clearTimeout(transactionTimeout);
                             }
@@ -201,6 +160,7 @@ function nestMiddleware(opts) {
         });
     };
 }
+exports.nestMiddleware = nestMiddleware;
 /**
  * Class-based Scout middleware for use with NestJS's MiddlewareConsumer.
  *
@@ -214,10 +174,55 @@ function nestMiddleware(opts) {
  */
 class ScoutNestMiddleware {
     constructor(opts) {
-        this._inner = nestMiddleware(opts);
+        this.inner = nestMiddleware(opts);
     }
     use(req, res, next) {
-        this._inner(req, res, next);
+        this.inner(req, res, next);
     }
 }
 exports.ScoutNestMiddleware = ScoutNestMiddleware;
+/**
+ * Returns a NestJS-compatible global exception filter that captures errors via Scout.
+ *
+ * Does not require @nestjs/common as a dependency — NestJS duck-types the catch() method.
+ *
+ * @example
+ * const { nestErrorFilter } = require("@scout_apm/scout-apm");
+ * // after NestFactory.create():
+ * app.useGlobalFilters(nestErrorFilter());
+ */
+function nestErrorFilter() {
+    return {
+        catch(exception, host) {
+            const { captureError } = require("./error-monitor");
+            const ctx = host.switchToHttp();
+            const req = ctx.getRequest();
+            const res = ctx.getResponse();
+            if (req) {
+                captureError(exception, undefined, {
+                    controller: (req.route && req.route.path) || req.path || null,
+                    action: req.method ? req.method.toUpperCase() : null,
+                    module: null,
+                    requestId: req.scout && req.scout.request ? req.scout.request.requestId : undefined,
+                    requestUrl: req.originalUrl || req.url,
+                    requestParams: (req.query || req.body)
+                        ? Object.assign({}, req.query, req.body)
+                        : undefined,
+                    requestSession: req.session || undefined,
+                });
+            }
+            else {
+                captureError(exception);
+            }
+            // Determine HTTP status — NestJS HttpException carries getStatus()
+            const status = exception && typeof exception.getStatus === "function"
+                ? exception.getStatus()
+                : 500;
+            const message = exception instanceof Error
+                ? exception.message
+                : typeof exception === "string" ? exception : "Internal server error";
+            res.status(status).json({ statusCode: status, message });
+        },
+    };
+}
+exports.nestErrorFilter = nestErrorFilter;

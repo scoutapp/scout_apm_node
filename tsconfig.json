@@ -11,7 +11,8 @@
     "allowSyntheticDefaultImports": true,
     "strictPropertyInitialization": false,
     "noImplicitAny": false,
-    "lib": [ "es2017", "dom" ]
+    "lib": [ "es2017", "dom" ],
+    "importHelpers": true
   },
   "include": [
     "./index.ts",

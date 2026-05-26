@@ -1,41 +1,6 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setupErrorMonitoring = setupErrorMonitoring;
-exports.captureError = captureError;
-const os = __importStar(require("os"));
+const os = require("os");
 const error_service_1 = require("./error-service");
 let service = null;
 let ignoredExceptions = [];
@@ -66,6 +31,7 @@ function setupErrorMonitoring(config) {
         });
     }
 }
+exports.setupErrorMonitoring = setupErrorMonitoring;
 /**
  * Report an error to Scout APM.
  *
@@ -87,6 +53,7 @@ function setupErrorMonitoring(config) {
  * })
  */
 function captureError(error, context, opts) {
+    var _a, _b, _c;
     if (!service || !currentConfig) {
         return;
     }
@@ -113,15 +80,16 @@ function captureError(error, context, opts) {
         environment: null,
         trace: parseStack(err),
         request_components: hasLocation ? {
-            module: (opts && opts.module) ?? null,
-            controller: (opts && opts.controller) ?? null,
-            action: (opts && opts.action) ?? null,
+            module: (_a = (opts && opts.module), (_a !== null && _a !== void 0 ? _a : null)),
+            controller: (_b = (opts && opts.controller), (_b !== null && _b !== void 0 ? _b : null)),
+            action: (_c = (opts && opts.action), (_c !== null && _c !== void 0 ? _c : null)),
         } : null,
         context: context || undefined,
         host: currentConfig.hostname || os.hostname(),
         revision_sha: currentConfig.revisionSHA,
     });
 }
+exports.captureError = captureError;
 function isIgnored(err) {
     if (ignoredExceptions.length === 0) {
         return false;

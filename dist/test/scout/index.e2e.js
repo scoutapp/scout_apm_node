@@ -9,7 +9,7 @@ const types_1 = require("../../lib/types");
 const global_1 = require("../../lib/global");
 const errors_1 = require("../../lib/errors");
 const fs_extra_2 = require("fs-extra");
-const TestUtil = __importStar(require("../util"));
+const TestUtil = require("../util");
 const mock_agent_1 = require("../integration/mock-agent");
 const scoutExport = require("../../lib");
 // Shared mock agent for tests that need a real socket path.
@@ -22,15 +22,15 @@ function withMock(extras = {}) {
         socketPath: sharedMock.socketPath(),
     }, extras);
 }
-(0, tape_1.default)("setup: start shared mock agent", t => {
+test("setup: start shared mock agent", t => {
     sharedMock.start().then(() => t.end()).catch(t.end);
 });
-(0, tape_1.default)("Scout object creation works without config", t => {
+test("Scout object creation works without config", t => {
     const scout = new scout_1.Scout();
     t.assert(scout, "scout object was created");
     t.end();
 });
-(0, tape_1.default)("Scout object setup works without config", t => {
+test("Scout object setup works without config", t => {
     const scout = TestUtil.buildTestScoutInstance(withMock());
     scout
         .setup()
@@ -40,7 +40,7 @@ function withMock(extras = {}) {
         .then(() => t.end())
         .catch(t.end);
 });
-(0, tape_1.default)("Request can be created and finished", t => {
+test("Request can be created and finished", t => {
     const scout = TestUtil.buildTestScoutInstance(withMock());
     let expectedRequestId;
     // Set up a listener for the scout request that gets sent
@@ -74,7 +74,7 @@ function withMock(extras = {}) {
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-(0, tape_1.default)("Single span request", t => {
+test("Single span request", t => {
     const scout = TestUtil.buildTestScoutInstance(withMock());
     let req;
     let span;
@@ -121,7 +121,7 @@ function withMock(extras = {}) {
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-(0, tape_1.default)("Multi span request (2 top level)", t => {
+test("Multi span request (2 top level)", t => {
     const scout = TestUtil.buildTestScoutInstance(withMock());
     const spans = [];
     // Set up a listener for the scout request that gets sent
@@ -171,7 +171,7 @@ function withMock(extras = {}) {
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-(0, tape_1.default)("Multi span request (1 top level, 1 nested)", t => {
+test("Multi span request (1 top level, 1 nested)", t => {
     const scout = TestUtil.buildTestScoutInstance(withMock());
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
@@ -222,7 +222,7 @@ function withMock(extras = {}) {
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-(0, tape_1.default)("Parent Span auto close works (1 top level, 1 nested)", t => {
+test("Parent Span auto close works (1 top level, 1 nested)", t => {
     const scout = TestUtil.buildTestScoutInstance(withMock());
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
@@ -271,7 +271,7 @@ function withMock(extras = {}) {
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-(0, tape_1.default)("Request auto close works (1 top level, 1 nested)", t => {
+test("Request auto close works (1 top level, 1 nested)", t => {
     const scout = TestUtil.buildTestScoutInstance(withMock());
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
@@ -319,7 +319,7 @@ function withMock(extras = {}) {
         // Teardown and end test
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
-(0, tape_1.default)("Request auto close works (2 top level)", t => {
+test("Request auto close works (2 top level)", t => {
     const scout = TestUtil.buildTestScoutInstance(withMock());
     // Set up a listener for the scout request that gets sent
     const listener = (data) => {
@@ -437,9 +437,9 @@ test("Launch disabling works via top level config", t => {
     });
 });
 // https://github.com/scoutapp/scout_apm_node/issues/59
-(0, tape_1.default)("Custom version specification works via top level config", t => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
-        coreAgentVersion: "v1.1.8", // older version (default is newer)
+test("Custom version specification works via top level config", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration(withMock({
+        coreAgentVersion: "v1.1.8",
         allowShutdown: true,
         monitor: true,
     })));
@@ -457,7 +457,7 @@ test("Application metadata is built and sent", t => {
     const appMeta = new types_1.ApplicationMetadata({
         frameworkVersion: "framework-version-from-app-meta",
     });
-    const config = (0, types_1.buildScoutConfiguration)(withMock({ allowShutdown: true, monitor: true }), {
+    const config = types_1.buildScoutConfiguration(withMock({ allowShutdown: true, monitor: true }), {
         env: {
             SCOUT_FRAMEWORK: "framework-from-env",
             SCOUT_FRAMEWORK_VERSION: "framework-version-from-env",
@@ -503,7 +503,7 @@ test("Application metadata is built and sent", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/70
-(0, tape_1.default)("Multiple ongoing requests are possible at the same time", t => {
+test("Multiple ongoing requests are possible at the same time", t => {
     const scout = TestUtil.buildTestScoutInstance(withMock());
     const expectedRequestIds = [];
     const requests = [];
@@ -557,8 +557,8 @@ test("Application metadata is built and sent", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/72
-(0, tape_1.default)("Ensure that no requests are received by the agent if monitoring is off", t => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
+test("Ensure that no requests are received by the agent if monitoring is off", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: false,
     })));
@@ -597,8 +597,8 @@ test("socketPath setting is honored by scout instance", t => {
     });
 });
 // https://github.com/scoutapp/scout_apm_node/issues/142
-(0, tape_1.default)("Ignored requests are not sent", t => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
+test("Ignored requests are not sent", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: false,
     })));
@@ -630,8 +630,8 @@ test("socketPath setting is honored by scout instance", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/141
-(0, tape_1.default)("export WebTransaction is working", t => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
+test("export WebTransaction is working", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     })));
@@ -665,8 +665,8 @@ test("socketPath setting is honored by scout instance", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/141
-(0, tape_1.default)("export BackgroundTransaction is working", t => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
+test("export BackgroundTransaction is working", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     })));
@@ -701,8 +701,8 @@ test("socketPath setting is honored by scout instance", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/141
-(0, tape_1.default)("export Context.add add context (provided scout instance)", t => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
+test("export Context.add add context (provided scout instance)", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     })));
@@ -734,8 +734,8 @@ test("socketPath setting is honored by scout instance", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/141
-(0, tape_1.default)("export Context.addSync to add context (provided scout instance)", t => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
+test("export Context.addSync to add context (provided scout instance)", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     })));
@@ -755,8 +755,8 @@ test("socketPath setting is honored by scout instance", t => {
     t.end();
 });
 // https://github.com/scoutapp/scout_apm_node/issues/152
-(0, tape_1.default)("export ignoreTransaction successfully ignores transaction (provided scout instance)", t => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
+test("export ignoreTransaction successfully ignores transaction (provided scout instance)", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     })));
@@ -781,8 +781,8 @@ test("socketPath setting is honored by scout instance", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 // https://github.com/scoutapp/scout_apm_node/issues/152
-(0, tape_1.default)("export ignoreTransactionSync successfully ignores transaction (provided scout instance)", t => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)(withMock({
+test("export ignoreTransactionSync successfully ignores transaction (provided scout instance)", t => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     })));
@@ -806,7 +806,7 @@ test("socketPath setting is honored by scout instance", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/171
 test("Adding context does not cause socket close", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = (0, types_1.buildScoutConfiguration)(withMock({
+    const config = types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     }));
@@ -845,7 +845,7 @@ test("Adding context does not cause socket close", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/186
 test("instrumentSync should automatically create a transaction", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = (0, types_1.buildScoutConfiguration)(withMock({
+    const config = types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     }));
@@ -886,7 +886,7 @@ test("CPU and memory stats should be sent periodically", t => {
     const appMeta = new types_1.ApplicationMetadata({
         frameworkVersion: "framework-version-from-app-meta",
     });
-    const config = (0, types_1.buildScoutConfiguration)(withMock({
+    const config = types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     }));
@@ -941,7 +941,7 @@ test("CPU and memory stats should be sent periodically", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/152
 test("export ignoreTransactionSync successfully ignores transaction (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = (0, types_1.buildScoutConfiguration)(withMock({
+    const config = types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     }));
@@ -967,7 +967,7 @@ test("export ignoreTransactionSync successfully ignores transaction (global scou
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.addSync to add context (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = (0, types_1.buildScoutConfiguration)(withMock({
+    const config = types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     }));
@@ -997,11 +997,11 @@ test("export Context.addSync to add context (global scout instance)", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/152
 test("export ignoreTransaction successfully ignores transaction (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = (0, types_1.buildScoutConfiguration)(withMock({
+    const config = types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     }));
-    (0, global_1.getOrCreateActiveGlobalScoutInstance)(config)
+    global_1.getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
         const listener = () => {
             scout.removeListener(types_1.ScoutEvent.IgnoredRequestProcessingSkipped, listener);
@@ -1023,11 +1023,11 @@ test("export ignoreTransaction successfully ignores transaction (global scout in
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.add add context (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = (0, types_1.buildScoutConfiguration)(withMock({
+    const config = types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     }));
-    (0, global_1.getOrCreateActiveGlobalScoutInstance)(config)
+    global_1.getOrCreateActiveGlobalScoutInstance(config)
         .then(scout => {
         const listener = (data) => {
             scout.removeListener(types_1.ScoutEvent.RequestSent, listener);
@@ -1052,7 +1052,7 @@ test("export Context.add add context (global scout instance)", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Config returns a populated special object", t => {
     // We'll need to create a config to use with the global scout instance
-    const config = (0, types_1.buildScoutConfiguration)(withMock({
+    const config = types_1.buildScoutConfiguration(withMock({
         allowShutdown: true,
         monitor: true,
     }));
@@ -1079,6 +1079,6 @@ test("Shutdown the global instance", t => {
     }
     t.end();
 });
-(0, tape_1.default)("teardown: stop shared mock agent", t => {
+test("teardown: stop shared mock agent", t => {
     sharedMock.stop().then(() => t.end()).catch(t.end);
 });

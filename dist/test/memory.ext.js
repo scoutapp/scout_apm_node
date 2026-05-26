@@ -9,16 +9,8 @@
  * and the ENV variable SCOUT_KEY should be provided
  *
  */
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+const tslib_1 = require("tslib");
 const test = require("tape");
 const randomstring_1 = require("randomstring");
 const child_process_1 = require("child_process");
@@ -45,7 +37,7 @@ const DEFAULT_LOADTEST_OPTIONS = {
     maxSeconds: LOAD_TEST_DURATION_SECONDS,
 };
 // https://github.com/scoutapp/scout_apm_node/issues/239
-test("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS }, (t) => __awaiter(void 0, void 0, void 0, function* () {
+test("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS }, (t) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     // Ensure SCOUT_KEY was provided
     if (!process.env.SCOUT_KEY) {
         const err = new Error("Invalid/missing SCOUT_KEY ENV variable");

@@ -112,6 +112,7 @@
     "@types/tmp": "0.0.34",
     "@types/uuid": "3.4.4",
     "app-root-path": "^3.0.0",
+    "tslib": "^2.8.1",
     "big-number": "^2.0.0",
     "cls-hooked": "^4.2.2",
     "continuation-local-storage": "^3.2.1",

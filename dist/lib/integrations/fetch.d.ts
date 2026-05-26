@@ -3,7 +3,7 @@ export declare class FetchIntegration extends RequireIntegration {
     protected readonly packageName: string;
     private subscribed;
     private readonly pending;
-    ritmHook(_exportBag: ExportBag): void;
+    ritmHook(exportBag: ExportBag): void;
     protected shim(e: any): any;
     private subscribe;
 }

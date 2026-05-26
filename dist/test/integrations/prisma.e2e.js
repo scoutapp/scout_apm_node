@@ -1,46 +1,10 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const lib_1 = require("../../lib");
-(0, lib_1.setupRequireIntegrations)(["@prisma/client"]);
+lib_1.setupRequireIntegrations(["@prisma/client"]);
 const client_1 = require("@prisma/client");
-const tape_1 = __importDefault(require("tape"));
-const TestUtil = __importStar(require("../util"));
+const test = require("tape");
+const TestUtil = require("../util");
 const types_1 = require("../../lib/types");
 const scout_1 = require("../../lib/scout");
 const types_2 = require("../../lib/types");
@@ -59,22 +23,22 @@ const sharedMock = new mock_agent_1.MockAgent();
 function makePrisma(url = DATABASE_URL) {
     return new client_1.PrismaClient({ datasources: { db: { url } } });
 }
-(0, tape_1.default)("setup: start shared mock agent", (t) => {
+test("setup: start shared mock agent", (t) => {
     sharedMock.start().then(() => t.end()).catch(t.end);
 });
-(0, tape_1.default)("setup: create TestRecord table", { timeout: TIMEOUT_MS }, (t) => {
+test("setup: create TestRecord table", { timeout: TIMEOUT_MS }, (t) => {
     const prisma = makePrisma();
     prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "TestRecord" (id SERIAL PRIMARY KEY, value TEXT NOT NULL)`)
         .then(() => prisma.$disconnect())
         .then(() => t.end())
         .catch((err) => { prisma.$disconnect().catch(() => undefined); t.end(err); });
 });
-(0, tape_1.default)("the shim replaces PrismaClient", (t) => {
+test("the shim replaces PrismaClient", (t) => {
     t.notEqual(client_1.PrismaClient.name, "PrismaClient", "PrismaClient constructor is patched (name differs from original)");
     t.end();
 });
-(0, tape_1.default)("SQL/Query span is created for a Prisma createMany operation", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
+test("SQL/Query span is created for a Prisma createMany operation", { timeout: TIMEOUT_MS }, (t) => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
@@ -109,8 +73,8 @@ function makePrisma(url = DATABASE_URL) {
         TestUtil.shutdownScout(t, scout, err);
     });
 });
-(0, tape_1.default)("SQL/Query span is created for a Prisma findMany operation", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
+test("SQL/Query span is created for a Prisma findMany operation", { timeout: TIMEOUT_MS }, (t) => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
@@ -142,8 +106,8 @@ function makePrisma(url = DATABASE_URL) {
         TestUtil.shutdownScout(t, scout, err);
     });
 });
-(0, tape_1.default)("SQL/Query span has error context when operation fails", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
+test("SQL/Query span has error context when operation fails", { timeout: TIMEOUT_MS }, (t) => {
+    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
         allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
@@ -176,7 +140,7 @@ function makePrisma(url = DATABASE_URL) {
         TestUtil.shutdownScout(t, scout, err);
     });
 });
-(0, tape_1.default)("no span is created when there is no active Scout instance", { timeout: TIMEOUT_MS }, (t) => {
+test("no span is created when there is no active Scout instance", { timeout: TIMEOUT_MS }, (t) => {
     // PrismaClient used outside any Scout transaction — operation should pass through
     const prisma = makePrisma();
     prisma.testRecord.findMany()
@@ -190,6 +154,6 @@ function makePrisma(url = DATABASE_URL) {
         t.end(err);
     });
 });
-(0, tape_1.default)("teardown: stop shared mock agent", (t) => {
+test("teardown: stop shared mock agent", (t) => {
     sharedMock.stop().then(() => t.end()).catch(t.end);
 });

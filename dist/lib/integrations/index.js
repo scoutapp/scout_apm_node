@@ -1,22 +1,38 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getIntegrationForPackage = getIntegrationForPackage;
-const pg_1 = __importDefault(require("./pg"));
-const mysql_1 = __importDefault(require("./mysql"));
-const mysql2_1 = __importDefault(require("./mysql2"));
-const pug_1 = __importDefault(require("./pug"));
-const mustache_1 = __importDefault(require("./mustache"));
-const ejs_1 = __importDefault(require("./ejs"));
-const http_1 = __importDefault(require("./http"));
-const express_1 = __importDefault(require("./express"));
-const nuxt_1 = __importDefault(require("./nuxt"));
-const https_1 = __importDefault(require("./https"));
-const ioredis_1 = __importDefault(require("./ioredis"));
-const prisma_1 = __importDefault(require("./prisma"));
-const fetch_1 = __importDefault(require("./fetch"));
-const redis_1 = __importDefault(require("./redis"));
-const mongodb_1 = __importDefault(require("./mongodb"));
+const pg_1 = require("./pg");
+const mysql_1 = require("./mysql");
+const mysql2_1 = require("./mysql2");
+const pug_1 = require("./pug");
+const mustache_1 = require("./mustache");
+const ejs_1 = require("./ejs");
+const http_1 = require("./http");
+const express_1 = require("./express");
+const nuxt_1 = require("./nuxt");
+const https_1 = require("./https");
+const ioredis_1 = require("./ioredis");
+const prisma_1 = require("./prisma");
+const fetch_1 = require("./fetch");
+const redis_1 = require("./redis");
+const mongodb_1 = require("./mongodb");
 const integrations_1 = require("../types/integrations");
+exports.KNOWN_PACKAGES = [
+    pg_1.default.getPackageName(),
+    mysql_1.default.getPackageName(),
+    mysql2_1.default.getPackageName(),
+    pug_1.default.getPackageName(),
+    mustache_1.default.getPackageName(),
+    ejs_1.default.getPackageName(),
+    http_1.default.getPackageName(),
+    express_1.default.getPackageName(),
+    nuxt_1.default.getPackageName(),
+    https_1.default.getPackageName(),
+    ioredis_1.default.getPackageName(),
+    prisma_1.default.getPackageName(),
+    fetch_1.default.getPackageName(),
+    redis_1.default.getPackageName(),
+    mongodb_1.default.getPackageName(),
+];
 function getIntegrationForPackage(pkg) {
     switch (pkg) {
         case pg_1.default.getPackageName(): return pg_1.default;

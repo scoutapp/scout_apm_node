@@ -30,7 +30,7 @@ class RequireIntegration {
      * @param {ExportBag} exportBag - The bag of exports that have been shimmed by scout already
      */
     ritmHook(exportBag) {
-        const _hook = new require_in_the_middle_1.Hook([this.getPackageName()], (exports, name, basedir) => {
+        const hook = new Hook([this.getPackageName()], (exports, name, basedir) => {
             // Set the scout instsance to the global one if there is one
             // this is needed in cases where require()s are run dynamically, long after scout.setup()
             // we assume that scout.setup() will set *one* instance of scout to be the global one

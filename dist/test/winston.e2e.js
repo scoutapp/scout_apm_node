@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const tape_1 = __importDefault(require("tape"));
-const winston = __importStar(require("winston"));
+const test = require("tape");
+const winston = require("winston");
 const tmp = require("tmp");
 const types_1 = require("../lib/types");
-const TestUtil = __importStar(require("./util"));
-(0, tape_1.default)("Winston logger is successfully logged to", t => {
+const TestUtil = require("./util");
+test("Winston logger is successfully logged to", t => {
     let scout;
     let mockAgent;
     let logger;
@@ -14,7 +14,7 @@ const TestUtil = __importStar(require("./util"));
         logger = winston.createLogger({ transports: [
                 new winston.transports.File({ filename }),
             ] });
-        const logFn = (0, types_1.buildWinstonLogFn)(logger);
+        const logFn = types_1.buildWinstonLogFn(logger);
         return TestUtil.buildTestScoutInstanceWithMock({}, { logFn });
     })
         .then(({ scout: s, mockAgent: ma }) => {
@@ -27,7 +27,7 @@ const TestUtil = __importStar(require("./util"));
         logger.query({ until: new Date(), limit: 10, fields: ["message"] }, (err, results) => {
             if (err || !results) {
                 t.fail("no results returned from querying the logger");
-                reject();
+                reject(undefined);
                 return;
             }
             t.assert(results.file.length > 0, "results were returned from querying logger");
@@ -51,7 +51,7 @@ test("Scout inherits winston logger level", t => {
                 new winston.transports.File({ filename }),
             ],
         });
-        const logFn = (0, types_1.buildWinstonLogFn)(logger);
+        const logFn = types_1.buildWinstonLogFn(logger);
         scoutConfig = { allowShutdown: true, monitor: true };
         t.equals(scoutConfig.logLevel, undefined, "scout log level is initially undefined");
         return TestUtil.buildTestScoutInstanceWithMock(scoutConfig, { logFn });

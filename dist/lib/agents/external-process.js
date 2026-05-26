@@ -242,7 +242,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             this.stopped = true;
             // The process tree itself must be killed
             // otherwise instances of core-agent may be leaked.
-            if (process.platform === "linux") {
+            if (process.platform === "linux" && p.pid !== undefined) {
                 process.kill(-1 * p.pid);
             }
             p.kill();
@@ -300,7 +300,8 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 // Ensure the socket is not used again
                 socket.doNotUse = true;
                 socket.end();
-                return Promise.resolve(socket.destroy());
+                socket.destroy();
+                return Promise.resolve();
             },
             validate: (socket) => Promise.resolve(!socket.destroyed),
         });

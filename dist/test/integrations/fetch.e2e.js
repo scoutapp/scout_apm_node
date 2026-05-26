@@ -1,46 +1,10 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const lib_1 = require("../../lib");
-(0, lib_1.setupRequireIntegrations)(["fetch"]);
-const http = __importStar(require("http"));
-const tape_1 = __importDefault(require("tape"));
-const TestUtil = __importStar(require("../util"));
+lib_1.setupRequireIntegrations(["fetch"]);
+const http = require("http");
+const test = require("tape");
+const TestUtil = require("../util");
 const types_1 = require("../../lib/types");
 const scout_1 = require("../../lib/scout");
 const types_2 = require("../../lib/types");
@@ -51,11 +15,11 @@ const sharedMock = new mock_agent_1.MockAgent();
 // Spin up a minimal HTTP server once for all tests that need a target to fetch.
 let testServer;
 let testServerPort;
-(0, tape_1.default)("setup: start shared mock agent", (t) => {
+test("setup: start shared mock agent", (t) => {
     sharedMock.start().then(() => t.end()).catch(t.end);
 });
-(0, tape_1.default)("setup: start local HTTP target server", (t) => {
-    testServer = http.createServer((_req, res) => {
+test("setup: start local HTTP target server", (t) => {
+    testServer = http.createServer((req, res) => {
         res.writeHead(200, { "Content-Type": "text/plain" });
         res.end("ok");
     });
@@ -65,14 +29,14 @@ let testServerPort;
     });
 });
 if (NODE_MAJOR < 18) {
-    (0, tape_1.default)("fetch integration is skipped on Node < 18", (t) => {
+    test("fetch integration is skipped on Node < 18", (t) => {
         t.pass(`Node ${process.version} < 18 — fetch instrumentation not active`);
         t.end();
     });
 }
 else {
-    (0, tape_1.default)("HTTP/GET span is created for a fetch request", { timeout: TIMEOUT_MS }, (t) => {
-        const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
+    test("HTTP/GET span is created for a fetch request", { timeout: TIMEOUT_MS }, (t) => {
+        const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
             allowShutdown: true,
             monitor: true,
             coreAgentDownload: false,
@@ -99,8 +63,8 @@ else {
         }))
             .catch((err) => TestUtil.shutdownScout(t, scout, err));
     });
-    (0, tape_1.default)("HTTP/POST span is created for a fetch POST request", { timeout: TIMEOUT_MS }, (t) => {
-        const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
+    test("HTTP/POST span is created for a fetch POST request", { timeout: TIMEOUT_MS }, (t) => {
+        const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
             allowShutdown: true,
             monitor: true,
             coreAgentDownload: false,
@@ -128,8 +92,8 @@ else {
         }))
             .catch((err) => TestUtil.shutdownScout(t, scout, err));
     });
-    (0, tape_1.default)("HTTP/GET span has error context on network failure", { timeout: TIMEOUT_MS }, (t) => {
-        const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
+    test("HTTP/GET span has error context on network failure", { timeout: TIMEOUT_MS }, (t) => {
+        const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
             allowShutdown: true,
             monitor: true,
             coreAgentDownload: false,
@@ -157,8 +121,8 @@ else {
         }))
             .catch((err) => TestUtil.shutdownScout(t, scout, err));
     });
-    (0, tape_1.default)("concurrent fetch requests each get their own span", { timeout: TIMEOUT_MS }, (t) => {
-        const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
+    test("concurrent fetch requests each get their own span", { timeout: TIMEOUT_MS }, (t) => {
+        const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
             allowShutdown: true,
             monitor: true,
             coreAgentDownload: false,
@@ -191,7 +155,7 @@ else {
             .catch((err) => TestUtil.shutdownScout(t, scout, err));
     });
 }
-(0, tape_1.default)("teardown: stop local HTTP target server", (t) => {
+test("teardown: stop local HTTP target server", (t) => {
     if (testServer) {
         testServer.close(() => t.end());
     }
@@ -199,6 +163,6 @@ else {
         t.end();
     }
 });
-(0, tape_1.default)("teardown: stop shared mock agent", (t) => {
+test("teardown: stop shared mock agent", (t) => {
     sharedMock.stop().then(() => t.end()).catch(t.end);
 });
