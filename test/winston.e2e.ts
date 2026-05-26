@@ -32,7 +32,7 @@ test("Winston logger is successfully logged to", t => {
         })
         .then(() => scout.setup())
         .then((s: any) => t.assert(s, "scout object was successfully set up"))
-        .then(() => new Promise((resolve, reject) => {
+        .then(() => new Promise<void>((resolve, reject) => {
             logger.query(
                 {until: new Date(), limit: 10, fields: ["message"]},
                 (err: any, results: any) => {
