@@ -35,7 +35,7 @@ export declare class Scout extends EventEmitter {
     private agent;
     private processOptions;
     private applicationMetadata;
-    private asyncNamespace;
+    private asyncStorage;
     private syncCurrentRequest;
     private syncCurrentSpan;
     private uncaughtExceptionListenerFn;
@@ -158,9 +158,6 @@ export declare class Scout extends EventEmitter {
     private clearAsyncNamespaceEntry;
     private createAgentForExistingSocket;
     private downloadAndLaunchAgent;
-    /**
-     * Create an async namespace internally for use with tracking if not already present
-     */
     private createAsyncNamespace;
     /**
      * Perform some action within a context
