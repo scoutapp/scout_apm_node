@@ -46,22 +46,18 @@ export interface EndpointInfo {
  * so we implement our own walker for Express 5 and fall back to the library for Express 4.
  */
 export function listExpressEndpoints(app: any): EndpointInfo[] {
-    // Try express-list-endpoints first (works for Express 4)
-    const libResult = listExpressEndpointsLib(app);
-    if (libResult && libResult.length > 0) {
-        return libResult;
-    }
-
-    // Express 5: walk the router stack ourselves
     const endpoints: EndpointInfo[] = [];
 
-    // Express 4 uses app._router; Express 5 uses app.router (a getter that throws on Express 4)
+    // Walk the router stack ourselves first — works for both Express 4 and Express 5.
+    // express-list-endpoints lib is used as a fallback because it only covers Express 4
+    // and returns incomplete results for Express 5 (misses dynamic routes).
     let router = app._router;
     if (!router) {
         try { router = app.router; } catch { /* Express 4 getter throws */ }
     }
     if (!router || !router.stack) {
-        return endpoints;
+        // Can't walk the stack — fall back to the lib
+        return listExpressEndpointsLib(app) || [];
     }
 
     function walkStack(stack: any[], basePath: string = ""): void {
@@ -112,7 +108,13 @@ export function listExpressEndpoints(app: any): EndpointInfo[] {
     }
 
     walkStack(router.stack);
-    return endpoints;
+
+    if (endpoints.length > 0) {
+        return endpoints;
+    }
+
+    // Custom walker found nothing — fall back to express-list-endpoints lib
+    return listExpressEndpointsLib(app) || [];
 }
 
 export interface ApplicationWithScout {
@@ -257,7 +259,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         }
         if (!routePath && appRouter && appRouter.stack) {
             // Find routes that match the current URL
-            matchedRouteMiddleware = req.app._router.stack
+            matchedRouteMiddleware = appRouter.stack
                 .filter((middleware: any) => {
                     // We can recognize a middleware as a route if .route & .regexp are present
                     if (!middleware || !middleware.route || !middleware.regexp) { return false; }
