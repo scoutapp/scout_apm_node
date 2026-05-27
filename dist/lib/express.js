@@ -1,15 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.listExpressEndpoints = listExpressEndpoints;
-exports.scoutMiddleware = scoutMiddleware;
-exports.errorMiddleware = errorMiddleware;
-const on_finished_1 = __importDefault(require("on-finished"));
+const onFinished = require("on-finished");
 const async_hooks_1 = require("async_hooks");
 const types_1 = require("./types");
 const Constants = require("./constants");
 const global_1 = require("./global");
 const path_to_regexp_1 = require("path-to-regexp");
-const listExpressEndpoints = require("express-list-endpoints");
+const listExpressEndpointsLib = require("express-list-endpoints");
 const getNanoTime = require("nano-time");
 const BigNumber = require("big-number");
 /**
@@ -24,23 +21,20 @@ const BigNumber = require("big-number");
  * so we implement our own walker for Express 5 and fall back to the library for Express 4.
  */
 function listExpressEndpoints(app) {
-    // Try express-list-endpoints first (works for Express 4)
-    const libResult = listExpressEndpointsLib(app);
-    if (libResult && libResult.length > 0) {
-        return libResult;
-    }
-    // Express 5: walk the router stack ourselves
     const endpoints = [];
-    // Express 4 uses app._router; Express 5 uses app.router (a getter that throws on Express 4)
+    // Walk the router stack ourselves first — works for both Express 4 and Express 5.
+    // express-list-endpoints lib is used as a fallback because it only covers Express 4
+    // and returns incomplete results for Express 5 (misses dynamic routes).
     let router = app._router;
     if (!router) {
         try {
             router = app.router;
         }
-        catch { /* Express 4 getter throws */ }
+        catch ( /* Express 4 getter throws */_a) { /* Express 4 getter throws */ }
     }
     if (!router || !router.stack) {
-        return endpoints;
+        // Can't walk the stack — fall back to the lib
+        return listExpressEndpointsLib(app) || [];
     }
     function walkStack(stack, basePath = "") {
         for (const layer of stack) {
@@ -55,15 +49,15 @@ function listExpressEndpoints(app) {
                     middleware: [],
                 });
             }
-            // Nested router (app.use('/prefix', router))
             else if (layer.name === "router" && layer.handle && layer.handle.stack) {
+                // Nested router (app.use('/prefix', router))
                 let prefix = "";
                 // Express 5: check layer.path directly
                 if (layer.path) {
                     prefix = layer.path;
                 }
-                // Express 5: extract prefix from matcher by testing common path patterns
                 else if (layer.matchers && layer.matchers.length > 0) {
+                    // Express 5: extract prefix from matcher by testing common path patterns
                     // The matcher function returns { path: '/matched/prefix', params: {} } or false
                     const probeResults = [
                         layer.matchers[0]("/"),
@@ -77,8 +71,8 @@ function listExpressEndpoints(app) {
                         prefix = probeResults[0].path;
                     }
                 }
-                // Express 4: layer.regexp
                 else if (layer.regexp) {
+                    // Express 4: layer.regexp
                     const match = layer.regexp.source.match(/^\^\\\/([^\\\/\?\*\+\[\]]+)/);
                     if (match) {
                         prefix = "/" + match[1];
@@ -89,8 +83,13 @@ function listExpressEndpoints(app) {
         }
     }
     walkStack(router.stack);
-    return endpoints;
+    if (endpoints.length > 0) {
+        return endpoints;
+    }
+    // Custom walker found nothing — fall back to express-list-endpoints lib
+    return listExpressEndpointsLib(app) || [];
 }
+exports.listExpressEndpoints = listExpressEndpoints;
 // Support common request queue time headers
 // https://github.com/scoutapp/scout_apm_node/issues/68
 const REQUEST_QUEUE_TIME_HEADERS = ["x-queue-start", "x-request-start"];
@@ -179,11 +178,11 @@ function scoutMiddleware(opts) {
             try {
                 appRouter = req.app.router;
             }
-            catch { /* Express 4 getter throws */ }
+            catch ( /* Express 4 getter throws */_a) { /* Express 4 getter throws */ }
         }
         if (!routePath && appRouter && appRouter.stack) {
             // Find routes that match the current URL
-            matchedRouteMiddleware = req.app._router.stack
+            matchedRouteMiddleware = appRouter.stack
                 .filter((middleware) => {
                 // We can recognize a middleware as a route if .route & .regexp are present
                 if (!middleware || !middleware.route || !middleware.regexp) {
@@ -220,7 +219,7 @@ function scoutMiddleware(opts) {
                         .forEach(r => {
                         // Enrich endpoint list with regexes for the full match
                         r.regex = path_to_regexp_1.pathToRegexp(r.path);
-                        ROUTE_INFO_LOOKUP[r.path] = r;
+                        ROUTE_INFO_LOOKUP[r.path] = Object.assign(Object.assign({}, r), { middleware: r.middleware || [], regex: r.regex });
                     });
                     // Search again after adding to the cache
                     matchedRoute = Object.values(ROUTE_INFO_LOOKUP).find(r => r.regex.exec(req.originalUrl));
@@ -344,6 +343,7 @@ function scoutMiddleware(opts) {
         });
     };
 }
+exports.scoutMiddleware = scoutMiddleware;
 /**
  * Express 4-arg error-handling middleware.
  * Place after all other app.use()/routes so Express routes errors through it.
@@ -375,3 +375,4 @@ function errorMiddleware() {
         next(err);
     };
 }
+exports.errorMiddleware = errorMiddleware;
