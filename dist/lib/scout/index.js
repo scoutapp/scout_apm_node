@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendThroughAgent = exports.sendStopSpan = exports.sendTagSpan = exports.sendStartSpan = exports.sendTagRequest = exports.sendStopRequest = exports.sendStartRequest = exports.Scout = exports.ScoutSpan = exports.ScoutRequest = void 0;
 const events_1 = require("events");
 const path = require("path");
 const process = require("process");
@@ -17,9 +18,9 @@ const Requests = require("../protocol/v1/requests");
 const Constants = require("../constants");
 const Errors = require("../errors");
 var request_1 = require("./request");
-exports.ScoutRequest = request_1.default;
+Object.defineProperty(exports, "ScoutRequest", { enumerable: true, get: function () { return request_1.default; } });
 var span_1 = require("./span");
-exports.ScoutSpan = span_1.default;
+Object.defineProperty(exports, "ScoutSpan", { enumerable: true, get: function () { return span_1.default; } });
 const request_2 = require("./request");
 const DONE_NOTHING = () => undefined;
 class Scout extends events_1.EventEmitter {
@@ -30,7 +31,7 @@ class Scout extends events_1.EventEmitter {
         this.syncCurrentRequest = null;
         this.syncCurrentSpan = null;
         this.cpuUsageStart = getCPUUsage();
-        this.config = config || types_1.buildScoutConfiguration();
+        this.config = config || (0, types_1.buildScoutConfiguration)();
         if (opts) {
             if (opts.logFn) {
                 this.logFn = opts.logFn;
@@ -51,12 +52,12 @@ class Scout extends events_1.EventEmitter {
             version = version.slice(1);
         }
         // Build expected bin & socket path based on current version
-        const triple = types_1.generateTriple();
+        const triple = (0, types_1.generateTriple)();
         this.binPath = path.join(Constants.DEFAULT_CORE_AGENT_DOWNLOAD_CACHE_DIR, `scout_apm_core-v${version}-${triple}`, Constants.CORE_AGENT_BIN_FILE_NAME);
         // If the passed-in logging function (saved @ logFn) has a 'logger' property which has a correposnding level
         // attempt to set the log level to the passed in logger's level
-        if (this.logFn && this.logFn.logger && this.logFn.logger.level && types_1.isLogLevel(this.logFn.logger.level)) {
-            this.config.logLevel = types_1.parseLogLevel(this.logFn.logger.level);
+        if (this.logFn && this.logFn.logger && this.logFn.logger.level && (0, types_1.isLogLevel)(this.logFn.logger.level)) {
+            this.config.logLevel = (0, types_1.parseLogLevel)(this.logFn.logger.level);
         }
         // Create async namespace if it does not exist
         this.createAsyncNamespace();
@@ -68,7 +69,7 @@ class Scout extends events_1.EventEmitter {
         if (!this.config || !this.config.logLevel) {
             return;
         }
-        if (types_1.isIgnoredLogMessage(this.config.logLevel, level)) {
+        if ((0, types_1.isIgnoredLogMessage)(this.config.logLevel, level)) {
             return;
         }
         return this.logFn(message, level);
@@ -219,7 +220,7 @@ class Scout extends events_1.EventEmitter {
             process.on("uncaughtException", this.uncaughtExceptionListenerFn);
         })
             // Set up this scout instance as the global one, if there isn't already one
-            .then(() => global_1.setActiveGlobalScoutInstance(this))
+            .then(() => (0, global_1.setActiveGlobalScoutInstance)(this))
             // Start the statistics sending interval
             .then(() => this.startSendingStatistics())
             .then(() => this);
@@ -286,9 +287,9 @@ class Scout extends events_1.EventEmitter {
     filterRequestPath(path) {
         switch (this.config.uriReporting) {
             case types_1.URIReportingLevel.FilteredParams:
-                return types_1.scrubRequestPathParams(path);
+                return (0, types_1.scrubRequestPathParams)(path);
             case types_1.URIReportingLevel.Path:
-                return types_1.scrubRequestPath(path);
+                return (0, types_1.scrubRequestPath)(path);
             default:
                 return path;
         }
@@ -523,7 +524,7 @@ class Scout extends events_1.EventEmitter {
     // Setup integrations
     setupIntegrations() {
         Object.keys(global_1.EXPORT_BAG)
-            .map(packageName => integrations_1.getIntegrationForPackage(packageName))
+            .map(packageName => (0, integrations_1.getIntegrationForPackage)(packageName))
             .forEach(integration => integration.setScoutInstance(this));
     }
     /**
@@ -534,12 +535,12 @@ class Scout extends events_1.EventEmitter {
     agentIsRunning(socketPath) {
         const socketType = this.getSocketType();
         if (socketType === types_1.AgentSocketType.Unix) {
-            return fs_extra_1.pathExists(socketPath);
+            return (0, fs_extra_1.pathExists)(socketPath);
         }
         if (socketType === types_1.AgentSocketType.TCP) {
             const [_, __, portRaw] = socketPath.split(":");
             const port = parseInt(portRaw, 10);
-            return tcp_port_used_1.check(port);
+            return (0, tcp_port_used_1.check)(port);
         }
         return Promise.reject(new Errors.UnknownSocketType());
     }
@@ -574,7 +575,7 @@ class Scout extends events_1.EventEmitter {
         })
             // Build process options and agent
             .then(() => {
-            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
+            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), (0, types_1.buildProcessOptions)(this.config));
             return new external_process_1.default(this.processOptions, this.log);
         })
             .then(agent => this.setupAgent(agent));
@@ -594,7 +595,7 @@ class Scout extends events_1.EventEmitter {
         this.downloaderOptions = Object.assign({
             cacheDir: path.dirname(this.binPath),
             updateCache: true,
-        }, this.downloaderOptions, types_1.buildDownloadOptions(this.config));
+        }, this.downloaderOptions, (0, types_1.buildDownloadOptions)(this.config));
         // Download the appropriate binary
         return this.downloader
             .download(this.coreAgentVersion, this.downloaderOptions)
@@ -604,7 +605,7 @@ class Scout extends events_1.EventEmitter {
         })
             // Build options for the agent and create the agent
             .then(() => {
-            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), types_1.buildProcessOptions(this.config));
+            this.processOptions = new types_1.ProcessOptions(this.binPath, this.getSocketPath(), (0, types_1.buildProcessOptions)(this.config));
             const agent = new external_process_1.default(this.processOptions, this.log);
             if (!agent) {
                 throw new Errors.NoAgentPresent();

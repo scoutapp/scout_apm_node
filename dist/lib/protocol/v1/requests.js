@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.V1ApplicationEvent = exports.V1TagSpan = exports.V1StopSpan = exports.V1StartSpan = exports.V1TagRequest = exports.V1FinishRequest = exports.V1StartRequest = exports.V1Register = exports.V1GetVersionRequest = void 0;
 const uuid_1 = require("uuid");
 const Constants = require("../../constants");
 const types_1 = require("../../types");
@@ -31,7 +32,7 @@ class V1StartRequest extends types_1.BaseAgentRequest {
         this.type = types_1.AgentRequestType.V1StartRequest;
         const prefix = Constants.DEFAULT_REQUEST_PREFIX;
         this.timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
-        this.requestId = opts && opts.requestId ? opts.requestId : `${prefix}${uuid_1.v4()}`;
+        this.requestId = opts && opts.requestId ? opts.requestId : `${prefix}${(0, uuid_1.v4)()}`;
         this.json = {
             StartRequest: {
                 request_id: this.requestId,
@@ -81,7 +82,7 @@ class V1StartSpan extends types_1.BaseAgentRequest {
         this.operation = operation;
         this.parentId = opts && opts.parentId ? opts.parentId : undefined;
         const prefix = Constants.DEFAULT_SPAN_PREFIX;
-        this.spanId = opts && opts.spanId ? opts.spanId : `${prefix}${uuid_1.v4()}`;
+        this.spanId = opts && opts.spanId ? opts.spanId : `${prefix}${(0, uuid_1.v4)()}`;
         this.timestamp = opts && opts.timestamp ? opts.timestamp : new Date();
         this.json = {
             StartSpan: {

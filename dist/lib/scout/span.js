@@ -18,7 +18,7 @@ class ScoutSpan {
         this.ignored = false;
         this.logFn = () => undefined;
         this.requestId = opts.requestId;
-        this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_SPAN_PREFIX}${uuid_1.v4()}`;
+        this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_SPAN_PREFIX}${(0, uuid_1.v4)()}`;
         this.operation = opts.operation;
         if (opts) {
             if (opts.logFn) {
@@ -231,14 +231,14 @@ class ScoutSpan {
             return Promise.resolve(this);
         }
         // Start Span
-        this.sending = index_1.sendStartSpan(inst, this)
+        this.sending = (0, index_1.sendStartSpan)(inst, this)
             // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
             // Send tags
             .then(() => Promise.all(Object.entries(this.tags)
-            .map(([name, value]) => index_1.sendTagSpan(inst, this, name, value))))
+            .map(([name, value]) => (0, index_1.sendTagSpan)(inst, this, name, value))))
             // End the span
-            .then(() => index_1.sendStopSpan(inst, this))
+            .then(() => (0, index_1.sendStopSpan)(inst, this))
             .then(() => this.sent = true)
             .then(() => this)
             .catch(err => {

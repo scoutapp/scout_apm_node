@@ -16,7 +16,7 @@ class ScoutRequest {
         this.tags = {};
         this.ignored = false;
         this.logFn = () => undefined;
-        this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_REQUEST_PREFIX}${uuid_1.v4()}`;
+        this.id = opts && opts.id ? opts.id : `${Constants.DEFAULT_REQUEST_PREFIX}${(0, uuid_1.v4)()}`;
         if (opts) {
             if (opts.logFn) {
                 this.logFn = opts.logFn;
@@ -213,14 +213,14 @@ class ScoutRequest {
             inst.emit(types_2.ScoutEvent.IgnoredRequestProcessingSkipped, this);
             return Promise.resolve(this);
         }
-        this.sending = index_1.sendStartRequest(inst, this)
+        this.sending = (0, index_1.sendStartRequest)(inst, this)
             // Send all the child spans
             .then(() => Promise.all(this.childSpans.map(s => s.send())))
             // Send tags
             .then(() => Promise.all(Object.entries(this.tags)
-            .map(([name, value]) => index_1.sendTagRequest(inst, this, name, value))))
+            .map(([name, value]) => (0, index_1.sendTagRequest)(inst, this, name, value))))
             // End the span
-            .then(() => index_1.sendStopRequest(inst, this))
+            .then(() => (0, index_1.sendStopRequest)(inst, this))
             .then(() => this.sent = true)
             .then(() => this)
             .catch(err => {

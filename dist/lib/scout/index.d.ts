@@ -21,9 +21,9 @@ export interface CallbackInfo {
     parent?: ScoutSpan | ScoutRequest;
     request?: ScoutRequest;
 }
-export declare type DoneCallback = (done: () => void, info: CallbackInfo) => any;
-export declare type SpanCallback = (info: CallbackInfo) => any;
-export declare type RequestCallback = (info: CallbackInfo) => any;
+export type DoneCallback = (done: () => void, info: CallbackInfo) => any;
+export type SpanCallback = (info: CallbackInfo) => any;
+export type RequestCallback = (info: CallbackInfo) => any;
 export declare class Scout extends EventEmitter {
     private readonly config;
     private downloader;
