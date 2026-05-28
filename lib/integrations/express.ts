@@ -119,7 +119,7 @@ export class ExpressIntegration extends RequireIntegration {
                     // Get the current request if available
                     const currentRequest = integration.scout.getCurrentRequest();
                     if (currentRequest) {
-                        // Mark the curernt request as errored
+                        // Mark the current request as errored
                         currentRequest.addContextSync(ScoutContextName.Error, "true");
                     }
 

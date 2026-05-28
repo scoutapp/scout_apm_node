@@ -152,7 +152,7 @@ export function setGlobalLastUsedConfiguration(config: Partial<ScoutConfiguratio
 /**
  * Set the last used scout options, to support flexibility in setup from middleware or scout.install()
  *
- * @param {Partial<ScoutOptsuration>} opts
+ * @param {Partial<ScoutOptions>} opts
  */
 export function setGlobalLastUsedOptions(opts: ScoutOptions): void {
     LAST_USED_OPTS = opts;
