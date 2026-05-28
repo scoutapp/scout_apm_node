@@ -22,7 +22,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "build-watch": "tsc --watch -p tsconfig.json",
-    "lint": "tslint -p tsconfig.json",
+    "lint": "eslint lib/ index.ts",
     "test": "npm run lint && npm run test-unit && npm run test-int && npm run test-e2e && npm run test-integration-pg && npm run test-integration-mysql",
     "test-unit": "tape 'dist/test/**/*.unit.js'",
     "test-int": "tape 'dist/test/**/*.int.js'",
@@ -91,7 +91,9 @@
     "supertest": "^4.0.2",
     "tape": "^4.12.1",
     "tempfile": "^3.0.0",
-    "tslint": "^5.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
     "typescript": "^4.9.0"
   },
   "resolutions": {
