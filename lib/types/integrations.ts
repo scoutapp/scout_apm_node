@@ -1,4 +1,4 @@
-import { Hook } from "require-in-the-middle";
+import Hook = require("require-in-the-middle");
 
 import { Scout } from "../scout";
 import { LogFn } from "./util";

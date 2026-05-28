@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.doNothingRequireIntegration = exports.RequireIntegration = void 0;
-exports.getIntegrationSymbol = getIntegrationSymbol;
-const require_in_the_middle_1 = require("require-in-the-middle");
+exports.doNothingRequireIntegration = exports.RequireIntegration = exports.getIntegrationSymbol = void 0;
+const Hook = require("require-in-the-middle");
 const enum_1 = require("../types/enum");
 const global_1 = require("../global");
 let SYMBOL;
@@ -13,6 +12,7 @@ function getIntegrationSymbol() {
     SYMBOL = Symbol("scout");
     return SYMBOL;
 }
+exports.getIntegrationSymbol = getIntegrationSymbol;
 class RequireIntegration {
     constructor() {
         this.logFn = () => undefined;
@@ -31,7 +31,7 @@ class RequireIntegration {
      * @param {ExportBag} exportBag - The bag of exports that have been shimmed by scout already
      */
     ritmHook(exportBag) {
-        const _hook = new require_in_the_middle_1.Hook([this.getPackageName()], (exports, name, basedir) => {
+        const _hook = new Hook([this.getPackageName()], (exports, name, basedir) => {
             // Set the scout instsance to the global one if there is one
             // this is needed in cases where require()s are run dynamically, long after scout.setup()
             // we assume that scout.setup() will set *one* instance of scout to be the global one
