@@ -35,22 +35,22 @@ export class PGIntegration extends RequireIntegration {
         const originalConnectFn = Client.prototype.connect;
         const integration = this;
 
-        const fn: any = function(this: Client, userCallback?: (err?: Error) => void) {
+        const fn: any = function(this: Client, userCallback?: (err?: Error, connection?: any) => void) {
             integration.logFn("[scout/integrations/pg] Connecting to Postgres db...", LogLevel.Trace);
 
             // If a callback was specified we need to do callback version
             if (userCallback) {
                 return originalConnectFn.apply(this, [
-                    err => {
+                    (err, connection) => {
                         if (err) {
                             integration.logFn(
                                 "[scout/integrations/pg] Connection to Postgres db failed",
                                 LogLevel.Trace,
                             );
-                            userCallback(err);
+                            userCallback(err, connection);
                             return;
                         }
-                        userCallback();
+                        userCallback(undefined, connection);
                     },
                 ]);
             }
