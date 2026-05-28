@@ -1,168 +1,210 @@
-# Scout APM NodeJS Client #
+# Scout APM Node.js Agent
 
-Monitor the performance of NodeJS apps, with [Scout](https://www.scoutapp.com). Detailed performance metrics and transactional traces are collected once the `scout-apm` package is installed and configured.
+Monitor the performance of Node.js apps with [Scout APM](https://www.scoutapp.com). Detailed performance metrics and transactional traces are collected once the `@scout_apm/scout-apm` package is installed and configured.
 
 ## Requirements
 
-[NodeJS](https://nodejs.org) Versions:
-- 10+
+- **Node.js** ≥ 18
+- **npm** or **yarn**
 
-Scout APM works with the following frameworks:
-- [Express](https://expressjs.com) 4.x
+Scout APM works with the following frameworks out of the box:
+
+- [Express](https://expressjs.com) 4.x / 5.x
+- [NestJS](https://nestjs.com) 10+
+
+## Installation
+
+```shell
+npm install @scout_apm/scout-apm
+```
 
 ## Quick Start
 
-__A Scout account is required. [Signup for Scout](https://apm.scoutapp.com/users/sign_up).__
-
-## Installing the Scout client
-
-Install `@scout_apm/scout-apm`:
-
-```shell
-$ npm install @scout_apm/scout-apm
-```
-
-## Using `@scout_apm/scout-apm` with [`express`](https://expressjs.com/)
-
-Scout supports use with `express`-based applications by using app-wide middleware:
+### Express
 
 ```javascript
 const scout = require("@scout_apm/scout-apm");
-const process = require("process");
 const express = require("express");
 
-// Initialize the express application
 const app = express();
 
-// Enable the app-wide scout middleware
+// Scout middleware must be registered before your routes
 app.use(scout.expressMiddleware());
 
-// Set up the routes for the application
-app.get('/', function (req, res) {
-  // Add some custom context to the request synchronously
-  // In an asynchronous context, `await` or `.then` can be used with `scout.api.Context.add`
-  scout.api.Context.addSync("custom_name", "custom_value");
-
-  res.send('hello, world!');
+app.get("/", (req, res) => {
+  // Add custom context synchronously; use scout.api.Context.add() in async handlers
+  scout.api.Context.addSync("user_id", req.user?.id);
+  res.send("hello, world!");
 });
 
-// Shut down the core-agent when this program exits
-process.on('exit', () => {
-  if (app && app.scout) {
-    app.scout.shutdown();
-  }
-});
-
-// Start application
 async function start() {
-  // Install and wait for scout to set up
-  await scout.install({
-    monitor: true, // enable monitoring
+  await scout.init({
     name: "<application name>",
     key: "<scout key>",
-
-    // allow scout to be shutdown when the process exits
-    allowShutdown: true,
+    monitor: true,
   });
 
-  // Start the server
   app.listen(3000);
 }
 
-if require.main === module { start(); }
+start();
 ```
 
-In addition to specifying `app` and `name` in the `config` object when building the middleware, you may also specify it via ENV by setting `SCOUT_NAME` and `SCOUT_APP` as environment variables for the process.
+### TypeScript
 
-If your `core-agent` instance is running externally and you do not need `@scout_apm/scout-apm` to start it, you can set the `coreAgentLaunch` setting to `false` or specify the ENV variable `SCOUT_CORE_AGENT_LAUNCH` with value `false`.
+Types are included — no `@types` package needed.
 
-For more information on configuration, see `docs/configuration.md`
+```typescript
+import * as scout from "@scout_apm/scout-apm";
+import express from "express";
 
-## Supported module integrations ##
+const app = express();
 
-`@scout_apm/scout-apm` supports a variety of modules and
+app.use(scout.expressMiddleware());
 
-| Name       | Status | Description                                                                          |
-|------------|--------|--------------------------------------------------------------------------------------|
-| `net`      | STABLE | NodeJS standard library `net` module                                                 |
-| `http`     | STABLE | NodeJS standard library `http` module                                                |
-| `https`    | STABLE | NodeJS standard library `https` module                                               |
-| `ejs`      | STABLE | [EJS](https://www.npmjs.com/package/ejs) templating library                          |
-| `mustache` | STABLE | [Mustache](https://github.com/janl/mustache.js/) templating library                  |
-| `pug`      | STABLE | [Pug](https://pugjs.org/api/getting-started.html) (formerly Jade) templating library |
-| `mysql`    | STABLE | [Mysql](https://www.npmjs.com/package/mysql) database driver                         |
-| `mysql2`   | STABLE | [Mysql2](https://www.npmjs.com/package/mysql2) database driver                       |
-| `pg`       | STABLE | [Postgres](https://www.npmjs.com/package/postgres) database driver                   |
-| `express`  | STABLE | [Express](https://www.npmjs.com/package/express) web framework                       |
-| `nuxt`     | ALPHA  | [Nuxt](https://www.npmjs.com/package/nuxt) web framework                             |
-| `nest`     | ALPHA  | [Nest](https://www.nestjs.com) web framework                                         |
+async function start(): Promise<void> {
+  await scout.init({
+    name: "my-app",
+    key: process.env.SCOUT_KEY!,
+    monitor: true,
+  });
 
-## Using `@scout_apm/scout-apm` with other frameworks ##
+  app.listen(3000);
+}
 
-Scout supports use with any other frameworks through it's `Promise` based API:
+start();
+```
+
+### NestJS
+
+```typescript
+import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
+import { APP_FILTER } from "@nestjs/core";
+import { nestMiddleware, nestErrorFilter } from "@scout_apm/scout-apm";
+
+@Module({
+  providers: [{ provide: APP_FILTER, useClass: nestErrorFilter() }],
+})
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(nestMiddleware()).forRoutes("*");
+  }
+}
+```
+
+## Configuration
+
+Configuration can be passed to `scout.init()` or set via environment variables:
+
+| Option | ENV variable | Description |
+|--------|-------------|-------------|
+| `name` | `SCOUT_NAME` | Application name shown in Scout UI |
+| `key` | `SCOUT_KEY` | Scout APM API key |
+| `monitor` | `SCOUT_MONITOR` | Enable/disable monitoring (`true`/`false`) |
+| `logLevel` | `SCOUT_LOG_LEVEL` | Log verbosity (`debug`, `info`, `warn`, `error`) |
+
+For the full configuration reference, see [`docs/configuration.md`](docs/configuration.md).
+
+## Supported Integrations
+
+Database and template integrations are auto-activated when the corresponding package is `require`d. Framework integrations (Express, NestJS) require explicit middleware registration — see the Quick Start examples above.
+
+| Package | Status | Description |
+|---------|--------|-------------|
+| `http` | STABLE | Node.js built-in `http` module |
+| `https` | STABLE | Node.js built-in `https` module |
+| `express` | STABLE | [Express](https://www.npmjs.com/package/express) 4.x / 5.x web framework |
+| `NestJS` | STABLE | [NestJS](https://nestjs.com) 10+ (via `nestMiddleware` / `nestErrorFilter`) |
+| `pg` | STABLE | [node-postgres](https://www.npmjs.com/package/pg) driver |
+| `mysql` | STABLE | [mysql](https://www.npmjs.com/package/mysql) driver |
+| `mysql2` | STABLE | [mysql2](https://www.npmjs.com/package/mysql2) driver |
+| `mongodb` | STABLE | [MongoDB](https://www.npmjs.com/package/mongodb) driver v4+ |
+| `prisma` | STABLE | [Prisma](https://www.prisma.io) ORM (Prisma 6+) |
+| `ioredis` | STABLE | [ioredis](https://www.npmjs.com/package/ioredis) Redis client |
+| `redis` | STABLE | [node-redis](https://www.npmjs.com/package/redis) v5+ |
+| `ejs` | STABLE | [EJS](https://www.npmjs.com/package/ejs) templating |
+| `mustache` | STABLE | [Mustache](https://github.com/janl/mustache.js/) templating |
+| `pug` | STABLE | [Pug](https://pugjs.org) templating |
+| `fetch` | STABLE | Node.js built-in `fetch` (Node 18+, via `diagnostics_channel`) |
+
+## Custom Instrumentation
+
+### Web transactions
 
 ```javascript
-const scout = require("@scout_apm/scout-apm");
-
-// Set up scout (this returns a Promise you may wait on if desired)
-scout.install(
-  {
-    allowShutdown: true, // allow shutting down spawned scout-agent processes from this program
-    monitor: true, // enable monitoring
-    name: "<application name>",
-    key: "<scout key>",
-  },
-);
-
-// Run a WebTransaction
-scout.api.WebTransaction.run("GET /users", (finishTransaction) => { .
-   return yourHandler
-     .run()
-     .then(() => finishTransaction());
-});
-
-// Run a BackgroundTransaction
-scout.api.BackgroundTransaction.run("your-large-transaction", (finishTransaction) => {
-  return bigHeavyTaskThatReturnsAPromise()
-      .then(() => finishTransaction());
+await scout.api.WebTransaction.run("GET /my-route", async (finishTransaction) => {
+  await doWork();
+  finishTransaction();
 });
 ```
 
-For more examples, see `docs/cookbook.md`
-For more information on the architecture of the client see `docs/architecture.md`.
+### Background jobs
+
+```javascript
+await scout.api.BackgroundTransaction.run("send-welcome-email", async (finishTransaction) => {
+  await sendEmail(user);
+  finishTransaction();
+});
+```
+
+### Custom spans
+
+```javascript
+await scout.instrument("MyOperation", async (finishSpan) => {
+  const result = await expensiveOperation();
+  finishSpan();
+  return result;
+});
+```
+
+### Custom context
+
+```javascript
+// Async
+await scout.api.Context.add("user_id", userId);
+
+// Sync
+scout.api.Context.addSync("plan", "enterprise");
+```
+
+## Node Version Support
+
+| Node version | Supported |
+|-------------|-----------|
+| 18.x | ✓ |
+| 20.x | ✓ |
+| 22.x | ✓ |
+| 24.x | ✓ |
+
+Node < 18 is not supported. The agent uses `AsyncLocalStorage` (available since Node 12, but Node 18 is our tested minimum and the current LTS baseline).
 
 ## Development
 
-To get started developing `@scout_apm/scout-apm`, run:
-
 ```shell
-$ make dev-setup
+# Install dependencies
+yarn install
+
+# Build TypeScript
+npm run build
+
+# Run linter
+npm run lint
+
+# Run tests (requires a running core-agent and test databases)
+npm run test-unit
+npm run test-int
+npm run test-integration-pg
+npm run test-integration-mysql
 ```
-
-This will set up the necessary environment (including git hooks) to get started hacking on `@scout_apm/scout-apm`.
-
-This repository comes with a few development aids pre-installed, via `make` targets:
-
-```
-$ make lint # run tslint (a typescript linter
-$ make lint-watch # run tslint continuously
-
-$ make build # run tsc (the typescript compiler)
-$ make build-watch # run tsc continuously
-```
-
-For more information on the development environment and tools, see `docs/development.md`.
 
 ## Contributing
 
-To contribute to development of the NodeJS client:
-
-0. Clone this repository
-1. Run `make dev-setup` to set up the local development environment
-2. Run `make build` to build the project
-3. Write code for the change/bugfix/feature
-4. Run `make test` to ensure all tests are passing (see `docs/tests.md` for more information)
-5. Submit a PR
+1. Fork and clone this repository
+2. Run `yarn install` to install dependencies
+3. Run `npm run build` to compile TypeScript
+4. Write your change and add tests
+5. Run `npm run lint && npm run test-unit` to verify
+6. Submit a PR
 
 ## Documentation
 
@@ -170,4 +212,4 @@ For full installation and troubleshooting documentation, visit our [help site](h
 
 ## Support
 
-Please contact us at [support@scoutapp.com](mailto://support@scoutapp.com) or [create an issue](https://github.com/scoutapp/scout_apm_node/issues/new) in this repository.
+Contact us at [support@scoutapp.com](mailto:support@scoutapp.com) or [open an issue](https://github.com/scoutapp/scout_apm_node/issues/new).
