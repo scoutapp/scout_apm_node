@@ -6,7 +6,6 @@ import mustacheIntegration from "./mustache";
 import ejsIntegration from "./ejs";
 import httpIntegration from "./http";
 import expressIntegration from "./express";
-import nuxtIntegration from "./nuxt";
 import httpsIntegration from "./https";
 import ioredisIntegration from "./ioredis";
 import prismaIntegration from "./prisma";
@@ -24,7 +23,6 @@ export const KNOWN_PACKAGES: string[] = [
     ejsIntegration.getPackageName(),
     httpIntegration.getPackageName(),
     expressIntegration.getPackageName(),
-    nuxtIntegration.getPackageName(),
     httpsIntegration.getPackageName(),
     ioredisIntegration.getPackageName(),
     prismaIntegration.getPackageName(),
@@ -43,7 +41,6 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case ejsIntegration.getPackageName(): return ejsIntegration;
         case httpIntegration.getPackageName(): return httpIntegration;
         case expressIntegration.getPackageName(): return expressIntegration;
-        case nuxtIntegration.getPackageName(): return nuxtIntegration;
         case httpsIntegration.getPackageName(): return httpsIntegration;
         case ioredisIntegration.getPackageName(): return ioredisIntegration;
         case prismaIntegration.getPackageName(): return prismaIntegration;
