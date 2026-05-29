@@ -46,7 +46,6 @@ test("express object still has native props", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/127
 test("errors in controller functions trigger context updates", t => {
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     });
     const scout = new Scout(config);
@@ -94,7 +93,6 @@ test("errors in controller functions trigger context updates", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/238
 test("express Routers are recorded (one level)", t => {
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     });
     const scout = new Scout(config);
@@ -166,7 +164,6 @@ test("express Routers are recorded (one level)", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/238
 test("express Routers are recorded (two levels)", t => {
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     });
     const scout = new Scout(config);

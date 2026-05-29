@@ -11,14 +11,13 @@ const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
 const scout_1 = require("../../lib/scout");
 // Must run before any instrumented library is first required so RITM can shim them.
-lib_1.setupRequireIntegrations(["mustache", "ejs", "pug", "pg"]);
+(0, lib_1.setupRequireIntegrations)(["mustache", "ejs", "pug", "pg"]);
 const TIMEOUT = 15000;
 const PAYLOAD_DIR = path.join(__dirname, "payloads");
 // Fixture views live in source tree; use getRootDir() so the path is correct at runtime.
-const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
+const VIEWS_DIR = path.join((0, app_root_dir_1.get)(), "test/fixtures/files");
 function buildConfig(mock) {
-    return types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    return (0, types_1.buildScoutConfiguration)({
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -26,7 +25,7 @@ function buildConfig(mock) {
     });
 }
 function makeApp(scout, factory) {
-    return factory(express_1.scoutMiddleware({
+    return factory((0, express_1.scoutMiddleware)({
         scout,
         requestTimeoutMs: 0,
         waitForScoutSetup: true,

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const lib_1 = require("../../lib");
-lib_1.setupRequireIntegrations(["ioredis"]);
+(0, lib_1.setupRequireIntegrations)(["ioredis"]);
 const ioredis_1 = require("ioredis");
 const test = require("tape");
 const TestUtil = require("../util");
@@ -17,12 +17,11 @@ test("setup: start shared mock agent", (t) => {
     sharedMock.start().then(() => t.end()).catch(t.end);
 });
 test("ioredis shim is applied", (t) => {
-    t.ok(ioredis_1.default[integrations_1.getIntegrationSymbol()], "Redis class has integration symbol");
+    t.ok(ioredis_1.default[(0, integrations_1.getIntegrationSymbol)()], "Redis class has integration symbol");
     t.end();
 });
 test("Redis/SET span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -55,8 +54,7 @@ test("Redis/SET span is created during a request", { timeout: TIMEOUT_MS }, (t) 
     });
 });
 test("Redis/GET span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,

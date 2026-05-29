@@ -448,7 +448,7 @@ export function buildTestScoutInstance(
     options?: Partial<ScoutOptions>,
 ): Scout {
     const cfg = buildScoutConfiguration(
-        Object.assign({allowShutdown: true, monitor: true}, configOverride),
+        Object.assign({monitor: true}, configOverride),
     );
     return new Scout(cfg, options);
 }
@@ -474,7 +474,6 @@ export async function buildTestScoutInstanceWithMock(
     await mockAgent.start();
     const cfg = buildScoutConfiguration(Object.assign(
         {
-            allowShutdown: true,
             monitor: true,
             coreAgentLaunch: false,
             coreAgentDownload: false,

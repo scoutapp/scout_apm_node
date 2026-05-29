@@ -199,7 +199,6 @@ export interface ScoutConfiguration {
     socketPath: string;
     logFilePath: "stdout" | string;
     httpProxy: string;
-    allowShutdown: boolean;
     monitor: boolean;
 
     // Scout ingest host — passed to core-agent as --ingest-url (reads SCOUT_HOST env var)

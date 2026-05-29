@@ -10,16 +10,15 @@ const types_2 = require("../../lib/types");
 const fixtures_1 = require("../fixtures");
 // The hook for ejs has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
-lib_1.setupRequireIntegrations(["ejs"]);
+(0, lib_1.setupRequireIntegrations)(["ejs"]);
 // ejs needs to be imported this way to trigger the require integration
 const ejs = require("ejs");
 test("the shim works", t => {
-    t.assert(integrations_1.getIntegrationSymbol() in ejs, "ejs export has the integration symbol");
+    t.assert((0, integrations_1.getIntegrationSymbol)() in ejs, "ejs export has the integration symbol");
     t.end();
 });
 test("ejs rendering a string is captured", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
     }));
     // Set up a listener for the scout request that will contain the DB record
@@ -56,8 +55,7 @@ test("ejs rendering a string is captured", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 test("ejs rendering a file is captured", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
     }));
     // Set up a listener for the scout request that will contain the DB record

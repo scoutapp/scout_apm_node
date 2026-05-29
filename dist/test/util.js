@@ -347,7 +347,7 @@ function buildCoreAgentSocketResponse(json) {
 }
 exports.buildCoreAgentSocketResponse = buildCoreAgentSocketResponse;
 function buildTestScoutInstance(configOverride, options) {
-    const cfg = (0, types_1.buildScoutConfiguration)(Object.assign({ allowShutdown: true, monitor: true }, configOverride));
+    const cfg = (0, types_1.buildScoutConfiguration)(Object.assign({ monitor: true }, configOverride));
     return new scout_1.Scout(cfg, options);
 }
 exports.buildTestScoutInstance = buildTestScoutInstance;
@@ -368,7 +368,6 @@ function buildTestScoutInstanceWithMock(configOverride, options) {
         const mockAgent = new mock_agent_1.MockAgent();
         yield mockAgent.start();
         const cfg = (0, types_1.buildScoutConfiguration)(Object.assign({
-            allowShutdown: true,
             monitor: true,
             coreAgentLaunch: false,
             coreAgentDownload: false,

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const lib_1 = require("../../lib");
-lib_1.setupRequireIntegrations(["fetch"]);
+(0, lib_1.setupRequireIntegrations)(["fetch"]);
 const http = require("http");
 const test = require("tape");
 const TestUtil = require("../util");
@@ -36,8 +36,7 @@ if (NODE_MAJOR < 18) {
 }
 else {
     test("HTTP/GET span is created for a fetch request", { timeout: TIMEOUT_MS }, (t) => {
-        const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-            allowShutdown: true,
+        const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
             monitor: true,
             coreAgentDownload: false,
             coreAgentLaunch: false,
@@ -64,8 +63,7 @@ else {
             .catch((err) => TestUtil.shutdownScout(t, scout, err));
     });
     test("HTTP/POST span is created for a fetch POST request", { timeout: TIMEOUT_MS }, (t) => {
-        const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-            allowShutdown: true,
+        const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
             monitor: true,
             coreAgentDownload: false,
             coreAgentLaunch: false,
@@ -93,8 +91,7 @@ else {
             .catch((err) => TestUtil.shutdownScout(t, scout, err));
     });
     test("HTTP/GET span has error context on network failure", { timeout: TIMEOUT_MS }, (t) => {
-        const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-            allowShutdown: true,
+        const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
             monitor: true,
             coreAgentDownload: false,
             coreAgentLaunch: false,
@@ -122,8 +119,7 @@ else {
             .catch((err) => TestUtil.shutdownScout(t, scout, err));
     });
     test("concurrent fetch requests each get their own span", { timeout: TIMEOUT_MS }, (t) => {
-        const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-            allowShutdown: true,
+        const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
             monitor: true,
             coreAgentDownload: false,
             coreAgentLaunch: false,

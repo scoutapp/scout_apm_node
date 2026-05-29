@@ -67,7 +67,6 @@ const pug = require("pug");
 test("Test scout app launch dashboard send", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
     // Build scout config & app meta for test
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -113,7 +112,6 @@ test("Test scout app launch dashboard send", {timeout: TestUtil.DASHBOARD_SEND_T
 // https://github.com/scoutapp/scout_apm_node/issues/71
 test("Scout sends basic controller span to dashboard", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -169,7 +167,6 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
 // https://github.com/scoutapp/scout_apm_node/issues/83
 test("transaction with with postgres DB query to dashboard", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -237,7 +234,6 @@ test("transaction with with postgres DB query to dashboard", {timeout: TestUtil.
 // https://github.com/scoutapp/scout_apm_node/issues/140
 test("Many select statments and a render are in the right order", {timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000}, t => {
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     });
     const appMeta = new ApplicationMetadata(config, {frameworkVersion: "test"});
@@ -357,7 +353,6 @@ TestUtil.startContainerizedMySQLTest(test, cao => {
 test("transaction with mysql query to dashboard", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
     // Build scout config & app meta for test
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -423,7 +418,6 @@ test("transaction with mysql query to dashboard", {timeout: TestUtil.DASHBOARD_S
 test("transaction with mysql2 query to dashboard", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
     // Build scout config & app meta for test
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -497,7 +491,6 @@ TestUtil.stopContainerizedMySQLTest(test, () => MYSQL_CONTAINER_AND_OPTS);
 test("Express pug integration dashboard send", {timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS}, t => {
     // Build scout config & app meta for test
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
