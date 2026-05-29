@@ -5,7 +5,7 @@ import { pathExists } from "fs-extra";
 import { Socket, createConnection } from "net";
 import { spawn } from "child_process";
 import { createPool, Pool } from "generic-pool";
-import { timeout, TimeoutError } from "promise-timeout";
+import { timeout } from "promise-timeout";
 
 import {
     Agent,
@@ -55,9 +55,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private pool: Pool<Socket>;
     private poolErrors: Error[] = [];
     private maxPoolErrors: number = 5;
-
-    private socketConnected: boolean = false;
-    private socketConnectionAttempts: number = 0;
 
     private stopped: boolean = true;
     private logFn: LogFn;
@@ -273,7 +270,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
                     };
 
                     // Send the message over the socket
-                    const result = socket.write(msg.toBinary());
+                    socket.write(msg.toBinary());
 
                     this.logFn(
                         `[scout/external-process] successfully sent message:\n ${JSON.stringify(msg.json)}`,
@@ -287,9 +284,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         return timeout(sendPromise, this.opts.sendTimeoutMs);
     }
 
-    /**
-     * Check if the process is present
-     */
     /**
      * No-op: the core agent is a daemon and manages its own lifecycle.
      * Workers must not kill it — doing so would take down all other workers
@@ -567,17 +561,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         throw new Errors.UnknownSocketType();
     }
 
-    // Helper for retrieving generic-pool stats
-    private getPoolStats(): object {
-        if (!this.pool) { return {}; }
-        return {
-            pending: this.pool.pending,
-            max: this.pool.max,
-            min: this.pool.min,
-        };
-    }
-
-     // Start a detached process with the configured scout-agent binary
+    // Start a detached process with the configured scout-agent binary
     private startProcess(): Promise<this> {
         // If core agent launching has been disabled, don't start the process
         if (this.opts.disallowLaunch) {

@@ -19,8 +19,6 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         this.agentType = types_1.AgentType.Process;
         this.poolErrors = [];
         this.maxPoolErrors = 5;
-        this.socketConnected = false;
-        this.socketConnectionAttempts = 0;
         this.stopped = true;
         if (!opts || !types_1.ProcessOptions.isValid(opts)) {
             throw new Errors.UnexpectedError("Invalid ProcessOptions object");
@@ -214,16 +212,13 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                     this.removeListener(types_1.AgentEvent.SocketResponseReceived, listener);
                 };
                 // Send the message over the socket
-                const result = socket.write(msg.toBinary());
+                socket.write(msg.toBinary());
                 this.logFn(`[scout/external-process] successfully sent message:\n ${JSON.stringify(msg.json)}`, types_1.LogLevel.Debug);
                 this.emit(types_1.AgentEvent.RequestSent, msg);
             });
         });
         return (0, promise_timeout_1.timeout)(sendPromise, this.opts.sendTimeoutMs);
     }
-    /**
-     * Check if the process is present
-     */
     /**
      * No-op: the core agent is a daemon and manages its own lifecycle.
      * Workers must not kill it — doing so would take down all other workers
@@ -458,17 +453,6 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             return this.opts.uri.replace(Constants.TCP_SOCKET_URI_SCHEME_RGX, "");
         }
         throw new Errors.UnknownSocketType();
-    }
-    // Helper for retrieving generic-pool stats
-    getPoolStats() {
-        if (!this.pool) {
-            return {};
-        }
-        return {
-            pending: this.pool.pending,
-            max: this.pool.max,
-            min: this.pool.min,
-        };
     }
     // Start a detached process with the configured scout-agent binary
     startProcess() {
