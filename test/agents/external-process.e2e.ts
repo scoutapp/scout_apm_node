@@ -556,6 +556,37 @@ test("Support starting scout with a completely external core-agent", {skip: SKIP
         });
 });
 
+test("first start() waits for daemon startup, subsequent start() calls resolve instantly", {skip: SKIP_BINARY_TESTS}, t => {
+    let agent: ExternalProcessAgent;
+
+    TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
+        .then(a => agent = a)
+    // First start() — daemon not yet running, must wait DEFAULT_BIN_STARTUP_WAIT_MS
+        .then(() => {
+            const t0 = Date.now();
+            return agent.start().then(() => Date.now() - t0);
+        })
+        .then(elapsed => {
+            t.assert(
+                elapsed >= Constants.DEFAULT_BIN_STARTUP_WAIT_MS,
+                `first start() took ${elapsed}ms (expected >= ${Constants.DEFAULT_BIN_STARTUP_WAIT_MS}ms)`,
+            );
+        })
+    // Second start() — peerRunning() returns true, returns this immediately
+        .then(() => {
+            const t0 = Date.now();
+            return agent.start().then(() => Date.now() - t0);
+        })
+        .then(elapsed => {
+            t.assert(
+                elapsed < Constants.DEFAULT_BIN_STARTUP_WAIT_MS,
+                `second start() took ${elapsed}ms (expected < ${Constants.DEFAULT_BIN_STARTUP_WAIT_MS}ms)`,
+            );
+        })
+        .then(() => TestUtil.cleanup(t, agent))
+        .catch(err => TestUtil.cleanup(t, agent, err));
+});
+
 test("Timeout agent messages", {skip: SKIP_BINARY_TESTS}, t => {
     let agent: ExternalProcessAgent;
 
