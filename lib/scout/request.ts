@@ -8,17 +8,18 @@ import {
     Startable,
     ScoutTag,
     JSONValue,
+    BaseAgentRequest,
 } from "../types";
+
+import * as Requests from "../protocol/v1/requests";
 
 import ScoutSpan from "./span";
 import { ChildSpannable } from "./span";
 
 import {
     Scout,
-    sendStartRequest,
-    sendStopRequest,
-    sendTagRequest,
-    sendStopSpan,
+    ScoutEventRequestSentData,
+    sendThroughAgent,
 } from "./index";
 
 import { ScoutContextName, ScoutEvent, isScoutTag } from "../types";
@@ -258,7 +259,7 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
     }
 
     /**
-     * Send this request and internal spans to the scoutInstance
+     * Send this request and all its spans to the scout instance as a single BatchCommand.
      *
      * @returns this request
      */
@@ -268,33 +269,43 @@ export default class ScoutRequest implements ChildSpannable, Taggable, Stoppable
 
         const inst = scoutInstance || this.scoutInstance;
 
-        // Ensure a scout instance was available
         if (!inst) {
             this.logFn(`[scout/request/${this.id}] No scout instance available, send failed`);
             return Promise.resolve(this);
         }
 
-        // If request is ignored don't send it
         if (this.ignored) {
             this.logFn(`[scout/request/${this.id}] skipping ignored request send`, LogLevel.Warn);
             inst.emit(ScoutEvent.IgnoredRequestProcessingSkipped, this);
             return Promise.resolve(this);
         }
 
-        this.sending = sendStartRequest(inst, this)
-        // Send all the child spans
-            .then(() => Promise.all(this.childSpans.map(s => s.send())))
-        // Send tags
-            .then(() => Promise.all(
-                Object.entries(this.tags)
-                    .map(([name, value]) => sendTagRequest(inst, this, name, value)),
-            ))
-        // End the span
-            .then(() => sendStopRequest(inst, this))
-            .then(() => this.sent = true)
+        // Assemble all commands for this request into a single BatchCommand
+        const commands: BaseAgentRequest[] = [];
+
+        commands.push(new Requests.V1StartRequest({
+            requestId: this.id,
+            timestamp: this.timestamp,
+        }));
+
+        for (const [name, value] of Object.entries(this.tags)) {
+            commands.push(new Requests.V1TagRequest(name, value, this.id));
+        }
+
+        for (const span of this.childSpans) {
+            commands.push(...span.buildCommands());
+        }
+
+        commands.push(new Requests.V1FinishRequest(this.id, {timestamp: this.endTime}));
+
+        const batch = new Requests.V1BatchCommand(commands);
+
+        this.sending = sendThroughAgent(inst, batch)
+            .then(() => inst.emit(ScoutEvent.RequestSent, {request: this} as ScoutEventRequestSentData))
+            .then(() => { this.sent = true; })
             .then(() => this)
-            .catch(err => {
-                this.logFn(`[scout/request/${this.id}]Failed to send request`);
+            .catch(() => {
+                this.logFn(`[scout/request/${this.id}] Failed to send request batch`);
                 return this;
             });
 
