@@ -38,7 +38,6 @@ test("the shim works", t => {
 
 test("http connections are captured", t => {
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     });
     const scout = new Scout(config);

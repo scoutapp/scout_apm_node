@@ -51,7 +51,6 @@ test("Simple operation", t => {
     // Create an application and setup scout middleware
     const app: Application & ApplicationWithScout = TestUtil.simpleExpressApp(scoutMiddleware({
         config: buildScoutConfiguration(withMock({
-            allowShutdown: true,
             monitor: true,
         })),
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
@@ -103,7 +102,6 @@ test("Dynamic segment routes (uses global instance)", {timeout: TestUtil.EXPRESS
     const app: Application & ApplicationWithScout = TestUtil.simpleDynamicSegmentExpressApp(
         scoutMiddleware({
             config: buildScoutConfiguration(withMock({
-                allowShutdown: true,
                 monitor: true,
             })),
             requestTimeoutMs: 0, // disable request timeout to stop test from hanging
@@ -170,7 +168,6 @@ test("Application which errors (uses global scout instance)", {timeout: TestUtil
     // Create an application and setup scout middleware
     const app: Application & ApplicationWithScout = TestUtil.simpleErrorApp(scoutMiddleware({
         config: buildScoutConfiguration(withMock({
-            allowShutdown: true,
             monitor: true,
         })),
         requestTimeoutMs: 0, // disable request timeout to stop test from hanging
@@ -197,7 +194,6 @@ test("Application which errors (uses global scout instance)", {timeout: TestUtil
 test("express ignores a path (exact path, with dynamic segments)", TEST_OPTS, t => {
     const path = "/dynamic/:segment";
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
         ignore: [path],
     })));
@@ -231,7 +227,6 @@ test("express ignores a path (exact path, with dynamic segments)", TEST_OPTS, t 
 test("express ignores a path (exact path, static)", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const path = "/";
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
         ignore: [path],
     })));
@@ -266,7 +261,6 @@ test("express ignores a path (prefix, with dynamic segments)", {timeout: TestUti
     const path = "/dynamic/:segment";
     const prefix = "/dynamic";
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
         ignore: [prefix],
     })));
@@ -302,7 +296,6 @@ test("express ignores a path (prefix, static)", {timeout: TestUtil.EXPRESS_TEST_
     const path = "/echo-by-post";
     const prefix = "/echo";
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
         ignore: [prefix],
     })));
@@ -337,7 +330,6 @@ test("express ignores a path (prefix, static)", {timeout: TestUtil.EXPRESS_TEST_
 
 test("URI params are filtered", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
     // Create an application and setup scout middleware
@@ -385,7 +377,6 @@ test("URI params are filtered", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t =
 
 test("URI filtered down to path", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
         uriReporting: URIReportingLevel.Path,
     })));
@@ -435,7 +426,6 @@ test("URI filtered down to path", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t
 // https://github.com/scoutapp/scout_apm_node/issues/82
 test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -492,7 +482,6 @@ test("Pug integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
 // https://github.com/scoutapp/scout_apm_node/issues/82
 test("ejs integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -550,7 +539,6 @@ test("ejs integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => 
 // https://github.com/scoutapp/scout_apm_node/issues/82
 test("mustache integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -607,7 +595,6 @@ test("mustache integration works", {timeout: TestUtil.EXPRESS_TEST_TIMEOUT_MS}, 
 // https://github.com/scoutapp/scout_apm_node/issues/129
 test("Nested spans on the top level controller have parent ID specified", TEST_OPTS, t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -669,7 +656,6 @@ test("Nested spans on the top level controller have parent ID specified", TEST_O
 // https://github.com/scoutapp/scout_apm_node/issues/150
 test("Unknown routes should not be recorded", TEST_OPTS, t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -708,7 +694,6 @@ test("Unknown routes should not be recorded", TEST_OPTS, t => {
 // https://github.com/scoutapp/scout_apm_node/issues/68
 test("Request queue time should be recorded", TEST_OPTS, t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 

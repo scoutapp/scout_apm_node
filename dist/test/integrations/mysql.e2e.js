@@ -10,14 +10,14 @@ const types_2 = require("../../lib/types");
 const fixtures_1 = require("../fixtures");
 // The hook for MYSQL has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
-lib_1.setupRequireIntegrations(["mysql"]);
+(0, lib_1.setupRequireIntegrations)(["mysql"]);
 const mysql_1 = require("mysql");
 let MYSQL_CONTAINER_AND_OPTS = null;
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // it may break if import order is changed (require hook would not have taken place)
 test("the shim works", t => {
-    const connection = mysql_1.createConnection({ host: "localhost", user: "mysql", password: "mysql" });
-    t.assert(integrations_1.getIntegrationSymbol() in connection, "created connection has the integration symbol");
+    const connection = (0, mysql_1.createConnection)({ host: "localhost", user: "mysql", password: "mysql" });
+    t.assert((0, integrations_1.getIntegrationSymbol)() in connection, "created connection has the integration symbol");
     t.end();
 });
 // Pseudo test that will start a containerized mysql instance
@@ -25,8 +25,7 @@ TestUtil.startContainerizedMySQLTest(test, cao => {
     MYSQL_CONTAINER_AND_OPTS = cao;
 });
 test("SELECT query during a request is recorded", { timeout: TestUtil.MYSQL_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
     }));
     // Setup a MYSQL Connection that we'll use later

@@ -9,14 +9,14 @@ const scout_1 = require("../../lib/scout");
 // The hook for http has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
 // *NOTE* this must be here since express is used from TestUtil
-lib_1.setupRequireIntegrations(["express"]);
+(0, lib_1.setupRequireIntegrations)(["express"]);
 const TestUtil = require("../util");
 const integrations_1 = require("../../lib/types/integrations");
 const express_1 = require("../../lib/integrations/express");
 const express_2 = require("../../lib/express");
 const types_2 = require("../../lib/types");
 test("the shim works", t => {
-    t.assert(integrations_1.getIntegrationSymbol() in require("express"), "express export has the integration symbol");
+    t.assert((0, integrations_1.getIntegrationSymbol)() in require("express"), "express export has the integration symbol");
     t.end();
 });
 test("express object still has native props", t => {
@@ -26,14 +26,13 @@ test("express object still has native props", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/127
 test("errors in controller functions trigger context updates", t => {
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
     });
     const scout = new scout_1.Scout(config);
-    const app = TestUtil.appWithGETSynchronousError(express_2.scoutMiddleware({
+    const app = TestUtil.appWithGETSynchronousError((0, express_2.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }), (fn) => express_1.default.shimExpressFn(fn));
     // Set up a listener for the scout request that will be after the controller error is thrown
     // Express should catch the error (https://expressjs.com/en/guide/error-handling.html)
@@ -64,17 +63,16 @@ test("errors in controller functions trigger context updates", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/238
 test("express Routers are recorded (one level)", t => {
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
     });
     const scout = new scout_1.Scout(config);
-    const app = TestUtil.appWithRouterGET(express_2.scoutMiddleware({
+    const app = TestUtil.appWithRouterGET((0, express_2.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }), (fn) => express_1.default.shimExpressFn(fn));
     // Create a name to use the echo router
-    const reqName = randomstring_1.generate(5);
+    const reqName = (0, randomstring_1.generate)(5);
     // Set up a listener for the scout request that will be after the Router-hosted GET is hit
     const listener = (data) => {
         if (!data || !data.request) {
@@ -118,17 +116,16 @@ test("express Routers are recorded (one level)", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/238
 test("express Routers are recorded (two levels)", t => {
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
     });
     const scout = new scout_1.Scout(config);
-    const app = TestUtil.appWithRouterGET(express_2.scoutMiddleware({
+    const app = TestUtil.appWithRouterGET((0, express_2.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }), (fn) => express_1.default.shimExpressFn(fn));
     // Create a name to use the echo router
-    const reqName = randomstring_1.generate(5);
+    const reqName = (0, randomstring_1.generate)(5);
     // Set up a listener for the scout request that will be after the Router-hosted GET is hit
     const listener = (data) => {
         if (!data || !data.request) {

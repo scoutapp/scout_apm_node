@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const lib_1 = require("../../lib");
 // The hook for PG has to be triggered this way in a typescript context
 // since a partial import like { Client } will not trigger a require
-lib_1.setupRequireIntegrations(["pg"]);
+(0, lib_1.setupRequireIntegrations)(["pg"]);
 const pg_1 = require("pg");
 const sequelize_1 = require("sequelize");
 const test = require("tape");
@@ -17,7 +17,7 @@ let PG_CONTAINER_AND_OPTS = null;
 // NOTE: this test *presumes* that the integration is working, since the integration is require-based
 // it may break if import order is changed (require hook would not have taken place)
 test("the shim works", t => {
-    t.assert(pg_1.Client[integrations_1.getIntegrationSymbol()], "client has the integration symbol");
+    t.assert(pg_1.Client[(0, integrations_1.getIntegrationSymbol)()], "client has the integration symbol");
     t.end();
 });
 // Pseudo test that will start a containerized postgres instance
@@ -25,8 +25,7 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
     PG_CONTAINER_AND_OPTS = cao;
 });
 test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
     }));
     // Setup a PG Client that we'll use later
@@ -79,8 +78,7 @@ test("SELECT query during a request is recorded", { timeout: TestUtil.PG_TEST_TI
     });
 });
 test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
     }));
     // Set up a listener for the scout request that will contain the DB record
@@ -152,8 +150,7 @@ test("CREATE TABLE and INSERT are recorded", { timeout: TestUtil.PG_TEST_TIMEOUT
 });
 // https://github.com/scoutapp/scout_apm_node/issues/191
 test("sequelize basic authenticate works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
     }));
     // Set up a listener for the scout request that will contain the DB record
@@ -208,8 +205,7 @@ test("sequelize basic authenticate works", { timeout: TestUtil.PG_TEST_TIMEOUT_M
 });
 // https://github.com/scoutapp/scout_apm_node/issues/191
 test("sequelize library works", { timeout: TestUtil.PG_TEST_TIMEOUT_MS }, t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
     }));
     // Set up a listener for the scout request that will contain the DB record

@@ -11,15 +11,14 @@ const express_1 = require("../../lib/express");
 const types_2 = require("../../lib/types");
 // The hook for https has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
-lib_1.setupRequireIntegrations(["https"]);
+(0, lib_1.setupRequireIntegrations)(["https"]);
 const https = require("https");
 test("the shim works", t => {
-    t.assert(integrations_1.getIntegrationSymbol() in https, "https export has the integration symbol");
+    t.assert((0, integrations_1.getIntegrationSymbol)() in https, "https export has the integration symbol");
     t.end();
 });
 test("https.get triggers proper span creation", t => {
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
     });
     const scout = new scout_1.Scout(config);
@@ -71,8 +70,7 @@ test("https.get triggers proper span creation", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/209
 test("An endpoint using http-proxy-middleware should capture proxied requests", t => {
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
     });
     const scout = new scout_1.Scout(config);
@@ -80,7 +78,7 @@ test("An endpoint using http-proxy-middleware should capture proxied requests", 
     const proxyTarget = "https://www.scoutapm.com";
     const app = TestUtil.appWithHTTPProxyMiddleware(
     // we disable request timeout to stop test from hanging
-    express_1.scoutMiddleware({ scout, requestTimeoutMs: 0 }), proxyTarget);
+    (0, express_1.scoutMiddleware)({ scout, requestTimeoutMs: 0 }), proxyTarget);
     let expectedReqId;
     // Set up a listener for the scout request that will contain the DB record
     const listener = (data) => {

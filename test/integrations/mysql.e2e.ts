@@ -43,7 +43,6 @@ TestUtil.startContainerizedMySQLTest(test, cao => {
 
 test("SELECT query during a request is recorded", {timeout: TestUtil.MYSQL_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 

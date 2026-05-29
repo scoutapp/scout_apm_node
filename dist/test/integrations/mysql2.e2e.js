@@ -10,7 +10,7 @@ const types_2 = require("../../lib/types");
 const fixtures_1 = require("../fixtures");
 // The hook for mysql2 has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
-lib_1.setupRequireIntegrations([
+(0, lib_1.setupRequireIntegrations)([
     "mysql2",
 ]);
 // The hook for MYSQL2 has to be triggered this way in a typescript context
@@ -23,14 +23,13 @@ TestUtil.startContainerizedMySQLTest(test, cao => { MYSQL2_CONTAINER_AND_OPTS = 
 test("the shim works", t => {
     TestUtil.makeConnectedMySQL2Connection(() => MYSQL2_CONTAINER_AND_OPTS)
         .then(conn => {
-        t.assert(integrations_1.getIntegrationSymbol() in conn, "created connection has the integration symbol");
+        t.assert((0, integrations_1.getIntegrationSymbol)() in conn, "created connection has the integration symbol");
     })
         .then(() => t.end())
         .catch(err => t.end(err));
 });
 test("SELECT query during a request is recorded", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
     }));
     // Setup a MYSQL2 Connection that we'll use later

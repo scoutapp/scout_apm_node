@@ -29,7 +29,6 @@ import * as Constants from "../../lib/constants";
 test("spans should have traces attached", t => {
     const scout = new Scout(
         buildScoutConfiguration({
-            allowShutdown: true,
             monitor: true,
             logFilePath: "/tmp/scout.log",
         }),
@@ -75,7 +74,6 @@ test("spans should have traces attached", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/107
 test("spans within the threshold should not have traces attached", t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -115,7 +113,6 @@ test("spans within the threshold should not have traces attached", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/186
 test("transactions created automatically if not present", t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 

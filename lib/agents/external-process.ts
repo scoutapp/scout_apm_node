@@ -1,9 +1,9 @@
 import { EventEmitter } from "events";
 import * as Errors from "../errors";
 import * as Constants from "../constants";
-import { pathExists, remove } from "fs-extra";
+import { pathExists } from "fs-extra";
 import { Socket, createConnection } from "net";
-import { spawn, ChildProcess } from "child_process";
+import { spawn } from "child_process";
 import { createPool, Pool } from "generic-pool";
 import { timeout, TimeoutError } from "promise-timeout";
 
@@ -59,7 +59,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private socketConnected: boolean = false;
     private socketConnectionAttempts: number = 0;
 
-    private detachedProcess: ChildProcess;
     private stopped: boolean = true;
     private logFn: LogFn;
 
@@ -95,12 +94,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
     /** @see Agent */
     public start(): Promise<this> {
-
         return this.peerRunning()
             .then(exists => {
-                // If the socket doesn't already exist, start the process as configured
                 if (exists) {
-                    this.logFn("[scout/external-process] Socket already present", LogLevel.Warn);
+                    this.logFn("[scout/external-process] Core agent already running, skipping launch", LogLevel.Debug);
+                    return this;
                 }
 
                 return this.startProcess();
@@ -292,36 +290,13 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     /**
      * Check if the process is present
      */
-    public getProcess(): Promise<ChildProcess> {
-        if (this.opts.disallowLaunch) {
-            return Promise.reject(new Errors.NoProcessReference("launch disabled"));
-        }
-
-        if (this.detachedProcess === undefined || this.detachedProcess === null) {
-            return Promise.reject(new Errors.NoProcessReference());
-        }
-
-        return Promise.resolve(this.detachedProcess);
-    }
-
     /**
-     * Stop the process (if one is running)
+     * No-op: the core agent is a daemon and manages its own lifecycle.
+     * Workers must not kill it — doing so would take down all other workers
+     * sharing the same socket.
      */
     public stopProcess(): Promise<void> {
-        return this.getProcess()
-            .then(p => {
-                this.stopped = true;
-                // The process tree itself must be killed
-                // otherwise instances of core-agent may be leaked.
-                if (process.platform === "linux" && p.pid !== undefined) { process.kill(-1 * p.pid); }
-
-                p.kill();
-            })
-        // Remove the socket path
-            .then(() => remove(this.getSocketPath()))
-            .catch(err => {
-                this.logFn(`[scout/external-process] Process stop failed:\n${err}`, LogLevel.Error);
-            });
+        return Promise.resolve();
     }
 
     /**
@@ -618,6 +593,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         const socketPath = this.getSocketPath();
         const args = [
             "start",
+            "--daemonize", "true",
             this.opts.isTCPSocket() ? "--tcp" : "--socket",
             socketPath,
         ];
@@ -630,11 +606,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
 
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, LogLevel.Debug);
-        this.detachedProcess = spawn(this.opts.binPath, args, {
+        const proc = spawn(this.opts.binPath, args, {
             detached: true,
             stdio: "ignore",
         });
-        this.detachedProcess.unref();
+        proc.unref();
 
         // Wait until process is listening on the given socket port
         return new Promise((resolve, reject) => {

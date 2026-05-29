@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.buildProcessOptions = exports.buildDownloadOptions = exports.buildScoutConfiguration = exports.ScoutConfigurationProxy = exports.generateTriple = exports.detectPlatformTriple = exports.DEFAULT_SCOUT_CONFIGURATION = exports.ApplicationMetadata = void 0;
 const os_1 = require("os");
 const process_1 = require("process");
 const os = require("os");
@@ -243,7 +244,7 @@ class EnvConfigSource {
         if (typeof prop === "symbol") {
             return this.env[prop];
         }
-        const envVar = util_1.convertCamelCaseToEnvVar(prop);
+        const envVar = (0, util_1.convertCamelCaseToEnvVar)(prop);
         let val = this.env[envVar];
         if (typeof val !== "undefined" && envVar in ENV_TRANSFORMS) {
             val = ENV_TRANSFORMS[envVar](val);
@@ -303,7 +304,7 @@ class DerivedConfigSource {
 }
 // Detect the machine architecture
 function detectArch() {
-    switch (os_1.arch()) {
+    switch ((0, os_1.arch)()) {
         case "x64": return enum_1.Architecture.X86_64;
         case "x32": return enum_1.Architecture.I686;
         default:
@@ -314,7 +315,7 @@ function detectArch() {
 function detectPlatform() {
     // Default to Musl Linux, even on glibc-enabled distros
     // https://github.com/scoutapp/scout_apm_node/issues/174
-    switch (os_1.platform()) {
+    switch ((0, os_1.platform)()) {
         case "linux": return enum_1.Platform.LinuxMusl;
         case "darwin": return enum_1.Platform.Darwin;
         default:

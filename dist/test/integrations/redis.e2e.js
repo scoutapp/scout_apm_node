@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const lib_1 = require("../../lib");
-lib_1.setupRequireIntegrations(["redis"]);
+(0, lib_1.setupRequireIntegrations)(["redis"]);
 const redis_1 = require("redis");
 const test = require("tape");
 const TestUtil = require("../util");
@@ -18,18 +18,17 @@ test("setup: start shared mock agent", (t) => {
 });
 test("redis shim is applied", (t) => {
     const redisModule = require("redis");
-    t.ok(redisModule[integrations_1.getIntegrationSymbol()], "redis module has integration symbol");
+    t.ok(redisModule[(0, integrations_1.getIntegrationSymbol)()], "redis module has integration symbol");
     t.end();
 });
 test("Redis/SET span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
         socketPath: sharedMock.socketPath(),
     }));
-    const client = redis_1.createClient({
+    const client = (0, redis_1.createClient)({
         socket: { host: REDIS_HOST, port: REDIS_PORT },
     });
     const listener = (data) => {
@@ -59,14 +58,13 @@ test("Redis/SET span is created during a request", { timeout: TIMEOUT_MS }, (t) 
     });
 });
 test("Redis/GET span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
         socketPath: sharedMock.socketPath(),
     }));
-    const client = redis_1.createClient({
+    const client = (0, redis_1.createClient)({
         socket: { host: REDIS_HOST, port: REDIS_PORT },
     });
     const listener = (data) => {
@@ -97,15 +95,14 @@ test("Redis/GET span is created during a request", { timeout: TIMEOUT_MS }, (t) 
     });
 });
 test("Redis/DEL span has error context on command failure", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
         socketPath: sharedMock.socketPath(),
     }));
     // Connect to a port that is not listening to force a connection error
-    const client = redis_1.createClient({
+    const client = (0, redis_1.createClient)({
         socket: { host: REDIS_HOST, port: 1 },
     });
     scout.setup()

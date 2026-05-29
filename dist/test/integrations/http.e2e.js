@@ -11,22 +11,21 @@ const express_1 = require("../../lib/express");
 const types_2 = require("../../lib/types");
 // The hook for http has to be triggered this way in a typescript context
 // since a partial import from scout itself (lib/index) will not run the setupRequireIntegrations() code
-lib_1.setupRequireIntegrations(["http"]);
+(0, lib_1.setupRequireIntegrations)(["http"]);
 // http needs to be imported this way to trigger the require integration
 const http = require("http");
 test("the shim works", t => {
-    t.assert(integrations_1.getIntegrationSymbol() in http, "http export has the integration symbol");
+    t.assert((0, integrations_1.getIntegrationSymbol)() in http, "http export has the integration symbol");
     t.end();
 });
 test("http connections are captured", t => {
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
     });
     const scout = new scout_1.Scout(config);
-    const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }));
     let expectedReqId;
     // Set up a listener for the scout request that will contain the DB record

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const lib_1 = require("../../lib");
-lib_1.setupRequireIntegrations(["@prisma/client"]);
+(0, lib_1.setupRequireIntegrations)(["@prisma/client"]);
 const client_1 = require("@prisma/client");
 const test = require("tape");
 const TestUtil = require("../util");
@@ -38,8 +38,7 @@ test("the shim replaces PrismaClient", (t) => {
     t.end();
 });
 test("SQL/Query span is created for a Prisma createMany operation", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -74,8 +73,7 @@ test("SQL/Query span is created for a Prisma createMany operation", { timeout: T
     });
 });
 test("SQL/Query span is created for a Prisma findMany operation", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -107,8 +105,7 @@ test("SQL/Query span is created for a Prisma findMany operation", { timeout: TIM
     });
 });
 test("SQL/Query span has error context when operation fails", { timeout: TIMEOUT_MS }, (t) => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,

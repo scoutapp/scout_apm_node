@@ -57,7 +57,6 @@ test("the shim works", t => {
 
 test("SELECT query during a request is recorded", t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 

@@ -61,7 +61,7 @@ test("nestMiddleware is a function", (t) => {
 });
 
 test("NestJS app instruments root route", { timeout: TIMEOUT }, (t) => {
-    const config = buildScoutConfiguration({ allowShutdown: true, monitor: true });
+    const config = buildScoutConfiguration({ monitor: true });
     const scout = new Scout(config);
     let nestApp: any;
 
@@ -92,7 +92,7 @@ test("NestJS app instruments root route", { timeout: TIMEOUT }, (t) => {
 });
 
 test("NestJS parameterised route captures pattern not value", { timeout: TIMEOUT }, (t) => {
-    const config = buildScoutConfiguration({ allowShutdown: true, monitor: true });
+    const config = buildScoutConfiguration({ monitor: true });
     const scout = new Scout(config);
     let nestApp: any;
 
