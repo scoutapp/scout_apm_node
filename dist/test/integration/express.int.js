@@ -8,10 +8,10 @@ const lib_1 = require("../../lib");
 const types_1 = require("../../lib/types");
 const scout_1 = require("../../lib/scout");
 const TestUtil = require("../util");
-lib_1.setupRequireIntegrations(["pug", "ejs", "mustache"]);
+(0, lib_1.setupRequireIntegrations)(["pug", "ejs", "mustache"]);
 const TIMEOUT = 15000;
 function buildScoutWithMock(mock, extra) {
-    return types_1.buildScoutConfiguration(Object.assign({ allowShutdown: true, monitor: true, coreAgentDownload: false, coreAgentLaunch: false, socketPath: mock.socketPath() }, extra));
+    return (0, types_1.buildScoutConfiguration)(Object.assign({ monitor: true, coreAgentDownload: false, coreAgentLaunch: false, socketPath: mock.socketPath() }, extra));
 }
 function nextRequestSent(scout) {
     return new Promise((resolve, reject) => {
@@ -31,7 +31,7 @@ function nextRequestSent(scout) {
     });
 }
 function makeApp(scout, factory) {
-    return factory(express_1.scoutMiddleware({
+    return factory((0, express_1.scoutMiddleware)({
         scout,
         requestTimeoutMs: 0,
         waitForScoutSetup: true,
@@ -80,11 +80,10 @@ test("Express dynamic route captures route pattern", { timeout: TIMEOUT }, (t) =
         return sentPromise;
     })
         .then((data) => {
-        var _a;
         const spans = data.request.getChildSpansSync();
         const controllerSpan = spans.find((s) => s.operation.startsWith("Controller/"));
         t.ok(controllerSpan, "Controller span present for dynamic route");
-        t.ok(controllerSpan && controllerSpan.operation.includes(":segment"), `Route pattern captured — operation: ${(_a = controllerSpan) === null || _a === void 0 ? void 0 : _a.operation}`);
+        t.ok(controllerSpan && controllerSpan.operation.includes(":segment"), `Route pattern captured — operation: ${controllerSpan === null || controllerSpan === void 0 ? void 0 : controllerSpan.operation}`);
         return TestUtil.shutdownScout(t, scout);
     })
         .then(() => mock.stop())

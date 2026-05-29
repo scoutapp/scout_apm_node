@@ -40,7 +40,6 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
 
 test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -106,7 +105,6 @@ test("SELECT query during a request is recorded", {timeout: TestUtil.PG_TEST_TIM
 
 test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -188,7 +186,6 @@ test("CREATE TABLE and INSERT are recorded", {timeout: TestUtil.PG_TEST_TIMEOUT_
 // https://github.com/scoutapp/scout_apm_node/issues/191
 test("sequelize basic authenticate works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -251,7 +248,6 @@ test("sequelize basic authenticate works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS
 // https://github.com/scoutapp/scout_apm_node/issues/191
 test("sequelize library works", {timeout: TestUtil.PG_TEST_TIMEOUT_MS}, t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 

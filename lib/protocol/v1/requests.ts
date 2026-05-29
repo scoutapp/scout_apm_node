@@ -204,6 +204,19 @@ export class V1TagSpan extends BaseAgentRequest {
     }
 }
 
+export class V1BatchCommand extends BaseAgentRequest {
+    public readonly type: AgentRequestType = AgentRequestType.V1BatchCommand;
+
+    constructor(commands: BaseAgentRequest[]) {
+        super();
+        this.json = {
+            BatchCommand: {
+                commands: commands.map(c => c.json),
+            },
+        };
+    }
+}
+
 export class V1ApplicationEvent extends BaseAgentRequest {
     public readonly type: AgentRequestType = AgentRequestType.V1ApplicationEvent;
 

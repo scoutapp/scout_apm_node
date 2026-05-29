@@ -37,7 +37,6 @@ test("the shim works", t => {
 
 test("https.get triggers proper span creation", t => {
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     });
     const scout = new Scout(config);
@@ -96,7 +95,6 @@ test("https.get triggers proper span creation", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/209
 test("An endpoint using http-proxy-middleware should capture proxied requests", t => {
     const config = buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     });
     const scout = new Scout(config);

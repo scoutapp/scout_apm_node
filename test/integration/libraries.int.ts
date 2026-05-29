@@ -28,7 +28,6 @@ type AppWithScout = Application & ApplicationWithScout;
 
 function buildConfig(mock: MockAgent) {
     return buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,

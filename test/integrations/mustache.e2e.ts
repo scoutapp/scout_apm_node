@@ -36,7 +36,6 @@ test("the shim works", t => {
 
 test("mustache rendering a string is captured", t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 

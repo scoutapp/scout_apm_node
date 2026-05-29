@@ -418,7 +418,6 @@ test("Request auto close works (2 top level)", t => {
 test("Download disabling works via top level config", t => {
     const config = buildScoutConfiguration({
         coreAgentDownload: false,
-        allowShutdown: true,
         monitor: true,
     });
     const scout = new Scout(config, {downloadOptions: {disableCache: true}});
@@ -448,7 +447,6 @@ test("Launch disabling works via top level config", t => {
         .then(() => {
             scout = new Scout(buildScoutConfiguration({
                 coreAgentLaunch: false,
-                allowShutdown: true,
                 monitor: true,
                 socketPath: `${socketDir}/core-agent.sock`,
             }));
@@ -493,7 +491,6 @@ test("Launch disabling works via top level config", t => {
 test("Custom version specification works via top level config", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
         coreAgentVersion: "v1.1.8", // older version (default is newer)
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -514,7 +511,7 @@ test("Application metadata is built and sent", t => {
     });
 
     const config = buildScoutConfiguration(
-        withMock({allowShutdown: true, monitor: true}),
+        withMock({monitor: true}),
         {
             env: {
                 SCOUT_FRAMEWORK: "framework-from-env",
@@ -631,7 +628,6 @@ test("Multiple ongoing requests are possible at the same time", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/72
 test("Ensure that no requests are received by the agent if monitoring is off", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: false,
     })));
 
@@ -663,7 +659,6 @@ test("socketPath setting is honored by scout instance", t => {
         .then(socketPath => {
             // Create the scout instance with the custom socketPath
             scout = new Scout(buildScoutConfiguration({
-                allowShutdown: true,
                 monitor: false,
                 coreAgentLaunch: false,
                 coreAgentDownload: false,
@@ -678,7 +673,6 @@ test("socketPath setting is honored by scout instance", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/142
 test("Ignored requests are not sent", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: false,
     })));
 
@@ -718,7 +712,6 @@ test("Ignored requests are not sent", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export WebTransaction is working", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -761,7 +754,6 @@ test("export WebTransaction is working", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export BackgroundTransaction is working", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -804,7 +796,6 @@ test("export BackgroundTransaction is working", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.add add context (provided scout instance)", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -845,7 +836,6 @@ test("export Context.add add context (provided scout instance)", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.addSync to add context (provided scout instance)", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -872,7 +862,6 @@ test("export Context.addSync to add context (provided scout instance)", t => {
 test("export ignoreTransaction successfully ignores transaction (provided scout instance)", t => {
 
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -907,7 +896,6 @@ test("export ignoreTransaction successfully ignores transaction (provided scout 
 // https://github.com/scoutapp/scout_apm_node/issues/152
 test("export ignoreTransactionSync successfully ignores transaction (provided scout instance)", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -938,7 +926,6 @@ test("export ignoreTransactionSync successfully ignores transaction (provided sc
 test("Adding context does not cause socket close", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -983,7 +970,6 @@ test("Adding context does not cause socket close", t => {
 test("instrumentSync should automatically create a transaction", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1031,7 +1017,6 @@ test("CPU and memory stats should be sent periodically", t => {
     });
 
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1095,7 +1080,6 @@ test("CPU and memory stats should be sent periodically", t => {
 test("export ignoreTransactionSync successfully ignores transaction (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1128,7 +1112,6 @@ test("export ignoreTransactionSync successfully ignores transaction (global scou
 test("export Context.addSync to add context (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1165,7 +1148,6 @@ test("export Context.addSync to add context (global scout instance)", t => {
 test("export ignoreTransaction successfully ignores transaction (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1199,7 +1181,6 @@ test("export ignoreTransaction successfully ignores transaction (global scout in
 test("export Context.add add context (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1237,7 +1218,6 @@ test("export Context.add add context (global scout instance)", t => {
 test("export Config returns a populated special object", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1257,6 +1237,81 @@ test("export Config returns a populated special object", t => {
             t.end();
         })
         .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+test("Request with spans is sent as a single BatchCommand wire message", t => {
+    // Each request should produce exactly one BatchCommand containing all commands
+    // (StartRequest, TagRequest, StartSpan, TagSpan, StopSpan, FinishRequest) rather
+    // than N individual messages.  We listen for ScoutEvent.RequestSent to know when
+    // send() has fully completed (the agent's response has been received).
+    const mock = new MockAgent();
+    let scout: Scout;
+
+    const teardown = (err?: Error) => {
+        scout ? scout.shutdown().then(() => mock.stop()).then(() => t.end(err)) : mock.stop().then(() => t.end(err));
+    };
+
+    mock.start()
+        .then(() => {
+            scout = TestUtil.buildTestScoutInstance({
+                coreAgentLaunch: false,
+                coreAgentDownload: false,
+                socketPath: mock.socketPath(),
+            });
+        })
+        .then(() => scout.setup())
+        .then(() => new Promise<void>((resolve, reject) => {
+            const listener = (data: ScoutEventRequestSentData) => {
+                scout.removeListener(ScoutEvent.RequestSent, listener);
+
+                try {
+                    const batchMessages = mock.getMessagesByType("BatchCommand");
+
+                    // One BatchCommand per request, no individual span/request messages
+                    t.equals(batchMessages.length, 1, "exactly one BatchCommand was sent");
+                    t.equals(mock.getMessagesByType("StartRequest").length, 0, "no standalone StartRequest");
+                    t.equals(mock.getMessagesByType("FinishRequest").length, 0, "no standalone FinishRequest");
+                    t.equals(mock.getMessagesByType("StartSpan").length, 0, "no standalone StartSpan");
+                    t.equals(mock.getMessagesByType("StopSpan").length, 0, "no standalone StopSpan");
+
+                    // Inspect the commands inside the BatchCommand
+                    const batch: any = batchMessages[0].raw;
+                    const commands: any[] = batch.BatchCommand.commands;
+                    const types = commands.map((c: any) => Object.keys(c)[0]);
+
+                    t.assert(types.includes("StartRequest"), "batch contains StartRequest");
+                    t.assert(types.includes("FinishRequest"), "batch contains FinishRequest");
+                    t.assert(types.includes("StartSpan"), "batch contains StartSpan");
+                    t.assert(types.includes("StopSpan"), "batch contains StopSpan");
+                    t.assert(types.includes("TagSpan"), "batch contains TagSpan (db.statement)");
+                    t.assert(types.includes("TagRequest"), "batch contains TagRequest (path)");
+                    t.assert(
+                        types.indexOf("StartRequest") < types.indexOf("FinishRequest"),
+                        "StartRequest appears before FinishRequest in commands list",
+                    );
+
+                    resolve();
+                } catch (err) {
+                    reject(err);
+                }
+            };
+
+            scout.on(ScoutEvent.RequestSent, listener);
+
+            scout.transaction("BatchCommand/test", (done: any, {request}: any) => {
+                return scout.instrument("Controller/test", (stopSpan: any) => {
+                    const span = scout.getCurrentSpan();
+                    if (span) { span.addContextSync("db.statement", "SELECT 1"); }
+                    stopSpan();
+                })
+                    .then(() => {
+                        if (request) { request.addContextSync("path", "/test"); }
+                        done();
+                    });
+            }).catch(reject);
+        }))
+        .then(() => teardown())
+        .catch((err: Error) => teardown(err));
 });
 
 // Cleanup the global isntance(s) that get created

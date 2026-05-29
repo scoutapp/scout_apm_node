@@ -51,6 +51,10 @@ const RTAC_LOOKUP: RTACWithCheck[] = [
         {type: AgentResponseType.V1ApplicationEvent, ctor: (obj) => new V1ApplicationEventResponse(obj)},
     ],
     [
+        obj => "BatchCommand" in obj,
+        {type: AgentResponseType.V1BatchCommand, ctor: (obj) => new V1BatchCommandResponse(obj)},
+    ],
+    [
         obj => "Failure" in obj,
         {type: AgentResponseType.V1Failure, ctor: (obj) => new V1FailureResponse(obj)},
     ],
@@ -227,6 +231,19 @@ export class V1ApplicationEventResponse extends V1AgentResponse {
         }
 
         const inner = obj.ApplicationEvent;
+        if ("result" in inner) { this.result = inner.result; }
+    }
+}
+
+export class V1BatchCommandResponse extends V1AgentResponse {
+    public readonly type: AgentResponseType = AgentResponseType.V1BatchCommand;
+
+    constructor(obj: any) {
+        super();
+        if (!("BatchCommand" in obj)) {
+            throw new Errors.UnexpectedError("Invalid V1BatchCommandResponse, 'BatchCommand' key missing");
+        }
+        const inner = obj.BatchCommand;
         if ("result" in inner) { this.result = inner.result; }
     }
 }

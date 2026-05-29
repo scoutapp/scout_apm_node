@@ -1,7 +1,9 @@
 /// <reference types="node" />
+/// <reference types="node" />
+/// <reference types="node" />
+/// <reference types="node" />
 import { EventEmitter } from "events";
 import { Socket } from "net";
-import { ChildProcess } from "child_process";
 import { Agent, AgentStatus, AgentType, BaseAgentRequest, BaseAgentResponse, LogFn, ProcessOptions } from "../types";
 import { V1ApplicationEventResponse, V1RegisterResponse } from "../protocol/v1/responses";
 import { V1Register, V1ApplicationEvent } from "../protocol/v1/requests";
@@ -14,7 +16,7 @@ export interface ExtraSocketInfo {
     chunks?: Buffer;
     onFailure?: () => void;
 }
-export declare type ScoutSocket = Socket & ExtraSocketInfo;
+export type ScoutSocket = Socket & ExtraSocketInfo;
 export default class ExternalProcessAgent extends EventEmitter implements Agent {
     private readonly agentType;
     private readonly opts;
@@ -23,7 +25,6 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     private maxPoolErrors;
     private socketConnected;
     private socketConnectionAttempts;
-    private detachedProcess;
     private stopped;
     private logFn;
     private registrationMsg;
@@ -48,9 +49,10 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
     /**
      * Check if the process is present
      */
-    getProcess(): Promise<ChildProcess>;
     /**
-     * Stop the process (if one is running)
+     * No-op: the core agent is a daemon and manages its own lifecycle.
+     * Workers must not kill it — doing so would take down all other workers
+     * sharing the same socket.
      */
     stopProcess(): Promise<void>;
     /**

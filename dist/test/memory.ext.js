@@ -19,7 +19,7 @@ const TestUtil = require("./util");
 const fixtures_1 = require("./fixtures");
 const loadtest_1 = require("loadtest");
 const util_1 = require("util");
-const loadTest = util_1.promisify(loadtest_1.loadTest);
+const loadTest = (0, util_1.promisify)(loadtest_1.loadTest);
 const LOAD_TEST_CONCURRENCY = parseInt(process.env.LOAD_TEST_CONCURRENCY || "5", 10);
 const LOAD_TEST_RPS = parseInt(process.env.LOAD_TEST_RPS || "20", 10);
 const LOAD_TEST_DURATION_SECONDS = parseInt(process.env.LOAD_TEST_DURATION || "120", 10);
@@ -53,13 +53,13 @@ test("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS },
             memoryUsage: {},
         },
     };
-    const testName = `memory-leak-test-${randomstring_1.generate(5)}`;
+    const testName = `memory-leak-test-${(0, randomstring_1.generate)(5)}`;
     // Launch a small express application as a child process *without* scout
     const expressENV = {
         PORT: yield getPort(),
         SCOUT_NAME: `${testName}-no-scout`,
     };
-    const expressProcess = child_process_1.fork(fixtures_1.FILE_PATHS.EXPRESS_APP_PATH, [], {
+    const expressProcess = (0, child_process_1.fork)(fixtures_1.FILE_PATHS.EXPRESS_APP_PATH, [], {
         env: expressENV,
     });
     t.comment(`app without scout started (PID: [${expressProcess.pid}])`);
@@ -77,7 +77,7 @@ test("no large memory leaks", { timeout: TestUtil.MEMORY_LEAK_TEST_TIMEOUT_MS },
         SCOUT_KEY: process.env.SCOUT_KEY,
         SCOUT_NAME: `${testName}-with-scout`,
     };
-    const expressWithScoutProcess = child_process_1.fork(fixtures_1.FILE_PATHS.EXPRESS_APP_WITH_SCOUT_PATH, [], {
+    const expressWithScoutProcess = (0, child_process_1.fork)(fixtures_1.FILE_PATHS.EXPRESS_APP_WITH_SCOUT_PATH, [], {
         env: expressWithScoutENV,
     });
     t.comment(`app with scout started (PID: [${expressWithScoutProcess.pid}])`);
