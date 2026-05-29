@@ -1,4 +1,4 @@
-export const DEFAULT_CORE_AGENT_VERSION = "v1.3.0";
+export const DEFAULT_CORE_AGENT_VERSION = "v1.5.1";
 export const DOMAIN_SOCKET_URI_SCHEME_RGX = /^(unix|file):\/\//;
 export const TCP_SOCKET_URI_SCHEME_RGX = /^tcp:\/\//;
 export const TMP_DIR_PREFIX = "core-agent-dl-";
