@@ -336,7 +336,7 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
             .then(scout => req.app.scout = scout)
         // Set up the scout instance (if necessary)
             .then(scout => scout.setup())
-        // Start perofrming midleware duties
+        // Start performing middleware duties
             .then(scout => {
                 // If we get here but have no route path,
                 // (meaning we couldn't figure it out from a matched middleware or full route listing)

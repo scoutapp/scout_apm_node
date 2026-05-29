@@ -153,13 +153,12 @@ export class Scout extends EventEmitter {
             Constants.CORE_AGENT_BIN_FILE_NAME,
         );
 
-        // If the passed-in logging function (saved @ logFn) has a 'logger' property which has a correposnding level
-        // attempt to set the log level to the passed in logger's level
+        // If the passed-in logging function has a 'logger' property with a corresponding level,
+        // attempt to set the log level to match
         if (this.logFn && this.logFn.logger && this.logFn.logger.level && isLogLevel(this.logFn.logger.level)) {
             this.config.logLevel = parseLogLevel(this.logFn.logger.level);
         }
 
-        // Create async namespace if it does not exist
         this.createAsyncNamespace();
     }
 
@@ -208,7 +207,7 @@ export class Scout extends EventEmitter {
 
         this.statsSendingInterval = setInterval(() => {
             if (!this.agent) {
-                // A shutdown likey occurred
+                // A shutdown likely occurred
                 this.log("[scout] Disabling stats sending interval since agent is missing...", LogLevel.Debug);
                 if (this.statsSendingInterval) { clearInterval(this.statsSendingInterval); }
                 return;
@@ -242,7 +241,7 @@ export class Scout extends EventEmitter {
     /**
      * Stop sending statistics for the node process
      *
-     * @return {Promise<void>} A promise that resolves when the statistics sending has stoped
+     * @return {Promise<void>} A promise that resolves when the statistics sending has stopped
      */
     protected stopSendingStatistics(): void {
         if (!this.statsSendingInterval) { return; }
@@ -309,7 +308,6 @@ export class Scout extends EventEmitter {
 
         const doLaunch = shouldLaunch ? this.downloadAndLaunchAgent() : this.createAgentForExistingSocket();
 
-        // If the socket path exists then we may be able to skip downloading and launching
         this.settingUp = doLaunch
             .then(() => {
                 if (!this.agent) { throw new Errors.NoAgentPresent(); }
@@ -361,7 +359,7 @@ export class Scout extends EventEmitter {
             this.stopSendingStatistics();
         }
 
-        // Ensure an agent is present bfore we attempt to shut it down
+        // Ensure an agent is present before we attempt to shut it down
         if (!this.agent) {
             this.log("[scout] shutdown called but no agent to shutdown is present", LogLevel.Error);
             return Promise.reject(new Errors.NoAgentPresent());
@@ -447,7 +445,7 @@ export class Scout extends EventEmitter {
 
         let ranContext = false;
 
-        // Setup if necessary then then perform the async request context
+        // Setup if necessary, then perform the async request context
         return this.setup()
             .then(() => {
                 ranContext = true;
@@ -688,7 +686,7 @@ export class Scout extends EventEmitter {
     }
 
     /**
-     * Retrieve the current request using the async hook/continuation local storage machinery
+     * Retrieve the current request from the active async context
      *
      * @returns {ScoutRequest} the current active request
      */
@@ -701,7 +699,7 @@ export class Scout extends EventEmitter {
     }
 
     /**
-     * Retrieve the current span using the async hook/continuation local storage machinery
+     * Retrieve the current span from the active async context
      *
      * @returns {ScoutSpan} the current active span
      */
@@ -739,22 +737,6 @@ export class Scout extends EventEmitter {
         }
 
         return Promise.reject(new Errors.UnknownSocketType());
-    }
-
-    /**
-     * Attempt to clear an async name space entry
-     *
-     * this.asyncNamespace.set can fail if the async context ID is already gone
-     * before someone tries to clear it. This can happen if some caller moves calls to
-     * another async context or if it's cleaned up suddenly
-     */
-    private clearAsyncNamespaceEntry(key: keyof ScoutAsyncStore) {
-        try {
-            const store = this.asyncStorage.getStore();
-            if (store) { store[key] = undefined; }
-        } catch {
-            this.logFn("failed to clear async namespace", LogLevel.Debug);
-        }
     }
 
     // Helper for creating an ExternalProcessAgent for an existing, listening agent
@@ -886,7 +868,7 @@ export class Scout extends EventEmitter {
 
                 };
 
-                this.log(`[scout] Starting request in async namespace...`, LogLevel.Debug);
+                this.log(`[scout] Starting request in async context...`, LogLevel.Debug);
 
                 // Start the request
                 this.startRequest()
@@ -996,7 +978,7 @@ export class Scout extends EventEmitter {
         const currentRequest = this.getCurrentRequest();
         if (!currentRequest) { return; }
 
-        // Mark the curernt request as errored
+        // Mark the current request as errored
         currentRequest.addContext(ScoutContextName.Error, "true");
     }
 
@@ -1067,7 +1049,7 @@ export function sendStopRequest(scout: Scout, req: ScoutRequest): Promise<ScoutR
  * @param {ScoutRequest} req - The original request
  * @param {String} name - The tag name
  * @param {String} value - The tag value
- * @returns {Promise<void>} A promise which resolves when the message has been sent
+ * @returns {Promise<void>} A promise which resolves when the message has been sent sent
  */
 export function sendTagRequest(
     scout: Scout,
@@ -1128,13 +1110,13 @@ export function sendStartSpan(scout: Scout, span: ScoutSpan): Promise<ScoutSpan>
 }
 
 /**
- * Send the TagSpan message to the agent message to the agent
+ * Send the TagSpan message to the agent
  *
  * @param {Scout} scout - A scout instance
  * @param {ScoutSpan} span - The original span
  * @param {String} name - The tag name
  * @param {String} value - The tag value
- * @returns {Promise<void>} A promise which resolves when the message has been
+ * @returns {Promise<void>} A promise which resolves when the message has been sent
  */
 export function sendTagSpan(
     scout: Scout,
@@ -1220,7 +1202,7 @@ export function sendThroughAgent<T extends BaseAgentRequest, R extends BaseAgent
     }
 
     if (!config.monitor) {
-        scout.log("[scout] monitoring disabled, not sending tag request", LogLevel.Warn);
+        scout.log("[scout] monitoring disabled, not sending request", LogLevel.Warn);
         return Promise.reject(new Errors.MonitoringDisabled());
     }
 
