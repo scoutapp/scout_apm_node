@@ -1,4 +1,7 @@
 /// <reference types="node" />
+/// <reference types="node" />
+/// <reference types="node" />
+/// <reference types="node" />
 import * as net from "net";
 import { Application } from "express";
 import { ChildProcess } from "child_process";
@@ -98,7 +101,7 @@ export declare function stopContainerizedInstanceTest(test: any, provider: () =>
 export declare function stopContainerizedPostgresTest(test: any, provider: () => ContainerAndOpts | null): void;
 export declare function makeConnectedPGClient(provider: () => ContainerAndOpts | null): Promise<Client>;
 export declare function makePGConnectionString(provider: () => ContainerAndOpts | null): Promise<string>;
-declare type ServerShutdownFn = () => void;
+type ServerShutdownFn = () => void;
 export declare function createClientCollectingServer(): [net.Server, ServerShutdownFn];
 export declare function startContainerizedMySQLTest(test: any, cb: (cao: ContainerAndOpts) => void, opts?: {
     containerEnv?: object;

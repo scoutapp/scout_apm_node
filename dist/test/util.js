@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.minimal = exports.makeConnectedMySQL2Connection = exports.makeConnectedMySQLConnection = exports.stopContainerizedMySQLTest = exports.startContainerizedMySQLTest = exports.createClientCollectingServer = exports.makePGConnectionString = exports.makeConnectedPGClient = exports.stopContainerizedPostgresTest = exports.stopContainerizedInstanceTest = exports.startContainerizedPostgresTest = exports.killContainer = exports.startContainer = exports.TestContainerStartOpts = exports.buildTestScoutInstanceWithMock = exports.getOrStartSharedMock = exports.buildTestScoutInstance = exports.buildCoreAgentSocketResponse = exports.testConfigurationOverlay = exports.appWithRouterGET = exports.queryAndRenderRandomNumbers = exports.appWithHTTPProxyMiddleware = exports.appWithGETSynchronousError = exports.simpleInstrumentApp = exports.simpleHTML5BoilerplateApp = exports.simpleErrorApp = exports.simpleDynamicSegmentExpressApp = exports.simpleExpressApp = exports.shutdownScoutAndMock = exports.shutdownScout = exports.waitForAgentBufferFlush = exports.cleanup = exports.waitMinutes = exports.waitMs = exports.initializeAgent = exports.bootstrapExternalProcessAgent = exports.MEMORY_LEAK_TEST_TIMEOUT_MS = exports.DASHBOARD_SEND_TIMEOUT_MS = exports.MYSQL_TEST_TIMEOUT_MS = exports.PG_TEST_TIMEOUT_MS = exports.EXPRESS_TEST_TIMEOUT_MS = void 0;
 const tslib_1 = require("tslib");
 const path = require("path");
 const tmp = require("tmp-promise");
@@ -87,15 +88,15 @@ function waitMinutes(mins, t) {
     return waitMs(mins * 60 * 1000, t);
 }
 exports.waitMinutes = waitMinutes;
-// Helper function for cleaning up an agent processe and passing/failing a test
+// Helper function for cleaning up an agent and passing/failing a test
 function cleanup(t, agent, err) {
     if (!agent) {
         t.end(err);
         return Promise.resolve();
     }
-    return agent.getProcess()
-        .then(process => process.kill())
-        .then(() => t.end(err));
+    return agent.disconnect()
+        .then(() => t.end(err))
+        .catch(() => t.end(err));
 }
 exports.cleanup = cleanup;
 // Helper that waits for agent buffer to flush
@@ -190,7 +191,7 @@ function simpleHTML5BoilerplateApp(middleware, templateEngine) {
         app.engine("mustache", require("mustache-express")());
     }
     // Expect all the views to be in the same fixtures/files path
-    const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
+    const VIEWS_DIR = path.join((0, app_root_dir_1.get)(), "test/fixtures/files");
     app.set("views", VIEWS_DIR);
     app.set("view engine", templateEngine);
     app.get("/", (req, res) => {
@@ -251,7 +252,7 @@ function queryAndRenderRandomNumbers(middleware, templateEngine, dbClient) {
         app.engine("mustache", require("mustache-express")());
     }
     // Expect all the views to be in the same fixtures/files path
-    const VIEWS_DIR = path.join(app_root_dir_1.get(), "test/fixtures/files");
+    const VIEWS_DIR = path.join((0, app_root_dir_1.get)(), "test/fixtures/files");
     app.set("views", VIEWS_DIR);
     app.set("view engine", templateEngine);
     app.get("/", (req, res) => {
@@ -298,9 +299,9 @@ exports.appWithRouterGET = appWithRouterGET;
 // Test that a given variable is effectively overlaid in the configuration
 function testConfigurationOverlay(t, opts) {
     const { appKey, envValue, expectedValue } = opts;
-    const envKey = types_1.convertCamelCaseToEnvVar(appKey);
+    const envKey = (0, types_1.convertCamelCaseToEnvVar)(appKey);
     const envValueIsSet = envKey in process.env;
-    const defaultConfig = types_1.buildScoutConfiguration();
+    const defaultConfig = (0, types_1.buildScoutConfiguration)();
     t.assert(defaultConfig, "defaultConfig was generated");
     // Only perform this check if we're not currently overriding the value in ENV *during* this test
     // it won't be the default, because we've set it to be so
@@ -310,7 +311,7 @@ function testConfigurationOverlay(t, opts) {
     // Set key at the application level
     const appConfig = {};
     appConfig[appKey] = expectedValue;
-    const appOnlyConfig = types_1.buildScoutConfiguration(appConfig);
+    const appOnlyConfig = (0, types_1.buildScoutConfiguration)(appConfig);
     t.assert(appOnlyConfig, "appOnlyConfig was generated");
     // Only perform this check if we're not currently overriding the value in ENV *during* this test
     // ENV overrides the app so it won't be the app value
@@ -323,7 +324,7 @@ function testConfigurationOverlay(t, opts) {
     process.env[envKey] = envValue;
     // FUTURE: we could also *simulate* process.env here by passing in {env: {...}} to buildScoutConfiguration
     // since we're not trying to do parallel tests yet (env will be changed and reset serially), it's fine
-    const envOverrideConfig = types_1.buildScoutConfiguration(appConfig);
+    const envOverrideConfig = (0, types_1.buildScoutConfiguration)(appConfig);
     t.assert(envOverrideConfig, "envOverrideConfig was generated");
     t.deepEquals(envOverrideConfig[appKey], expectedValue, `config [${appKey}] matches app value when set by app`);
     // Reset the env value
@@ -346,7 +347,7 @@ function buildCoreAgentSocketResponse(json) {
 }
 exports.buildCoreAgentSocketResponse = buildCoreAgentSocketResponse;
 function buildTestScoutInstance(configOverride, options) {
-    const cfg = types_1.buildScoutConfiguration(Object.assign({ allowShutdown: true, monitor: true }, configOverride));
+    const cfg = (0, types_1.buildScoutConfiguration)(Object.assign({ allowShutdown: true, monitor: true }, configOverride));
     return new scout_1.Scout(cfg, options);
 }
 exports.buildTestScoutInstance = buildTestScoutInstance;
@@ -366,7 +367,7 @@ function buildTestScoutInstanceWithMock(configOverride, options) {
     return tslib_1.__awaiter(this, void 0, void 0, function* () {
         const mockAgent = new mock_agent_1.MockAgent();
         yield mockAgent.start();
-        const cfg = types_1.buildScoutConfiguration(Object.assign({
+        const cfg = (0, types_1.buildScoutConfiguration)(Object.assign({
             allowShutdown: true,
             monitor: true,
             coreAgentLaunch: false,
@@ -418,7 +419,7 @@ class TestContainerStartOpts {
         }
         // Generate a random container name if one wasn't provided
         if (!this.containerName) {
-            this.containerName = `test-${this.imageName}-${randomstring_1.generate(5)}`;
+            this.containerName = `test-${this.imageName}-${(0, randomstring_1.generate)(5)}`;
         }
     }
     imageWithTag() {
@@ -460,7 +461,7 @@ function startContainer(t, optOverrides) {
     ];
     // Spawn the docker container
     t.comment(`spawning container [${opts.imageName}:${opts.tagName}] with name [${opts.containerName}]...`);
-    const containerProcess = child_process_1.spawn(opts.dockerBinPath, args, { detached: true, stdio: "pipe" });
+    const containerProcess = (0, child_process_1.spawn)(opts.dockerBinPath, args, { detached: true, stdio: "pipe" });
     opts.setExecutedStartCommand(`${opts.dockerBinPath} ${args.join(" ")}`);
     let resolved = false;
     let stdoutListener;
@@ -473,7 +474,7 @@ function startContainer(t, optOverrides) {
         if (expected.times && expected.times <= 0) {
             return () => reject(new Error(`[${type}] invalid waitFor: expected.times <= 0`));
         }
-        let times = (_a = expected.times, (_a !== null && _a !== void 0 ? _a : 1));
+        let times = (_a = expected.times) !== null && _a !== void 0 ? _a : 1;
         return (line) => {
             line = line.toString();
             if (!line.includes(expected.phrase)) {
@@ -568,7 +569,7 @@ function startContainer(t, optOverrides) {
             resolve({ containerProcess, opts });
         });
     });
-    return promise_timeout_1.timeout(promise, opts.startTimeoutMs)
+    return (0, promise_timeout_1.timeout)(promise, opts.startTimeoutMs)
         .catch(err => {
         // If we timed out clean up some waiting stuff, shutdown the process
         // since none of the listeners may have triggered, clean them up
@@ -591,13 +592,13 @@ function killContainer(t, opts) {
     const args = ["kill", opts.containerName];
     // Spawn the docker container
     t.comment(`attempting to kill [${opts.containerName}]...`);
-    const dockerKillProcess = child_process_1.spawn(opts.dockerBinPath, args, { detached: true, stdio: "ignore" });
+    const dockerKillProcess = (0, child_process_1.spawn)(opts.dockerBinPath, args, { detached: true, stdio: "ignore" });
     const promise = new Promise((resolve, reject) => {
         dockerKillProcess.on("close", code => {
             resolve(code);
         });
     });
-    return promise_timeout_1.timeout(promise, opts.killTimeoutMs);
+    return (0, promise_timeout_1.timeout)(promise, opts.killTimeoutMs);
 }
 exports.killContainer = killContainer;
 const POSTGRES_IMAGE_NAME = "postgres";
@@ -796,7 +797,7 @@ function makeConnectedMySQLConnection(provider) {
         return Promise.reject(new Error("no CAO in provider"));
     }
     const port = cao.opts.portBinding[3306];
-    const conn = mysql_1.createConnection({
+    const conn = (0, mysql_1.createConnection)({
         user: "root",
         password: "mysql",
         host: "localhost",
@@ -819,7 +820,7 @@ function makeConnectedMySQL2Connection(provider) {
     if (!cao) {
         return Promise.reject(new Error("no CAO in provider"));
     }
-    const conn = mysql2_1.createConnection({
+    const conn = (0, mysql2_1.createConnection)({
         user: "root",
         password: "mysql",
         host: "localhost",

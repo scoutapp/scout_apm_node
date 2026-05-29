@@ -126,12 +126,12 @@ export function waitMinutes(mins: number, t?: Test): Promise<void> {
     return waitMs(mins * 60 * 1000, t);
 }
 
-// Helper function for cleaning up an agent processe and passing/failing a test
+// Helper function for cleaning up an agent and passing/failing a test
 export function cleanup(t: Test, agent: ExternalProcessAgent, err?: Error): Promise<void> {
     if (!agent) { t.end(err); return Promise.resolve(); }
-    return agent.getProcess()
-        .then(process => process.kill())
-        .then(() => t.end(err));
+    return agent.disconnect()
+        .then(() => t.end(err))
+        .catch(() => t.end(err));
 }
 
 // Helper that waits for agent buffer to flush

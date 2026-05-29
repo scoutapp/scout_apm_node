@@ -46,9 +46,9 @@ class ExternalProcessAgent extends events_1.EventEmitter {
     start() {
         return this.peerRunning()
             .then(exists => {
-            // If the socket doesn't already exist, start the process as configured
             if (exists) {
-                this.logFn("[scout/external-process] Socket already present", types_1.LogLevel.Warn);
+                this.logFn("[scout/external-process] Core agent already running, skipping launch", types_1.LogLevel.Debug);
+                return this;
             }
             return this.startProcess();
         });
@@ -219,39 +219,18 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                 this.emit(types_1.AgentEvent.RequestSent, msg);
             });
         });
-        return promise_timeout_1.timeout(sendPromise, this.opts.sendTimeoutMs);
+        return (0, promise_timeout_1.timeout)(sendPromise, this.opts.sendTimeoutMs);
     }
     /**
      * Check if the process is present
      */
-    getProcess() {
-        if (this.opts.disallowLaunch) {
-            return Promise.reject(new Errors.NoProcessReference("launch disabled"));
-        }
-        if (this.detachedProcess === undefined || this.detachedProcess === null) {
-            return Promise.reject(new Errors.NoProcessReference());
-        }
-        return Promise.resolve(this.detachedProcess);
-    }
     /**
-     * Stop the process (if one is running)
+     * No-op: the core agent is a daemon and manages its own lifecycle.
+     * Workers must not kill it — doing so would take down all other workers
+     * sharing the same socket.
      */
     stopProcess() {
-        return this.getProcess()
-            .then(p => {
-            this.stopped = true;
-            // The process tree itself must be killed
-            // otherwise instances of core-agent may be leaked.
-            if (process.platform === "linux" && p.pid !== undefined) {
-                process.kill(-1 * p.pid);
-            }
-            p.kill();
-        })
-            // Remove the socket path
-            .then(() => fs_extra_1.remove(this.getSocketPath()))
-            .catch(err => {
-            this.logFn(`[scout/external-process] Process stop failed:\n${err}`, types_1.LogLevel.Error);
-        });
+        return Promise.resolve();
     }
     /**
      * Set the registration and metadata that will be used by the agent
@@ -271,10 +250,10 @@ class ExternalProcessAgent extends events_1.EventEmitter {
      */
     peerRunning() {
         if (this.opts.isDomainSocket()) {
-            return fs_extra_1.pathExists(this.getSocketPath());
+            return (0, fs_extra_1.pathExists)(this.getSocketPath());
         }
         if (this.opts.isTCPSocket()) {
-            return tcp_port_used_1.check(Constants.CORE_AGENT_TCP_DEFAULT_PORT);
+            return (0, tcp_port_used_1.check)(Constants.CORE_AGENT_TCP_DEFAULT_PORT);
         }
         return Promise.reject(new Errors.UnknownSocketType());
     }
@@ -287,12 +266,12 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if (!this.opts.isValidSocket()) {
             return Promise.reject(new Errors.NotSupported("Only domain (file:// | unix://) or TCP (tcp://) sockets are supported"));
         }
-        this.pool = generic_pool_1.createPool({
+        this.pool = (0, generic_pool_1.createPool)({
             create: () => {
                 // If there is at least one pool error, let's wait a bit between creating domain sockets
                 let maybeWait = () => Promise.resolve();
                 if (this.poolErrors.length > DOMAIN_SOCKET_CREATE_ERR_THRESHOLD) {
-                    maybeWait = () => types_1.waitMs(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
+                    maybeWait = () => (0, types_1.waitMs)(DOMAIN_SOCKET_CREATE_BACKOFF_MS);
                 }
                 return maybeWait().then(() => this.createSocket());
             },
@@ -333,12 +312,12 @@ class ExternalProcessAgent extends events_1.EventEmitter {
             };
             // Perform the right connection based on the type of socket
             if (this.opts.isDomainSocket()) {
-                socket = net_1.createConnection(this.getSocketPath(), cb);
+                socket = (0, net_1.createConnection)(this.getSocketPath(), cb);
             }
             else if (this.opts.isTCPSocket()) {
                 const [host, portRaw] = this.getSocketPath().split(":");
                 const port = parseInt(portRaw, 10);
-                socket = net_1.createConnection(port, host, cb);
+                socket = (0, net_1.createConnection)(port, host, cb);
             }
             else {
                 reject(new Error("Unrecognized connection, neither domain nor TCP"));
@@ -423,13 +402,13 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         }
         let framed = [];
         // Parse the buffer to return zero or more well-framed agent responses
-        const { framed: newFramed, remaining: newRemaining } = types_1.splitAgentResponses(data);
+        const { framed: newFramed, remaining: newRemaining } = (0, types_1.splitAgentResponses)(data);
         framed = framed.concat(newFramed);
         // Add the remaining to the partial response buffer we're keeping
         socket.chunks = Buffer.concat([socket.chunks, newRemaining]);
         // Attempt to extract any *just* completed messages
         // Update the partial response for any remaining
-        const { framed: chunkFramed, remaining: chunkRemaining } = types_1.splitAgentResponses(socket.chunks);
+        const { framed: chunkFramed, remaining: chunkRemaining } = (0, types_1.splitAgentResponses)(socket.chunks);
         framed = framed.concat(chunkFramed);
         socket.chunks = chunkRemaining;
         // Read all (likely) fully formed, correctly framed messages
@@ -503,6 +482,7 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         const socketPath = this.getSocketPath();
         const args = [
             "start",
+            "--daemonize", "true",
             this.opts.isTCPSocket() ? "--tcp" : "--socket",
             socketPath,
         ];
@@ -523,11 +503,11 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         }
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, types_1.LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, types_1.LogLevel.Debug);
-        this.detachedProcess = child_process_1.spawn(this.opts.binPath, args, {
+        const proc = (0, child_process_1.spawn)(this.opts.binPath, args, {
             detached: true,
             stdio: "ignore",
         });
-        this.detachedProcess.unref();
+        proc.unref();
         // Wait until process is listening on the given socket port
         return new Promise((resolve, reject) => {
             setTimeout(() => {

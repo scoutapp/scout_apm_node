@@ -1,5 +1,4 @@
 import * as test from "tape";
-import { ChildProcess } from "child_process";
 import { mkdtemp } from "fs-extra";
 import * as path from "path";
 
@@ -29,17 +28,14 @@ const SKIP_BINARY_TESTS = process.env.ENABLE_BINARY_TESTS !== "true";
 
 test(`external process can be launched locally (v${TestConstants.TEST_APP_VERSION})`, {skip: SKIP_BINARY_TESTS}, t => {
     let agent: ExternalProcessAgent;
-    let process: ChildProcess;
 
     // Create the external process agent
     TestUtil.bootstrapExternalProcessAgent(t, TestConstants.TEST_APP_VERSION)
         .then(a => agent = a)
-    // Start the agent & check it was started by viewing the process
         .then(() => agent.start())
-        .then(() => agent.getProcess())
-        .then(p => process = p)
-        .then(() => t.assert(process, "process was started by this agent"))
-    // Cleanup the process & end test
+        .then(() => agent.connect())
+        .then(status => t.assert(status.connected, "agent is connected after start"))
+    // Cleanup & end test
         .then(() => TestUtil.cleanup(t, agent))
         .catch(err => TestUtil.cleanup(t, agent, err));
 });
@@ -540,26 +536,22 @@ test(`Request with 'Controller' span works, after waiting for flush (v${TestCons
 });
 
 test("Support starting scout with a completely external core-agent", {skip: SKIP_BINARY_TESTS}, t => {
-    // Create the external process agent, with special function for building the proc opts with
+    let agent: ExternalProcessAgent;
+    // Create the external process agent with launch disabled — simulates connecting to an
+    // externally-managed daemon.
     TestUtil.bootstrapExternalProcessAgent(
         t,
         TestConstants.TEST_APP_VERSION,
         {buildProcOpts: (binPath, uri) => new ProcessOptions(binPath, uri, {disallowLaunch: true})},
     )
-    // Attempt to shut down the agent immediately which shouldn't work because there is no process
-        .then(agent => agent.getProcess())
-    // Cleanup the process & end test
-        .then(() => {
-            t.fail("shutdown succeeded on an agent with no process");
-            t.end();
-        })
+        .then(a => agent = a)
+        .then(() => agent.start())
         .catch(err => {
-            if (err instanceof Errors.NoProcessReference) {
-                t.pass("NoProcessReference error was returned");
+            if (err instanceof Errors.AgentLaunchDisabled) {
+                t.pass("AgentLaunchDisabled error returned when launch is disabled");
                 t.end();
                 return;
             }
-
             t.end(err);
         });
 });
