@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.errorMiddleware = exports.scoutMiddleware = exports.listExpressEndpoints = void 0;
 const onFinished = require("on-finished");
 const async_hooks_1 = require("async_hooks");
 const types_1 = require("./types");
@@ -127,23 +128,23 @@ function scoutMiddleware(opts) {
     const commonRouteMiddlewares = [];
     // Build configuration overrides
     const overrides = opts && opts.config ? opts.config : {};
-    const config = types_1.buildScoutConfiguration(overrides);
+    const config = (0, types_1.buildScoutConfiguration)(overrides);
     const options = {
         logFn: opts && opts.logFn ? opts.logFn : undefined,
         statisticsIntervalMS: opts && opts.statisticsIntervalMS ? opts.statisticsIntervalMS : undefined,
     };
     // Set the last used configurations
-    global_1.setGlobalLastUsedConfiguration(config);
-    global_1.setGlobalLastUsedOptions(options);
+    (0, global_1.setGlobalLastUsedConfiguration)(config);
+    (0, global_1.setGlobalLastUsedOptions)(options);
     return (req, res, next) => {
         const requestStartTimeNS = getNanoTime();
         // If there is no global scout instance yet and no scout instance just go to next middleware immediately
-        const scout = opts && opts.scout ? opts.scout : req.app.scout || global_1.getActiveGlobalScoutInstance();
+        const scout = opts && opts.scout ? opts.scout : req.app.scout || (0, global_1.getActiveGlobalScoutInstance)();
         // Build a closure that installs scout (and waits on it)
         // depending on whether waitForScoutSetup is set we will run this in the background or inline
         const setupScout = () => {
             // If app doesn't already have a scout instance *and* no active global one is present, create one
-            return global_1.getOrCreateActiveGlobalScoutInstance(config, options)
+            return (0, global_1.getOrCreateActiveGlobalScoutInstance)(config, options)
                 .then(scout => req.app.scout = scout);
         };
         const waitForScoutSetup = opts && opts.waitForScoutSetup;
@@ -184,12 +185,18 @@ function scoutMiddleware(opts) {
             // Find routes that match the current URL
             matchedRouteMiddleware = appRouter.stack
                 .filter((middleware) => {
-                // We can recognize a middleware as a route if .route & .regexp are present
-                if (!middleware || !middleware.route || !middleware.regexp) {
+                if (!middleware || !middleware.route) {
                     return false;
                 }
-                // Check if the URL matches the route
-                const isMatch = middleware.regexp.test(preQueryUrl);
+                // Express v4: layer has a pre-built regexp
+                // Express v5: layer has a match() method instead
+                let isMatch = false;
+                if (middleware.regexp) {
+                    isMatch = middleware.regexp.test(preQueryUrl);
+                }
+                else if (typeof middleware.match === "function") {
+                    isMatch = middleware.match(preQueryUrl);
+                }
                 // Add matches in the hope that common routes will be faster than searching everything
                 if (isMatch) {
                     commonRouteMiddlewares.push(middleware);
@@ -218,7 +225,7 @@ function scoutMiddleware(opts) {
                     listExpressEndpoints(req.app)
                         .forEach(r => {
                         // Enrich endpoint list with regexes for the full match
-                        r.regex = path_to_regexp_1.pathToRegexp(r.path);
+                        r.regex = (0, path_to_regexp_1.pathToRegexp)(r.path);
                         ROUTE_INFO_LOOKUP[r.path] = Object.assign(Object.assign({}, r), { middleware: r.middleware || [], regex: r.regex });
                     });
                     // Search again after adding to the cache

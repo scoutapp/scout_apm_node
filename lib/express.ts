@@ -261,11 +261,16 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
             // Find routes that match the current URL
             matchedRouteMiddleware = appRouter.stack
                 .filter((middleware: any) => {
-                    // We can recognize a middleware as a route if .route & .regexp are present
-                    if (!middleware || !middleware.route || !middleware.regexp) { return false; }
+                    if (!middleware || !middleware.route) { return false; }
 
-                    // Check if the URL matches the route
-                    const isMatch = middleware.regexp.test(preQueryUrl);
+                    // Express v4: layer has a pre-built regexp
+                    // Express v5: layer has a match() method instead
+                    let isMatch = false;
+                    if (middleware.regexp) {
+                        isMatch = middleware.regexp.test(preQueryUrl);
+                    } else if (typeof middleware.match === "function") {
+                        isMatch = middleware.match(preQueryUrl);
+                    }
 
                     // Add matches in the hope that common routes will be faster than searching everything
                     if (isMatch) { commonRouteMiddlewares.push(middleware); }
