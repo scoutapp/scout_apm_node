@@ -105,7 +105,9 @@ export declare enum ScoutContextName {
     Path = "path",
     Timeout = "timeout",
     IgnoreTransaction = "ignore_transaction",
-    QueueTimeNS = "scout.queue_time_ns"
+    QueueTimeNS = "scout.queue_time_ns",
+    JobQueueTimeNS = "scout.job_queue_time_ns",
+    Queue = "queue"
 }
 export declare enum ScoutSpanOperation {
     SQLQuery = "SQL/Query",

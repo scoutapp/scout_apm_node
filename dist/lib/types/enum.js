@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ScoutSpanOperation = exports.ScoutContextName = exports.ScoutEvent = exports.PlatformTriple = exports.Platform = exports.Architecture = exports.ConfigSourceName = exports.parseLogLevel = exports.isLogLevel = exports.AgentResponseType = exports.AgentRequestType = exports.AgentEvent = exports.ApplicationEventType = exports.LogLevel = exports.AgentType = exports.URIReportingLevel = exports.APIVersion = void 0;
 var APIVersion;
 (function (APIVersion) {
     APIVersion["V1"] = "1.0";
@@ -133,6 +134,8 @@ var ScoutContextName;
     ScoutContextName["Timeout"] = "timeout";
     ScoutContextName["IgnoreTransaction"] = "ignore_transaction";
     ScoutContextName["QueueTimeNS"] = "scout.queue_time_ns";
+    ScoutContextName["JobQueueTimeNS"] = "scout.job_queue_time_ns";
+    ScoutContextName["Queue"] = "queue";
 })(ScoutContextName = exports.ScoutContextName || (exports.ScoutContextName = {}));
 var ScoutSpanOperation;
 (function (ScoutSpanOperation) {
