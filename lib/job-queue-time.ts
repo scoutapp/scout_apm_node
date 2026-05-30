@@ -1,8 +1,8 @@
 import { ScoutContextName } from "./types/enum";
-import ScoutRequest from "./scout/request";
+import ScoutSpan from "./scout/span";
 
 /**
- * Tag a background job request with how long it waited in the queue before
+ * Tag a background job span with how long it waited in the queue before
  * being picked up. Scout displays this as "Queue Latency" in the background
  * jobs UI.
  *
@@ -14,19 +14,19 @@ import ScoutRequest from "./scout/request";
  *
  * Example (BullMQ):
  *   const job = await queue.getJob(jobId);
- *   trackJobQueueTime(request, job.timestamp); // BullMQ timestamps are ms
+ *   trackJobQueueTime(span, job.timestamp); // BullMQ timestamps are ms
  *
  * Example (manual):
- *   trackJobQueueTime(request, new Date(payload.enqueuedAt));
+ *   trackJobQueueTime(span, new Date(payload.enqueuedAt));
  */
 export function trackJobQueueTime(
-    request: ScoutRequest,
+    span: ScoutSpan,
     enqueuedAt: Date | number,
 ): void {
     const nowNs = Date.now() * 1e6;
     const startNs = toNanoseconds(enqueuedAt);
     const queueTimeNs = Math.max(0, Math.round(nowNs - startNs));
-    request.addContextSync(ScoutContextName.JobQueueTimeNS, queueTimeNs);
+    span.addContextSync(ScoutContextName.JobQueueTimeNS, queueTimeNs);
 }
 
 function toNanoseconds(value: Date | number): number {
