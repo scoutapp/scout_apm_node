@@ -9,16 +9,17 @@ Generate one at npmjs.com → Account → Access Tokens → New Token → **Auto
 
 1. **Merge all changes to master** — the release commit should be on master.
 
-2. **Bump the version in `package.json`**:
+2. **Bump the version in `package.json`** via a PR — do not push directly to master:
    ```sh
+   git checkout -b chore/bump-version-0.2.4
    # Edit package.json "version" field, e.g. "0.2.3" → "0.2.4"
-   # Then commit:
    git add package.json
    git commit -m "chore: bump version to 0.2.4"
-   git push origin master
+   git push origin chore/bump-version-0.2.4
+   # Open a PR, get approval, then merge to master
    ```
 
-3. **Tag the commit and push the tag**:
+3. **Tag the merged master commit and push the tag**:
    ```sh
    git tag v0.2.4
    git push origin v0.2.4
