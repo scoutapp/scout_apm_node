@@ -248,7 +248,11 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // The query of the URL needs to be  stripped before attempting to test it against express regexps
         // i.e. all route regexps end in /..\?$/
         const preQueryUrl = reqUrl.split("?")[0];
-        let matchedRouteMiddleware = commonRouteMiddlewares.find((m: any) => m.regexp.test(preQueryUrl));
+        let matchedRouteMiddleware = commonRouteMiddlewares.find((m: any) => {
+            if (m.regexp) { return m.regexp.test(preQueryUrl); }
+            if (typeof m.match === "function") { return m.match(preQueryUrl); }
+            return false;
+        });
 
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack

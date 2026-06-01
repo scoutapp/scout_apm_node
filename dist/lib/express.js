@@ -170,7 +170,15 @@ function scoutMiddleware(opts) {
         // The query of the URL needs to be  stripped before attempting to test it against express regexps
         // i.e. all route regexps end in /..\?$/
         const preQueryUrl = reqUrl.split("?")[0];
-        let matchedRouteMiddleware = commonRouteMiddlewares.find((m) => m.regexp.test(preQueryUrl));
+        let matchedRouteMiddleware = commonRouteMiddlewares.find((m) => {
+            if (m.regexp) {
+                return m.regexp.test(preQueryUrl);
+            }
+            if (typeof m.match === "function") {
+                return m.match(preQueryUrl);
+            }
+            return false;
+        });
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
         // Express 4 uses _router; Express 5 uses router (a getter that throws on Express 4)
