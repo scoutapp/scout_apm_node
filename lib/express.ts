@@ -184,6 +184,44 @@ interface EndpointListingItem {
 const ROUTE_INFO_LOOKUP: {[key: string]: EndpointListingItem} = {};
 
 /**
+ * Recursively find the full route path for a URL within a router layer stack.
+ * Handles Express 4 (regexp) and Express 5 (match function) layer formats,
+ * and recurses into nested express.Router() instances.
+ *
+ * Each nested Router's match() operates on the URL relative to its mount point,
+ * so we try stripping 1..N leading segments until a sub-stack match is found.
+ */
+function findRoutePathInStack(stack: any[], url: string, mountPrefix: string): string | null {
+    const segments = url.split("/").filter(Boolean);
+    for (const layer of stack) {
+        if (!layer) { continue; }
+        if (layer.route) {
+            let isMatch = false;
+            if (layer.regexp) { isMatch = layer.regexp.test(url); }
+            else if (typeof layer.match === "function") { isMatch = !!layer.match(url); }
+            if (isMatch) {
+                // Avoid double-slash when a sub-router root ('/') is appended to a non-empty prefix
+                const suffix = layer.route.path === "/" && mountPrefix !== "" ? "" : layer.route.path;
+                return mountPrefix + suffix;
+            }
+        } else if (layer.name === "router" && layer.handle && layer.handle.stack) {
+            let routerMatches = false;
+            if (layer.regexp) { routerMatches = layer.regexp.test(url); }
+            else if (typeof layer.match === "function") { routerMatches = !!layer.match(url); }
+            if (!routerMatches) { continue; }
+            // Strip 1..N leading segments to derive the sub-URL relative to the nested router
+            for (let i = 1; i <= segments.length; i++) {
+                const nestedMount = mountPrefix + "/" + segments.slice(0, i).join("/");
+                const nestedUrl = segments.slice(i).length > 0 ? "/" + segments.slice(i).join("/") : "/";
+                const result = findRoutePathInStack(layer.handle.stack, nestedUrl, nestedMount);
+                if (result) { return result; }
+            }
+        }
+    }
+    return null;
+}
+
+/**
  * Middleware for using scout, this should be
  * attached to the application object using app.use(...)
  *
@@ -287,6 +325,14 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
         // (for the request name, e.x. "Controller/GET <some path>")
         if (matchedRouteMiddleware) {
             routePath = matchedRouteMiddleware.route.path;
+        }
+
+        // If still no match, walk nested express.Router() stacks recursively.
+        // This handles routes mounted via app.use('/prefix', router) that are invisible
+        // to the top-level stack scan (which only looks at layers with layer.route).
+        if (!routePath && appRouter && appRouter.stack) {
+            const nestedPath = findRoutePathInStack(appRouter.stack, preQueryUrl, "");
+            if (nestedPath) { routePath = nestedPath; }
         }
 
         // If we get to this point and matchedRouteMiddleware is still empty/missing

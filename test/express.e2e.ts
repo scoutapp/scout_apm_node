@@ -763,6 +763,72 @@ test("Request queue time should be recorded", TEST_OPTS, t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
+test("express Router() routes are traced (one level nesting)", TEST_OPTS, t => {
+    const scout = new Scout(buildScoutConfiguration(withMock({
+        allowShutdown: true,
+        monitor: true,
+    })));
+
+    const app: Application & ApplicationWithScout = TestUtil.simpleRouterExpressApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0,
+        waitForScoutSetup: true,
+    })) as any;
+
+    const expectedOperation = "Controller/GET /api/echo/:name";
+
+    const listener = (data: ScoutEventRequestSentData) => {
+        if (!data || !data.request) { return; }
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length === 0) { return; }
+        const top = spans[0];
+        if (!top.operation.startsWith("Controller")) { return; }
+
+        t.equals(top.operation, expectedOperation, "router route has correct operation name");
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+        TestUtil.shutdownScout(t, scout).catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    scout.setup()
+        .then(() => request(app).get("/api/echo/alice").expect("Content-Type", /json/).expect(200))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
+test("express Router() routes are traced (two levels nesting)", TEST_OPTS, t => {
+    const scout = new Scout(buildScoutConfiguration(withMock({
+        allowShutdown: true,
+        monitor: true,
+    })));
+
+    const app: Application & ApplicationWithScout = TestUtil.simpleRouterExpressApp(scoutMiddleware({
+        scout,
+        requestTimeoutMs: 0,
+        waitForScoutSetup: true,
+    })) as any;
+
+    const expectedOperation = "Controller/GET /api/nested/deep/:id";
+
+    const listener = (data: ScoutEventRequestSentData) => {
+        if (!data || !data.request) { return; }
+        const spans = data.request.getChildSpansSync();
+        if (!spans || spans.length === 0) { return; }
+        const top = spans[0];
+        if (!top.operation.startsWith("Controller")) { return; }
+
+        t.equals(top.operation, expectedOperation, "nested router route has correct operation name");
+        scout.removeListener(ScoutEvent.RequestSent, listener);
+        TestUtil.shutdownScout(t, scout).catch(err => TestUtil.shutdownScout(t, scout, err));
+    };
+
+    scout.on(ScoutEvent.RequestSent, listener);
+
+    scout.setup()
+        .then(() => request(app).get("/api/nested/deep/42").expect("Content-Type", /json/).expect(200))
+        .catch(err => TestUtil.shutdownScout(t, scout, err));
+});
+
 // Cleanup the global isntance(s) that get created
 test("Shutdown the global instance", t => {
     const inst = getActiveGlobalScoutInstance();

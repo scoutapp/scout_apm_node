@@ -211,6 +211,31 @@ export function simpleDynamicSegmentExpressApp(middleware: any, delayMs: number 
     return app;
 }
 
+// An express application with routes via express.Router() mounted at /api.
+// Used to verify that scoutMiddleware traces Router-based routes without needing
+// the express integration shim.
+//   GET /api/echo/:name        — one level deep
+//   GET /api/nested/deep/:id   — two levels deep (router inside router)
+export function simpleRouterExpressApp(middleware: any): Application {
+    const app = express();
+    app.use(middleware);
+
+    const router = express.Router();
+    router.get("/echo/:name", (req: Request, res: Response) => {
+        res.json({ status: "success", name: (req.params as any).name });
+    });
+
+    const nested = express.Router();
+    nested.get("/deep/:id", (req: Request, res: Response) => {
+        res.json({ status: "success", id: (req.params as any).id });
+    });
+    router.use("/nested", nested);
+
+    app.use("/api", router);
+
+    return app;
+}
+
 // An express application which errors on the /
 export function simpleErrorApp(middleware: any, delayMs: number = 0): Application {
     const app = express();
