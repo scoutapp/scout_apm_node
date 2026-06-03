@@ -60,7 +60,6 @@ class ExtendedTestModule {}
 
 function buildConfig(mock: MockAgent, extra?: object) {
     return buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,

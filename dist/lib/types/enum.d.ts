@@ -43,7 +43,8 @@ export declare enum AgentRequestType {
     V1StartSpan = "v1-start-span",
     V1StopSpan = "v1-stop-span",
     V1TagSpan = "v1-tag-span",
-    V1ApplicationEvent = "v1-application-event"
+    V1ApplicationEvent = "v1-application-event",
+    V1BatchCommand = "v1-batch-command"
 }
 export declare enum AgentResponseType {
     Unknown = "unknown",
@@ -56,6 +57,7 @@ export declare enum AgentResponseType {
     V1StopSpan = "v1-stop-span-response",
     V1TagSpan = "v1-tag-span-response",
     V1ApplicationEvent = "v1-application-event-response",
+    V1BatchCommand = "v1-batch-command-response",
     V1Failure = "v1-failure-response"
 }
 export declare function isLogLevel(lvl: string): lvl is LogLevel;
@@ -105,7 +107,9 @@ export declare enum ScoutContextName {
     Path = "path",
     Timeout = "timeout",
     IgnoreTransaction = "ignore_transaction",
-    QueueTimeNS = "scout.queue_time_ns"
+    QueueTimeNS = "scout.queue_time_ns",
+    JobQueueTimeNS = "scout.job_queue_time_ns",
+    Queue = "queue"
 }
 export declare enum ScoutSpanOperation {
     SQLQuery = "SQL/Query",

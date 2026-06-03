@@ -3,6 +3,7 @@ import * as Errors from "./errors";
 import { scoutMiddleware as expressMiddleware, errorMiddleware } from "./express";
 import { nestMiddleware as nestMiddlewareImpl, nestErrorFilter as nestErrorFilterImpl } from "./nest";
 import { captureError } from "./error-monitor";
+import { trackJobQueueTime } from "./job-queue-time";
 
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
@@ -43,6 +44,9 @@ const API = {
 
     // Error monitoring
     captureError,
+
+    // Background jobs
+    trackJobQueueTime,
 
     // Logging
     consoleLogFn,
