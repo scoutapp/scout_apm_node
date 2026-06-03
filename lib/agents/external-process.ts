@@ -1,7 +1,8 @@
 import { EventEmitter } from "events";
 import * as Errors from "../errors";
 import * as Constants from "../constants";
-import { pathExists } from "fs-extra";
+import { pathExists, writeFileSync } from "fs-extra";
+import * as path from "path";
 import { Socket, createConnection } from "net";
 import { spawn } from "child_process";
 import { createPool, Pool } from "generic-pool";
@@ -605,7 +606,11 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (this.opts.configFilePath) { args.push("--config-file", this.opts.configFilePath); }
         if (this.opts.logLevel) { args.push("--log-level", this.opts.logLevel); }
         if (this.opts.proxyUrl) { args.push("--proxy", this.opts.proxyUrl); }
-        if (this.opts.ingestUrl) { args.push("--ingest-url", this.opts.ingestUrl); }
+        if (this.opts.ingestUrl && !this.opts.configFilePath) {
+            const configTomlPath = path.join(path.dirname(this.opts.binPath), "config.toml");
+            writeFileSync(configTomlPath, `[debug]\ningest_url = "${this.opts.ingestUrl}"\n`, "utf8");
+            args.push("--config-file", configTomlPath);
+        }
 
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, LogLevel.Debug);
