@@ -16,7 +16,7 @@ import {
     setGlobalLastUsedConfiguration,
     setGlobalLastUsedOptions,
 } from "./global";
-import { listExpressEndpoints, EndpointInfo, ApplicationWithScout, ExpressScoutInfo } from "./express";
+import { listExpressEndpoints, findRoutePathInStack, EndpointInfo, ApplicationWithScout, ExpressScoutInfo } from "./express";
 import { pathToRegexp } from "path-to-regexp";
 
 const getNanoTime = require("nano-time");
@@ -87,10 +87,20 @@ export function nestMiddleware(opts?: NestMiddlewareOptions): NestMiddleware {
         const reqUrl = req.url;
         const preQueryUrl = reqUrl.split("?")[0];
 
-        // NestJS routes are always registered on a nested Express Router, never as
-        // top-level layers on app._router.  Skip the flat stack scan and go straight
-        // to listExpressEndpoints which walks the full nested tree.
+        // NestJS routes are registered on nested Express Routers.  Try walking the
+        // router stack directly first (handles Express v5 where listExpressEndpoints
+        // probing is limited), then fall back to listExpressEndpoints.
         let routePath: string | null = reqUrl === "/" ? "/" : null;
+
+        if (!routePath) {
+            try {
+                const appRouter = req.app._router || (req.app.router && req.app.router());
+                if (appRouter && appRouter.stack) {
+                    const walked = findRoutePathInStack(appRouter.stack, preQueryUrl, "");
+                    if (walked) { routePath = walked; }
+                }
+            } catch (_e) { /* ignore */ }
+        }
 
         if (!routePath) {
             try {
