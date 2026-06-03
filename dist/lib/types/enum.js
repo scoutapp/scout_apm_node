@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ScoutSpanOperation = exports.ScoutContextName = exports.ScoutEvent = exports.PlatformTriple = exports.Platform = exports.Architecture = exports.ConfigSourceName = exports.parseLogLevel = exports.isLogLevel = exports.AgentResponseType = exports.AgentRequestType = exports.AgentEvent = exports.ApplicationEventType = exports.LogLevel = exports.AgentType = exports.URIReportingLevel = exports.APIVersion = void 0;
 var APIVersion;
 (function (APIVersion) {
     APIVersion["V1"] = "1.0";
@@ -53,6 +54,7 @@ var AgentRequestType;
     AgentRequestType["V1StopSpan"] = "v1-stop-span";
     AgentRequestType["V1TagSpan"] = "v1-tag-span";
     AgentRequestType["V1ApplicationEvent"] = "v1-application-event";
+    AgentRequestType["V1BatchCommand"] = "v1-batch-command";
 })(AgentRequestType = exports.AgentRequestType || (exports.AgentRequestType = {}));
 var AgentResponseType;
 (function (AgentResponseType) {
@@ -66,6 +68,7 @@ var AgentResponseType;
     AgentResponseType["V1StopSpan"] = "v1-stop-span-response";
     AgentResponseType["V1TagSpan"] = "v1-tag-span-response";
     AgentResponseType["V1ApplicationEvent"] = "v1-application-event-response";
+    AgentResponseType["V1BatchCommand"] = "v1-batch-command-response";
     AgentResponseType["V1Failure"] = "v1-failure-response";
 })(AgentResponseType = exports.AgentResponseType || (exports.AgentResponseType = {}));
 // Check if a given string is a valid log level
@@ -133,6 +136,8 @@ var ScoutContextName;
     ScoutContextName["Timeout"] = "timeout";
     ScoutContextName["IgnoreTransaction"] = "ignore_transaction";
     ScoutContextName["QueueTimeNS"] = "scout.queue_time_ns";
+    ScoutContextName["JobQueueTimeNS"] = "scout.job_queue_time_ns";
+    ScoutContextName["Queue"] = "queue";
 })(ScoutContextName = exports.ScoutContextName || (exports.ScoutContextName = {}));
 var ScoutSpanOperation;
 (function (ScoutSpanOperation) {

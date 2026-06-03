@@ -2,6 +2,7 @@ import * as Errors from "./errors";
 import { scoutMiddleware as expressMiddleware, errorMiddleware } from "./express";
 import { nestMiddleware as nestMiddlewareImpl, nestErrorFilter as nestErrorFilterImpl } from "./nest";
 import { captureError } from "./error-monitor";
+import { trackJobQueueTime } from "./job-queue-time";
 import { Scout, ScoutRequest, DoneCallback, SpanCallback, RequestCallback } from "./scout";
 import { ScoutConfiguration, JSONValue, buildScoutConfiguration, consoleLogFn, buildWinstonLogFn } from "./types";
 import { getOrCreateActiveGlobalScoutInstance } from "./global";
@@ -15,30 +16,31 @@ declare const API: {
     nestMiddleware: typeof nestMiddlewareImpl;
     nestErrorFilter: typeof nestErrorFilterImpl;
     captureError: typeof captureError;
+    trackJobQueueTime: typeof trackJobQueueTime;
     consoleLogFn: typeof consoleLogFn;
     buildWinstonLogFn: typeof buildWinstonLogFn;
     install: typeof getOrCreateActiveGlobalScoutInstance;
     init(config: Partial<ScoutConfiguration>): Promise<Scout>;
-    instrument(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;
-    instrumentSync(op: string, cb: SpanCallback, scout?: Scout | undefined): Promise<any>;
+    instrument(op: string, cb: DoneCallback, scout?: Scout): Promise<any>;
+    instrumentSync(op: string, cb: SpanCallback, scout?: Scout): Promise<any>;
     api: {
         WebTransaction: {
-            run(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;
-            runSync(op: string, cb: RequestCallback, scout?: Scout | undefined): any;
+            run(op: string, cb: DoneCallback, scout?: Scout): Promise<any>;
+            runSync(op: string, cb: RequestCallback, scout?: Scout): any;
         };
         BackgroundTransaction: {
-            run(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;
-            runSync(op: string, cb: SpanCallback, scout?: Scout | undefined): any;
+            run(op: string, cb: DoneCallback, scout?: Scout): Promise<any>;
+            runSync(op: string, cb: SpanCallback, scout?: Scout): any;
         };
-        instrument(op: string, cb: DoneCallback, scout?: Scout | undefined): Promise<any>;
-        instrumentSync(operation: string, fn: SpanCallback, scout?: Scout | undefined): Promise<any>;
+        instrument(op: string, cb: DoneCallback, scout?: Scout): Promise<any>;
+        instrumentSync(operation: string, fn: SpanCallback, scout?: Scout): Promise<any>;
         readonly Config: Partial<ScoutConfiguration> | undefined;
         Context: {
-            add(name: string, value: JSONValue, scout?: Scout | undefined): Promise<void | ScoutRequest>;
-            addSync(name: string, value: JSONValue, scout?: Scout | undefined): ScoutRequest | undefined;
+            add(name: string, value: JSONValue, scout?: Scout): Promise<ScoutRequest | void>;
+            addSync(name: string, value: JSONValue, scout?: Scout): ScoutRequest | undefined;
         };
-        ignoreTransaction(scout?: Scout | undefined): Promise<void | ScoutRequest>;
-        ignoreTransactionSync(scout?: Scout | undefined): void | ScoutRequest;
+        ignoreTransaction(scout?: Scout): Promise<ScoutRequest | void>;
+        ignoreTransactionSync(scout?: Scout): ScoutRequest | void;
     };
 };
 export = API;
