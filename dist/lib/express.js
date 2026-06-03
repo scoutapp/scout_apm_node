@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.errorMiddleware = exports.scoutMiddleware = exports.listExpressEndpoints = void 0;
 const onFinished = require("on-finished");
 const async_hooks_1 = require("async_hooks");
 const types_1 = require("./types");
@@ -115,6 +116,58 @@ function parseQueueTimeNS(value) {
 }
 const ROUTE_INFO_LOOKUP = {};
 /**
+ * Recursively find the full route path for a URL within a router layer stack.
+ * Handles Express 4 (regexp) and Express 5 (match function) layer formats,
+ * and recurses into nested express.Router() instances.
+ *
+ * Each nested Router's match() operates on the URL relative to its mount point,
+ * so we try stripping 1..N leading segments until a sub-stack match is found.
+ */
+function findRoutePathInStack(stack, url, mountPrefix) {
+    const segments = url.split("/").filter(Boolean);
+    for (const layer of stack) {
+        if (!layer) {
+            continue;
+        }
+        if (layer.route) {
+            let isMatch = false;
+            if (layer.regexp) {
+                isMatch = layer.regexp.test(url);
+            }
+            else if (typeof layer.match === "function") {
+                isMatch = !!layer.match(url);
+            }
+            if (isMatch) {
+                // Avoid double-slash when a sub-router root ('/') is appended to a non-empty prefix
+                const suffix = layer.route.path === "/" && mountPrefix !== "" ? "" : layer.route.path;
+                return mountPrefix + suffix;
+            }
+        }
+        else if (layer.name === "router" && layer.handle && layer.handle.stack) {
+            let routerMatches = false;
+            if (layer.regexp) {
+                routerMatches = layer.regexp.test(url);
+            }
+            else if (typeof layer.match === "function") {
+                routerMatches = !!layer.match(url);
+            }
+            if (!routerMatches) {
+                continue;
+            }
+            // Strip 1..N leading segments to derive the sub-URL relative to the nested router
+            for (let i = 1; i <= segments.length; i++) {
+                const nestedMount = mountPrefix + "/" + segments.slice(0, i).join("/");
+                const nestedUrl = segments.slice(i).length > 0 ? "/" + segments.slice(i).join("/") : "/";
+                const result = findRoutePathInStack(layer.handle.stack, nestedUrl, nestedMount);
+                if (result) {
+                    return result;
+                }
+            }
+        }
+    }
+    return null;
+}
+/**
  * Middleware for using scout, this should be
  * attached to the application object using app.use(...)
  *
@@ -127,23 +180,23 @@ function scoutMiddleware(opts) {
     const commonRouteMiddlewares = [];
     // Build configuration overrides
     const overrides = opts && opts.config ? opts.config : {};
-    const config = types_1.buildScoutConfiguration(overrides);
+    const config = (0, types_1.buildScoutConfiguration)(overrides);
     const options = {
         logFn: opts && opts.logFn ? opts.logFn : undefined,
         statisticsIntervalMS: opts && opts.statisticsIntervalMS ? opts.statisticsIntervalMS : undefined,
     };
     // Set the last used configurations
-    global_1.setGlobalLastUsedConfiguration(config);
-    global_1.setGlobalLastUsedOptions(options);
+    (0, global_1.setGlobalLastUsedConfiguration)(config);
+    (0, global_1.setGlobalLastUsedOptions)(options);
     return (req, res, next) => {
         const requestStartTimeNS = getNanoTime();
         // If there is no global scout instance yet and no scout instance just go to next middleware immediately
-        const scout = opts && opts.scout ? opts.scout : req.app.scout || global_1.getActiveGlobalScoutInstance();
+        const scout = opts && opts.scout ? opts.scout : req.app.scout || (0, global_1.getActiveGlobalScoutInstance)();
         // Build a closure that installs scout (and waits on it)
         // depending on whether waitForScoutSetup is set we will run this in the background or inline
         const setupScout = () => {
             // If app doesn't already have a scout instance *and* no active global one is present, create one
-            return global_1.getOrCreateActiveGlobalScoutInstance(config, options)
+            return (0, global_1.getOrCreateActiveGlobalScoutInstance)(config, options)
                 .then(scout => req.app.scout = scout);
         };
         const waitForScoutSetup = opts && opts.waitForScoutSetup;
@@ -169,7 +222,15 @@ function scoutMiddleware(opts) {
         // The query of the URL needs to be  stripped before attempting to test it against express regexps
         // i.e. all route regexps end in /..\?$/
         const preQueryUrl = reqUrl.split("?")[0];
-        let matchedRouteMiddleware = commonRouteMiddlewares.find((m) => m.regexp.test(preQueryUrl));
+        let matchedRouteMiddleware = commonRouteMiddlewares.find((m) => {
+            if (m.regexp) {
+                return m.regexp.test(preQueryUrl);
+            }
+            if (typeof m.match === "function") {
+                return m.match(preQueryUrl);
+            }
+            return false;
+        });
         // If we couldn't find a route in the ones that have worked before,
         // then we have to search the router stack
         // Express 4 uses _router; Express 5 uses router (a getter that throws on Express 4)
@@ -184,12 +245,18 @@ function scoutMiddleware(opts) {
             // Find routes that match the current URL
             matchedRouteMiddleware = appRouter.stack
                 .filter((middleware) => {
-                // We can recognize a middleware as a route if .route & .regexp are present
-                if (!middleware || !middleware.route || !middleware.regexp) {
+                if (!middleware || !middleware.route) {
                     return false;
                 }
-                // Check if the URL matches the route
-                const isMatch = middleware.regexp.test(preQueryUrl);
+                // Express v4: layer has a pre-built regexp
+                // Express v5: layer has a match() method instead
+                let isMatch = false;
+                if (middleware.regexp) {
+                    isMatch = middleware.regexp.test(preQueryUrl);
+                }
+                else if (typeof middleware.match === "function") {
+                    isMatch = middleware.match(preQueryUrl);
+                }
                 // Add matches in the hope that common routes will be faster than searching everything
                 if (isMatch) {
                     commonRouteMiddlewares.push(middleware);
@@ -201,6 +268,15 @@ function scoutMiddleware(opts) {
         // (for the request name, e.x. "Controller/GET <some path>")
         if (matchedRouteMiddleware) {
             routePath = matchedRouteMiddleware.route.path;
+        }
+        // If still no match, walk nested express.Router() stacks recursively.
+        // This handles routes mounted via app.use('/prefix', router) that are invisible
+        // to the top-level stack scan (which only looks at layers with layer.route).
+        if (!routePath && appRouter && appRouter.stack) {
+            const nestedPath = findRoutePathInStack(appRouter.stack, preQueryUrl, "");
+            if (nestedPath) {
+                routePath = nestedPath;
+            }
         }
         // If we get to this point and matchedRouteMiddleware is still empty/missing
         // we're likely in the case of a nested express.Router and cannot rely on
@@ -218,7 +294,7 @@ function scoutMiddleware(opts) {
                     listExpressEndpoints(req.app)
                         .forEach(r => {
                         // Enrich endpoint list with regexes for the full match
-                        r.regex = path_to_regexp_1.pathToRegexp(r.path);
+                        r.regex = (0, path_to_regexp_1.pathToRegexp)(r.path);
                         ROUTE_INFO_LOOKUP[r.path] = Object.assign(Object.assign({}, r), { middleware: r.middleware || [], regex: r.regex });
                     });
                     // Search again after adding to the cache

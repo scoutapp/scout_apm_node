@@ -22,8 +22,8 @@ export declare function listExpressEndpoints(app: any): EndpointInfo[];
 export interface ApplicationWithScout {
     scout?: Scout;
 }
-declare type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
-declare type ExpressErrorMiddleware = (err: any, req: any, res: any, next: (err?: any) => void) => void;
+type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
+type ExpressErrorMiddleware = (err: any, req: any, res: any, next: (err?: any) => void) => void;
 export interface ExpressMiddlewareOptions {
     config?: Partial<ScoutConfiguration>;
     logFn?: LogFn;
@@ -37,7 +37,7 @@ export interface ExpressScoutInfo {
     request?: ScoutRequest;
     rootSpan?: ScoutSpan;
 }
-export declare type ExpressRequestWithScout = Request & ExpressScoutInfo;
+export type ExpressRequestWithScout = Request & ExpressScoutInfo;
 /**
  * Middleware for using scout, this should be
  * attached to the application object using app.use(...)
