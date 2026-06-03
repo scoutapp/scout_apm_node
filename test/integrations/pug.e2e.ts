@@ -35,7 +35,6 @@ test("the shim works", t => {
 
 test("pug rendering a string is captured", t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -80,7 +79,6 @@ test("pug rendering a string is captured", t => {
 
 test("pug rendering a file is captured", t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 

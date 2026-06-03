@@ -15,7 +15,7 @@ const request = require("supertest");
 const randomstring_1 = require("randomstring");
 const types_1 = require("../lib/types");
 const lib_1 = require("../lib");
-lib_1.setupRequireIntegrations(["pg", "ejs", "pug"]);
+(0, lib_1.setupRequireIntegrations)(["pg", "ejs", "pug"]);
 const scout_1 = require("../lib/scout");
 const express_1 = require("../lib/express");
 const TestUtil = require("./util");
@@ -30,8 +30,7 @@ const pug = require("pug");
 // https://github.com/scoutapp/scout_apm_node/issues/82
 test("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
     // Build scout config & app meta for test
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -41,7 +40,7 @@ test("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_
     if (!config.name) {
         throw new Error("No Scout name! Provide one with the SCOUT_NAME ENV variable");
     }
-    const sha = randomstring_1.generate(64);
+    const sha = (0, randomstring_1.generate)(64);
     config.revisionSHA = sha;
     t.comment(`set revision sha to ${sha}`);
     // Generate generic app metadata
@@ -50,9 +49,9 @@ test("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_
     const scout = new scout_1.Scout(config, { appMeta });
     SCOUT_INSTANCES.push(scout);
     // Create a simple application and setup scout middleware
-    const app = TestUtil.simpleExpressApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleExpressApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }));
     // Set up a listener that should fire when the request is finished
     const listener = (data, another) => {
@@ -72,8 +71,7 @@ test("Test scout app launch dashboard send", { timeout: TestUtil.DASHBOARD_SEND_
 });
 // https://github.com/scoutapp/scout_apm_node/issues/71
 test("Scout sends basic controller span to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -118,8 +116,7 @@ TestUtil.startContainerizedPostgresTest(test, cao => {
 // For the postgres integration
 // https://github.com/scoutapp/scout_apm_node/issues/83
 test("transaction with with postgres DB query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -181,8 +178,7 @@ test("transaction with with postgres DB query to dashboard", { timeout: TestUtil
 });
 // https://github.com/scoutapp/scout_apm_node/issues/140
 test("Many select statments and a render are in the right order", { timeout: TestUtil.PG_TEST_TIMEOUT_MS * 1000 }, t => {
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
     });
     const appMeta = new types_1.ApplicationMetadata(config, { frameworkVersion: "test" });
@@ -241,9 +237,9 @@ test("Many select statments and a render are in the right order", { timeout: Tes
         // Build the app with the postgres client
         .then(() => {
         // Create an application will do many queries and render something using ejs
-        app = TestUtil.queryAndRenderRandomNumbers(express_1.scoutMiddleware({
+        app = TestUtil.queryAndRenderRandomNumbers((0, express_1.scoutMiddleware)({
             scout,
-            requestTimeoutMs: 0,
+            requestTimeoutMs: 0, // disable request timeout to stop test from hanging
         }), "ejs", client);
     })
         // Perform the request to trigger the queries & render
@@ -273,8 +269,7 @@ TestUtil.startContainerizedMySQLTest(test, cao => {
 });
 test("transaction with mysql query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
     // Build scout config & app meta for test
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -335,8 +330,7 @@ test("transaction with mysql query to dashboard", { timeout: TestUtil.DASHBOARD_
 });
 test("transaction with mysql2 query to dashboard", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
     // Build scout config & app meta for test
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -403,8 +397,7 @@ TestUtil.stopContainerizedMySQLTest(test, () => MYSQL_CONTAINER_AND_OPTS);
 // https://github.com/scoutapp/scout_apm_node/issues/82
 test("Express pug integration dashboard send", { timeout: TestUtil.DASHBOARD_SEND_TIMEOUT_MS }, t => {
     // Build scout config & app meta for test
-    const config = types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const config = (0, types_1.buildScoutConfiguration)({
         monitor: true,
         name: TestConstants.TEST_SCOUT_NAME,
     });
@@ -417,9 +410,9 @@ test("Express pug integration dashboard send", { timeout: TestUtil.DASHBOARD_SEN
     const scout = new scout_1.Scout(config);
     SCOUT_INSTANCES.push(scout);
     // Create an application that's set up to use pug templating
-    const app = TestUtil.simpleHTML5BoilerplateApp(express_1.scoutMiddleware({
+    const app = TestUtil.simpleHTML5BoilerplateApp((0, express_1.scoutMiddleware)({
         scout,
-        requestTimeoutMs: 0,
+        requestTimeoutMs: 0, // disable request timeout to stop test from hanging
     }), "pug");
     // Set up a listener that should fire when the request is finished
     const listener = (data, another) => {

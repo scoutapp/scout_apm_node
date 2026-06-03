@@ -27,7 +27,6 @@ test("redis shim is applied", (t) => {
 
 test("Redis/SET span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -70,7 +69,6 @@ test("Redis/SET span is created during a request", { timeout: TIMEOUT_MS }, (t) 
 
 test("Redis/GET span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -114,7 +112,6 @@ test("Redis/GET span is created during a request", { timeout: TIMEOUT_MS }, (t) 
 
 test("Redis/DEL span has error context on command failure", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,

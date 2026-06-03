@@ -66,7 +66,7 @@ test("Scout inherits winston logger level", t => {
                 ],
             });
             const logFn = buildWinstonLogFn(logger);
-            scoutConfig = {allowShutdown: true, monitor: true};
+            scoutConfig = {monitor: true};
             t.equals(scoutConfig.logLevel, undefined, "scout log level is initially undefined");
             return TestUtil.buildTestScoutInstanceWithMock(scoutConfig, {logFn});
         })

@@ -52,7 +52,6 @@ test("the shim replaces PrismaClient", (t) => {
 
 test("SQL/Query span is created for a Prisma createMany operation", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -94,7 +93,6 @@ test("SQL/Query span is created for a Prisma createMany operation", { timeout: T
 
 test("SQL/Query span is created for a Prisma findMany operation", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -133,7 +131,6 @@ test("SQL/Query span is created for a Prisma findMany operation", { timeout: TIM
 
 test("SQL/Query span has error context when operation fails", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,

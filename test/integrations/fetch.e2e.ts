@@ -42,7 +42,6 @@ if (NODE_MAJOR < 18) {
 } else {
     test("HTTP/GET span is created for a fetch request", { timeout: TIMEOUT_MS }, (t) => {
         const scout = new Scout(buildScoutConfiguration({
-            allowShutdown: true,
             monitor: true,
             coreAgentDownload: false,
             coreAgentLaunch: false,
@@ -75,7 +74,6 @@ if (NODE_MAJOR < 18) {
 
     test("HTTP/POST span is created for a fetch POST request", { timeout: TIMEOUT_MS }, (t) => {
         const scout = new Scout(buildScoutConfiguration({
-            allowShutdown: true,
             monitor: true,
             coreAgentDownload: false,
             coreAgentLaunch: false,
@@ -109,7 +107,6 @@ if (NODE_MAJOR < 18) {
 
     test("HTTP/GET span has error context on network failure", { timeout: TIMEOUT_MS }, (t) => {
         const scout = new Scout(buildScoutConfiguration({
-            allowShutdown: true,
             monitor: true,
             coreAgentDownload: false,
             coreAgentLaunch: false,
@@ -147,7 +144,6 @@ if (NODE_MAJOR < 18) {
 
     test("concurrent fetch requests each get their own span", { timeout: TIMEOUT_MS }, (t) => {
         const scout = new Scout(buildScoutConfiguration({
-            allowShutdown: true,
             monitor: true,
             coreAgentDownload: false,
             coreAgentLaunch: false,

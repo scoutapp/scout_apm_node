@@ -14,7 +14,7 @@ test("Winston logger is successfully logged to", t => {
         logger = winston.createLogger({ transports: [
                 new winston.transports.File({ filename }),
             ] });
-        const logFn = types_1.buildWinstonLogFn(logger);
+        const logFn = (0, types_1.buildWinstonLogFn)(logger);
         return TestUtil.buildTestScoutInstanceWithMock({}, { logFn });
     })
         .then(({ scout: s, mockAgent: ma }) => {
@@ -51,8 +51,8 @@ test("Scout inherits winston logger level", t => {
                 new winston.transports.File({ filename }),
             ],
         });
-        const logFn = types_1.buildWinstonLogFn(logger);
-        scoutConfig = { allowShutdown: true, monitor: true };
+        const logFn = (0, types_1.buildWinstonLogFn)(logger);
+        scoutConfig = { monitor: true };
         t.equals(scoutConfig.logLevel, undefined, "scout log level is initially undefined");
         return TestUtil.buildTestScoutInstanceWithMock(scoutConfig, { logFn });
     })

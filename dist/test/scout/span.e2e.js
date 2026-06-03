@@ -7,8 +7,7 @@ const TestUtil = require("../util");
 const Constants = require("../../lib/constants");
 // https://github.com/scoutapp/scout_apm_node/issues/76
 test("spans should have traces attached", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
         logFilePath: "/tmp/scout.log",
     }), { slowRequestThresholdMs: 50 });
@@ -45,8 +44,7 @@ test("spans should have traces attached", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/107
 test("spans within the threshold should not have traces attached", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
     }));
     // Set up a listener for the scout request that gets sent
@@ -79,8 +77,7 @@ test("spans within the threshold should not have traces attached", t => {
 });
 // https://github.com/scoutapp/scout_apm_node/issues/186
 test("transactions created automatically if not present", t => {
-    const scout = new scout_1.Scout(types_1.buildScoutConfiguration({
-        allowShutdown: true,
+    const scout = new scout_1.Scout((0, types_1.buildScoutConfiguration)({
         monitor: true,
     }));
     // Set up a listener for the scout request that gets sent

@@ -242,11 +242,7 @@ class Scout extends events_1.EventEmitter {
         }
         return this.agent
             .disconnect()
-            .then(() => {
-            if (this.config.allowShutdown && this.agent) {
-                return this.agent.stopProcess();
-            }
-        })
+            .then(() => undefined)
             // Remove the agent, emit the shutdown event
             .then(() => {
             this.agent = null;

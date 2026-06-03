@@ -28,7 +28,6 @@ test("mongodb shim is applied", (t) => {
 
 test("MongoDB/insertOne span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -71,7 +70,6 @@ test("MongoDB/insertOne span is created during a request", { timeout: TIMEOUT_MS
 
 test("MongoDB/find span is created during a request", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -113,7 +111,6 @@ test("MongoDB/find span is created during a request", { timeout: TIMEOUT_MS }, (
 
 test("MongoDB span has error context on command failure", { timeout: TIMEOUT_MS }, (t) => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,

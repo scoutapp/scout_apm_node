@@ -418,7 +418,6 @@ test("Request auto close works (2 top level)", t => {
 test("Download disabling works via top level config", t => {
     const config = buildScoutConfiguration({
         coreAgentDownload: false,
-        allowShutdown: true,
         monitor: true,
     });
     const scout = new Scout(config, {downloadOptions: {disableCache: true}});
@@ -448,7 +447,6 @@ test("Launch disabling works via top level config", t => {
         .then(() => {
             scout = new Scout(buildScoutConfiguration({
                 coreAgentLaunch: false,
-                allowShutdown: true,
                 monitor: true,
                 socketPath: `${socketDir}/core-agent.sock`,
             }));
@@ -493,7 +491,6 @@ test("Launch disabling works via top level config", t => {
 test("Custom version specification works via top level config", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
         coreAgentVersion: "v1.1.8", // older version (default is newer)
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -514,7 +511,7 @@ test("Application metadata is built and sent", t => {
     });
 
     const config = buildScoutConfiguration(
-        withMock({allowShutdown: true, monitor: true}),
+        withMock({monitor: true}),
         {
             env: {
                 SCOUT_FRAMEWORK: "framework-from-env",
@@ -631,7 +628,6 @@ test("Multiple ongoing requests are possible at the same time", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/72
 test("Ensure that no requests are received by the agent if monitoring is off", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: false,
     })));
 
@@ -663,7 +659,6 @@ test("socketPath setting is honored by scout instance", t => {
         .then(socketPath => {
             // Create the scout instance with the custom socketPath
             scout = new Scout(buildScoutConfiguration({
-                allowShutdown: true,
                 monitor: false,
                 coreAgentLaunch: false,
                 coreAgentDownload: false,
@@ -678,7 +673,6 @@ test("socketPath setting is honored by scout instance", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/142
 test("Ignored requests are not sent", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: false,
     })));
 
@@ -718,7 +712,6 @@ test("Ignored requests are not sent", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export WebTransaction is working", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -761,7 +754,6 @@ test("export WebTransaction is working", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export BackgroundTransaction is working", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -804,7 +796,6 @@ test("export BackgroundTransaction is working", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.add add context (provided scout instance)", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -845,7 +836,6 @@ test("export Context.add add context (provided scout instance)", t => {
 // https://github.com/scoutapp/scout_apm_node/issues/141
 test("export Context.addSync to add context (provided scout instance)", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -872,7 +862,6 @@ test("export Context.addSync to add context (provided scout instance)", t => {
 test("export ignoreTransaction successfully ignores transaction (provided scout instance)", t => {
 
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -907,7 +896,6 @@ test("export ignoreTransaction successfully ignores transaction (provided scout 
 // https://github.com/scoutapp/scout_apm_node/issues/152
 test("export ignoreTransactionSync successfully ignores transaction (provided scout instance)", t => {
     const scout = new Scout(buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     })));
 
@@ -938,7 +926,6 @@ test("export ignoreTransactionSync successfully ignores transaction (provided sc
 test("Adding context does not cause socket close", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -983,7 +970,6 @@ test("Adding context does not cause socket close", t => {
 test("instrumentSync should automatically create a transaction", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1031,7 +1017,6 @@ test("CPU and memory stats should be sent periodically", t => {
     });
 
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1095,7 +1080,6 @@ test("CPU and memory stats should be sent periodically", t => {
 test("export ignoreTransactionSync successfully ignores transaction (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1128,7 +1112,6 @@ test("export ignoreTransactionSync successfully ignores transaction (global scou
 test("export Context.addSync to add context (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1165,7 +1148,6 @@ test("export Context.addSync to add context (global scout instance)", t => {
 test("export ignoreTransaction successfully ignores transaction (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1199,7 +1181,6 @@ test("export ignoreTransaction successfully ignores transaction (global scout in
 test("export Context.add add context (global scout instance)", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -1237,7 +1218,6 @@ test("export Context.add add context (global scout instance)", t => {
 test("export Config returns a populated special object", t => {
     // We'll need to create a config to use with the global scout instance
     const config = buildScoutConfiguration(withMock({
-        allowShutdown: true,
         monitor: true,
     }));
 

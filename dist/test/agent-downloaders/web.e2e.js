@@ -27,7 +27,7 @@ test("cache is updated by download (v1.1.8)", { skip: SKIP_DOWNLOAD_TESTS }, t =
     let subdir = `scout_apm_core-v${version.raw}`;
     let expectedDirPath;
     let expectedBinPath;
-    types_1.detectPlatformTriple()
+    (0, types_1.detectPlatformTriple)()
         .then(platform => subdir = `${subdir}-${platform}`)
         .then(() => downloader.download(version, opts))
         .then(() => {

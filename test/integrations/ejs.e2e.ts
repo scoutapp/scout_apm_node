@@ -34,7 +34,6 @@ test("the shim works", t => {
 
 test("ejs rendering a string is captured", t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 
@@ -83,7 +82,6 @@ test("ejs rendering a string is captured", t => {
 
 test("ejs rendering a file is captured", t => {
     const scout = new Scout(buildScoutConfiguration({
-        allowShutdown: true,
         monitor: true,
     }));
 
