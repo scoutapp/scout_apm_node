@@ -1,6 +1,6 @@
 # Scout APM Node.js Agent
 
-Monitor the performance of Node.js apps with [Scout APM](https://www.scoutapp.com). Detailed performance metrics and transactional traces are collected once the `@scout_apm/scout-apm` package is installed and configured.
+Monitor the performance of Node.js apps with [Scout APM](https://www.scoutapm.com). Detailed performance metrics and transactional traces are collected once the `@scout_apm/scout-apm` package is installed and configured.
 
 ## Requirements
 
@@ -208,8 +208,8 @@ npm run test-integration-mysql
 
 ## Documentation
 
-For full installation and troubleshooting documentation, visit our [help site](http://help.apm.scoutapp.com/#nodejs-client).
+For full installation and troubleshooting documentation, visit our [help site](http://help.apm.scoutapm.com/#nodejs-client).
 
 ## Support
 
-Contact us at [support@scoutapp.com](mailto:support@scoutapp.com) or [open an issue](https://github.com/scoutapp/scout_apm_node/issues/new).
+Contact us at [support@scoutapm.com](mailto:support@scoutapm.com) or [open an issue](https://github.com/scoutapp/scout_apm_node/issues/new).
