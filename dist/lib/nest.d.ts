@@ -8,7 +8,7 @@ export interface NestMiddlewareOptions {
     scout?: Scout;
     waitForScoutSetup?: boolean;
 }
-declare type NestMiddleware = (req: any, res: any, next: () => void) => void;
+type NestMiddleware = (req: any, res: any, next: () => void) => void;
 export declare function nestMiddleware(opts?: NestMiddlewareOptions): NestMiddleware;
 /**
  * Class-based Scout middleware for use with NestJS's MiddlewareConsumer.

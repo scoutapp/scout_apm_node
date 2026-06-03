@@ -2,7 +2,7 @@ import "reflect-metadata";
 import * as test from "tape";
 import * as request from "supertest";
 import { NestFactory } from "@nestjs/core";
-import { Module, Controller, Get } from "@nestjs/common";
+import { Module, Controller, Get, Param } from "@nestjs/common";
 import { MockAgent } from "./mock-agent";
 import { nestMiddleware } from "../../lib/nest";
 import { Scout } from "../../lib/scout";
@@ -29,13 +29,38 @@ class ApiController {
     public hello() { return { message: "hello" }; }
 }
 
+@Controller("products")
+class ProductsController {
+    @Get()
+    list() { return { route: "GET /products" }; }
+
+    @Get("featured")
+    featured() { return { route: "GET /products/featured" }; }
+
+    @Get(":id")
+    getById(@Param("id") id: string) { return { route: "GET /products/:id", id }; }
+}
+
+@Controller("orders")
+class OrdersController {
+    @Get(":orderId/tracking/:trackingId")
+    tracking(
+        @Param("orderId") orderId: string,
+        @Param("trackingId") trackingId: string,
+    ) { return { orderId, trackingId }; }
+}
+
 @Module({ controllers: [TestController, ApiController] })
 class TestModule {}
+
+@Module({ controllers: [TestController, ApiController, ProductsController, OrdersController] })
+class ExtendedTestModule {}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function buildConfig(mock: MockAgent, extra?: object) {
     return buildScoutConfiguration({
+        allowShutdown: true,
         monitor: true,
         coreAgentDownload: false,
         coreAgentLaunch: false,
@@ -66,6 +91,13 @@ function nextRequestSent(scout: Scout): Promise<ScoutEventRequestSentData> {
 
 async function makeNestApp(scout: Scout): Promise<any> {
     const app = await NestFactory.create(TestModule, { logger: false });
+    app.use(nestMiddleware({ scout, requestTimeoutMs: 0, waitForScoutSetup: true }));
+    await app.init();
+    return app;
+}
+
+async function makeExtendedNestApp(scout: Scout): Promise<any> {
+    const app = await NestFactory.create(ExtendedTestModule, { logger: false });
     app.use(nestMiddleware({ scout, requestTimeoutMs: 0, waitForScoutSetup: true }));
     await app.init();
     return app;
@@ -168,6 +200,78 @@ test("NestJS controller prefix is included in span operation", { timeout: TIMEOU
             const ctrl = spans.find((s) => s.operation.startsWith("Controller/"));
             t.ok(ctrl, "Controller span created for prefixed route");
             t.equal(ctrl?.operation, "Controller/GET /api/hello", "full path with prefix captured");
+        })
+        .then(() => nestApp.close())
+        .then(() => TestUtil.shutdownScout(t, scout))
+        .then(() => mock.stop())
+        .catch((err) => {
+            mock.stop().catch(() => undefined);
+            nestApp?.close().catch(() => undefined);
+            t.fail(err.message);
+            t.end();
+        });
+});
+
+test("NestJS controller with arbitrary prefix resolves via router walk", { timeout: TIMEOUT }, (t) => {
+    const mock = new MockAgent();
+    let nestApp: any;
+    let scout: Scout;
+
+    mock.start()
+        .then(async () => {
+            scout = new Scout(buildConfig(mock));
+            await scout.setup();
+            nestApp = await makeExtendedNestApp(scout);
+        })
+        .then(() => {
+            const sentPromise = nextRequestSent(scout);
+            request(nestApp.getHttpServer()).get("/products/featured").end(() => undefined);
+            return sentPromise;
+        })
+        .then((data) => {
+            const spans = data.request.getChildSpansSync();
+            const ctrl = spans.find((s) => s.operation.startsWith("Controller/"));
+            t.ok(ctrl, "Controller span created for /products/featured");
+            t.equal(ctrl?.operation, "Controller/GET /products/featured", "correct static sub-route under arbitrary prefix");
+        })
+        .then(() => nestApp.close())
+        .then(() => TestUtil.shutdownScout(t, scout))
+        .then(() => mock.stop())
+        .catch((err) => {
+            mock.stop().catch(() => undefined);
+            nestApp?.close().catch(() => undefined);
+            t.fail(err.message);
+            t.end();
+        });
+});
+
+test("NestJS parameterized route under arbitrary prefix resolves via router walk", { timeout: TIMEOUT }, (t) => {
+    const mock = new MockAgent();
+    let nestApp: any;
+    let scout: Scout;
+
+    mock.start()
+        .then(async () => {
+            scout = new Scout(buildConfig(mock));
+            await scout.setup();
+            nestApp = await makeExtendedNestApp(scout);
+        })
+        .then(() => {
+            const sentPromise = nextRequestSent(scout);
+            request(nestApp.getHttpServer()).get("/orders/42/tracking/TRK-999").end(() => undefined);
+            return sentPromise;
+        })
+        .then((data) => {
+            const spans = data.request.getChildSpansSync();
+            const ctrl = spans.find((s) => s.operation.startsWith("Controller/"));
+            t.ok(ctrl, "Controller span created for multi-param route");
+            t.equal(
+                ctrl?.operation,
+                "Controller/GET /orders/:orderId/tracking/:trackingId",
+                "multi-param pattern captured",
+            );
+            t.notOk(ctrl?.operation.includes("42"), "concrete orderId not in operation");
+            t.notOk(ctrl?.operation.includes("TRK-999"), "concrete trackingId not in operation");
         })
         .then(() => nestApp.close())
         .then(() => TestUtil.shutdownScout(t, scout))

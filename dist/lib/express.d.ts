@@ -22,8 +22,8 @@ export declare function listExpressEndpoints(app: any): EndpointInfo[];
 export interface ApplicationWithScout {
     scout?: Scout;
 }
-declare type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
-declare type ExpressErrorMiddleware = (err: any, req: any, res: any, next: (err?: any) => void) => void;
+type ExpressMiddleware = (req: any, res: any, next: () => void) => void;
+type ExpressErrorMiddleware = (err: any, req: any, res: any, next: (err?: any) => void) => void;
 export interface ExpressMiddlewareOptions {
     config?: Partial<ScoutConfiguration>;
     logFn?: LogFn;
@@ -37,7 +37,16 @@ export interface ExpressScoutInfo {
     request?: ScoutRequest;
     rootSpan?: ScoutSpan;
 }
-export declare type ExpressRequestWithScout = Request & ExpressScoutInfo;
+export type ExpressRequestWithScout = Request & ExpressScoutInfo;
+/**
+ * Recursively find the full route path for a URL within a router layer stack.
+ * Handles Express 4 (regexp) and Express 5 (match function) layer formats,
+ * and recurses into nested express.Router() instances.
+ *
+ * Each nested Router's match() operates on the URL relative to its mount point,
+ * so we try stripping 1..N leading segments until a sub-stack match is found.
+ */
+export declare function findRoutePathInStack(stack: any[], url: string, mountPrefix: string): string | null;
 /**
  * Middleware for using scout, this should be
  * attached to the application object using app.use(...)

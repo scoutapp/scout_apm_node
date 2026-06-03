@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.nestErrorFilter = exports.ScoutNestMiddleware = exports.nestMiddleware = void 0;
 const onFinished = require("on-finished");
 const async_hooks_1 = require("async_hooks");
 const types_1 = require("./types");
@@ -29,17 +30,17 @@ function parseQueueTimeNS(value) {
 }
 function nestMiddleware(opts) {
     const overrides = opts && opts.config ? opts.config : {};
-    const config = types_1.buildScoutConfiguration(overrides);
+    const config = (0, types_1.buildScoutConfiguration)(overrides);
     const options = {
         logFn: opts && opts.logFn ? opts.logFn : undefined,
         statisticsIntervalMS: opts && opts.statisticsIntervalMS ? opts.statisticsIntervalMS : undefined,
     };
-    global_1.setGlobalLastUsedConfiguration(config);
-    global_1.setGlobalLastUsedOptions(options);
+    (0, global_1.setGlobalLastUsedConfiguration)(config);
+    (0, global_1.setGlobalLastUsedOptions)(options);
     return (req, res, next) => {
         const requestStartTimeNS = getNanoTime();
-        const scout = opts && opts.scout ? opts.scout : req.app.scout || global_1.getActiveGlobalScoutInstance();
-        const setupScout = () => global_1.getOrCreateActiveGlobalScoutInstance(config, options)
+        const scout = opts && opts.scout ? opts.scout : req.app.scout || (0, global_1.getActiveGlobalScoutInstance)();
+        const setupScout = () => (0, global_1.getOrCreateActiveGlobalScoutInstance)(config, options)
             .then(s => req.app.scout = s);
         const waitForScoutSetup = opts && opts.waitForScoutSetup;
         if (!scout && !waitForScoutSetup) {
@@ -56,16 +57,28 @@ function nestMiddleware(opts) {
         }
         const reqUrl = req.url;
         const preQueryUrl = reqUrl.split("?")[0];
-        // NestJS routes are always registered on a nested Express Router, never as
-        // top-level layers on app._router.  Skip the flat stack scan and go straight
-        // to listExpressEndpoints which walks the full nested tree.
+        // NestJS routes are registered on nested Express Routers.  Try walking the
+        // router stack directly first (handles Express v5 where listExpressEndpoints
+        // probing is limited), then fall back to listExpressEndpoints.
         let routePath = reqUrl === "/" ? "/" : null;
+        if (!routePath) {
+            try {
+                const appRouter = req.app._router || (req.app.router && req.app.router());
+                if (appRouter && appRouter.stack) {
+                    const walked = (0, express_1.findRoutePathInStack)(appRouter.stack, preQueryUrl, "");
+                    if (walked) {
+                        routePath = walked;
+                    }
+                }
+            }
+            catch (_e) { /* ignore */ }
+        }
         if (!routePath) {
             try {
                 let matchedRoute = Object.values(NEST_ROUTE_INFO_LOOKUP).find(r => r.regex.exec(preQueryUrl));
                 if (!matchedRoute) {
-                    express_1.listExpressEndpoints(req.app).forEach(r => {
-                        NEST_ROUTE_INFO_LOOKUP[r.path] = Object.assign(Object.assign({}, r), { regex: path_to_regexp_1.pathToRegexp(r.path) });
+                    (0, express_1.listExpressEndpoints)(req.app).forEach(r => {
+                        NEST_ROUTE_INFO_LOOKUP[r.path] = Object.assign(Object.assign({}, r), { regex: (0, path_to_regexp_1.pathToRegexp)(r.path) });
                     });
                     matchedRoute = Object.values(NEST_ROUTE_INFO_LOOKUP).find(r => r.regex.exec(preQueryUrl));
                 }
