@@ -208,7 +208,7 @@ npm run test-integration-mysql
 
 ## Documentation
 
-For full installation and troubleshooting documentation, visit our [help site](http://help.apm.scoutapm.com/#nodejs-client).
+For full installation and troubleshooting documentation, visit our [help site](https://scoutapm.com/docs/node/).
 
 ## Support
 
