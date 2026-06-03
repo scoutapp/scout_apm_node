@@ -97,7 +97,7 @@ ExtendedTestModule = tslib_1.__decorate([
 ], ExtendedTestModule);
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function buildConfig(mock, extra) {
-    return (0, types_1.buildScoutConfiguration)(Object.assign({ allowShutdown: true, monitor: true, coreAgentDownload: false, coreAgentLaunch: false, socketPath: mock.socketPath() }, extra));
+    return (0, types_1.buildScoutConfiguration)(Object.assign({ monitor: true, coreAgentDownload: false, coreAgentLaunch: false, socketPath: mock.socketPath() }, extra));
 }
 function nextRequestSent(scout) {
     return new Promise((resolve, reject) => {
