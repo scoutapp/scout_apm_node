@@ -4,6 +4,7 @@ const events_1 = require("events");
 const Errors = require("../errors");
 const Constants = require("../constants");
 const fs_extra_1 = require("fs-extra");
+const path = require("path");
 const net_1 = require("net");
 const child_process_1 = require("child_process");
 const generic_pool_1 = require("generic-pool");
@@ -427,6 +428,9 @@ class ExternalProcessAgent extends events_1.EventEmitter {
                     case types_1.AgentResponseType.V1FinishRequest:
                         this.emit(types_1.AgentEvent.RequestFinished);
                         break;
+                    case types_1.AgentResponseType.V1BatchCommand:
+                        this.emit(types_1.AgentEvent.RequestFinished);
+                        break;
                     case types_1.AgentResponseType.V1StartSpan:
                         this.emit(types_1.AgentEvent.SpanStarted);
                         break;
@@ -498,8 +502,10 @@ class ExternalProcessAgent extends events_1.EventEmitter {
         if (this.opts.proxyUrl) {
             args.push("--proxy", this.opts.proxyUrl);
         }
-        if (this.opts.ingestUrl) {
-            args.push("--ingest-url", this.opts.ingestUrl);
+        if (this.opts.ingestUrl && !this.opts.configFilePath) {
+            const configTomlPath = path.join(path.dirname(this.opts.binPath), "config.toml");
+            (0, fs_extra_1.writeFileSync)(configTomlPath, `[debug]\ningest_url = "${this.opts.ingestUrl}"\n`, "utf8");
+            args.push("--config-file", configTomlPath);
         }
         this.logFn(`[scout/external-process] binary path: [${this.opts.binPath}]`, types_1.LogLevel.Debug);
         this.logFn(`[scout/external-process] args: [${args}]`, types_1.LogLevel.Debug);
