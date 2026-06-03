@@ -1239,6 +1239,81 @@ test("export Config returns a populated special object", t => {
         .catch(err => TestUtil.shutdownScout(t, scout, err));
 });
 
+test("Request with spans is sent as a single BatchCommand wire message", t => {
+    // Each request should produce exactly one BatchCommand containing all commands
+    // (StartRequest, TagRequest, StartSpan, TagSpan, StopSpan, FinishRequest) rather
+    // than N individual messages.  We listen for ScoutEvent.RequestSent to know when
+    // send() has fully completed (the agent's response has been received).
+    const mock = new MockAgent();
+    let scout: Scout;
+
+    const teardown = (err?: Error) => {
+        scout ? scout.shutdown().then(() => mock.stop()).then(() => t.end(err)) : mock.stop().then(() => t.end(err));
+    };
+
+    mock.start()
+        .then(() => {
+            scout = TestUtil.buildTestScoutInstance({
+                coreAgentLaunch: false,
+                coreAgentDownload: false,
+                socketPath: mock.socketPath(),
+            });
+        })
+        .then(() => scout.setup())
+        .then(() => new Promise<void>((resolve, reject) => {
+            const listener = (data: ScoutEventRequestSentData) => {
+                scout.removeListener(ScoutEvent.RequestSent, listener);
+
+                try {
+                    const batchMessages = mock.getMessagesByType("BatchCommand");
+
+                    // One BatchCommand per request, no individual span/request messages
+                    t.equals(batchMessages.length, 1, "exactly one BatchCommand was sent");
+                    t.equals(mock.getMessagesByType("StartRequest").length, 0, "no standalone StartRequest");
+                    t.equals(mock.getMessagesByType("FinishRequest").length, 0, "no standalone FinishRequest");
+                    t.equals(mock.getMessagesByType("StartSpan").length, 0, "no standalone StartSpan");
+                    t.equals(mock.getMessagesByType("StopSpan").length, 0, "no standalone StopSpan");
+
+                    // Inspect the commands inside the BatchCommand
+                    const batch: any = batchMessages[0].raw;
+                    const commands: any[] = batch.BatchCommand.commands;
+                    const types = commands.map((c: any) => Object.keys(c)[0]);
+
+                    t.assert(types.includes("StartRequest"), "batch contains StartRequest");
+                    t.assert(types.includes("FinishRequest"), "batch contains FinishRequest");
+                    t.assert(types.includes("StartSpan"), "batch contains StartSpan");
+                    t.assert(types.includes("StopSpan"), "batch contains StopSpan");
+                    t.assert(types.includes("TagSpan"), "batch contains TagSpan (db.statement)");
+                    t.assert(types.includes("TagRequest"), "batch contains TagRequest (path)");
+                    t.assert(
+                        types.indexOf("StartRequest") < types.indexOf("FinishRequest"),
+                        "StartRequest appears before FinishRequest in commands list",
+                    );
+
+                    resolve();
+                } catch (err) {
+                    reject(err);
+                }
+            };
+
+            scout.on(ScoutEvent.RequestSent, listener);
+
+            scout.transaction("BatchCommand/test", (done: any, {request}: any) => {
+                return scout.instrument("Controller/test", (stopSpan: any) => {
+                    const span = scout.getCurrentSpan();
+                    if (span) { span.addContextSync("db.statement", "SELECT 1"); }
+                    stopSpan();
+                })
+                    .then(() => {
+                        if (request) { request.addContextSync("path", "/test"); }
+                        done();
+                    });
+            }).catch(reject);
+        }))
+        .then(() => teardown())
+        .catch((err: Error) => teardown(err));
+});
+
 // Cleanup the global isntance(s) that get created
 test("Shutdown the global instance", t => {
     const inst = getActiveGlobalScoutInstance();

@@ -58,6 +58,8 @@ export enum AgentRequestType {
     V1TagSpan = "v1-tag-span",
 
     V1ApplicationEvent = "v1-application-event",
+
+    V1BatchCommand = "v1-batch-command",
 }
 
 export enum AgentResponseType {
@@ -74,6 +76,8 @@ export enum AgentResponseType {
     V1TagSpan = "v1-tag-span-response",
 
     V1ApplicationEvent = "v1-application-event-response",
+
+    V1BatchCommand = "v1-batch-command-response",
 
     V1Failure = "v1-failure-response",
 }

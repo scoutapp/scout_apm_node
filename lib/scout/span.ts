@@ -15,7 +15,10 @@ import {
     ScoutTag,
     JSONValue,
     ScoutStackFrame,
+    BaseAgentRequest,
 } from "../types";
+
+import * as Requests from "../protocol/v1/requests";
 
 import {
     Scout,
@@ -313,6 +316,34 @@ export default class ScoutSpan implements ChildSpannable, Taggable, Stoppable, S
         this.started = true;
 
         return this;
+    }
+
+    /**
+     * Build the flat list of protocol commands for this span and all its children.
+     * Used by ScoutRequest.send() to assemble a BatchCommand.
+     */
+    public buildCommands(): BaseAgentRequest[] {
+        if (this.ignored) { return []; }
+
+        const commands: BaseAgentRequest[] = [];
+
+        commands.push(new Requests.V1StartSpan(this.operation, this.requestId, {
+            spanId: this.id,
+            parentId: this.parentId,
+            timestamp: this.getTimestamp(),
+        }));
+
+        for (const child of this.childSpans) {
+            commands.push(...child.buildCommands());
+        }
+
+        for (const [name, value] of Object.entries(this.tags)) {
+            commands.push(new Requests.V1TagSpan(name, value, this.id, this.requestId));
+        }
+
+        commands.push(new Requests.V1StopSpan(this.id, this.requestId, {timestamp: this.getEndTime()}));
+
+        return commands;
     }
 
     /**
