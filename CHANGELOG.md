@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-06-05
+
+### Changed
+- Bumped `mongodb` from `^4` to `^6` (Node >=16.20.1 compatible)
+- Bumped `@prisma/client` and `prisma` from `^5` to `^6` (Node >=18.18 compatible)
+- Bumped `typescript` from `^4.9` to `^5.0`
+
 ## [2.0.1] - 2026-06-05
 
 ### Changed
@@ -218,7 +225,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.3...v2.0.0
 [0.2.3]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.2...v0.2.3
