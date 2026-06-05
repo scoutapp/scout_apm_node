@@ -6,6 +6,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-06-04
+
+### Added
+- `init()` single-call setup API with `node --require` preload support ([#315](https://github.com/scoutapp/scout_apm_node/pull/315))
+- Error monitoring: `captureError()` API, Express error middleware, and global unhandled rejection/exception handlers ([#313](https://github.com/scoutapp/scout_apm_node/pull/313))
+- NestJS middleware and exception filter instrumentation ([#307](https://github.com/scoutapp/scout_apm_node/pull/307))
+- NestJS route pattern resolution via router walk for Express v5 / NestJS v11 ([#332](https://github.com/scoutapp/scout_apm_node/pull/332))
+- Prisma integration using Prisma 6+ TracingHelper global contract ([#306](https://github.com/scoutapp/scout_apm_node/pull/306))
+- MongoDB instrumentation via CommandMonitor API ([#310](https://github.com/scoutapp/scout_apm_node/pull/310))
+- Redis integrations: ioredis and node-redis ([#305](https://github.com/scoutapp/scout_apm_node/pull/305))
+- `fetch` instrumentation via `diagnostics_channel` (Node 18+) ([#309](https://github.com/scoutapp/scout_apm_node/pull/309))
+- `trackJobQueueTime()` helper and `scout.queue_time_ns` / `queue` context names for background job latency ([#335](https://github.com/scoutapp/scout_apm_node/pull/335))
+- `SCOUT_HOST` / `ingest_url` config option for self-hosted deployments ([#311](https://github.com/scoutapp/scout_apm_node/pull/311))
+- `httpProxy` config option to pass `--proxy` flag to core-agent ([#308](https://github.com/scoutapp/scout_apm_node/pull/308))
+- `logPayloadContent` config option to log span and error payloads for debugging ([#312](https://github.com/scoutapp/scout_apm_node/pull/312))
+- GitHub Actions CI with MockAgent and integration test suite across Node 18/20/22 ([#303](https://github.com/scoutapp/scout_apm_node/pull/303))
+
+### Changed
+- All spans per request are now sent as a single `BatchCommand` wire message, matching the Python agent and resolving atomicity issues during core-agent reconnects ([#326](https://github.com/scoutapp/scout_apm_node/pull/326))
+- Core-agent is now daemonized (`--daemonize true`) — workers no longer own the process lifecycle, fixing cluster shutdown and always-spawns bugs ([#325](https://github.com/scoutapp/scout_apm_node/pull/325))
+- Core-agent `ingest_url` is now written to a `config.toml` file instead of passed as a CLI flag ([#334](https://github.com/scoutapp/scout_apm_node/pull/334))
+- Bumped default core-agent version to v1.5.1 ([#328](https://github.com/scoutapp/scout_apm_node/pull/328))
+- Replaced `cls-hooked` with Node's built-in `AsyncLocalStorage` ([#318](https://github.com/scoutapp/scout_apm_node/pull/318))
+- Replaced TSLint with ESLint + typescript-eslint ([#320](https://github.com/scoutapp/scout_apm_node/pull/320))
+- Updated `uuid` dependency ([#319](https://github.com/scoutapp/scout_apm_node/pull/319))
+
+### Removed
+- Nuxt 2 (EOL) integration ([#321](https://github.com/scoutapp/scout_apm_node/pull/321))
+
 ## [0.2.3] - 2021-09-28
 
 ### Changes
@@ -183,7 +212,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.3...v2.0.0
 [0.2.3]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.2-rc.1...v0.2.2
 [0.2.2-rc.1]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.2-rc.0...v0.2.2-rc.1
