@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.0.1] - 2026-06-05
 
 ### Changed
-- Publish workflow now uses OIDC trusted publishing — no `NPM_TOKEN` secret required ([#337](https://github.com/scoutapp/scout_apm_node/pull/337))
-- Removed compiled `dist/` files from source control — generated at publish time ([#339](https://github.com/scoutapp/scout_apm_node/pull/339))
+- Publish workflow now uses OIDC trusted publishing ([#337](https://github.com/scoutapp/scout_apm_node/pull/337))
+- Removed compiled `dist/` files from source control ([#339](https://github.com/scoutapp/scout_apm_node/pull/339))
 
 ## [2.0.0] - 2026-06-04
 
