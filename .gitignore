@@ -12,6 +12,7 @@ node_modules
 # build artifacts
 /yarn-error.log
 target
+dist/
 
 # direnv
 .envrc
@@ -19,5 +20,4 @@ target
 
 # NPM
 /.npmrc
-dist/test/integration/payloads/
 package-lock.json
