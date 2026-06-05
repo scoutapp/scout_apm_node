@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-06-05
+
+### Changed
+- Publish workflow now uses OIDC trusted publishing ([#337](https://github.com/scoutapp/scout_apm_node/pull/337))
+- Removed compiled `dist/` files from source control ([#339](https://github.com/scoutapp/scout_apm_node/pull/339))
+
 ## [2.0.0] - 2026-06-04
 
 ### Added
@@ -212,7 +218,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.3...v2.0.0
 [0.2.3]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.2-rc.1...v0.2.2

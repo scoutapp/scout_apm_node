@@ -1,6 +1,6 @@
 {
   "name": "@scout_apm/scout-apm",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Scout APM Node Agent",
   "main": "dist/lib/index.js",
   "repository": "git@github.com:scoutapp/scout_apm_node.git",
@@ -113,7 +113,6 @@
     "app-root-path": "^3.0.0",
     "tslib": "^2.8.1",
     "big-number": "^2.0.0",
-
     "cpu-percentage": "^1.0.3",
     "detect-libc": "1.0.3",
     "download": "7.1.0",
