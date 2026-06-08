@@ -131,7 +131,7 @@
     "snake-case": "3.0.2",
     "stacktrace-js": "^2.0.2",
     "tcp-port-used": "^1.0.2",
-    "tmp": "0.0.33",
+    "tmp": "0.2.6",
     "tmp-promise": "1.0.5",
     "tslib": "^2.8.1",
     "uuid": "^11.0.0",
