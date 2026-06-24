@@ -27,7 +27,28 @@ is reproduced below.
 
 -------------------------------------------------------------------------------
 
-2. lib/integrations/prisma.ts
+2. lib/integrations/sequelize.ts
+
+   This file is derived from @opentelemetry/instrumentation-sequelize
+   (https://github.com/open-telemetry/opentelemetry-js-contrib/tree/main/plugins/node/opentelemetry-instrumentation-sequelize)
+
+   Copyright The OpenTelemetry Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   The approach of patching `Sequelize.prototype.query` to intercept all
+   database queries, extracting the operation from `options.type` (falling
+   back to the leading SQL keyword), and capturing `db.statement` and
+   `db.operation` span attributes is derived from the OpenTelemetry
+   Sequelize instrumentation.
+
+-------------------------------------------------------------------------------
+
+3. lib/integrations/prisma.ts
 
    This file is derived from @prisma/instrumentation
    (https://github.com/prisma/prisma/tree/main/packages/instrumentation)
