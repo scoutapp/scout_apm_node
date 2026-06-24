@@ -151,6 +151,8 @@ export enum ScoutContextName {
     Queue = "queue",
     TaskId = "task_id",
     Priority = "priority",
+    DBOperation = "db.operation",
+    DBModel = "db.model",
 }
 
 export enum ScoutSpanOperation {

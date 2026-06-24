@@ -13,6 +13,7 @@ import fetchIntegration from "./fetch";
 import redisIntegration from "./redis";
 import mongodbIntegration from "./mongodb";
 import bullmqIntegration from "./bullmq";
+import sequelizeIntegration from "./sequelize";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
 
 export const KNOWN_PACKAGES: string[] = [
@@ -31,6 +32,7 @@ export const KNOWN_PACKAGES: string[] = [
     redisIntegration.getPackageName(),
     mongodbIntegration.getPackageName(),
     bullmqIntegration.getPackageName(),
+    sequelizeIntegration.getPackageName(),
 ];
 
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
@@ -50,6 +52,7 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case redisIntegration.getPackageName(): return redisIntegration;
         case mongodbIntegration.getPackageName(): return mongodbIntegration;
         case bullmqIntegration.getPackageName(): return bullmqIntegration;
+        case sequelizeIntegration.getPackageName(): return sequelizeIntegration;
         default: return doNothingRequireIntegration;
     }
 }
