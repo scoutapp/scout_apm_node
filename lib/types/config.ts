@@ -237,6 +237,14 @@ export interface ScoutConfiguration {
     errorsIgnoredExceptions: string[];
     environment: string;
 
+    // Log management
+    logsMonitor: boolean;
+    logsIngestKey: string;
+    logsCaptureLevel: string;
+    logsReportingEndpoint: string;
+    logsReportingEndpointHttp: string;
+    logsCaptureConsole: boolean;
+
     // Derived
     coreAgentTriple: string;
     coreAgentFullName: string;
@@ -262,6 +270,13 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     errorsHost: "https://errors.scoutapm.com",
     errorsIgnoredExceptions: [],
     environment: "",
+
+    logsMonitor: false,
+    logsIngestKey: "",
+    logsCaptureLevel: "debug",
+    logsReportingEndpoint: "https://otlp.scoutotel.com:4317",
+    logsReportingEndpointHttp: "https://otlp.scoutotel.com:4318/v1/logs",
+    logsCaptureConsole: true,
 
     framework: "",
     frameworkVersion: "",
@@ -327,6 +342,8 @@ const ENV_TRANSFORMS = {
     SCOUT_LOG_PAYLOAD_CONTENT: v => v.toLowerCase() === "true",
     SCOUT_ERRORS_ENABLED: v => v.toLowerCase() === "true",
     SCOUT_ERRORS_IGNORED_EXCEPTIONS: v => v.split(",").map((s: string) => s.trim()).filter(Boolean),
+    SCOUT_LOGS_MONITOR: v => v.toLowerCase() === "true",
+    SCOUT_LOGS_CAPTURE_CONSOLE: v => v.toLowerCase() === "true",
 };
 
 /**
