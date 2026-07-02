@@ -1,6 +1,7 @@
 // Orchestrates Scout log management: initializes the buffer, wires up integrations.
 // Called from global.ts after Scout configuration is resolved.
 import { ScoutConfiguration } from "./types";
+import { parseLogLevel } from "./types/enum";
 import { ScoutLogBuffer } from "./logs/buffer";
 import { setupPinoIntegration } from "./logs/integrations/pino";
 import { setupConsoleIntegration } from "./logs/integrations/console";
@@ -25,10 +26,12 @@ export function setupLogManagement(
         agentVersion = require("../package.json").version || "";
     } catch { /* ignore */ }
 
+    const logLevel = parseLogLevel(process.env.SCOUT_LOG_LEVEL || (config.logLevel as any) || "warn");
+
     if (logBuffer) {
-        logBuffer.updateOpts({ endpointHttp, ingestKey, serviceName, agentVersion });
+        logBuffer.updateOpts({ endpointHttp, ingestKey, serviceName, agentVersion, logLevel });
     } else {
-        logBuffer = new ScoutLogBuffer({ endpointHttp, ingestKey, serviceName, agentVersion });
+        logBuffer = new ScoutLogBuffer({ endpointHttp, ingestKey, serviceName, agentVersion, logLevel });
     }
 
     // Wire winston integration (RITM hook already set up; needs the buffer reference)

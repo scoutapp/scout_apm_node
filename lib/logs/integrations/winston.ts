@@ -51,7 +51,7 @@ function buildTransportClass(
 
             const now = nowNanos();
             const scout = getScout();
-            const requestId: string | null = scout?.getCurrentSpan?.()?.id ?? null;
+            const requestId: string | null = scout?.getCurrentRequest?.()?.id ?? null;
 
             // Collect extra fields (excluding message and level) as attributes
             const skip = new Set(["message", "level", "timestamp", "service", "splat"]);
@@ -70,7 +70,7 @@ function buildTransportClass(
                 body: { stringValue: typeof info.message === "string" ? info.message : JSON.stringify(info.message) },
                 attributes: [
                     { key: "logger.name", value: { stringValue: "winston" } },
-                    ...(requestId ? [{ key: "scout.request_id", value: { stringValue: requestId } }] : []),
+                    ...(requestId ? [{ key: "scout_transaction_id", value: { stringValue: requestId } }] : []),
                     ...extras,
                 ],
             });
