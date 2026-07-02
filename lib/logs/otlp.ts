@@ -32,6 +32,34 @@ export interface OtlpShipOptions {
     logLevel?: LogLevel;
 }
 
+// Scout-internal context keys — not forwarded to OTLP log attributes.
+const INTERNAL_CONTEXT_KEYS = new Set([
+    "stack", "db.statement", "error", "name", "url", "path", "timeout",
+    "ignore_transaction", "scout.queue_time_ns", "scout.job_queue_time_ns",
+    "queue", "task_id", "priority", "db.operation", "db.model",
+]);
+
+export function getContextAttributes(request: any): OtlpKeyValue[] {
+    if (!request || typeof request.getTags !== "function") { return []; }
+    const tags: Array<{ name: string; value: any }> = request.getTags();
+    const attrs: OtlpKeyValue[] = [];
+    for (const tag of tags) {
+        if (INTERNAL_CONTEXT_KEYS.has(tag.name) || tag.name.startsWith("scout.")) { continue; }
+        let value: OtlpKeyValue["value"];
+        if (typeof tag.value === "boolean") {
+            value = { boolValue: tag.value };
+        } else if (typeof tag.value === "number" && Number.isInteger(tag.value)) {
+            value = { intValue: tag.value };
+        } else if (typeof tag.value === "string") {
+            value = { stringValue: tag.value };
+        } else {
+            value = { stringValue: JSON.stringify(tag.value) };
+        }
+        attrs.push({ key: tag.name, value });
+    }
+    return attrs;
+}
+
 // Maps severity level names to OTel SeverityNumber (per OTel Logs Data Model spec).
 const SEVERITY_NUMBER: Record<string, number> = {
     trace: 1, debug: 5, info: 9, warn: 13, warning: 13, error: 17, fatal: 21,
