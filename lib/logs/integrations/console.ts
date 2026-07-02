@@ -37,10 +37,11 @@ export function setupConsoleIntegration(
         (console as any)[method] = (...args: any[]) => {
             original(...args);
             if (!meetsMinLevel(level, captureLevel)) { return; }
+            if (args.length > 0 && typeof args[0] === "string" && args[0].includes("[scout/")) { return; }
 
             const now = nowNanos();
             const scout = getScout();
-            const requestId: string | null = scout?.getCurrentSpan?.()?.id ?? null;
+            const requestId: string | null = scout?.getCurrentRequest?.()?.id ?? null;
 
             logBuffer.append({
                 timeUnixNano: now,
@@ -54,7 +55,7 @@ export function setupConsoleIntegration(
                 },
                 attributes: [
                     { key: "logger.name", value: { stringValue: "console" } },
-                    ...(requestId ? [{ key: "scout.request_id", value: { stringValue: requestId } }] : []),
+                    ...(requestId ? [{ key: "scout_transaction_id", value: { stringValue: requestId } }] : []),
                 ],
             });
         };

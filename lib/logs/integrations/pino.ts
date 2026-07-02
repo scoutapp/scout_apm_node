@@ -57,8 +57,7 @@ export function setupPinoIntegration(
 
         const now = nowNanos();
         const scout = getScout?.();
-        const request = scout?.getCurrentSpan?.() ?? null;
-        const requestId = request?.id ?? null;
+        const requestId = scout?.getCurrentRequest?.()?.id ?? null;
 
         buffer.append({
             timeUnixNano: now,
@@ -68,7 +67,7 @@ export function setupPinoIntegration(
             body: { stringValue: String(parsed.msg ?? "") },
             attributes: [
                 { key: "logger.name", value: { stringValue: "pino" } },
-                ...(requestId ? [{ key: "scout.request_id", value: { stringValue: requestId } }] : []),
+                ...(requestId ? [{ key: "scout_transaction_id", value: { stringValue: requestId } }] : []),
             ],
         });
     });
