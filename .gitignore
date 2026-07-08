@@ -21,3 +21,8 @@ dist/
 # NPM
 /.npmrc
 package-lock.json
+
+# Local build artifacts and planning docs
+*.tgz
+ISSUES.md
+PR_PLAN.md
