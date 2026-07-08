@@ -351,7 +351,11 @@ export class Scout extends EventEmitter {
         this.settingUp = doLaunch
             .then(() => {
                 if (!this.agent) { throw new Errors.NoAgentPresent(); }
-                return this.agent.connect();
+                return this.agent.connect()
+                    .catch(err => {
+                        this.log(`[scout] failed to connect to agent at [${this.socketPath}]: ${err.message}`, LogLevel.Error);
+                        throw err;
+                    });
             })
             .then(() => this.log("[scout] successfully connected to agent", LogLevel.Debug))
             .then(() => {
@@ -388,7 +392,15 @@ export class Scout extends EventEmitter {
             .then(() => setActiveGlobalScoutInstance(this))
         // Start the statistics sending interval
             .then(() => this.startSendingStatistics())
-            .then(() => this);
+            .then(() => this)
+            .catch(err => {
+                this.log(`[scout] setup failed: ${err.message}`, LogLevel.Error);
+                return Promise.reject(err);
+            });
+
+        // Attach a no-op catch immediately to prevent PromiseRejectionHandledWarning
+        // when callers attach their own .catch() asynchronously later.
+        this.settingUp.catch(() => undefined);
 
         return this.settingUp;
     }
