@@ -39,7 +39,7 @@ export function isIgnoredLogMessage(applicationLevel: LogLevel, messageLevel: Lo
 export function consoleLogFn(message: string, level?: LogLevel) {
     level = level || LogLevel.Info;
     const time = new Date().toISOString();
-    const msg = `[${time}] [${level.toUpperCase()}] ${message}`;
+    const msg = `[${time}] [${level.toUpperCase()}] [pid:${process.pid}] ${message}`;
 
     switch (level) {
         case LogLevel.Warn:
