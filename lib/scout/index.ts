@@ -176,11 +176,12 @@ export class Scout extends EventEmitter {
     private logConfiguration() {
         if (!this.config || this.config.logLevel !== LogLevel.Debug) { return; }
 
-        const REDACTED_KEYS = new Set(["key", "logsIngestKey"]);
-
-        const mask = (val: any): string => {
+        const mask = (val: any, showTail = false): string => {
             if (typeof val !== "string" || val.length === 0) { return String(val); }
-            return val.length <= 4 ? "***" : `${val.slice(0, 4)}***`;
+            if (val.length <= 4) { return "***"; }
+            return showTail
+                ? `${val.slice(0, 4)}***${val.slice(-3)}`
+                : `${val.slice(0, 4)}***`;
         };
 
         const CONFIG_KEYS: Array<keyof ScoutConfiguration> = [
@@ -203,7 +204,10 @@ export class Scout extends EventEmitter {
         this.log("[scout] active configuration:", LogLevel.Debug);
         for (const key of CONFIG_KEYS) {
             const raw = (this.config as any)[key];
-            const display = REDACTED_KEYS.has(key) ? mask(raw) : JSON.stringify(raw);
+            let display: string;
+            if (key === "logsIngestKey") { display = mask(raw, true); }
+            else if (key === "key") { display = mask(raw); }
+            else { display = JSON.stringify(raw); }
             this.log(`[scout]   ${key}: ${display}`, LogLevel.Debug);
         }
     }
