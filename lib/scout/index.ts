@@ -173,6 +173,41 @@ export class Scout extends EventEmitter {
         return this.logFn(message, level);
     }
 
+    private logConfiguration() {
+        if (!this.config || this.config.logLevel !== LogLevel.Debug) { return; }
+
+        const REDACTED_KEYS = new Set(["key", "logsIngestKey"]);
+
+        const mask = (val: any): string => {
+            if (typeof val !== "string" || val.length === 0) { return String(val); }
+            return val.length <= 4 ? "***" : `${val.slice(0, 4)}***`;
+        };
+
+        const CONFIG_KEYS: Array<keyof ScoutConfiguration> = [
+            "name", "key", "revisionSHA", "appServer", "applicationRoot", "scmSubdirectory",
+            "logLevel", "logFilePath", "socketPath", "httpProxy", "monitor",
+            "host",
+            "framework", "frameworkVersion",
+            "apiVersion", "downloadUrl",
+            "coreAgentDownload", "coreAgentLaunch", "coreAgentDir",
+            "coreAgentLogLevel", "coreAgentPermissions", "coreAgentVersion",
+            "coreAgentTriple", "coreAgentFullName",
+            "hostname",
+            "ignore", "collectRemoteIP", "uriReporting",
+            "disabledInstruments", "logPayloadContent",
+            "errorsEnabled", "errorsHost", "errorsIgnoredExceptions", "environment",
+            "logsMonitor", "logsIngestKey", "logsCaptureLevel",
+            "logsReportingEndpoint", "logsReportingEndpointHttp", "logsCaptureConsole",
+        ];
+
+        this.log("[scout] active configuration:", LogLevel.Debug);
+        for (const key of CONFIG_KEYS) {
+            const raw = (this.config as any)[key];
+            const display = REDACTED_KEYS.has(key) ? mask(raw) : JSON.stringify(raw);
+            this.log(`[scout]   ${key}: ${display}`, LogLevel.Debug);
+        }
+    }
+
     private get socketPath() {
         if (this.config.socketPath) {
             return this.config.socketPath;
@@ -314,6 +349,7 @@ export class Scout extends EventEmitter {
                 return this.agent.connect();
             })
             .then(() => this.log("[scout] successfully connected to agent", LogLevel.Debug))
+            .then(() => this.logConfiguration())
             .then(() => {
                 if (!this.config.name) {
                     this.log("[scout] 'name' configuration value missing", LogLevel.Warn);
