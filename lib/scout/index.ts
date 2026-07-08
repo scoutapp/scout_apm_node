@@ -338,6 +338,7 @@ export class Scout extends EventEmitter {
         if (this.settingUp) { return this.settingUp; }
 
         this.log("[scout] setting up scout...", LogLevel.Debug);
+        this.logConfiguration();
 
         const shouldLaunch = this.config.coreAgentLaunch;
 
@@ -349,7 +350,6 @@ export class Scout extends EventEmitter {
                 return this.agent.connect();
             })
             .then(() => this.log("[scout] successfully connected to agent", LogLevel.Debug))
-            .then(() => this.logConfiguration())
             .then(() => {
                 if (!this.config.name) {
                     this.log("[scout] 'name' configuration value missing", LogLevel.Warn);
