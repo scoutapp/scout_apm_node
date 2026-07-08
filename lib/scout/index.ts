@@ -41,6 +41,7 @@ import {
     isIgnoredLogMessage,
 } from "../types";
 import { setActiveGlobalScoutInstance, EXPORT_BAG } from "../global";
+import { consoleLogFn } from "../types/util";
 import { getIntegrationForPackage } from "../integrations";
 
 import WebAgentDownloader from "../agent-downloaders/web";
@@ -163,14 +164,13 @@ export class Scout extends EventEmitter {
     }
 
     public log(message: string, level: LogLevel = LogLevel.Info) {
-        if (!this.logFn) { return; }
         if (!this.config || !this.config.logLevel) { return; }
 
         if (isIgnoredLogMessage(this.config.logLevel, level)) {
             return;
         }
 
-        return this.logFn(message, level);
+        return this.logFn ? this.logFn(message, level) : consoleLogFn(message, level);
     }
 
     private logConfiguration() {
