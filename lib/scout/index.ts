@@ -974,8 +974,9 @@ export class Scout extends EventEmitter {
 
     // Helper for sending app metadata
     private sendAppMetadataEvent(): Promise<void> {
+        this.log(`[scout] sending app server load (metadata) for pid ${process.pid}`, LogLevel.Debug);
         return sendThroughAgent(this, this.buildAppMetadataEvent())
-            .then(() => undefined)
+            .then(() => this.log("[scout] app server load sent", LogLevel.Debug))
             .catch(err => {
                 this.log("[scout] failed to send start request request", LogLevel.Error);
             });
@@ -989,7 +990,7 @@ export class Scout extends EventEmitter {
             this.config.key || "",
             APIVersion.V1,
         ))
-            .then(() => undefined)
+            .then(() => this.log("[scout] app registration sent", LogLevel.Debug))
             .catch(err => {
                 this.log("[scout] failed to send app registration request", LogLevel.Error);
             });
