@@ -83,7 +83,12 @@ export function captureError(
     context?: Record<string, any>,
     opts?: CaptureOptions,
 ): void {
-    if (!service || !currentConfig) { return; }
+    if (!service || !currentConfig) {
+        const { consoleLogFn } = require("./types/util");
+        const { LogLevel } = require("./types/enum");
+        consoleLogFn(`[scout/errors] captureError called but service not initialized (errorsEnabled or key/name missing)`, LogLevel.Warn);
+        return;
+    }
 
     const err = typeof error === "string"
         ? new Error(error)
@@ -106,6 +111,10 @@ export function captureError(
         : context || undefined;
 
     const hasLocation = opts && (opts.controller != null || opts.action != null || opts.module != null);
+
+    const { consoleLogFn } = require("./types/util");
+    const { LogLevel } = require("./types/enum");
+    consoleLogFn(`[scout/errors] capturing error: ${className}: ${err.message}`, LogLevel.Debug);
 
     service.enqueue({
         exception_class: className,
