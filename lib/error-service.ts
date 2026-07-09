@@ -120,14 +120,13 @@ export class ErrorService {
                     // tslint:disable-next-line no-console
                     console.log(`[scout/error-payload] response ${res.statusCode} from ${parsedUrl.hostname}`);
                 }
+                res.on("error", () => { /* drain errors silently */ });
                 res.resume();
             });
 
             req.on("error", (err) => {
-                if (this.config.logPayloadContent) {
-                    // tslint:disable-next-line no-console
-                    console.log(`[scout/error-payload] send error: ${err.message}`);
-                }
+                // tslint:disable-next-line no-console
+                console.warn(`[scout/error-payload] send error: ${err.message} (${(err as any).code || ""})`);
             });
             req.write(compressed);
             req.end();
