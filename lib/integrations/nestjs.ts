@@ -6,19 +6,24 @@ import { getActiveGlobalScoutInstance } from "../global";
 // Instruments the NestJS execution pipeline — guards, pipes, interceptors — by hooking
 // into the internal consumer submodule paths that NestJS uses at require-time.
 //
-// Each category gets a single aggregate span inside the active Scout request span:
-//   NestJS/Guards        — GuardsConsumer.tryActivate (all guards in sequence)
-//   NestJS/Pipes         — PipesConsumer.applyPipes   (all pipes in sequence)
-//   NestJS/Interceptors  — InterceptorsConsumer.intercept (all interceptors)
+// Consumer modules are eagerly loaded by @nestjs/core before ritmHook fires,
+// so RITM v5 Hook instances won't backfill them. Patch prototypes directly
+// via require() — they're already in the module cache and will return instantly.
 //
-// @nestjs/schedule jobs (Cron / Interval / Timeout) each become their own Scout
-// transaction so they appear as background jobs in the Scout UI.
+// Each component gets its own span as a sibling within the active Scout request:
+//   NestJS/Guards/<ClassName>        — GuardsConsumer.tryActivate
+//   NestJS/Pipes/<ClassName>         — PipesConsumer.applyPipes
+//   NestJS/Interceptors/<ClassName>  — span ends at next.handle() handoff (pre-handler only)
+//
+// Pipes appear as siblings of guards/interceptors because setCurrentSpan() synchronously
+// restores store.span to the interceptor's parent after done() is called. doneFn() does
+// the same thing but runs asynchronously (inside span.stop()), too late for pipes.
+//
+// @nestjs/schedule jobs each become their own Scout transaction (background jobs in Scout UI).
 
 export class NestJSIntegration extends RequireIntegration {
     protected readonly packageName: string = "@nestjs/core";
 
-    // Override ritmHook entirely — we need to hook submodule paths, not the top-level
-    // @nestjs/core export, because GuardsConsumer etc. are not exported from the index.
     public ritmHook(_exportBag: ExportBag): void {
         const integration = this;
 
@@ -27,74 +32,116 @@ export class NestJSIntegration extends RequireIntegration {
             if (g) { integration.setScoutInstance(g); }
         };
 
-        // ── Guards ──────────────────────────────────────────────────────────────
-        new Hook(["@nestjs/core/guards/guards-consumer"], (exports) => {
-            syncScout();
-            const proto = exports?.GuardsConsumer?.prototype;
-            if (!proto?.tryActivate || proto._scoutGuardsPatched) { return exports; }
-            proto._scoutGuardsPatched = true;
-
-            const original = proto.tryActivate;
-            proto.tryActivate = async function(guards: any[], ...rest: any[]) {
-                if (!guards?.length || !integration.scout) {
-                    return original.apply(this, [guards, ...rest]);
+        const patchConsumers = () => {
+            // ── Guards ──────────────────────────────────────────────────────────
+            try {
+                const m = require("@nestjs/core/guards/guards-consumer");
+                const proto = m?.GuardsConsumer?.prototype;
+                if (proto?.tryActivate && !proto._scoutGuardsPatched) {
+                    proto._scoutGuardsPatched = true;
+                    const original = proto.tryActivate;
+                    proto.tryActivate = async function(guards: any[], ...rest: any[]) {
+                        if (!guards?.length || !integration.scout) {
+                            return original.apply(this, [guards, ...rest]);
+                        }
+                        const names = guards.map((g: any) => g?.constructor?.name || "Guard").join(",");
+                        const op = `${ScoutSpanOperation.NestJSGuards}/${names}`;
+                        return integration.scout.instrument(op, (done: any) => {
+                            return original.apply(this, [guards, ...rest])
+                                .then((r: any) => { done(); return r; })
+                                .catch((e: any) => { done(); throw e; });
+                        });
+                    };
                 }
-                return integration.scout.instrument(ScoutSpanOperation.NestJSGuards, (done: any) => {
-                    return original.apply(this, [guards, ...rest])
-                        .then((r: any) => { done(); return r; })
-                        .catch((e: any) => { done(); throw e; });
-                });
-            };
+            } catch (_e) { /* guards-consumer not available */ }
 
-            exports[getIntegrationSymbol()] = integration;
-            return exports;
-        });
-
-        // ── Pipes ───────────────────────────────────────────────────────────────
-        new Hook(["@nestjs/core/pipes/pipes-consumer"], (exports) => {
-            syncScout();
-            const proto = exports?.PipesConsumer?.prototype;
-            if (!proto?.applyPipes || proto._scoutPipesPatched) { return exports; }
-            proto._scoutPipesPatched = true;
-
-            const original = proto.applyPipes;
-            proto.applyPipes = async function(value: any, metadata: any, transforms: any[]) {
-                if (!transforms?.length || !integration.scout) {
-                    return original.apply(this, [value, metadata, transforms]);
+            // ── Pipes ────────────────────────────────────────────────────────────
+            try {
+                const m = require("@nestjs/core/pipes/pipes-consumer");
+                const proto = m?.PipesConsumer?.prototype;
+                if (proto?.applyPipes && !proto._scoutPipesPatched) {
+                    proto._scoutPipesPatched = true;
+                    const original = proto.applyPipes;
+                    proto.applyPipes = async function(value: any, metadata: any, transforms: any[]) {
+                        if (!transforms?.length || !integration.scout) {
+                            return original.apply(this, [value, metadata, transforms]);
+                        }
+                        const names = transforms.map((p: any) => p?.constructor?.name || "Pipe").join(",");
+                        const op = `${ScoutSpanOperation.NestJSPipes}/${names}`;
+                        return integration.scout.instrument(op, (done: any) => {
+                            return original.apply(this, [value, metadata, transforms])
+                                .then((r: any) => { done(); return r; })
+                                .catch((e: any) => { done(); throw e; });
+                        });
+                    };
                 }
-                return integration.scout.instrument(ScoutSpanOperation.NestJSPipes, (done: any) => {
-                    return original.apply(this, [value, metadata, transforms])
-                        .then((r: any) => { done(); return r; })
-                        .catch((e: any) => { done(); throw e; });
-                });
-            };
+            } catch (_e) { /* pipes-consumer not available */ }
 
-            exports[getIntegrationSymbol()] = integration;
-            return exports;
-        });
-
-        // ── Interceptors ────────────────────────────────────────────────────────
-        new Hook(["@nestjs/core/interceptors/interceptors-consumer"], (exports) => {
-            syncScout();
-            const proto = exports?.InterceptorsConsumer?.prototype;
-            if (!proto?.intercept || proto._scoutInterceptorsPatched) { return exports; }
-            proto._scoutInterceptorsPatched = true;
-
-            const original = proto.intercept;
-            proto.intercept = async function(interceptors: any[], ...rest: any[]) {
-                if (!interceptors?.length || !integration.scout) {
-                    return original.apply(this, [interceptors, ...rest]);
+            // ── Interceptors ─────────────────────────────────────────────────────
+            // Interceptors return RxJS Observables (lazy). Wrap each interceptor's
+            // CallHandler so the span ends at next.handle() — pre-handler work only.
+            // After done(), setCurrentSpan() synchronously restores store.span to the
+            // interceptor's parent so pipes run as siblings, not children.
+            try {
+                const m = require("@nestjs/core/interceptors/interceptors-consumer");
+                const proto = m?.InterceptorsConsumer?.prototype;
+                if (proto?.intercept && !proto._scoutInterceptorsPatched) {
+                    proto._scoutInterceptorsPatched = true;
+                    const original = proto.intercept;
+                    proto.intercept = async function(interceptors: any[], ...rest: any[]) {
+                        if (!interceptors?.length || !integration.scout) {
+                            return original.apply(this, [interceptors, ...rest]);
+                        }
+                        const { Observable } = require("rxjs");
+                        const { finalize } = require("rxjs");
+                        const scout = integration.scout;
+                        const wrapped = interceptors.map((interceptor: any) => {
+                            const name = interceptor?.constructor?.name || "Interceptor";
+                            const op = `${ScoutSpanOperation.NestJSInterceptors}/${name}`;
+                            return {
+                                intercept(ctx: any, next: any) {
+                                    if (!scout) { return interceptor.intercept(ctx, next); }
+                                    return new Observable((subscriber: any) => {
+                                        scout.instrument(op, (done: any, info: any) => {
+                                            return new Promise<void>((resolve) => {
+                                                let spanEnded = false;
+                                                const endSpan = () => {
+                                                    if (!spanEnded) {
+                                                        spanEnded = true;
+                                                        done();
+                                                        // Synchronously restore store.span to the interceptor's parent so
+                                                        // pipes in next.handle() become siblings of the interceptor span.
+                                                        // doneFn() does the same thing but runs async (inside span.stop()).
+                                                        const parentSpan = (info.parent !== info.request) ? info.parent : undefined;
+                                                        scout.setCurrentSpan(parentSpan);
+                                                    }
+                                                };
+                                                const wrappedNext = {
+                                                    handle() {
+                                                        endSpan();
+                                                        return next.handle();
+                                                    },
+                                                };
+                                                interceptor.intercept(ctx, wrappedNext)
+                                                    .pipe(finalize(() => { endSpan(); resolve(); }))
+                                                    .subscribe({
+                                                        next: (v: any) => subscriber.next(v),
+                                                        error: (e: any) => subscriber.error(e),
+                                                        complete: () => subscriber.complete(),
+                                                    });
+                                            });
+                                        }).catch(() => {});
+                                    });
+                                },
+                            };
+                        });
+                        return original.apply(this, [wrapped, ...rest]);
+                    };
                 }
-                return integration.scout.instrument(ScoutSpanOperation.NestJSInterceptors, (done: any) => {
-                    return original.apply(this, [interceptors, ...rest])
-                        .then((r: any) => { done(); return r; })
-                        .catch((e: any) => { done(); throw e; });
-                });
-            };
+            } catch (_e) { /* interceptors-consumer not available */ }
+        };
 
-            exports[getIntegrationSymbol()] = integration;
-            return exports;
-        });
+        patchConsumers();
 
         // ── Schedule (optional — only fires if @nestjs/schedule is installed) ──
         new Hook(["@nestjs/schedule/dist/scheduler.orchestrator"], (exports) => {
@@ -127,7 +174,6 @@ export class NestJSIntegration extends RequireIntegration {
                     if (!meta || (meta as any)._scoutWrapped) { continue; }
                     (meta as any)._scoutWrapped = true;
 
-                    // Cron stores the callback on meta.target; intervals/timeouts vary
                     const targetKey = "target" in meta ? "target" : "fn";
                     const originalFn = meta[targetKey];
                     if (typeof originalFn !== "function") { continue; }
