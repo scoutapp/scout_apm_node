@@ -19,11 +19,6 @@ const SUPPORTED_HTTP_METHODS = [
     "PATCH",
 ];
 
-// Express-internal layer names that should never generate spans
-const INTERNAL_LAYER_NAMES = new Set(["query", "expressInit"]);
-// bound* names come from Express's internal .bind() calls (e.g. "bound dispatch")
-const INTERNAL_LAYER_NAME_PREFIX = "bound ";
-
 // Hook into the express and mongodb module
 export class ExpressIntegration extends RequireIntegration {
     protected readonly packageName: string = "express";
@@ -40,38 +35,38 @@ export class ExpressIntegration extends RequireIntegration {
             const original = exports.prototype.handle_request;
 
             exports.prototype.handle_request = function handle_request(req: any, res: any, next: Function) {
-                const scout = integration.scout;
-                if (!scout) { return original.apply(this, arguments); }
+                if (!integration.scout) { return original.apply(this, arguments); }
+
+                // rootSpan is only set after scoutMiddleware has run, so this naturally
+                // excludes all layers that execute before it (query, expressInit, etc.)
+                const rootSpan = req.scout && req.scout.rootSpan;
+                if (!rootSpan) { return original.apply(this, arguments); }
+
+                // this.route is set on the layer Express creates for route handlers (app.get/post/etc.)
+                // this.method is set on per-method layers inside a Route's own stack
+                // Neither should produce a Middleware/ span
+                if (this.route || this.method) { return original.apply(this, arguments); }
 
                 const fnName: string | undefined = this.handle && this.handle.name;
-
-                // Skip internal Express layers (query, expressInit, bound dispatch, etc.)
-                if (fnName && (INTERNAL_LAYER_NAMES.has(fnName) || fnName.startsWith(INTERNAL_LAYER_NAME_PREFIX))) {
-                    return original.apply(this, arguments);
-                }
-
-                // Skip anonymous/unnamed middleware unless configured otherwise
-                const config = scout.getConfig();
-                const instrumentAnon = config && config.expressInstrumentAnonymousMiddleware;
-                if (!fnName && !instrumentAnon) {
+                const config = integration.scout.getConfig();
+                if (!fnName && !config.expressInstrumentAnonymousMiddleware) {
                     return original.apply(this, arguments);
                 }
 
                 const operation = `Middleware/${fnName || "anonymous"}`;
-                const startMs = Date.now();
 
-                let spanDone: () => void = () => undefined;
+                // Create the span synchronously as a direct child of the Controller span.
+                // Using scout.instrument() would cause chained nesting — each middleware's
+                // span.stop() restores the async store asynchronously, so the next middleware
+                // sees the previous one as its parent instead of Controller.
+                // Parenting off rootSpan directly makes all middleware spans siblings.
                 let spanEnded = false;
+                const span = rootSpan.startChildSpanSync(operation);
 
                 const endSpan = () => {
                     if (spanEnded) { return; }
                     spanEnded = true;
-                    const minDuration = (config && config.expressMiddlewareMinDurationMs) || 0;
-                    if (minDuration > 0 && (Date.now() - startMs) < minDuration) {
-                        spanDone();
-                        return;
-                    }
-                    spanDone();
+                    span.stop();
                 };
 
                 const wrappedNext = function(this: any) {
@@ -79,11 +74,8 @@ export class ExpressIntegration extends RequireIntegration {
                     return next.apply(this, arguments);
                 };
 
-                scout.instrument(operation, (done: any) => {
-                    spanDone = done;
-                    res.once("finish", endSpan);
-                    return original.apply(this, [req, res, wrappedNext]);
-                });
+                res.once("finish", endSpan);
+                return original.apply(this, [req, res, wrappedNext]);
             };
 
             return exports;
