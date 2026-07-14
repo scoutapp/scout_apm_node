@@ -1,5 +1,6 @@
 import * as path from "path";
 import { Express, Application } from "express";
+import * as Hook from "require-in-the-middle";
 
 import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout } from "../scout";
@@ -18,9 +19,76 @@ const SUPPORTED_HTTP_METHODS = [
     "PATCH",
 ];
 
+// Express-internal layer names that should never generate spans
+const INTERNAL_LAYER_NAMES = new Set(["query", "expressInit"]);
+// bound* names come from Express's internal .bind() calls (e.g. "bound dispatch")
+const INTERNAL_LAYER_NAME_PREFIX = "bound ";
+
 // Hook into the express and mongodb module
 export class ExpressIntegration extends RequireIntegration {
     protected readonly packageName: string = "express";
+
+    public ritmHook(exportBag: ExportBag): void {
+        super.ritmHook(exportBag);
+        this.hookExpressLayer();
+    }
+
+    private hookExpressLayer(): void {
+        const integration = this;
+
+        new Hook(["express/lib/router/layer"], (exports: any) => {
+            const original = exports.prototype.handle_request;
+
+            exports.prototype.handle_request = function handle_request(req: any, res: any, next: Function) {
+                const scout = integration.scout;
+                if (!scout) { return original.apply(this, arguments); }
+
+                const fnName: string | undefined = this.handle && this.handle.name;
+
+                // Skip internal Express layers (query, expressInit, bound dispatch, etc.)
+                if (fnName && (INTERNAL_LAYER_NAMES.has(fnName) || fnName.startsWith(INTERNAL_LAYER_NAME_PREFIX))) {
+                    return original.apply(this, arguments);
+                }
+
+                // Skip anonymous/unnamed middleware unless configured otherwise
+                const config = scout.getConfig();
+                const instrumentAnon = config && config.expressInstrumentAnonymousMiddleware;
+                if (!fnName && !instrumentAnon) {
+                    return original.apply(this, arguments);
+                }
+
+                const operation = `Middleware/${fnName || "anonymous"}`;
+                const startMs = Date.now();
+
+                let spanDone: () => void = () => undefined;
+                let spanEnded = false;
+
+                const endSpan = () => {
+                    if (spanEnded) { return; }
+                    spanEnded = true;
+                    const minDuration = (config && config.expressMiddlewareMinDurationMs) || 0;
+                    if (minDuration > 0 && (Date.now() - startMs) < minDuration) {
+                        spanDone();
+                        return;
+                    }
+                    spanDone();
+                };
+
+                const wrappedNext = function(this: any) {
+                    endSpan();
+                    return next.apply(this, arguments);
+                };
+
+                scout.instrument(operation, (done: any) => {
+                    spanDone = done;
+                    res.once("finish", endSpan);
+                    return original.apply(this, [req, res, wrappedNext]);
+                });
+            };
+
+            return exports;
+        });
+    }
 
     protected shim(expressExport: any): any {
         // Shim application creation
