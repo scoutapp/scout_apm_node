@@ -245,6 +245,10 @@ export interface ScoutConfiguration {
     logsReportingEndpointHttp: string;
     logsCaptureConsole: boolean;
 
+    // Express middleware instrumentation
+    expressInstrumentAnonymousMiddleware: boolean;
+    expressMiddlewareMinDurationMs: number;
+
     // Derived
     coreAgentTriple: string;
     coreAgentFullName: string;
@@ -277,6 +281,9 @@ export const DEFAULT_SCOUT_CONFIGURATION: Partial<ScoutConfiguration> = {
     logsReportingEndpoint: "https://otlp.scoutotel.com:4317",
     logsReportingEndpointHttp: "https://otlp.scoutotel.com:4318/v1/logs",
     logsCaptureConsole: true,
+
+    expressInstrumentAnonymousMiddleware: false,
+    expressMiddlewareMinDurationMs: 0,
 
     framework: "",
     frameworkVersion: "",
