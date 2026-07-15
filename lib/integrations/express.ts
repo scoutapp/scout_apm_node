@@ -69,9 +69,9 @@ export class ExpressIntegration extends RequireIntegration {
                     span.stop();
                 };
 
-                const wrappedNext = function(this: any) {
+                const wrappedNext = function(this: any, ...args: any[]) {
                     endSpan();
-                    return next.apply(this, arguments);
+                    return next.apply(this, args);
                 };
 
                 res.once("finish", endSpan);
