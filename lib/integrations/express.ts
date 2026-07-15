@@ -34,7 +34,7 @@ export class ExpressIntegration extends RequireIntegration {
         new Hook(["express/lib/router/layer"], (exports: any) => {
             const original = exports.prototype.handle_request;
 
-            exports.prototype.handle_request = function handle_request(req: any, res: any, next: Function) {
+            exports.prototype.handle_request = function handle_request(req: any, res: any, next: (...args: any[]) => void) {
                 if (!integration.scout) { return original.apply(this, arguments); }
 
                 // rootSpan is only set after scoutMiddleware has run, so this naturally
