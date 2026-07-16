@@ -115,7 +115,6 @@
     "@types/tmp": "0.0.34",
     "app-root-path": "^3.0.0",
     "big-number": "^2.0.0",
-    "cpu-percentage": "^1.0.3",
     "detect-libc": "1.0.3",
     "download": "7.1.0",
     "express-list-endpoints": "^5.0.0",

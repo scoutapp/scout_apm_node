@@ -7,7 +7,7 @@ import * as semver from "semver";
 import { pathExists } from "fs-extra";
 import { instrument as instrumentTrace } from "stacktrace-js";
 import { check as tcpPortUsed } from "tcp-port-used";
-import * as getCPUUsage from "cpu-percentage";
+import * as os from "os";
 
 import {
     APIVersion,
@@ -123,7 +123,8 @@ export class Scout extends EventEmitter {
 
     private statsSendingInterval?: NodeJS.Timeout;
     private statsIntervalMS?: number;
-    private cpuUsageStart = getCPUUsage();
+    private lastCPUUsage = process.cpuUsage();
+    private lastCPUSampleTime = process.hrtime.bigint();
 
     constructor(config?: Partial<ScoutConfiguration>, opts?: ScoutOptions) {
         super();
@@ -257,22 +258,39 @@ export class Scout extends EventEmitter {
             // Gather metrics
             this.log("`[scout] Gathering CPU & memory usage statistics...", LogLevel.Debug);
 
-            // Send memory metric
+            const source = `Pid: ${pid}`;
+
+            // Send memory metric (RSS in MB, matching the python agent's Memory sampler)
             const memoryUsageMB = process.memoryUsage().rss / (1024 * 1024);
             this.agent.sendAsync(new Requests.V1ApplicationEvent(
-                `Pid: ${pid}`,
+                source,
                 ApplicationEventType.MemoryUsageMB,
                 memoryUsageMB,
             ));
 
-            // Calculate the CPU usage since last measurement, send percentage
-            const cpuUsagePercent = getCPUUsage(this.cpuUsageStart).percent * 100;
-            this.cpuUsageStart = getCPUUsage();
-            this.agent.sendAsync(new Requests.V1ApplicationEvent(
-                `Pid: ${pid}`,
-                ApplicationEventType.CPUUtilizationPercent,
-                cpuUsagePercent,
-            ));
+            // Calculate the CPU utilization since the last measurement, matching the
+            // python agent's Cpu sampler: process CPU time over wall-clock time,
+            // normalized to the number of processors
+            const cpuUsage = process.cpuUsage();
+            const now = process.hrtime.bigint();
+            const processElapsedUs = (cpuUsage.user - this.lastCPUUsage.user)
+                + (cpuUsage.system - this.lastCPUUsage.system);
+            const wallClockElapsedUs = Number(now - this.lastCPUSampleTime) / 1e3;
+            const normalizedWallClockUs = wallClockElapsedUs * os.cpus().length;
+            this.lastCPUUsage = cpuUsage;
+            this.lastCPUSampleTime = now;
+
+            // Skip the sample on negative deltas (clock adjustment), as the python agent does
+            if (processElapsedUs >= 0 && wallClockElapsedUs >= 0) {
+                const cpuUsagePercent = normalizedWallClockUs === 0
+                    ? 0
+                    : (processElapsedUs / normalizedWallClockUs) * 100;
+                this.agent.sendAsync(new Requests.V1ApplicationEvent(
+                    source,
+                    ApplicationEventType.CPUUtilizationPercent,
+                    cpuUsagePercent,
+                ));
+            }
 
         }, this.statsIntervalMS || Constants.DEFAULT_STATS_INTERVAL_MS);
     }
@@ -593,12 +611,16 @@ export class Scout extends EventEmitter {
 
                 // Create a done function that will clear the entry and stop the span
                 const doneFn = () => {
-                    // Set the parent for other sibling/same-level spans
+                    // Restore span pointer so subsequent instrument() calls create sibling spans.
+                    // When parent is a span, restore to that span. When parent is the request,
+                    // clear only the span — keep store.request alive so sibling spans (e.g. pipes
+                    // after an interceptor ends early) can still attach to the active transaction.
                     if (parentIsSpan) {
                         store.span = parent as ScoutSpan;
                     } else {
                         store.span = undefined;
-                        store.request = undefined;
+                        // store.request intentionally NOT cleared — transaction stays active
+                        // until the middleware finishes the request explicitly.
                     }
 
                     // If we never made the span object then don't do anything
@@ -757,6 +779,18 @@ export class Scout extends EventEmitter {
         } catch {
             return null;
         }
+    }
+
+    // Synchronously update the current-span pointer in the active ALS store.
+    // Pass the interceptor's parent span so that subsequent instrument() calls
+    // in the same async context create siblings of that span (children of the
+    // same parent) rather than children of the mid-stopping interceptor span.
+    // Pass undefined to clear the pointer (pipe becomes a direct request child).
+    public setCurrentSpan(span: ScoutSpan | undefined): void {
+        try {
+            const store = this.asyncStorage.getStore();
+            if (store) { store.span = span; }
+        } catch { /* ignore */ }
     }
 
     // Setup integrations
