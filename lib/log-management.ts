@@ -27,11 +27,12 @@ export function setupLogManagement(
     } catch { /* ignore */ }
 
     const logLevel = parseLogLevel(process.env.SCOUT_LOG_LEVEL || (config.logLevel as any) || "warn");
+    const logPayloadContent = config.logPayloadContent === true;
 
     if (logBuffer) {
-        logBuffer.updateOpts({ endpointHttp, ingestKey, serviceName, agentVersion, logLevel });
+        logBuffer.updateOpts({ endpointHttp, ingestKey, serviceName, agentVersion, logLevel, logPayloadContent });
     } else {
-        logBuffer = new ScoutLogBuffer({ endpointHttp, ingestKey, serviceName, agentVersion, logLevel });
+        logBuffer = new ScoutLogBuffer({ endpointHttp, ingestKey, serviceName, agentVersion, logLevel, logPayloadContent });
     }
 
     // Wire winston integration (RITM hook already set up; needs the buffer reference)
