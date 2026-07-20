@@ -149,6 +149,8 @@ export enum ScoutContextName {
     QueueTimeNS = "scout.queue_time_ns",
     JobQueueTimeNS = "scout.job_queue_time_ns",
     Queue = "queue",
+    TaskId = "task_id",
+    Priority = "priority",
 }
 
 export enum ScoutSpanOperation {
@@ -159,4 +161,5 @@ export enum ScoutSpanOperation {
     HTTPDelete = "HTTP/DELETE",
     HTTPPut = "HTTP/PUT",
     HTTPPatch = "HTTP/PATCH",
+    BullMQJob = "Job",
 }

@@ -12,6 +12,7 @@ import prismaIntegration from "./prisma";
 import fetchIntegration from "./fetch";
 import redisIntegration from "./redis";
 import mongodbIntegration from "./mongodb";
+import bullmqIntegration from "./bullmq";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
 
 export const KNOWN_PACKAGES: string[] = [
@@ -29,6 +30,7 @@ export const KNOWN_PACKAGES: string[] = [
     fetchIntegration.getPackageName(),
     redisIntegration.getPackageName(),
     mongodbIntegration.getPackageName(),
+    bullmqIntegration.getPackageName(),
 ];
 
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
@@ -47,6 +49,7 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case fetchIntegration.getPackageName(): return fetchIntegration;
         case redisIntegration.getPackageName(): return redisIntegration;
         case mongodbIntegration.getPackageName(): return mongodbIntegration;
+        case bullmqIntegration.getPackageName(): return bullmqIntegration;
         default: return doNothingRequireIntegration;
     }
 }
