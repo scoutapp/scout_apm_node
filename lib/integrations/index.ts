@@ -14,6 +14,7 @@ import redisIntegration from "./redis";
 import mongodbIntegration from "./mongodb";
 import bullmqIntegration from "./bullmq";
 import sequelizeIntegration from "./sequelize";
+import winstonIntegration from "../logs/integrations/winston";
 import { doNothingRequireIntegration, RequireIntegration } from "../types/integrations";
 
 export const KNOWN_PACKAGES: string[] = [
@@ -33,6 +34,7 @@ export const KNOWN_PACKAGES: string[] = [
     mongodbIntegration.getPackageName(),
     bullmqIntegration.getPackageName(),
     sequelizeIntegration.getPackageName(),
+    winstonIntegration.getPackageName(),
 ];
 
 export function getIntegrationForPackage(pkg: string): RequireIntegration {
@@ -53,6 +55,7 @@ export function getIntegrationForPackage(pkg: string): RequireIntegration {
         case mongodbIntegration.getPackageName(): return mongodbIntegration;
         case bullmqIntegration.getPackageName(): return bullmqIntegration;
         case sequelizeIntegration.getPackageName(): return sequelizeIntegration;
+        case winstonIntegration.getPackageName(): return winstonIntegration;
         default: return doNothingRequireIntegration;
     }
 }
