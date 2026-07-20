@@ -146,14 +146,13 @@ const API = {
         },
 
         Context: {
+            // Kept for backwards compatibility — the async signature was never necessary.
+            // addContextSync is a plain object property set; there is nothing to await.
+            // Delegating to addSync means context is on the request immediately, so log
+            // integrations that read tags synchronously (pino diagnostics_channel, etc.)
+            // see the values without requiring callers to switch to addSync.
             add(name: string, value: JSONValue, scout?: Scout): Promise<ScoutRequest | void> {
-                return (scout ? Promise.resolve(scout.setup()) : getOrCreateActiveGlobalScoutInstance())
-                    .then(scout => {
-                        const req = scout.getCurrentRequest();
-                        if (!req) { return; }
-
-                        return req.addContext(name, value);
-                    });
+                return Promise.resolve(this.addSync(name, value, scout));
             },
 
             addSync(name: string, value: JSONValue, scout?: Scout): ScoutRequest | undefined {

@@ -1,6 +1,7 @@
 import * as os from "os";
 import { ScoutConfiguration } from "./types";
 import { ErrorService } from "./error-service";
+import { getActiveGlobalScoutInstance } from "./global";
 
 let service: ErrorService | null = null;
 let ignoredExceptions: string[] = [];
@@ -97,6 +98,13 @@ export function captureError(
 
     if (isIgnored(err)) { return; }
 
+    const scout = getActiveGlobalScoutInstance();
+    const transactionId = scout?.getCurrentRequest()?.id ?? null;
+
+    const mergedContext = transactionId
+        ? { transaction_id: transactionId, ...(context || {}) }
+        : context || undefined;
+
     const hasLocation = opts && (opts.controller != null || opts.action != null || opts.module != null);
 
     service.enqueue({
@@ -113,7 +121,7 @@ export function captureError(
             controller: (opts && opts.controller) ?? null,
             action: (opts && opts.action) ?? null,
         } : null,
-        context: context || undefined,
+        context: mergedContext,
         host: (currentConfig.hostname as string) || os.hostname(),
         revision_sha: currentConfig.revisionSHA,
     });

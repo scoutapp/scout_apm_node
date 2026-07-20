@@ -116,10 +116,19 @@ export class ErrorService {
             };
 
             const req = transport.request(options, (res) => {
+                if (this.config.logPayloadContent) {
+                    // tslint:disable-next-line no-console
+                    console.log(`[scout/error-payload] response ${res.statusCode} from ${parsedUrl.hostname}`);
+                }
                 res.resume();
             });
 
-            req.on("error", () => { /* swallow network errors */ });
+            req.on("error", (err) => {
+                if (this.config.logPayloadContent) {
+                    // tslint:disable-next-line no-console
+                    console.log(`[scout/error-payload] send error: ${err.message}`);
+                }
+            });
             req.write(compressed);
             req.end();
         });

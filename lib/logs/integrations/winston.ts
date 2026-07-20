@@ -10,7 +10,7 @@
 //   https://github.com/open-telemetry/opentelemetry-js-contrib/tree/main/packages/instrumentation-winston
 import { RequireIntegration, getIntegrationSymbol } from "../../types/integrations";
 import { ScoutLogBuffer } from "../buffer";
-import { levelToSeverityNumber, levelToSeverityText, nowNanos } from "../otlp";
+import { levelToSeverityNumber, levelToSeverityText, nowNanos, getContextAttributes } from "../otlp";
 
 const LEVEL_ORDER = ["trace", "debug", "info", "warn", "error", "fatal"];
 
@@ -51,7 +51,8 @@ function buildTransportClass(
 
             const now = nowNanos();
             const scout = getScout();
-            const requestId: string | null = scout?.getCurrentSpan?.()?.id ?? null;
+            const request = scout?.getCurrentRequest?.() ?? null;
+            const requestId: string | null = request?.id ?? null;
 
             // Collect extra fields (excluding message and level) as attributes
             const skip = new Set(["message", "level", "timestamp", "service", "splat"]);
@@ -70,7 +71,8 @@ function buildTransportClass(
                 body: { stringValue: typeof info.message === "string" ? info.message : JSON.stringify(info.message) },
                 attributes: [
                     { key: "logger.name", value: { stringValue: "winston" } },
-                    ...(requestId ? [{ key: "scout.request_id", value: { stringValue: requestId } }] : []),
+                    ...(requestId ? [{ key: "scout_transaction_id", value: { stringValue: requestId } }] : []),
+                    ...getContextAttributes(request),
                     ...extras,
                 ],
             });

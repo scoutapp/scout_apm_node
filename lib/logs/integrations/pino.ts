@@ -8,7 +8,7 @@
 // Requires: pino >=v8.0.0, Node >=18.19.0 or >=20.6.0 (diagnostics_channel tracing channels).
 import * as diagnosticsChannel from "node:diagnostics_channel";
 import { ScoutLogBuffer } from "../buffer";
-import { levelToSeverityNumber, levelToSeverityText, nowNanos } from "../otlp";
+import { levelToSeverityNumber, levelToSeverityText, nowNanos, getContextAttributes } from "../otlp";
 
 type LevelMapping = { labels: Record<number, string> };
 type PinoInstance = { levels?: LevelMapping };
@@ -57,7 +57,7 @@ export function setupPinoIntegration(
 
         const now = nowNanos();
         const scout = getScout?.();
-        const request = scout?.getCurrentSpan?.() ?? null;
+        const request = scout?.getCurrentRequest?.() ?? null;
         const requestId = request?.id ?? null;
 
         buffer.append({
@@ -68,7 +68,8 @@ export function setupPinoIntegration(
             body: { stringValue: String(parsed.msg ?? "") },
             attributes: [
                 { key: "logger.name", value: { stringValue: "pino" } },
-                ...(requestId ? [{ key: "scout.request_id", value: { stringValue: requestId } }] : []),
+                ...(requestId ? [{ key: "scout_transaction_id", value: { stringValue: requestId } }] : []),
+                ...getContextAttributes(request),
             ],
         });
     });

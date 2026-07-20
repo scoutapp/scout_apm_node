@@ -3,6 +3,10 @@
 import * as https from "https";
 import * as http from "http";
 import * as url from "url";
+import * as fs from "fs";
+import * as zlib from "zlib";
+import { consoleLogFn, isIgnoredLogMessage } from "../types/util";
+import { LogLevel } from "../types/enum";
 
 export interface OtlpKeyValue {
     key: string;
@@ -10,8 +14,8 @@ export interface OtlpKeyValue {
 }
 
 export interface OtlpLogRecord {
-    timeUnixNano: string;
-    observedTimeUnixNano: string;
+    timeUnixNano: number;
+    observedTimeUnixNano: number;
     severityText: string;
     severityNumber: number;
     body: { stringValue: string };
@@ -25,6 +29,35 @@ export interface OtlpShipOptions {
     ingestKey: string;
     serviceName: string;
     agentVersion: string;
+    logLevel?: LogLevel;
+}
+
+// Scout-internal context keys — not forwarded to OTLP log attributes.
+const INTERNAL_CONTEXT_KEYS = new Set([
+    "stack", "db.statement", "error", "name", "url", "path", "timeout",
+    "ignore_transaction", "scout.queue_time_ns", "scout.job_queue_time_ns",
+    "queue", "task_id", "priority", "db.operation", "db.model",
+]);
+
+export function getContextAttributes(request: any): OtlpKeyValue[] {
+    if (!request || typeof request.getTags !== "function") { return []; }
+    const tags: Array<{ name: string; value: any }> = request.getTags();
+    const attrs: OtlpKeyValue[] = [];
+    for (const tag of tags) {
+        if (INTERNAL_CONTEXT_KEYS.has(tag.name) || tag.name.startsWith("scout.")) { continue; }
+        let value: OtlpKeyValue["value"];
+        if (typeof tag.value === "boolean") {
+            value = { boolValue: tag.value };
+        } else if (typeof tag.value === "number" && Number.isInteger(tag.value)) {
+            value = { intValue: tag.value };
+        } else if (typeof tag.value === "string") {
+            value = { stringValue: tag.value };
+        } else {
+            value = { stringValue: JSON.stringify(tag.value) };
+        }
+        attrs.push({ key: tag.name, value });
+    }
+    return attrs;
 }
 
 // Maps severity level names to OTel SeverityNumber (per OTel Logs Data Model spec).
@@ -45,13 +78,11 @@ export function levelToSeverityText(level: string): string {
     return map[l] ?? "INFO";
 }
 
-// Returns nanoseconds-since-epoch as a decimal string without BigInt literals
-// (which require ES2020 and would break the ES6 build target).
-export function nowNanos(): string {
+// Returns nanoseconds-since-epoch as a number.
+// Precision loss beyond 2^53 (~9ms in 2026) is acceptable for log timestamps.
+export function nowNanos(): number {
     const ms = Date.now();
-    const sec = Math.floor(ms / 1000);
-    const nsRem = (ms % 1000) * 1000000;
-    return String(sec) + String(nsRem).padStart(9, "0");
+    return ms * 1000000;
 }
 
 export function buildExportRequest(
@@ -76,30 +107,71 @@ export function buildExportRequest(
     };
 }
 
+const GZIP_THRESHOLD_BYTES = 1024;
+
 export function shipLogs(records: OtlpLogRecord[], opts: OtlpShipOptions): void {
     if (records.length === 0) { return; }
 
     const payload = JSON.stringify(buildExportRequest(records, opts));
+    const payloadBuf = Buffer.from(payload, "utf8");
     const parsed = url.parse(opts.endpointHttp);
     const isHttps = parsed.protocol === "https:";
     const lib = isHttps ? https : http;
     const port = parsed.port ? parseInt(parsed.port, 10) : (isHttps ? 443 : 80);
 
-    const req = lib.request({
-        hostname: parsed.hostname,
-        port,
-        path: parsed.path || "/v1/logs",
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Content-Length": Buffer.byteLength(payload),
-            "x-telemetry-key": opts.ingestKey,
-        },
-    }, (res) => {
-        res.resume(); // drain response
-    });
+    const configLevel = opts.logLevel ?? LogLevel.Warn;
+    const debugEnabled = !isIgnoredLogMessage(configLevel, LogLevel.Debug);
+    const ts = new Date().toISOString();
 
-    req.on("error", () => { /* fire-and-forget; buffer will retry next flush */ });
-    req.write(payload);
-    req.end();
+    const shouldGzip = payloadBuf.length > GZIP_THRESHOLD_BYTES;
+
+    const sendRequest = (body: Buffer) => {
+        const headers: Record<string, string | number> = {
+            "Content-Type": "application/json",
+            "Content-Length": body.length,
+            "x-telemetryhub-key": opts.ingestKey,
+        };
+        if (shouldGzip) { headers["Content-Encoding"] = "gzip"; }
+
+        if (debugEnabled) {
+            consoleLogFn(`[scout/logs] ${ts} sending ${records.length} record(s) to ${opts.endpointHttp} (${body.length} bytes${shouldGzip ? ", gzipped" : ""})`, LogLevel.Debug);
+            try {
+                const capture = JSON.stringify({ ts, endpoint: opts.endpointHttp, headers, payload: JSON.parse(payload) }, null, 2);
+                fs.writeFileSync("/scout_debug/otlp_payload.json", capture, "utf8");
+            } catch { /* ignore write errors */ }
+        }
+
+        const req = lib.request({
+            hostname: parsed.hostname,
+            port,
+            path: parsed.path || "/v1/logs",
+            method: "POST",
+            headers,
+        }, (res) => {
+            let resBody = "";
+            res.on("data", (chunk) => { resBody += chunk; });
+            res.on("end", () => {
+                if (debugEnabled) { consoleLogFn(`[scout/logs] ${new Date().toISOString()} response ${res.statusCode} from ${opts.endpointHttp}${resBody ? ": " + resBody.slice(0, 200) : ""}`, LogLevel.Debug); }
+            });
+        });
+
+        req.on("error", (err) => {
+            consoleLogFn(`[scout/logs] ${new Date().toISOString()} error shipping to ${opts.endpointHttp}: ${err.message} (${(err as any).code})`, LogLevel.Warn);
+        });
+        req.write(body);
+        req.end();
+    };
+
+    if (shouldGzip) {
+        zlib.gzip(payloadBuf, (err, compressed) => {
+            if (err) {
+                consoleLogFn(`[scout/logs] gzip error, sending uncompressed: ${err.message}`, LogLevel.Warn);
+                sendRequest(payloadBuf);
+            } else {
+                sendRequest(compressed);
+            }
+        });
+    } else {
+        sendRequest(payloadBuf);
+    }
 }
