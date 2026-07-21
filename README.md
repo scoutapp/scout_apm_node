@@ -2,6 +2,8 @@
 
 Monitor the performance of Node.js apps with [Scout APM](https://www.scoutapm.com). Detailed performance metrics and transactional traces are collected once the `@scout_apm/scout-apm` package is installed and configured.
 
+> This README covers the essentials. See our [documentation](https://scoutapm.com/docs/node/) for the complete setup, configuration, and troubleshooting guide.
+
 ## Requirements
 
 - **Node.js** ≥ 18
@@ -113,19 +115,37 @@ Database and template integrations are auto-activated when the corresponding pac
 |---------|--------|-------------|
 | `http` | STABLE | Node.js built-in `http` module |
 | `https` | STABLE | Node.js built-in `https` module |
-| `express` | STABLE | [Express](https://www.npmjs.com/package/express) 4.x / 5.x web framework |
-| `NestJS` | STABLE | [NestJS](https://nestjs.com) 10+ (via `nestMiddleware` / `nestErrorFilter`) |
+| `express` | STABLE | [Express](https://www.npmjs.com/package/express) 4.x / 5.x — route + per-middleware spans |
+| `NestJS` | STABLE | [NestJS](https://nestjs.com) 10+ — middleware, guards, pipes, interceptors, `@nestjs/schedule` jobs |
 | `pg` | STABLE | [node-postgres](https://www.npmjs.com/package/pg) driver |
 | `mysql` | STABLE | [mysql](https://www.npmjs.com/package/mysql) driver |
 | `mysql2` | STABLE | [mysql2](https://www.npmjs.com/package/mysql2) driver |
 | `mongodb` | STABLE | [MongoDB](https://www.npmjs.com/package/mongodb) driver v4+ |
 | `prisma` | STABLE | [Prisma](https://www.prisma.io) ORM (Prisma 6+) |
+| `sequelize` | STABLE | [Sequelize](https://sequelize.org) ORM v6 |
+| `bullmq` | STABLE | [BullMQ](https://docs.bullmq.io) v5+ Worker job spans |
 | `ioredis` | STABLE | [ioredis](https://www.npmjs.com/package/ioredis) Redis client |
 | `redis` | STABLE | [node-redis](https://www.npmjs.com/package/redis) v5+ |
 | `ejs` | STABLE | [EJS](https://www.npmjs.com/package/ejs) templating |
 | `mustache` | STABLE | [Mustache](https://github.com/janl/mustache.js/) templating |
 | `pug` | STABLE | [Pug](https://pugjs.org) templating |
 | `fetch` | STABLE | Node.js built-in `fetch` (Node 18+, via `diagnostics_channel`) |
+
+## Log Management
+
+Forward `pino`, `winston`, or `console` logs to Scout, auto-enriched with the active transaction ID and request context:
+
+```javascript
+await scout.init({
+  name: "<application name>",
+  key: "<scout key>",
+  monitor: true,
+  logsMonitor: true,
+  logsIngestKey: "<logs ingest key>",
+});
+```
+
+See the [Log Management docs](https://scoutapm.com/docs/node/log-management) for supported logger versions and configuration options.
 
 ## Custom Instrumentation
 
