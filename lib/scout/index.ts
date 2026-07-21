@@ -541,12 +541,16 @@ export class Scout extends EventEmitter {
 
                 // Create a done function that will clear the entry and stop the span
                 const doneFn = () => {
-                    // Set the parent for other sibling/same-level spans
+                    // Restore span pointer so subsequent instrument() calls create sibling spans.
+                    // When parent is a span, restore to that span. When parent is the request,
+                    // clear only the span — keep store.request alive so sibling spans (e.g. pipes
+                    // after an interceptor ends early) can still attach to the active transaction.
                     if (parentIsSpan) {
                         store.span = parent as ScoutSpan;
                     } else {
                         store.span = undefined;
-                        store.request = undefined;
+                        // store.request intentionally NOT cleared — transaction stays active
+                        // until the middleware finishes the request explicitly.
                     }
 
                     // If we never made the span object then don't do anything
@@ -705,6 +709,18 @@ export class Scout extends EventEmitter {
         } catch {
             return null;
         }
+    }
+
+    // Synchronously update the current-span pointer in the active ALS store.
+    // Pass the interceptor's parent span so that subsequent instrument() calls
+    // in the same async context create siblings of that span (children of the
+    // same parent) rather than children of the mid-stopping interceptor span.
+    // Pass undefined to clear the pointer (pipe becomes a direct request child).
+    public setCurrentSpan(span: ScoutSpan | undefined): void {
+        try {
+            const store = this.asyncStorage.getStore();
+            if (store) { store.span = span; }
+        } catch { /* ignore */ }
     }
 
     // Setup integrations
