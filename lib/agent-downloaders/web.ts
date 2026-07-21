@@ -1,6 +1,5 @@
 import * as download from "download";
 import * as path from "path";
-import * as tmp from "tmp-promise";
 import { Readable } from "stream";
 import { mkdtemp, createReadStream } from "fs";
 import { PlatformTriple, detectPlatformTriple } from "../types";

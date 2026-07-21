@@ -1,12 +1,12 @@
 import * as test from "tape";
 import * as path from "path";
 import * as fs from "fs-extra";
-import * as tmp from "tmp-promise";
 
 import * as Errors from "../../lib/errors";
 import * as Constants from "../../lib/constants";
 import { CoreAgentVersion, AgentDownloadOptions, PlatformTriple, detectPlatformTriple } from "../../lib/types";
 import { WebAgentDownloader } from "../../lib/agent-downloaders/web";
+import { tmpDir } from "../util";
 
 const SKIP_DOWNLOAD_TESTS = process.env.ENABLE_BINARY_TESTS !== "true";
 
@@ -68,7 +68,7 @@ test("cache is used by second download (v1.1.8)", {skip: SKIP_DOWNLOAD_TESTS}, t
 
     // Create a temporary directory for opts to use
     // this ensure tests don't collide
-    tmp.dir({prefix: "core-agent-web-dl-cache-test"})
+    tmpDir({prefix: "core-agent-web-dl-cache-test"})
         .then(result => {
             generatedCacheDir = result.path;
             opts.cacheDir = generatedCacheDir;
