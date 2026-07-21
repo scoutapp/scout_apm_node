@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-07-21
+
+### Added
+- BullMQ Worker job instrumentation — automatic `Job/{name}` spans with queue, priority, and queue-time context ([#355](https://github.com/scoutapp/scout_apm_node/pull/355))
+- Sequelize v6 integration — automatic `SQL/Query` spans ([#356](https://github.com/scoutapp/scout_apm_node/pull/356))
+- Log management: forward `pino`, `winston`, and `console` logs to Scout ([#363](https://github.com/scoutapp/scout_apm_node/pull/363))
+- Logs are enriched with the active transaction ID and request context ([#362](https://github.com/scoutapp/scout_apm_node/pull/362))
+- Logs now include the request's controller/job entrypoint ([#368](https://github.com/scoutapp/scout_apm_node/pull/368))
+- NestJS guard, pipe, and interceptor spans, plus `@nestjs/schedule` job tracing ([#364](https://github.com/scoutapp/scout_apm_node/pull/364))
+- Express per-middleware spans ([#367](https://github.com/scoutapp/scout_apm_node/pull/367))
+- Debug-level dump of active configuration at startup ([#365](https://github.com/scoutapp/scout_apm_node/pull/365))
+
+### Fixed
+- `api.Context.add()` is now synchronous ([#362](https://github.com/scoutapp/scout_apm_node/pull/362))
+
+### Security
+- Bumped `tmp` to `0.2.6` and removed the unused `tmp-promise` dependency, resolving [CVE-2025-54798](https://github.com/advisories/GHSA-52f5-9888-hmc6) ([#346](https://github.com/scoutapp/scout_apm_node/pull/346))
+
 ## [2.0.2] - 2026-06-05
 
 ### Changed
@@ -225,7 +243,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.2...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/scoutapp/scout_apm_node/compare/v0.2.3...v2.0.0
