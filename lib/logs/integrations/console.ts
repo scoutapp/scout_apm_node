@@ -2,7 +2,7 @@
 // Patches global console methods to forward log entries to the Scout log buffer.
 // Active when logs_monitor=true and logs_capture_console=true (default).
 import { ScoutLogBuffer } from "../buffer";
-import { levelToSeverityNumber, levelToSeverityText, nowNanos, getContextAttributes } from "../otlp";
+import { levelToSeverityNumber, levelToSeverityText, nowNanos, getContextAttributes, getEntrypointAttributes } from "../otlp";
 
 const CONSOLE_LEVELS: Array<[keyof Console, string]> = [
     ["log",   "info"],
@@ -57,6 +57,7 @@ export function setupConsoleIntegration(
                 attributes: [
                     { key: "logger.name", value: { stringValue: "console" } },
                     ...(requestId ? [{ key: "scout_transaction_id", value: { stringValue: requestId } }] : []),
+                    ...getEntrypointAttributes(request),
                     ...getContextAttributes(request),
                 ],
             });

@@ -10,7 +10,7 @@
 //   https://github.com/open-telemetry/opentelemetry-js-contrib/tree/main/packages/instrumentation-winston
 import { RequireIntegration, getIntegrationSymbol } from "../../types/integrations";
 import { ScoutLogBuffer } from "../buffer";
-import { levelToSeverityNumber, levelToSeverityText, nowNanos, getContextAttributes } from "../otlp";
+import { levelToSeverityNumber, levelToSeverityText, nowNanos, getContextAttributes, getEntrypointAttributes } from "../otlp";
 
 const LEVEL_ORDER = ["trace", "debug", "info", "warn", "error", "fatal"];
 
@@ -72,6 +72,7 @@ function buildTransportClass(
                 attributes: [
                     { key: "logger.name", value: { stringValue: "winston" } },
                     ...(requestId ? [{ key: "scout_transaction_id", value: { stringValue: requestId } }] : []),
+                    ...getEntrypointAttributes(request),
                     ...getContextAttributes(request),
                     ...extras,
                 ],

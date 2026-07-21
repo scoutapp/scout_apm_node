@@ -3,7 +3,6 @@
 import * as https from "https";
 import * as http from "http";
 import * as url from "url";
-import * as fs from "fs";
 import * as zlib from "zlib";
 import { consoleLogFn, isIgnoredLogMessage } from "../types/util";
 import { LogLevel } from "../types/enum";
@@ -30,6 +29,7 @@ export interface OtlpShipOptions {
     serviceName: string;
     agentVersion: string;
     logLevel?: LogLevel;
+    logPayloadContent?: boolean;
 }
 
 // Scout-internal context keys — not forwarded to OTLP log attributes.
@@ -38,6 +38,37 @@ const INTERNAL_CONTEXT_KEYS = new Set([
     "ignore_transaction", "scout.queue_time_ns", "scout.job_queue_time_ns",
     "queue", "task_id", "priority", "db.operation", "db.model",
 ]);
+
+// Derives the transaction entrypoint from the current request's span tree, mirroring the
+// ruby logging agent's controller_entrypoint/job_entrypoint attributes. The value matches
+// the transaction name shown for metrics (e.g. "Controller/GET /products", "Job/send-email").
+export function getEntrypointAttributes(request: any): OtlpKeyValue[] {
+    if (!request || typeof request.getChildSpansSync !== "function") { return []; }
+
+    // Breadth-first search: entrypoint spans are top-level, but tolerate nesting
+    const queue: any[] = request.getChildSpansSync();
+    while (queue.length > 0) {
+        const span = queue.shift();
+        const op = span?.operation;
+        if (typeof op === "string") {
+            if (op.startsWith("Controller/")) {
+                return [{ key: "controller_entrypoint", value: { stringValue: op } }];
+            }
+            if (op.startsWith("Job/")) {
+                const attrs: OtlpKeyValue[] = [{ key: "job_entrypoint", value: { stringValue: op } }];
+                const jobQueue = typeof span.getContextValue === "function" ? span.getContextValue("queue") : undefined;
+                if (typeof jobQueue === "string" && jobQueue.length > 0) {
+                    attrs.push({ key: "job_queue", value: { stringValue: jobQueue } });
+                }
+                return attrs;
+            }
+        }
+        if (typeof span?.getChildSpansSync === "function") {
+            queue.push(...span.getChildSpansSync());
+        }
+    }
+    return [];
+}
 
 export function getContextAttributes(request: any): OtlpKeyValue[] {
     if (!request || typeof request.getTags !== "function") { return []; }
@@ -135,10 +166,11 @@ export function shipLogs(records: OtlpLogRecord[], opts: OtlpShipOptions): void 
 
         if (debugEnabled) {
             consoleLogFn(`[scout/logs] ${ts} sending ${records.length} record(s) to ${opts.endpointHttp} (${body.length} bytes${shouldGzip ? ", gzipped" : ""})`, LogLevel.Debug);
-            try {
-                const capture = JSON.stringify({ ts, endpoint: opts.endpointHttp, headers, payload: JSON.parse(payload) }, null, 2);
-                fs.writeFileSync("/scout_debug/otlp_payload.json", capture, "utf8");
-            } catch { /* ignore write errors */ }
+        }
+
+        // The "[scout/" prefix also prevents the console integration from re-capturing this line
+        if (opts.logPayloadContent) {
+            consoleLogFn(`[scout/logs] ${ts} payload for ${opts.endpointHttp}: ${payload}`, LogLevel.Info);
         }
 
         const req = lib.request({
