@@ -116,18 +116,20 @@ export class ErrorService {
             };
 
             const req = transport.request(options, (res) => {
-                if (this.config.logPayloadContent) {
-                    // tslint:disable-next-line no-console
-                    console.log(`[scout/error-payload] response ${res.statusCode} from ${parsedUrl.hostname}`);
-                }
-                res.resume();
+                let resBody = "";
+                res.on("data", (chunk) => { resBody += chunk; });
+                res.on("end", () => {
+                    if (this.config.logPayloadContent || (res.statusCode && res.statusCode >= 400)) {
+                        // tslint:disable-next-line no-console
+                        console.warn(`[scout/error-payload] ${res.statusCode} from ${parsedUrl.hostname}${resBody ? ": " + resBody.slice(0, 200) : ""}`);
+                    }
+                });
+                res.on("error", () => { /* drain errors silently */ });
             });
 
             req.on("error", (err) => {
-                if (this.config.logPayloadContent) {
-                    // tslint:disable-next-line no-console
-                    console.log(`[scout/error-payload] send error: ${err.message}`);
-                }
+                // tslint:disable-next-line no-console
+                console.warn(`[scout/error-payload] send error: ${err.message} (${(err as any).code || ""})`);
             });
             req.write(compressed);
             req.end();

@@ -41,6 +41,7 @@ import {
     isIgnoredLogMessage,
 } from "../types";
 import { setActiveGlobalScoutInstance, EXPORT_BAG } from "../global";
+import { consoleLogFn } from "../types/util";
 import { getIntegrationForPackage } from "../integrations";
 
 import WebAgentDownloader from "../agent-downloaders/web";
@@ -163,14 +164,52 @@ export class Scout extends EventEmitter {
     }
 
     public log(message: string, level: LogLevel = LogLevel.Info) {
-        if (!this.logFn) { return; }
         if (!this.config || !this.config.logLevel) { return; }
 
         if (isIgnoredLogMessage(this.config.logLevel, level)) {
             return;
         }
 
-        return this.logFn(message, level);
+        return this.logFn ? this.logFn(message, level) : consoleLogFn(message, level);
+    }
+
+    private logConfiguration() {
+        if (!this.config || this.config.logLevel !== LogLevel.Debug) { return; }
+
+        const mask = (val: any, showTail = false): string => {
+            if (typeof val !== "string" || val.length === 0) { return String(val); }
+            if (val.length <= 4) { return "***"; }
+            return showTail
+                ? `${val.slice(0, 4)}***${val.slice(-3)}`
+                : `${val.slice(0, 4)}***`;
+        };
+
+        const CONFIG_KEYS: Array<keyof ScoutConfiguration> = [
+            "name", "key", "revisionSHA", "appServer", "applicationRoot", "scmSubdirectory",
+            "logLevel", "logFilePath", "socketPath", "httpProxy", "monitor",
+            "host",
+            "framework", "frameworkVersion",
+            "apiVersion", "downloadUrl",
+            "coreAgentDownload", "coreAgentLaunch", "coreAgentDir",
+            "coreAgentLogLevel", "coreAgentPermissions", "coreAgentVersion",
+            "coreAgentTriple", "coreAgentFullName",
+            "hostname",
+            "ignore", "collectRemoteIP", "uriReporting",
+            "disabledInstruments", "logPayloadContent",
+            "errorsEnabled", "errorsHost", "errorsIgnoredExceptions", "environment",
+            "logsMonitor", "logsIngestKey", "logsCaptureLevel",
+            "logsReportingEndpoint", "logsReportingEndpointHttp", "logsCaptureConsole",
+        ];
+
+        this.log("[scout] active configuration:", LogLevel.Debug);
+        for (const key of CONFIG_KEYS) {
+            const raw = (this.config as any)[key];
+            let display: string;
+            if (key === "logsIngestKey") { display = mask(raw, true); }
+            else if (key === "key") { display = mask(raw); }
+            else { display = JSON.stringify(raw); }
+            this.log(`[scout]   ${key}: ${display}`, LogLevel.Debug);
+        }
     }
 
     private get socketPath() {
@@ -303,6 +342,7 @@ export class Scout extends EventEmitter {
         if (this.settingUp) { return this.settingUp; }
 
         this.log("[scout] setting up scout...", LogLevel.Debug);
+        this.logConfiguration();
 
         const shouldLaunch = this.config.coreAgentLaunch;
 
@@ -311,7 +351,11 @@ export class Scout extends EventEmitter {
         this.settingUp = doLaunch
             .then(() => {
                 if (!this.agent) { throw new Errors.NoAgentPresent(); }
-                return this.agent.connect();
+                return this.agent.connect()
+                    .catch(err => {
+                        this.log(`[scout] failed to connect to agent at [${this.socketPath}]: ${err.message}`, LogLevel.Error);
+                        throw err;
+                    });
             })
             .then(() => this.log("[scout] successfully connected to agent", LogLevel.Debug))
             .then(() => {
@@ -348,7 +392,15 @@ export class Scout extends EventEmitter {
             .then(() => setActiveGlobalScoutInstance(this))
         // Start the statistics sending interval
             .then(() => this.startSendingStatistics())
-            .then(() => this);
+            .then(() => this)
+            .catch(err => {
+                this.log(`[scout] setup failed: ${err.message}`, LogLevel.Error);
+                return Promise.reject(err);
+            });
+
+        // Attach a no-op catch immediately to prevent PromiseRejectionHandledWarning
+        // when callers attach their own .catch() asynchronously later.
+        this.settingUp.catch(() => undefined);
 
         return this.settingUp;
     }
@@ -950,8 +1002,9 @@ export class Scout extends EventEmitter {
 
     // Helper for sending app metadata
     private sendAppMetadataEvent(): Promise<void> {
+        this.log(`[scout] sending app server load (metadata) for pid ${process.pid}`, LogLevel.Debug);
         return sendThroughAgent(this, this.buildAppMetadataEvent())
-            .then(() => undefined)
+            .then(() => this.log("[scout] app server load sent", LogLevel.Debug))
             .catch(err => {
                 this.log("[scout] failed to send start request request", LogLevel.Error);
             });
@@ -965,7 +1018,7 @@ export class Scout extends EventEmitter {
             this.config.key || "",
             APIVersion.V1,
         ))
-            .then(() => undefined)
+            .then(() => this.log("[scout] app registration sent", LogLevel.Debug))
             .catch(err => {
                 this.log("[scout] failed to send app registration request", LogLevel.Error);
             });

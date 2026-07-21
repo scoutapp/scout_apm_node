@@ -23,7 +23,9 @@ let LAST_USED_OPTS: ScoutOptions | null = null;
  */
 export function setActiveGlobalScoutInstance(scout: Scout) {
     if (SCOUT_INSTANCE && !SCOUT_INSTANCE.isShutdown()) {
-        SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", LogLevel.Warn);
+        if (SCOUT_INSTANCE !== scout) {
+            SCOUT_INSTANCE.log("[scout/global] A global scout instance is already set", LogLevel.Warn);
+        }
         return;
     }
 
