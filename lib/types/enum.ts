@@ -164,6 +164,7 @@ export enum ScoutSpanOperation {
     HTTPPut = "HTTP/PUT",
     HTTPPatch = "HTTP/PATCH",
     BullMQJob = "Job",
+    ExpressMiddleware = "Middleware",
     NestJSGuards = "NestJS/Guards",
     NestJSPipes = "NestJS/Pipes",
     NestJSInterceptors = "NestJS/Interceptors",

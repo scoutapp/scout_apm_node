@@ -1,5 +1,6 @@
 import * as path from "path";
 import { Express, Application } from "express";
+import * as Hook from "require-in-the-middle";
 
 import { ExportBag, RequireIntegration } from "../types/integrations";
 import { Scout } from "../scout";
@@ -21,6 +22,65 @@ const SUPPORTED_HTTP_METHODS = [
 // Hook into the express and mongodb module
 export class ExpressIntegration extends RequireIntegration {
     protected readonly packageName: string = "express";
+
+    public ritmHook(exportBag: ExportBag): void {
+        super.ritmHook(exportBag);
+        this.hookExpressLayer();
+    }
+
+    private hookExpressLayer(): void {
+        const integration = this;
+
+        new Hook(["express/lib/router/layer"], (exports: any) => {
+            const original = exports.prototype.handle_request;
+
+            exports.prototype.handle_request = function handle_request(req: any, res: any, next: (...args: any[]) => void) {
+                if (!integration.scout) { return original.apply(this, arguments); }
+
+                // rootSpan is only set after scoutMiddleware has run, so this naturally
+                // excludes all layers that execute before it (query, expressInit, etc.)
+                const rootSpan = req.scout && req.scout.rootSpan;
+                if (!rootSpan) { return original.apply(this, arguments); }
+
+                // this.route is set on the layer Express creates for route handlers (app.get/post/etc.)
+                // this.method is set on per-method layers inside a Route's own stack
+                // Neither should produce a Middleware/ span
+                if (this.route || this.method) { return original.apply(this, arguments); }
+
+                const fnName: string | undefined = this.handle && this.handle.name;
+                const config = integration.scout.getConfig();
+                if (!fnName && !config.expressInstrumentAnonymousMiddleware) {
+                    return original.apply(this, arguments);
+                }
+
+                const operation = `Middleware/${fnName || "anonymous"}`;
+
+                // Create the span synchronously as a direct child of the Controller span.
+                // Using scout.instrument() would cause chained nesting — each middleware's
+                // span.stop() restores the async store asynchronously, so the next middleware
+                // sees the previous one as its parent instead of Controller.
+                // Parenting off rootSpan directly makes all middleware spans siblings.
+                let spanEnded = false;
+                const span = rootSpan.startChildSpanSync(operation);
+
+                const endSpan = () => {
+                    if (spanEnded) { return; }
+                    spanEnded = true;
+                    span.stop();
+                };
+
+                const wrappedNext = function(this: any, ...args: any[]) {
+                    endSpan();
+                    return next.apply(this, args);
+                };
+
+                res.once("finish", endSpan);
+                return original.apply(this, [req, res, wrappedNext]);
+            };
+
+            return exports;
+        });
+    }
 
     protected shim(expressExport: any): any {
         // Shim application creation
