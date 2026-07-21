@@ -1,5 +1,5 @@
 import * as path from "path";
-import * as tmp from "tmp-promise";
+import * as tmp from "tmp";
 import * as express from "express";
 import * as net from "net";
 import { Express, Application, Request, Response } from "express";
@@ -56,6 +56,16 @@ const POSTGRES_STARTUP_MESSAGE = "database system is ready to accept connections
 
 const PROJECT_ROOT = path.join(path.dirname(require!.main!.filename), "../../");
 
+// Promisified wrapper around tmp.dir(), replacing the tmp-promise dependency
+export function tmpDir(options?: tmp.Options): Promise<{ path: string }> {
+    return new Promise((resolve, reject) => {
+        tmp.dir(options || {}, (err, dirPath) => {
+            if (err) { reject(err); return; }
+            resolve({ path: dirPath });
+        });
+    });
+}
+
 // Helper for downloading and creating an agent
 export function bootstrapExternalProcessAgent(
     t: Test,
@@ -80,7 +90,7 @@ export function bootstrapExternalProcessAgent(
         .download(version, downloadOpts)
         .then(bp => binPath = bp)
     // Create temporary directory for socket
-        .then(() => tmp.dir({prefix: "core-agent-test-"}))
+        .then(() => tmpDir({prefix: "core-agent-test-"}))
         .then(result => {
             const socketPath = path.join(result.path, "core-agent.sock");
             uri = `unix://${socketPath}`;
