@@ -131,7 +131,7 @@ Database and template integrations are auto-activated when the corresponding pac
 | `pug` | STABLE | [Pug](https://pugjs.org) templating |
 | `fetch` | STABLE | Node.js built-in `fetch` (Node 18+, via `diagnostics_channel`) |
 
-Scout also supports [Log Management](https://scoutapm.com/docs/node/log-management) (forward `pino`/`winston`/`console` logs, auto-enriched with transaction context) and [Error Monitoring](https://scoutapm.com/docs/node/error-monitoring) (automatic capture of uncaught exceptions and unhandled rejections, plus manual reporting via `captureError`) — see the linked docs for setup.
+Scout also supports Log Management (forward `pino`/`winston`/`console` logs, auto-enriched with transaction context — docs coming soon) and [Error Monitoring](https://scoutapm.com/docs/node/error-monitoring) (automatic capture of uncaught exceptions and unhandled rejections, plus manual reporting via `captureError`).
 
 ## Custom Instrumentation
 
