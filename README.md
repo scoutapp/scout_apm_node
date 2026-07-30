@@ -147,6 +147,39 @@ await scout.init({
 
 See the [Log Management docs](https://scoutapm.com/docs/node/log-management) for supported logger versions and configuration options.
 
+## Error Monitoring
+
+Uncaught exceptions and unhandled promise rejections are captured automatically once Scout is initialized. Add the error middleware/filter to also capture errors raised while handling a request, tagged with the route and enriched with request params and session:
+
+```javascript
+// Express — register after your routes
+app.use(scout.errorMiddleware());
+```
+
+```typescript
+// NestJS — registered as a global filter (see Quick Start above)
+providers: [{ provide: APP_FILTER, useClass: nestErrorFilter() }]
+```
+
+Report errors manually from anywhere — background jobs, queues, custom handlers — with `captureError`:
+
+```javascript
+scout.captureError(new Error("Payment failed"), { userId: user.id, plan: "pro" });
+```
+
+Ignore expected exceptions by class name with `errorsIgnoredExceptions`:
+
+```javascript
+await scout.init({
+  name: "<application name>",
+  key: "<scout key>",
+  monitor: true,
+  errorsIgnoredExceptions: ["ValidationError"],
+});
+```
+
+See the [Error Monitoring docs](https://scoutapm.com/docs/node/error-monitoring) for full configuration options.
+
 ## Custom Instrumentation
 
 ### Web transactions
