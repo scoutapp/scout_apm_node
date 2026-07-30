@@ -131,54 +131,7 @@ Database and template integrations are auto-activated when the corresponding pac
 | `pug` | STABLE | [Pug](https://pugjs.org) templating |
 | `fetch` | STABLE | Node.js built-in `fetch` (Node 18+, via `diagnostics_channel`) |
 
-## Log Management
-
-Forward `pino`, `winston`, or `console` logs to Scout, auto-enriched with the active transaction ID and request context:
-
-```javascript
-await scout.init({
-  name: "<application name>",
-  key: "<scout key>",
-  monitor: true,
-  logsMonitor: true,
-  logsIngestKey: "<logs ingest key>",
-});
-```
-
-See the [Log Management docs](https://scoutapm.com/docs/node/log-management) for supported logger versions and configuration options.
-
-## Error Monitoring
-
-Uncaught exceptions and unhandled promise rejections are captured automatically once Scout is initialized. Add the error middleware/filter to also capture errors raised while handling a request, tagged with the route and enriched with request params and session:
-
-```javascript
-// Express — register after your routes
-app.use(scout.errorMiddleware());
-```
-
-```typescript
-// NestJS — registered as a global filter (see Quick Start above)
-providers: [{ provide: APP_FILTER, useClass: nestErrorFilter() }]
-```
-
-Report errors manually from anywhere — background jobs, queues, custom handlers — with `captureError`:
-
-```javascript
-scout.captureError(new Error("Payment failed"), { userId: user.id, plan: "pro" });
-```
-
-Ignore expected exceptions by class name with `errorsIgnoredExceptions`:
-
-```javascript
-await scout.init({
-  name: "<application name>",
-  key: "<scout key>",
-  monitor: true,
-  errorsIgnoredExceptions: ["ValidationError"],
-});
-```
-
-See the [Error Monitoring docs](https://scoutapm.com/docs/node/error-monitoring) for full configuration options.
+Scout also supports [Log Management](https://scoutapm.com/docs/node/log-management) (forward `pino`/`winston`/`console` logs, auto-enriched with transaction context) and [Error Monitoring](https://scoutapm.com/docs/node/error-monitoring) (automatic capture of uncaught exceptions and unhandled rejections, plus manual reporting via `captureError`) — see the linked docs for setup.
 
 ## Custom Instrumentation
 
