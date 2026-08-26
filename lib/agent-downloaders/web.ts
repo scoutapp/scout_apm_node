@@ -1,8 +1,6 @@
-import * as download from "download";
+import { downloadAndMaybeExtract } from "./fetch-extract";
 import * as path from "path";
-import { Readable } from "stream";
-import { mkdtemp, createReadStream } from "fs";
-import { PlatformTriple, detectPlatformTriple } from "../types";
+import { detectPlatformTriple } from "../types";
 import * as fs from "fs-extra";
 
 // tslint:disable-next-line no-var-requires
@@ -101,7 +99,7 @@ export class WebAgentDownloader implements AgentDownloader {
 
                 // Perform download
                 this.logFn(`[scout/agent-downloader/web] Downloading from URL [${url}]`, LogLevel.Debug);
-                return download(url, downloadDir, {extract: true})
+                return downloadAndMaybeExtract(url, downloadDir, {extract: true})
                 // Ensure file download succeeded
                     .then(() => fs.pathExists(expectedBinPath))
                     .then(exists => {
@@ -196,7 +194,7 @@ export class WebAgentDownloader implements AgentDownloader {
                 // Ensure we're not attempting to do a download if they're disallowed
                 if (opts && opts.disallowDownload) { throw new Errors.ExternalDownloadDisallowed(); }
 
-                return download(adc.url, downloadDir, options);
+                return downloadAndMaybeExtract(adc.url, downloadDir, options);
             })
         // Ensure file download succeeded
             .then(() => fs.pathExists(expectedBinPath))
