@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-08-27
+
+### Security
+- Removed the `download` dependency and replaced core-agent downloading/extraction with Node's built-in `https`/`zlib` plus `tar-stream`, eliminating the vulnerable `decompress`, `got`, and `http-cache-semantics` transitive dependencies. Extraction now guards against path traversal ("zip slip"). ([#374](https://github.com/scoutapp/scout_apm_node/pull/374))
+- Moved the test-only `tmp` dependency to `devDependencies` and bumped it to `0.2.7`, removing it from production installs. ([#374](https://github.com/scoutapp/scout_apm_node/pull/374))
+
 ## [2.1.0] - 2026-07-21
 
 ### Added
@@ -243,7 +249,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/scoutapp/scout_apm_node/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.0...v2.0.1
