@@ -305,7 +305,7 @@
   integrity sha512-c6JL6E3EcZJuNqKFz+KM+l9l5mpcQiKvTwgA3blt5glWJ8hjDk0yeHN3beE/MpqYIQ8UEX44ItQzgkE/gCBELQ==
 
 "@scout_apm/scout-apm@file:.":
-  version "2.1.0"
+  version "2.1.1"
   dependencies:
     "@types/ejs" "^3.0.0"
     "@types/fs-extra" "5.0.5"
