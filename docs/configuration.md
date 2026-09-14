@@ -27,6 +27,7 @@ interface ScoutConfiguration {
     logFilePath: "stdout" | string;
     socketPath: string;
     httpProxy: string;
+    caCert: string;
     monitor: boolean;
 
     // Framework
@@ -68,6 +69,7 @@ interface ScoutConfiguration {
 | `logFilePath`          | `string`            | `"stdout"`                                                                           | The log file to be used by the underlying scout core-agent                                                                                       |
 | `socketPath`           | `string`            | `"/tmp/scout_apm_core"`                                                              | The path to the socket used by the `core-agent`                                                                                                  |
 | `httpProxy`            | `string`            | N/A                                                                                  | A HTTP proxy to use when communicating with the scout core-agent                                                                                 |
+| `caCert`               | `string`            | N/A                                                                                  | Path to a CA certificate file to use when the core-agent communicates over TLS                                                                   |
 | `monitor`              | `boolean`           | `false`                                                                              | Whether to enable/disable monitoring                                                                                                             |
 | `framework`            | `string`            | `""`                                                                                 | Framework name                                                                                                                                   |
 | `frameworkVersion`     | `string`            | `""`                                                                                 | Framework version                                                                                                                                |

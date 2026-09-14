@@ -606,6 +606,7 @@ export default class ExternalProcessAgent extends EventEmitter implements Agent 
         if (this.opts.configFilePath) { args.push("--config-file", this.opts.configFilePath); }
         if (this.opts.logLevel) { args.push("--log-level", this.opts.logLevel); }
         if (this.opts.proxyUrl) { args.push("--proxy", this.opts.proxyUrl); }
+        if (this.opts.caCertPath) { args.push("--ca-cert", this.opts.caCertPath); }
         if (this.opts.ingestUrl && !this.opts.configFilePath) {
             const configTomlPath = path.join(path.dirname(this.opts.binPath), "config.toml");
             writeFileSync(configTomlPath, `[debug]\ningest_url = "${this.opts.ingestUrl}"\n`, "utf8");

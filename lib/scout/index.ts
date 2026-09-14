@@ -186,7 +186,7 @@ export class Scout extends EventEmitter {
 
         const CONFIG_KEYS: Array<keyof ScoutConfiguration> = [
             "name", "key", "revisionSHA", "appServer", "applicationRoot", "scmSubdirectory",
-            "logLevel", "logFilePath", "socketPath", "httpProxy", "monitor",
+            "logLevel", "logFilePath", "socketPath", "httpProxy", "caCert", "monitor",
             "host",
             "framework", "frameworkVersion",
             "apiVersion", "downloadUrl",
