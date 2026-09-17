@@ -199,6 +199,7 @@ export interface ScoutConfiguration {
     socketPath: string;
     logFilePath: "stdout" | string;
     httpProxy: string;
+    caCert: string;
     monitor: boolean;
 
     // Scout ingest host — passed to core-agent as --ingest-url (reads SCOUT_HOST env var)
@@ -600,6 +601,7 @@ export function buildProcessOptions(config: Partial<ScoutConfiguration>): Partia
         logFilePath: config.logFilePath,
         logLevel: config.logLevel || config.coreAgentLogLevel,
         proxyUrl: config.httpProxy,
+        caCertPath: config.caCert,
         ingestUrl: config.host || undefined,
     };
 }
