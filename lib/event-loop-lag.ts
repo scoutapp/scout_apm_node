@@ -80,7 +80,8 @@ export function tagEventLoopLag(target: Taggable | undefined | null): void {
         const max = nsToMs(histogram.max);
         const p99 = nsToMs(histogram.percentile(99));
 
-        // Before the first sample, mean is 0 and max/percentile can be non-finite.
+        // Before the first sample, mean is NaN (and thus undefined here); skip
+        // tagging entirely until the histogram has collected at least one tick.
         if (mean === undefined) { return; }
 
         target.addContextSync(ScoutContextName.EventLoopLagMeanMS, mean);
