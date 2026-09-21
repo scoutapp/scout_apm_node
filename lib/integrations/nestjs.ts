@@ -2,6 +2,7 @@ import * as Hook from "require-in-the-middle";
 import { ExportBag, RequireIntegration, getIntegrationSymbol } from "../types/integrations";
 import { ScoutSpanOperation } from "../types";
 import { getActiveGlobalScoutInstance } from "../global";
+import { tagEventLoopLag } from "../event-loop-lag";
 
 // Instruments the NestJS execution pipeline — guards, pipes, interceptors — by hooking
 // into the internal consumer submodule paths that NestJS uses at require-time.
@@ -183,7 +184,8 @@ export class NestJSIntegration extends RequireIntegration {
                         if (!scout) { return originalFn.apply(this, args); }
                         const opName = `${opBase}/${key}`;
                         return scout.transaction(opName, (done: any) => {
-                            return scout.instrument(opName, () => {
+                            return scout.instrument(opName, (_: any, { span }: any) => {
+                                if (span) { tagEventLoopLag(span); }
                                 return Promise.resolve(originalFn.apply(this, args))
                                     .then((r: any) => { done(); return r; })
                                     .catch((e: any) => { done(); throw e; });

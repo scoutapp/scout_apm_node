@@ -56,6 +56,7 @@ export { default as ScoutSpan } from "./span";
 import ScoutRequest from "./request";
 import { ScoutRequestOptions } from "./request";
 import ScoutSpan from "./span";
+import { enableEventLoopLagMonitor, disableEventLoopLagMonitor } from "../event-loop-lag";
 
 export interface ScoutEventRequestSentData {
     request: ScoutRequest;
@@ -392,6 +393,8 @@ export class Scout extends EventEmitter {
             .then(() => setActiveGlobalScoutInstance(this))
         // Start the statistics sending interval
             .then(() => this.startSendingStatistics())
+        // Start sampling event-loop lag (no-op on Node < 11.10)
+            .then(() => { enableEventLoopLagMonitor(); })
             .then(() => this)
             .catch(err => {
                 this.log(`[scout] setup failed: ${err.message}`, LogLevel.Error);
@@ -410,6 +413,9 @@ export class Scout extends EventEmitter {
         if (this.statsSendingInterval) {
             this.stopSendingStatistics();
         }
+
+        // Stop sampling event-loop lag
+        disableEventLoopLagMonitor();
 
         // Ensure an agent is present before we attempt to shut it down
         if (!this.agent) {
