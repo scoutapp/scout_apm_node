@@ -153,6 +153,9 @@ export enum ScoutContextName {
     Priority = "priority",
     DBOperation = "db.operation",
     DBModel = "db.model",
+    EventLoopLagMeanMS = "scout.event_loop_lag_mean_ms",
+    EventLoopLagMaxMS = "scout.event_loop_lag_max_ms",
+    EventLoopLagP99MS = "scout.event_loop_lag_p99_ms",
 }
 
 export enum ScoutSpanOperation {

@@ -12,6 +12,7 @@ import {
 } from "./types";
 import * as Constants from "./constants";
 import { Scout, ScoutRequest, ScoutSpan, ScoutOptions } from "./scout";
+import { tagEventLoopLag } from "./event-loop-lag";
 import { Request, Router } from "express";
 import {
     getActiveGlobalScoutInstance,
@@ -427,6 +428,9 @@ export function scoutMiddleware(opts?: ExpressMiddlewareOptions): ExpressMiddlew
                         next();
                         return;
                     }
+
+                    // Tag the request with the current rolling event-loop lag
+                    tagEventLoopLag(req.scout.request);
 
                     // Add the path context
                     req.scout.request

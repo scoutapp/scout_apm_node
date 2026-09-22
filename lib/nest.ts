@@ -17,6 +17,7 @@ import {
     setGlobalLastUsedOptions,
 } from "./global";
 import { listExpressEndpoints, findRoutePathInStack, EndpointInfo, ApplicationWithScout, ExpressScoutInfo } from "./express";
+import { tagEventLoopLag } from "./event-loop-lag";
 import { pathToRegexp } from "path-to-regexp";
 
 const getNanoTime = require("nano-time");
@@ -166,6 +167,9 @@ export function nestMiddleware(opts?: NestMiddlewareOptions): NestMiddleware {
                         next();
                         return;
                     }
+
+                    // Tag the request with the current rolling event-loop lag
+                    tagEventLoopLag(req.scout.request);
 
                     req.scout.request
                         .addContext(ScoutContextName.Path, scout.filterRequestPath(reqUrl))

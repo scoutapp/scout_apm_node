@@ -1,6 +1,7 @@
 import { RequireIntegration } from "../types/integrations";
 import { ScoutContextName, ScoutSpanOperation } from "../types";
 import { trackJobQueueTime } from "../job-queue-time";
+import { tagEventLoopLag } from "../event-loop-lag";
 
 export class BullMQIntegration extends RequireIntegration {
     protected readonly packageName: string = "bullmq";
@@ -36,6 +37,7 @@ export class BullMQIntegration extends RequireIntegration {
                             job.opts?.priority != null ? String(job.opts.priority) : "unknown",
                         );
                         if (job.timestamp) { trackJobQueueTime(span, job.timestamp); }
+                        tagEventLoopLag(span);
                     }
 
                     return originalCallProcessJob.apply(self, [job, token])
