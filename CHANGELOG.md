@@ -6,11 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-09-22
+
 ### Changed
-- Bumped core-agent to 1.6.0
+- Bumped core-agent to 1.6.0 ([#379](https://github.com/scoutapp/scout_apm_node/pull/379))
 
 ### Added
-- `caCert` config option to pass `--ca-cert` flag to core-agent
+- `caCert` config option to pass `--ca-cert` flag to core-agent ([#378](https://github.com/scoutapp/scout_apm_node/pull/378))
+- Event-loop lag context (mean/max/p99, in ms) on each web request and background job, via `perf_hooks.monitorEventLoopDelay()` ([#382](https://github.com/scoutapp/scout_apm_node/pull/382))
 
 ## [2.1.1] - 2026-08-27
 
@@ -255,7 +258,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial implementation of NodeJS agent
 
-[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.1.1...HEAD
+[Unreleased]: https://github.com/scoutapp/scout_apm_node/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/scoutapp/scout_apm_node/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/scoutapp/scout_apm_node/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/scoutapp/scout_apm_node/compare/v2.0.1...v2.0.2
