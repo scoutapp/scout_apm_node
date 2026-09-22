@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.2.0] - 2026-09-22
 
 ### Changed
-- Bumped core-agent to 1.6.0
+- Bumped core-agent to 1.6.0 ([#379](https://github.com/scoutapp/scout_apm_node/pull/379))
 
 ### Added
 - `caCert` config option to pass `--ca-cert` flag to core-agent ([#378](https://github.com/scoutapp/scout_apm_node/pull/378))
