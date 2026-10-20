@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-10-20
+
+### Security
+- Bumped `moment` from 2.30.1 to 2.31.0 ([#383](https://github.com/scoutapp/scout_apm_node/pull/383))
+
+### Changed
+- Bumped `follow-redirects` from 1.16.0 to 1.16.1 ([#384](https://github.com/scoutapp/scout_apm_node/pull/384))
+
 ## [2.2.0] - 2026-09-22
 
 ### Changed
