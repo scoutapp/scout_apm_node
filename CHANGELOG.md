@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Bumped `moment` from 2.30.1 to 2.31.0 ([#383](https://github.com/scoutapp/scout_apm_node/pull/383))
+- Bumped `proxy-addr` from 2.0.7 to 2.0.8 ([#385](https://github.com/scoutapp/scout_apm_node/pull/385))
 
 ### Changed
 - Bumped `follow-redirects` from 1.16.0 to 1.16.1 ([#384](https://github.com/scoutapp/scout_apm_node/pull/384))
